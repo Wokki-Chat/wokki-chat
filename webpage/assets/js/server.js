@@ -480,6 +480,7 @@ function createMessageElement({ username, message, created_at, sent_by, id, chan
   if (channel_id_2 !== channel_id) return null;
 
   const isPremium = usersList.find(user => user.id === String(sent_by))?.premium ?? false;
+  const isStaff = usersList.find(user => user.id === String(sent_by))?.tags?.some(tag => tag.tag_name === "staff") ?? false;
   const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
 
   let hideHeader = false;
@@ -561,6 +562,7 @@ function createMessageElement({ username, message, created_at, sent_by, id, chan
             <div class="username-date" style="display: ${hideHeader && !parent_message_id && !command ? 'none' : 'flex'};">
               <p class="username">${sanitizedUsername}</p>
               ${isPremium ? '<div class="premium-tag"><span class="material-symbols-rounded">star</span>PREMIUM</div>' : ''}
+              ${isStaff ? '<div class="staff-tag"><span class="material-symbols-rounded">badge</span>STAFF</div>' : ''}
               ${bot_message == 1 ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
               <p class="date" data-timestamp="${created_at}">${formatDate(created_at)}</p>
             </div>
