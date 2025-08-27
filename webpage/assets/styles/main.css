@@ -987,7 +987,8 @@ h2 {
 
 
 .premium-tag,
-.bot-tag {
+.bot-tag,
+.staff-tag {
     background-color: var(--clr-popup-a20);
     color: var(--clr-text-a0);
     border-radius: 5px;
@@ -1014,7 +1015,8 @@ h2 {
 }
 
 .premium-tag span,
-.bot-tag span {
+.bot-tag span,
+.staff-tag span {
     font-size: 16px !important;
 }
 
