@@ -1,0 +1,65 @@
+RewriteEngine On
+
+# Redirect HTTP to HTTPS
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+SetEnvIf X-Forwarded-Proto "https" HTTPS=on
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+RewriteRule ^server/([a-zA-Z0-9\-]+)$ server.php [QSA,L]
+RewriteRule ^server/([a-zA-Z0-9\-]+)/channel/([a-zA-Z0-9\-]+)$ server.php [QSA,L]
+
+RewriteRule ^invite/([a-zA-Z0-9\-]+)$ invite.php [QSA,L]
+
+RewriteRule ^settings/?$ /settings.php [QSA,L]
+
+RewriteRule ^settings/([a-zA-Z0-9\-]+)$ /settings.php/$1 [QSA,L]
+
+RewriteRule ^dm/(.+)$ /dm.php/$1 [QSA,L]
+
+RewriteRule ^developer/bot/([a-zA-Z0-9\-]+)$ /developer/bot.php/$1 [QSA,L]
+
+RewriteRule ^bot/invite/([a-zA-Z0-9\-]+)$ /bot/invite.php/$1 [QSA,L]
+
+# Rewrite URLs for .html files
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^([^\.]+)$ $1.html [NC,L]
+
+# Rewrite URLs for .php files
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
+
+DirectoryIndex home.php
+
+# --- NO CACHING FOR EVERYTHING ---
+<IfModule mod_headers.c>
+    Header set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</IfModule>
+
+# ALSO EXPLICIT NO CACHE FOR /server/*
+<IfModule mod_headers.c>
+    SetEnvIf Request_URI "^/server/" no_cache
+    Header set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate" env=no_cache
+    Header set Pragma "no-cache" env=no_cache
+    Header set Expires "0" env=no_cache
+</IfModule>
+
+# Set favicon
+<Files "favicon.ico">
+    Header set Content-Type "image/x-icon"
+</Files>
+
+<Files "config.php">
+    Order Allow,Deny
+    Deny from all
+    Require user root
+</Files>
+
+Options -Indexes

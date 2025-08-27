@@ -1,0 +1,324 @@
+<?php
+include 'config.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\SMTP;
+
+require $_SERVER['DOCUMENT_ROOT'] . '/PHPMailer/src/Exception.php';
+require $_SERVER['DOCUMENT_ROOT'] . '/PHPMailer/src/PHPMailer.php';
+require $_SERVER['DOCUMENT_ROOT'] . '/PHPMailer/src/SMTP.php';
+
+$mail = new PHPMailer();
+
+error_reporting(-1);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+
+if (isset($_SERVER['HTTP_ORIGIN'])) {
+    header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Max-Age: 0');
+}
+
+header('Expires: Sun, 01 Jan 2014 00:00:00 GMT');
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+header('Content-Type: application/json');
+
+function generateUUIDv4() {
+    $data = random_bytes(16);
+    $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
+    $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+}
+
+function generateSafeName($originalName) {
+    $ext = strrchr($originalName, '.');
+    if ($ext === false) {
+        $ext = '';
+    }
+    $uuid = generateUUIDv4();
+    return $uuid . $ext;
+}
+
+function checkBotId($botId, $mysqli) {
+    $stmt = $mysqli->prepare("SELECT * FROM bots WHERE id = ?");
+    $stmt->bind_param("s", $botId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $stmt->close();
+    return $result->num_rows > 0;
+}
+
+function checkBotOwner($user_id, $bot_id, $mysqli) {
+    $stmt = $mysqli->prepare("SELECT * FROM bots WHERE id = ? AND created_by = ?");
+    $stmt->bind_param("si", $bot_id, $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $stmt->close();
+    return $result->num_rows > 0;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $allowedOrigin = 'https://chat.wokki20.nl';
+
+    if (isset($_SERVER['HTTP_ORIGIN'])) {
+        if ($_SERVER['HTTP_ORIGIN'] !== $allowedOrigin) {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Forbidden: Invalid Origin',
+                'return_code' => 38
+            ]);
+            exit;
+        }
+    } elseif (isset($_SERVER['HTTP_REFERER'])) {
+        $referer = parse_url($_SERVER['HTTP_REFERER'], PHP_URL_HOST);
+        if ($referer !== 'chat.wokki20.nl') {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Forbidden: Invalid Referer',
+                'return_code' => 39
+            ]);
+            exit;
+        }
+    } else {
+        http_response_code(403);
+        echo json_encode([
+            'status' => 'error',
+            'description' => 'Forbidden: No Origin or Referer',
+            'return_code' => 40
+        ]);
+        exit;
+    }
+
+    $headers = getallheaders();
+    if (
+        !isset($headers['Authorization']) ||
+        !preg_match('/Bearer\s(\S+)/', $headers['Authorization'], $matches)
+    ) {
+        http_response_code(401);
+        echo json_encode([
+            'status' => 'error',
+            'description' => 'Unauthorized: Missing or invalid Authorization header',
+            'return_code' => 41
+        ]);
+        exit;
+    }
+
+    $access_token = $matches[1];
+
+    $stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?");
+    $stmt->bind_param("s", $access_token);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $stmt->close();
+
+    if (!$row || !isset($row['user_id'])) {
+        http_response_code(401);
+        echo json_encode([
+            'status' => 'error',
+            'description' => 'Unauthorized: Invalid access token',
+            'return_code' => 42
+        ]);
+        exit;
+    }
+
+    $user_id = $row['user_id'];
+
+    $bot_id = $_POST['bot_id'];
+
+    if (!isset($bot_id)) {
+        http_response_code(400);
+        echo json_encode([
+            'status' => 'error',
+            'description' => 'Bad Request: Missing bot_id',
+            'return_code' => 44
+        ]);
+        exit;
+    }
+
+    if (!checkBotId($bot_id, $mysqli)) {
+        http_response_code(400);
+        echo json_encode([
+            'status' => 'error',
+            'description' => 'Bad Request: Invalid bot_id',
+            'return_code' => 43
+        ]);
+        exit;
+    }
+
+    if (!checkBotOwner($user_id, $bot_id, $mysqli)) {
+        http_response_code(403);
+        echo json_encode([
+            'status' => 'error',
+            'description' => 'Forbidden: User is not the owner of the bot',
+            'return_code' => 46
+        ]);
+        exit;
+    }
+
+
+    $profilePictureSuccess = false;
+    $botNameSuccess = false;
+
+    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['profile_picture'];
+        $fileType = mime_content_type($file['tmp_name']);
+        $allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
+
+        if (!in_array($fileType, $allowedTypes)) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Invalid file type',
+                'return_code' => 45
+            ]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("SELECT profile_picture FROM bots WHERE id = ?");
+        $stmt->bind_param("s", $bot_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $current = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!empty($current['profile_picture'])) {
+            $oldPath = $_SERVER['DOCUMENT_ROOT'] . $current['profile_picture'];
+            if (file_exists($oldPath) && !$oldPath === "/uploads/profile-pictures/default-profile.png") {
+                unlink($oldPath);
+            }
+        }
+
+        $safeFileName = generateSafeName($file['name']);
+        $uploadPath = $_SERVER['DOCUMENT_ROOT'] . '/uploads/profile-pictures/' . $safeFileName;
+
+
+        if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Failed to save file',
+                'return_code' => 45
+            ]);
+            exit;
+        }
+
+        $path = '/uploads/profile-pictures/' . $safeFileName;;
+
+        $stmt = $mysqli->prepare("UPDATE bots SET profile_picture = ? WHERE id = ?");
+        $stmt->bind_param("ss", $path, $bot_id);
+        $stmt->execute();
+        $stmt->close();
+
+        $profilePictureSuccess = true;
+    }
+
+    if (isset($_POST['bot_name']) && !empty($_POST['bot_name'])) {
+        $name = $_POST['bot_name'];
+
+        if (preg_match('/[^\x20-\x7E]/', $name)) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Bot name contains invalid characters',
+                'return_code' => 11
+            ]);
+            exit;
+        }
+        if (preg_match('/^\s*$/', $name)) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Bot name cannot contain only spaces',
+                'return_code' => 12
+            ]);
+            exit;
+        }
+        if (preg_match('/[^a-zA-Z0-9\- _]/', $name)) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Bot name can only contain letters, numbers, hyphens, spaces, and underscores',
+                'return_code' => 13
+            ]);
+            exit;
+        }
+        if (strlen($name) < 3) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Bot name must be at least 3 characters long',
+                'return_code' => 14
+            ]);
+            exit;
+        }
+
+        if (preg_match('/\n|\r/', $name)) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Bot name cannot contain newlines',
+                'return_code' => 15
+            ]);
+            exit;
+        }
+
+        if (strlen($name) > 50) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Bot name cannot be longer than 50 characters',
+                'return_code' => 16
+            ]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("UPDATE bots SET name = ? WHERE id = ?");
+        $stmt->bind_param("ss", $name, $bot_id);
+        $stmt->execute();
+        $stmt->close();
+
+
+        $botNameSuccess = true;
+    }
+    
+    if ($profilePictureSuccess && $botNameSuccess) {
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'Bot updated',
+            'return_code' => 0
+        ]);
+        exit;
+    }
+
+
+    if ($profilePictureSuccess) {
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'Bot updated',
+            'return_code' => 0
+        ]);
+        exit;
+    } else if ($botNameSuccess) {
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'Bot updated',
+            'return_code' => 0
+        ]);
+        exit;
+    }
+
+    echo json_encode([
+        'status' => 'error',
+        'description' => 'Failed to update bot',
+        'return_code' => 44
+    ]);
+    exit;
+
+} else {
+    echo json_encode([
+        'status' => 'error',
+        'description' => 'Invalid request method',
+        'return_code' => 43
+    ]);
+}

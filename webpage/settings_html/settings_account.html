@@ -1,0 +1,23 @@
+<h2 class="settings-page-title">My Account</h2>
+<div class="profile-container">
+    <div class="profile-picture-name-status-edit-container">
+        <div class="profile-picture-name-status-container">
+            <div class="profile-picture-status-container">
+                <div class="profile-picture-preview-container">
+                    <img src="{{profile_picture_url}}" alt="Profile Picture" class="profile-picture-preview">
+                    <span class="hover-text material-symbols-rounded">upload</span>
+                </div>
+                <div class="profile-status-circle-outer">
+                    <div class="profile-status-circle-inner {{status}}"></div>
+                </div>
+            </div>
+            <div class="profile-name-status-container">
+                <div class="profile-name">{{username}}{{premium_badge}}</div>
+                <p class="profile-status">{{status}}</p>
+            </div>
+        </div>
+        <div class="profile-edit-container">
+            <button class="button-primary-filled" id="edit-profile-button">Edit Profile</button>
+        </div>
+    </div>
+</div>

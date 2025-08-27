@@ -1,0 +1,15 @@
+RewriteEngine On
+
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+SetEnvIf X-Forwarded-Proto "https" HTTPS=on
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Disable all PHP and script execution regardless of extension
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .phps .cgi .pl .py .jsp .asp .sh .exe .bat
+
+# Force all files to be served as plain files, no handlers
+SetHandler default-handler
+
+# Disable directory listings for safety
+Options -Indexes

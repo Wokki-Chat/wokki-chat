@@ -1,0 +1,14 @@
+from server.sio_instance import sio
+from server.helpers.server_helpers import get_server_users, server_commands, command
+
+@sio.on('get_server_users')
+async def handle_get_server_users(sid, data):
+    await get_server_users(sid, data)
+    
+@sio.on('server_commands')
+async def handle_server_commands(sid, data):
+    await server_commands(sid, data)
+    
+@sio.on('command')
+async def handle_command(sid, data):
+    await command(sid, data)
