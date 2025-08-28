@@ -18,6 +18,8 @@ async def send_bot_message(sid, data):
     user_id = data.get('user_id') or None
     embed = data.get('embed')
     req_id = data.get('req_id')
+    parent_message_id = data.get('parent_message_id')
+    file_names = data.get('file_names')
 
     if not all([bot_token, server_id, channel_id, (message or embed)]):
         print("[send_bot_message] Missing one of bot_token, server_id, channel_id, or (message or embed)")
@@ -76,16 +78,29 @@ async def send_bot_message(sid, data):
             username = bot_row['name']
             profile_picture = bot_row['profile_picture']
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-            
+
             embed_str = json.dumps(embed) if embed is not None else None
+
+            assets_json = None
+            if file_names and isinstance(file_names, list) and len(file_names) > 0:
+                assets_list = []
+                for f in file_names:
+                    saved_name = f.get('savedName') or f.get('saved_name') or f.get('file_name')
+                    original_name = f.get('originalName') or f.get('original_name') or saved_name
+                    if saved_name:
+                        assets_list.append({
+                            'savedName': saved_name,
+                            'originalName': original_name
+                        })
+                assets_json = json.dumps(assets_list) if assets_list else None
             
             await cur.execute(
                 '''
                 INSERT INTO bot_messages 
-                (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed)
+                (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed, parent_message_id, assets)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ''',
-                (message_id, message, bot_id, timestamp, None, False, server_id, channel_id, command, user_id, embed_str)
+                (message_id, message, bot_id, timestamp, None, False, server_id, channel_id, command, user_id, embed_str, parent_message_id, assets_json)
             )
             await conn.commit()
             
@@ -103,9 +118,9 @@ async def send_bot_message(sid, data):
         'server_id': server_id,
         'channel_id': channel_id,
         'sent_by': None,
-        'parent_message_id': None,
+        'parent_message_id': parent_message_id,
         'profile_picture': profile_picture,
-        'assets': [],
+        'assets': json.loads(assets_json) if assets_json else [],
         'command': command,
         'command_user_id': user_id,
         'embed': embed
