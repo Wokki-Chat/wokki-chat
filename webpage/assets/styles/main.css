@@ -1522,6 +1522,12 @@ h2 {
     cursor: pointer;
 }
 
+.message-asset-profile-picture {
+    width: 350px;
+    height: 350px;
+    object-fit: cover;
+}
+
 .message-asset-audio {
     display: none;
 }
