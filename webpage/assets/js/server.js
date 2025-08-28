@@ -480,7 +480,7 @@ function createMessageElement({ username, message, created_at, sent_by, id, chan
   if (channel_id_2 !== channel_id) return null;
 
   const isPremium = usersList.find(user => user.id === String(sent_by))?.premium ?? false;
-  const isStaff = usersList.find(user => user.id === String(sent_by))?.is_staff ?? false;
+  const isStaff = usersList.find(user => user.id === String(sent_by))?.staff ?? false;
   const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
 
   let hideHeader = false;
