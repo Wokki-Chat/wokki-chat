@@ -3,37 +3,53 @@ import time
 import os
 import signal
 
-APP_NAME = "wokki20_chat"
-
-def get_gunicorn_pids():
-    result = subprocess.run(["pgrep", "-f", f"gunicorn main:app"], capture_output=True, text=True)
+def get_worker_pids():
+    """Return all Gunicorn worker PIDs (excluding master)."""
+    result = subprocess.run(
+        ["pgrep", "-f", "gunicorn main:app"], capture_output=True, text=True
+    )
     pids = [int(pid) for pid in result.stdout.split() if pid.strip()]
-    return sorted(pids)
+
+    master_pid = None
+    for pid in pids:
+        try:
+            with open(f"/proc/{pid}/status") as f:
+                for line in f:
+                    if line.startswith("PPid:"):
+                        ppid = int(line.split()[1])
+                        if ppid == 1:
+                            master_pid = pid
+                            break
+        except FileNotFoundError:
+            continue
+
+    workers = [p for p in pids if p != master_pid]
+    return sorted(workers), master_pid
 
 def rolling_restart():
-    original_pids = get_gunicorn_pids()
-    print(f"Found PIDs: {original_pids}")
-    killed_pids = []
+    workers, master = get_worker_pids()
+    print(f"Master PID: {master}")
+    print(f"Workers before restart: {workers}")
 
-    for pid in original_pids:
-        if pid in killed_pids:
-            continue
-        print(f"Killing PID {pid}...")
+    for old_worker in workers:
+        print(f"Killing worker {old_worker}...")
         try:
-            os.kill(pid, signal.SIGTERM)
+            os.kill(old_worker, signal.SIGTERM)
         except ProcessLookupError:
-            print(f"PID {pid} already gone.")
+            print(f"Worker {old_worker} already gone.")
             continue
-        killed_pids.append(pid)
 
         while True:
-            current_pids = get_gunicorn_pids()
-            new_workers = [p for p in current_pids if p not in original_pids]
-            if new_workers:
-                print(f"New worker detected: {new_workers}")
+            new_workers, _ = get_worker_pids()
+            if any(w not in workers for w in new_workers):
+                print(f"New worker spawned: {new_workers}")
+                workers = new_workers
                 break
-            time.sleep(1)
+            time.sleep(0.5)
+
         time.sleep(1)
+
+    print("Rolling restart complete ✅")
 
 if __name__ == "__main__":
     rolling_restart()
