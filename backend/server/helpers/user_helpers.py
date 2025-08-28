@@ -121,6 +121,7 @@ async def get_user_info(sid, data):
     bot_token = data.get('bot_token')
     requested_user_id = data.get('user_id')
     requested_bot_id = data.get('bot_id')
+    req_id = data.get('req_id')
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -131,48 +132,48 @@ async def get_user_info(sid, data):
             if bot_token:
                 caller_bot_id = await verify_bot_token(cur, bot_token)
                 if not caller_bot_id:
-                    await sio_instance.sio.emit('user_info', {'error': 'Invalid bot token'}, to=sid)
+                    await sio_instance.sio.emit('user_info', {'error': 'Invalid bot token', 'req_id': req_id}, to=sid)
                     return
             elif access_token:
                 caller_user_id = await verify_access_token(cur, access_token)
                 if not caller_user_id:
-                    await sio_instance.sio.emit('user_info', {'error': 'Invalid access token'}, to=sid)
+                    await sio_instance.sio.emit('user_info', {'error': 'Invalid access token', 'req_id': req_id}, to=sid)
                     return
             else:
-                await sio_instance.sio.emit('user_info', {'error': 'No authentication provided'}, to=sid)
+                await sio_instance.sio.emit('user_info', {'error': 'No authentication provided', 'req_id': req_id}, to=sid)
                 return
 
             if requested_user_id:
                 user_info = await get_user_info_from_id(cur, requested_user_id)
                 if not user_info:
-                    await sio_instance.sio.emit('user_info', {'error': 'User not found'}, to=sid)
+                    await sio_instance.sio.emit('user_info', {'error': 'User not found', 'req_id': req_id}, to=sid)
                     return
-                await sio_instance.sio.emit('user_info', user_info, to=sid)
+                await sio_instance.sio.emit('user_info', {'info': user_info, 'req_id': req_id}, to=sid)
                 return
 
 
             elif requested_bot_id:
                 bot_info = await get_bot_info_from_id(cur, requested_bot_id)
                 if not bot_info:
-                    await sio_instance.sio.emit('user_info', {'error': 'Bot not found'}, to=sid)
+                    await sio_instance.sio.emit('user_info', {'error': 'Bot not found', 'req_id': req_id}, to=sid)
                     return
-                await sio_instance.sio.emit('user_info', bot_info, to=sid)
+                await sio_instance.sio.emit('user_info', {'info': bot_info, 'req_id': req_id}, to=sid)
                 return
 
             if caller_user_id:
                 user_info = await get_user_info_from_id(cur, caller_user_id)
                 if not user_info:
-                    await sio_instance.sio.emit('user_info', {'error': 'User not found'}, to=sid)
+                    await sio_instance.sio.emit('user_info', {'error': 'User not found', 'req_id': req_id}, to=sid)
                     return
-                await sio_instance.sio.emit('user_info', user_info, to=sid)
+                await sio_instance.sio.emit('user_info', {'info': user_info, 'req_id': req_id}, to=sid)
                 return
 
             elif caller_bot_id:
                 bot_info = await get_bot_info_from_id(cur, caller_bot_id)
                 if not bot_info:
-                    await sio_instance.sio.emit('user_info', {'error': 'Bot not found'}, to=sid)
+                    await sio_instance.sio.emit('user_info', {'error': 'Bot not found', 'req_id': req_id}, to=sid)
                     return
-                await sio_instance.sio.emit('user_info', bot_info, to=sid)
+                await sio_instance.sio.emit('user_info', {'info': bot_info, 'req_id': req_id}, to=sid)
                 return
 
-            await sio_instance.sio.emit('user_info', {'error': 'User/bot not found'}, to=sid)
+            await sio_instance.sio.emit('user_info', {'error': 'User/bot not found', 'req_id': req_id}, to=sid)
