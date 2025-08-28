@@ -117,21 +117,22 @@ async def edit_bot_message(sid, data):
     message_id = data.get('message_id')
     message = data.get('message')
     embed = data.get('embed')
+    req_id = data.get('req_id')
     
     if not all([bot_token, (message or embed), message_id]):
         print("[send_bot_message] Missing one of bot_token, server_id, channel_id, or (message or embed)")
-        await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
+        await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
         return
     
     if embed is not None:
         if not validate_embed(embed):
-            await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Invalid embed data'}, to=sid)
+            await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Invalid embed data', 'req_id': req_id}, to=sid)
             return
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             bot_id = await verify_bot_token(cur, bot_token)
             if not bot_id:
-                await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Invalid token'}, to=sid)
+                await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Invalid token', 'req_id': req_id}, to=sid)
                 return
             
             await cur.execute(
@@ -143,7 +144,7 @@ async def edit_bot_message(sid, data):
             )
             message_row = await cur.fetchone()
             if not message_row:
-                await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Message not found'}, to=sid)
+                await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Message not found', 'req_id': req_id}, to=sid)
                 return
         
             if embed is not None:
@@ -153,13 +154,13 @@ async def edit_bot_message(sid, data):
             
             if message is not None:
                 if len(message) > 3000:
-                    await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Message too long'}, to=sid)
+                    await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Message too long', 'req_id': req_id}, to=sid)
                     return
             
             await cur.execute('SELECT name, profile_picture FROM bots WHERE id = %s', (bot_id,))
             bot_row = await cur.fetchone()
             if not bot_row:
-                await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Bot not found'}, to=sid)
+                await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Bot not found', 'req_id': req_id}, to=sid)
                 return
             
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
@@ -209,7 +210,102 @@ async def edit_bot_message(sid, data):
         'updated_at': timestamp,
         'embed': embed
     }, to=server_channel_sids)
-    await sio_instance.sio.emit('edit_bot_message_response', {'success': True}, to=sid)
+    await sio_instance.sio.emit('edit_bot_message_response', {'success': True, 'req_id': req_id}, to=sid)
+
+
+async def delete_bot_message(sid, data):
+    bot_token = data.get('bot_token')
+    message_id = data.get('message_id')
+    message = data.get('message')
+    embed = data.get('embed')
+    req_id = data.get('req_id')
+    
+    if not all([bot_token, (message or embed), message_id]):
+        print("[delete_bot_message] Missing one of bot_token, server_id, channel_id, or (message or embed)")
+        await sio_instance.sio.emit('delete_bot_message_response', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
+        return
+    
+    if embed is not None:
+        if not validate_embed(embed):
+            await sio_instance.sio.emit('delete_bot_message_response', {'success': False, 'error': 'Invalid embed data', 'req_id': req_id}, to=sid)
+            return
+    async with config.pool.acquire() as conn:
+        async with conn.cursor(aiomysql.DictCursor) as cur:
+            bot_id = await verify_bot_token(cur, bot_token)
+            if not bot_id:
+                await sio_instance.sio.emit('delete_bot_message_response', {'success': False, 'error': 'Invalid token', 'req_id': req_id}, to=sid)
+                return
+            
+            await cur.execute(
+                '''
+                SELECT server_id, channel_id FROM bot_messages 
+                WHERE id = %s AND bot_id = %s
+                ''',
+                (message_id, bot_id)
+            )
+            message_row = await cur.fetchone()
+            if not message_row:
+                await sio_instance.sio.emit('delete_bot_message_response', {'success': False, 'error': 'Message not found', 'req_id': req_id}, to=sid)
+                return
+        
+            if embed is not None:
+                for e in embed:
+                    e['bot_id'] = bot_id
+       
+            
+            if message is not None:
+                if len(message) > 3000:
+                    await sio_instance.sio.emit('delete_bot_message_response', {'success': False, 'error': 'Message too long', 'req_id': req_id}, to=sid)
+                    return
+            
+            await cur.execute('SELECT name, profile_picture FROM bots WHERE id = %s', (bot_id,))
+            bot_row = await cur.fetchone()
+            if not bot_row:
+                await sio_instance.sio.emit('delete_bot_message_response', {'success': False, 'error': 'Bot not found', 'req_id': req_id}, to=sid)
+                return
+            
+            timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            
+            embed_str = json.dumps(embed) if embed is not None else None
+            
+            fields = []
+            values = []
+
+            if message is not None:
+                fields.append("message = %s")
+                values.append(message)
+
+            if embed is not None:
+                embed_str = json.dumps(embed)
+                fields.append("embed = %s")
+                values.append(embed_str)
+
+            if fields:
+                fields.append("updated_at = %s")
+                fields.append("edited = %s")
+                values.append(timestamp)
+                values.append(True)
+
+                values.append(message_id)
+                values.append(bot_id)
+
+                sql = f'''
+                    UPDATE bot_messages
+                    SET {', '.join(fields)}
+                    WHERE id = %s AND bot_id = %s
+                '''
+
+                await cur.execute(sql, values)
+                await conn.commit()
+                
+            server_id = message_row['server_id']
+            channel_id = message_row['channel_id']
+            
+            server_channel_sids = await get_server_channel_sids(cur, server_id, channel_id)
+            
+                
+    await sio_instance.sio.emit('message_deleted', message_id, to=server_channel_sids)
+    await sio_instance.sio.emit('delete_bot_message_response', {'success': True, 'req_id': req_id}, to=sid)
     
 
 async def embed_button(sid, data):
