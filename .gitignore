@@ -1,2 +1,5 @@
 .env
 *.env
+*.pyc
+config.php
+livekit.yaml

@@ -67,24 +67,37 @@ if (messageContainer) {
 }
 
 loadMessages();
+
+const pendingMessages = [];
+
+function processMessage(msg, parentData, container = messageContainer) {
+  const msgEl = createMessageElement(msg, parentData);
+  if (!msgEl) return;
+  container.appendChild(msgEl);
+}
+
+async function getParentData(pid) {
+  if (!pid) return { parent_message_text: null, parent_message_user: null };
+  try {
+    return await loadParentMessage(pid);
+  } catch {
+    return { parent_message_text: null, parent_message_user: null };
+  }
+}
+
 socket.on("all_messages", async (messages) => {
   const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
-
-  async function getParentData(pid) {
-    if (!pid) return { parent_message_text: null, parent_message_user: null };
-    try {
-      return await loadParentMessage(pid);
-    } catch {
-      return { parent_message_text: null, parent_message_user: null };
-    }
-  }
 
   const fragment = document.createDocumentFragment();
 
   for (const msg of messages) {
+    if (!usersList || usersList.length === 0) {
+      pendingMessages.push({ msg });
+      continue;
+    }
+
     const parentData = await getParentData(msg.parent_message_id);
-    const msgEl = createMessageElement(msg, parentData);
-    if (msgEl) fragment.appendChild(msgEl);
+    processMessage(msg, parentData, fragment);
   }
 
   const oldScrollHeight = messageContainer.scrollHeight;
@@ -96,11 +109,12 @@ socket.on("all_messages", async (messages) => {
   await addCodeblockInfo();
 
   if (isAtBottom) {
-    await scrollToBottomWhenHeightStable(messageContainer);
+    await scrollToBottomWhenHeightStable(messageContainer, 250);
   }
   
   emojis.replaceAll();
 });
+
 
 
 socket.on("server_commands_response", async (data) => {
@@ -199,6 +213,35 @@ socket.on("new_message", async (msg) => {
   
   emojis.replaceEl(msgEl.querySelector(".message-text"));
 });
+
+async function onUsersListLoaded() {
+  pendingMessages.sort((a, b) => new Date(a.msg.created_at) - new Date(b.msg.created_at));
+
+  const processed = new Set();
+
+  while (pendingMessages.length > 0) {
+    let anyProcessed = false;
+
+    for (let i = 0; i < pendingMessages.length; i++) {
+      const { msg } = pendingMessages[i];
+
+      const parentData = msg.parent_message_id
+        ? await getParentData(msg.parent_message_id)
+        : { parent_message_text: null, parent_message_user: null };
+
+      if (!msg.parent_message_id || processed.has(msg.parent_message_id)) {
+        processMessage(msg, parentData);
+        processed.add(msg.id);
+        pendingMessages.splice(i, 1);
+        i--;
+        anyProcessed = true;
+      }
+    }
+
+    if (!anyProcessed) break;
+  }
+}
+
 
 socket.on("livekit_token", async ({ token, url, room: roomName }) => {
   await openParticipantsPopup(token, roomName);
@@ -480,6 +523,7 @@ function createMessageElement({ username, message, created_at, sent_by, id, chan
   if (channel_id_2 !== channel_id) return null;
 
   const isPremium = usersList.find(user => user.id === String(sent_by))?.premium ?? false;
+  const isStaff = usersList.find(user => user.id === String(sent_by))?.staff ?? false;
   const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
 
   let hideHeader = false;
@@ -519,6 +563,8 @@ function createMessageElement({ username, message, created_at, sent_by, id, chan
         return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${sanitize(asset.originalName)}</a>`;
       } else if (type === 'txt') {
         return `<pre class="message-asset-text" id="txt-asset-${id}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
+      } else if (type === 'profile_picture') {
+        return `<img src="https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}" alt="${asset.originalName}" class="message-asset-image message-asset-profile-picture" onclick="imageViewer('https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}', '${asset.originalName}')" />`;
       } else {
         return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" download class="message-asset-file link">${sanitize(asset.savedName)}</a>`;
       }
@@ -561,6 +607,7 @@ function createMessageElement({ username, message, created_at, sent_by, id, chan
             <div class="username-date" style="display: ${hideHeader && !parent_message_id && !command ? 'none' : 'flex'};">
               <p class="username">${sanitizedUsername}</p>
               ${isPremium ? '<div class="premium-tag"><span class="material-symbols-rounded">star</span>PREMIUM</div>' : ''}
+              ${isStaff ? '<div class="staff-tag"><span class="material-symbols-rounded">badge</span>STAFF</div>' : ''}
               ${bot_message == 1 ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
               <p class="date" data-timestamp="${created_at}">${formatDate(created_at)}</p>
             </div>
@@ -1089,6 +1136,7 @@ function renderUser(user) {
       <div class="self-info-status-username">
           <div class="self-info-profile-username-container"><p class="self-info-username">${sanitize(user.username)}</p>
               ${user.premium ? '<div class="premium-tag"><span class="material-symbols-rounded">star</span>PREMIUM</div>' : ''}
+              ${user.staff ? '<div class="staff-tag"><span class="material-symbols-rounded">badge</span>STAFF</div>' : ''}
               ${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
             </div>
           <p class="self-info-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
@@ -1120,6 +1168,7 @@ socket.on("server_users", (users) => {
   usersList = users;
 
   users.forEach(renderUser);
+  onUsersListLoaded();
 });
 
 socket.on("user_updated", (user) => {

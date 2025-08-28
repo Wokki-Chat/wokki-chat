@@ -109,6 +109,8 @@ async def get_bot_info_from_id(cur, bot_id):
         bot['bot'] = True
         bot['username'] = bot['name']
         bot['tags'] = []
+        bot['staff'] = False
+        bot['developer'] = False
         del bot['name']
         return dict(bot)
 
