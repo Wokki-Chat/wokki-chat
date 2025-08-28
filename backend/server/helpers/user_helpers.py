@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
 from dateutil import parser
+from functools import wraps
 import server.config as config
 import server.sio_instance as sio_instance
 import aiomysql
-from server.helpers.bot_helpers import get_bot_info_from_id, verify_bot_token
+from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server, verify_bot_token
+from server.helpers.server_helpers import is_user_in_server
 
 async def verify_access_token(cur, access_token):
     await cur.execute('SELECT user_id, access_token_expires_at FROM user_tokens WHERE access_token = %s', (access_token,))
@@ -25,6 +27,67 @@ async def verify_access_token(cur, access_token):
         return None
 
     return user_id
+    
+def auth_required(allow_bots=True):
+    """
+    Decorator to validate tokens.
+    1. Input function must be async.
+    2. Passes `is_bot` and `account_id` (user/bot id) into the input function.
+    """
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(sid, data, *args, **kwargs):
+            bot_token = data.get('bot_token')
+            access_token = data.get('access_token')
+            server_id = data.get('server_id')
+
+            is_bot = False
+            account_id = None
+
+            async with config.pool.acquire() as conn:
+                async with conn.cursor() as cur:
+                    if bot_token:
+                        if not allow_bots:
+                            await sio_instance.sio.emit(
+                                'error', {'success': False, 'error': 'Bots not allowed'}, to=sid
+                            )
+                            return
+                        bot_id = await verify_bot_token(cur, bot_token)
+                        if not bot_id:
+                            await sio_instance.sio.emit(
+                                'error', {'success': False, 'error': 'Invalid bot token'}, to=sid
+                            )
+                            return
+                        if not await is_bot_in_server(cur, bot_id, server_id):
+                            await sio_instance.sio.emit(
+                                'error', {'success': False, 'error': 'Bot not in server'}, to=sid
+                            )
+                            return
+                        is_bot = True
+                        account_id = bot_id
+                    else:
+                        if not access_token:
+                            await sio_instance.sio.emit(
+                                'error', {'success': False, 'error': 'Missing access token'}, to=sid
+                            )
+                            return
+                        user_id = await verify_access_token(cur, access_token)
+                        if not user_id:
+                            await sio_instance.sio.emit(
+                                'error', {'success': False, 'error': 'Invalid access token'}, to=sid
+                            )
+                            return
+                        if not await is_user_in_server(cur, user_id, server_id):
+                            await sio_instance.sio.emit(
+                                'error', {'success': False, 'error': 'User not in server'}, to=sid
+                            )
+                            return
+                        account_id = user_id
+
+            return await func(sid, data, *args, is_bot=is_bot, account_id=account_id, **kwargs)
+
+        return wrapper
+    return decorator
 
 async def get_user_premium_status(cur, user_id):
     await cur.execute('SELECT premium_expires_at, premium FROM users WHERE id = %s', (user_id,))
