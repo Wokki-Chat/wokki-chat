@@ -1134,6 +1134,7 @@ function renderUser(user) {
       <div class="self-info-status-username">
           <div class="self-info-profile-username-container"><p class="self-info-username">${sanitize(user.username)}</p>
               ${user.premium ? '<div class="premium-tag"><span class="material-symbols-rounded">star</span>PREMIUM</div>' : ''}
+              ${user.staff ? '<div class="staff-tag"><span class="material-symbols-rounded">badge</span>STAFF</div>' : ''}
               ${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
             </div>
           <p class="self-info-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
