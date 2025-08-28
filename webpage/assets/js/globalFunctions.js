@@ -1209,7 +1209,14 @@ if (fileInput) {
 };
 
 function getAssetType(fileName) {
-  const ext = fileName.split('.').pop().toLowerCase();
+  const parts = fileName.toLowerCase().split('.');
+
+  if (parts.length >= 3 && parts[parts.length - 1] === 'pfp' && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(parts[parts.length - 2])) {
+    return 'profile_picture';
+  }
+  
+  const ext = parts[parts.length - 1];
+
   if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(ext)) return 'image';
   if (['mp4', 'webm', 'ogg'].includes(ext)) return 'video';
   if (['mp3', 'wav', 'ogg'].includes(ext)) return 'audio';

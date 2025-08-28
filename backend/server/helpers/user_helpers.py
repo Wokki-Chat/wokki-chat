@@ -156,7 +156,9 @@ async def get_user_info_from_id(cur, user_id):
         "profile_picture": rows[0]["profile_picture"],
         "premium": await get_user_premium_status(cur, user_id),
         "bot": False,
-        "tags": []
+        "tags": [],
+        "staff": await is_user_staff(cur, user_id),
+        "developer": await is_user_developer(cur, user_id)
     }
 
     for row in rows:
@@ -240,3 +242,14 @@ async def get_user_info(sid, data):
                 return
 
             await sio_instance.sio.emit('user_info', {'error': 'User/bot not found', 'req_id': req_id}, to=sid)
+            
+async def is_user_staff(cur, user_id):
+    await cur.execute("SELECT is_staff FROM users WHERE id = %s", (user_id,))
+    row = await cur.fetchone()
+    return row["is_staff"] == 1
+
+async def is_user_developer(cur, user_id):
+    await cur.execute("SELECT is_developer, is_staff FROM users WHERE id = %s", (user_id,))
+    row = await cur.fetchone()
+    return row["is_developer"] == 1
+

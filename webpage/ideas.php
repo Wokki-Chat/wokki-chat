@@ -21,7 +21,7 @@ if ($result->num_rows > 0) {
     $user_id = $row['user_id'];
 }
 $stmt->close();
-    $stmt = $mysqli->prepare("SELECT username, profile_picture FROM users WHERE id = ?");
+    $stmt = $mysqli->prepare("SELECT username, profile_picture, is_staff, is_developer FROM users WHERE id = ?");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -29,10 +29,21 @@ $stmt->close();
         $row = $result->fetch_assoc();
         $username = $row['username'];
         $profile_picture = $row['profile_picture'];
+        $is_staff_stmt = $row['is_staff'];
+        $is_developer_stmt = $row['is_developer'];
     }
     $stmt->close();
 
     $param = json_encode(['user_id' => (int)$user_id]);
+
+    $is_developer = false;
+    $is_staff = false;
+    if ($is_developer_stmt === 1 && $is_developer_stmt === 1) {
+        $is_developer = true;
+    }
+    if ($is_staff_stmt === 1) {
+        $is_staff = true;
+    }
 }
 
 
@@ -81,6 +92,7 @@ foreach ($ideas as $index => $idea) {
     $votesStmt->close();
 
     $ideas[$index] = $idea;
+
 }
 
 
@@ -209,6 +221,9 @@ function render_idea($idea) {
             const id = window.location.href.split("?idea=")[1];
             showIdea(id);
         }
+
+        const is_developer = <?php echo json_encode($is_developer); ?>;
+        const is_staff = <?php echo json_encode($is_staff); ?>;
     </script>
 </body>
 </html>
