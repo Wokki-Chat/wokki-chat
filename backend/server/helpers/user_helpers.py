@@ -183,9 +183,9 @@ async def get_user_info(sid, data):
 async def is_user_staff(cur, user_id):
     await cur.execute("SELECT is_staff FROM users WHERE id = %s", (user_id,))
     row = await cur.fetchone()
-    return row[0] == 1
+    return bool(row[0]) if row else False
 
 async def is_user_developer(cur, user_id):
-    await cur.execute("SELECT is_developer AND is_staff FROM users WHERE id = %s", (user_id,))
+    await cur.execute("SELECT is_developer, is_staff FROM users WHERE id = %s", (user_id,))
     row = await cur.fetchone()
-    return row[0] == 1 and row[1] == 1
+    return bool(row[0]) and bool(row[1]) if row else False
