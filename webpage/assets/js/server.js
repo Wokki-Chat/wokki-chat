@@ -67,24 +67,37 @@ if (messageContainer) {
 }
 
 loadMessages();
+
+const pendingMessages = [];
+
+function processMessage(msg, parentData, container = messageContainer) {
+  const msgEl = createMessageElement(msg, parentData);
+  if (!msgEl) return;
+  container.appendChild(msgEl);
+}
+
+async function getParentData(pid) {
+  if (!pid) return { parent_message_text: null, parent_message_user: null };
+  try {
+    return await loadParentMessage(pid);
+  } catch {
+    return { parent_message_text: null, parent_message_user: null };
+  }
+}
+
 socket.on("all_messages", async (messages) => {
   const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
-
-  async function getParentData(pid) {
-    if (!pid) return { parent_message_text: null, parent_message_user: null };
-    try {
-      return await loadParentMessage(pid);
-    } catch {
-      return { parent_message_text: null, parent_message_user: null };
-    }
-  }
 
   const fragment = document.createDocumentFragment();
 
   for (const msg of messages) {
+    if (!usersList || usersList.length === 0) {
+      pendingMessages.push({ msg });
+      continue;
+    }
+
     const parentData = await getParentData(msg.parent_message_id);
-    const msgEl = createMessageElement(msg, parentData);
-    if (msgEl) fragment.appendChild(msgEl);
+    processMessage(msg, parentData, fragment);
   }
 
   const oldScrollHeight = messageContainer.scrollHeight;
@@ -96,11 +109,12 @@ socket.on("all_messages", async (messages) => {
   await addCodeblockInfo();
 
   if (isAtBottom) {
-    await scrollToBottomWhenHeightStable(messageContainer);
+    await scrollToBottomWhenHeightStable(messageContainer, 250);
   }
   
   emojis.replaceAll();
 });
+
 
 
 socket.on("server_commands_response", async (data) => {
@@ -199,6 +213,35 @@ socket.on("new_message", async (msg) => {
   
   emojis.replaceEl(msgEl.querySelector(".message-text"));
 });
+
+async function onUsersListLoaded() {
+  pendingMessages.sort((a, b) => new Date(a.msg.created_at) - new Date(b.msg.created_at));
+
+  const processed = new Set();
+
+  while (pendingMessages.length > 0) {
+    let anyProcessed = false;
+
+    for (let i = 0; i < pendingMessages.length; i++) {
+      const { msg } = pendingMessages[i];
+
+      const parentData = msg.parent_message_id
+        ? await getParentData(msg.parent_message_id)
+        : { parent_message_text: null, parent_message_user: null };
+
+      if (!msg.parent_message_id || processed.has(msg.parent_message_id)) {
+        processMessage(msg, parentData);
+        processed.add(msg.id);
+        pendingMessages.splice(i, 1);
+        i--;
+        anyProcessed = true;
+      }
+    }
+
+    if (!anyProcessed) break;
+  }
+}
+
 
 socket.on("livekit_token", async ({ token, url, room: roomName }) => {
   await openParticipantsPopup(token, roomName);
@@ -1122,6 +1165,7 @@ socket.on("server_users", (users) => {
   usersList = users;
 
   users.forEach(renderUser);
+  onUsersListLoaded();
 });
 
 socket.on("user_updated", (user) => {
