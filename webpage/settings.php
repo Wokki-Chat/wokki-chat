@@ -167,6 +167,12 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
             window.location.href = 'https://chat.wokki20.nl' + returnUrl;
             }
         });
+
+        socket.on("user_updated", (user) => {
+            if (user.id !== user_id) return;
+            document.querySelector(".profile-status-circle-inner").style.backgroundColor = `var(--clr-status-${user.status.toLowerCase()})`;
+            document.querySelector(".profile-status").textContent = user.status.charAt(0).toUpperCase() + user.status.slice(1);
+        });
     </script>
 </body>
 </html>

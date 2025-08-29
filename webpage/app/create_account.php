@@ -53,14 +53,14 @@ function getTokenExpirationTime($tokenType = 'access') {
 
 
 function registerUser($mysqli, $username, $email, $password) {
-    $stmt = $mysqli->prepare("SELECT id FROM users WHERE email = ?");
-    $stmt->bind_param("s", $email);
+    $stmt = $mysqli->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
+    $stmt->bind_param("ss", $email, $username);
     $stmt->execute();
     $stmt->store_result();
     if ($stmt->num_rows > 0) {
         return [
             'status' => 'error',
-            'description' => 'User with this email already exists',
+            'description' => 'User with this email or username already exists',
             'return_code' => 0
         ];
     };
