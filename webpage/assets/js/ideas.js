@@ -187,9 +187,17 @@ function showIdea(id) {
                     <p class="idea-creator-date">${formatDate(idea.created_at)}</p>
                 </div>
                 <div class="idea-description">${sanitizeMsg(idea.description)}</div>
+                ${is_developer ? `<div class="developer-info" style="display: flex; flex-direction: column; align-items: flex-start; margin-top: 10px;">` : ""}
+                ${is_developer ? `<p class="idea-id" style="margin: 0;">ID: ${idea.id}</p>` : ""}
+                ${is_developer ? `<p class="idea-channel-id" style="margin: 0;">Status: ${idea.status}</p>` : ""}
+                ${is_developer ? `</div>` : ""}
                 <div class="idea-actions">
                     <button class="idea-action" id="upvote-button" onclick="upvoteIdea('${idea.id}')" data-id="${idea.id}"><span class="material-symbols-rounded">arrow_shape_up</span>${idea.votes}</button>
-                    <button class="idea-action" onclick="share('${idea.id}')"><span class="material-symbols-rounded">share</span></button>
+                    <div class="idea-actions-owner">
+                      <button class="idea-action" onclick="share('${idea.id}')"><span class="material-symbols-rounded">share</span></button>
+                      ${is_developer ? `<button class="idea-action" onclick="moveIdeaBack('${idea.id}')"><span class="material-symbols-rounded">move_down</span></button>` : ""}
+                      ${is_developer ? `<button class="idea-action" onclick="moveIdea('${idea.id}')"><span class="material-symbols-rounded">move_up</span></button>` : ""}
+                    </div>
                 </div>
             </div>
         </div>
@@ -266,6 +274,46 @@ function upvoteIdea(id) {
     })
     .catch((error) => {
         console.error("Error creating server:", error);
+    });
+}
+
+function moveIdea(id) {
+    const formData = new FormData();
+    formData.append("idea_id", id);
+
+    fetch(`https://chat.wokki20.nl/app/move_idea`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${access_token}`,
+        },
+        body: formData,
+    })
+    .then((response) => response.json())
+    .then((data) => {
+        window.location.reload();
+    })
+    .catch((error) => {
+
+    });
+}
+
+function moveIdeaBack(id) {
+    const formData = new FormData();
+    formData.append("idea_id", id);
+
+    fetch(`https://chat.wokki20.nl/app/move_idea_back`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${access_token}`,
+        },
+        body: formData,
+    })
+    .then((response) => response.json())
+    .then((data) => {
+        window.location.reload();
+    })
+    .catch((error) => {
+      
     });
 }
 

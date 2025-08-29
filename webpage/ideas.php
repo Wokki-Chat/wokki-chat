@@ -215,15 +215,15 @@ function render_idea($idea) {
         const profile_picture = "<?php echo $profile_picture; ?>";
         <?php } ?>
 
+        const is_developer = <?php echo json_encode($is_developer); ?>;
+        const is_staff = <?php echo json_encode($is_staff); ?>;
+
         const ideas = <?php echo json_encode($ideas); ?>;
 
         if (window.location.href.includes("?idea=")) {
             const id = window.location.href.split("?idea=")[1];
             showIdea(id);
         }
-
-        const is_developer = <?php echo json_encode($is_developer); ?>;
-        const is_staff = <?php echo json_encode($is_staff); ?>;
     </script>
 </body>
 </html>
