@@ -1,42 +1,46 @@
 from datetime import datetime, timezone
 import json
-from server.config import user_message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS
-from server.helpers.user_helpers import verify_access_token, get_user_premium_status
+from server.config import user_message_timestamps, bot_message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS
+from server.helpers.user_helpers import verify_access_token, get_user_premium_status, auth_required
 from server.helpers.server_helpers import is_user_in_server, does_user_have_server_permission, send_server_notifications, get_server_channel_sids, get_server_users_info
 import aiomysql
 import uuid
 import server.sio_instance as sio_instance
 import server.config as config
 
-async def send_message(sid, data):
+@auth_required(allow_bots=True)
+async def send_message(sid, is_bot, account_id, data):
     print(f"[send_message] Received from {sid}: {data}")
-    access_token = data.get('access_token')
     message = data.get('message')
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
     parent_message_id = data.get('parent_message_id')
     file_names = data.get('file_names')
 
-    if not all([access_token, message, server_id, channel_id]):
-        print("[send_message] Missing one of access_token, message, server_id, or channel_id")
-        await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
+    embed = data.get('embed')
+    req_id = data.get('req_id')
+    command = data.get('command')
+    user_id = data.get('user_id')
+
+    if not all([message, server_id, channel_id]):
+        print("[send_message] Missing one of message, server_id, or channel_id")
+        await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
         return
 
     message_id = str(uuid.uuid4())
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
             now = datetime.now(timezone.utc)
-            timestamps = user_message_timestamps[user_id]
+            if is_bot:
+                timestamps = bot_message_timestamps[account_id]
+            else:
+                timestamps = user_message_timestamps[account_id]
             
-            if not await is_user_in_server(cur, user_id, server_id):
-                await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'User is not in server'}, to=sid)
-                return
-            
-            if not await does_user_have_server_permission(cur, user_id, server_id, 'send_messages'):
-                await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'User does not have permission to send messages'}, to=sid)
-                return
+            if not is_bot:
+                if not await does_user_have_server_permission(cur, account_id, server_id, 'send_messages'):
+                    await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'User does not have permission to send messages'}, to=sid)
+                    return
             
             while timestamps and (now - timestamps[0]).total_seconds() > TIME_WINDOW_SECONDS:
                 timestamps.popleft()
@@ -44,35 +48,45 @@ async def send_message(sid, data):
             if len(timestamps) >= MAX_MESSAGES:
                 await sio_instance.sio.emit('send_message_response', {
                     'success': False,
-                    'error': f'Rate limit exceeded. Max {MAX_MESSAGES} messages every {TIME_WINDOW_SECONDS} seconds.'
+                    'error': f'Rate limit exceeded. Max {MAX_MESSAGES} messages every {TIME_WINDOW_SECONDS} seconds.',
+                    'req_id': req_id
                 }, to=sid)
                 return
 
             timestamps.append(now)
 
-            if not user_id:
-                await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Invalid or expired token'}, to=sid)
-                return
-
-            is_premium = await get_user_premium_status(cur, user_id)
-            print(is_premium)
+            is_premium = False
+            if not is_bot:
+                is_premium = await get_user_premium_status(cur, account_id)
+            
             limit = 10000 if is_premium else 3000
             if len(message) > limit:
                 await sio_instance.sio.emit('send_message_response', {
                     'success': False,
-                    'error': f'Message too long. Limit is {limit} characters.'
+                    'error': f'Message too long. Limit is {limit} characters.',
+                    'req_id': req_id
                 }, to=sid)
                 return
 
-            await cur.execute('SELECT username, profile_picture FROM users WHERE id = %s', (user_id,))
-            user_row = await cur.fetchone()
-            if not user_row:
-                await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'User not found'}, to=sid)
-                return
+            if is_bot:
+                await cur.execute('SELECT name, profile_picture FROM bots WHERE id = %s', (account_id,))
+                row = await cur.fetchone()
+                if not row:
+                    await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Bot not found', 'req_id': req_id}, to=sid)
+                    return
+            else:
+                await cur.execute('SELECT username, profile_picture FROM users WHERE id = %s', (account_id,))
+                row = await cur.fetchone()
+                if not row:
+                    await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'User not found'}, to=sid)
+                    return
 
-            username = user_row['username']
-            profile_picture = user_row['profile_picture']
+            username = is_bot and row.get('name') or row.get('username')
+            profile_picture = row['profile_picture']
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
+            if is_bot: # perhaps add feature for users to have embeds too? would be funny
+                embed_str = json.dumps(embed) if embed is not None else None
 
             assets_json = None
             if file_names and isinstance(file_names, list) and len(file_names) > 0:
@@ -87,14 +101,26 @@ async def send_message(sid, data):
                         })
                 assets_json = json.dumps(assets_list) if assets_list else None
 
-            await cur.execute(
-                '''
-                INSERT INTO messages 
-                (id, message, sent_by, created_at, updated_at, edited, server_id, channel_id, parent_message_id, assets)
-                VALUES (%s, %s, %s, %s, NULL, FALSE, %s, %s, %s, %s)
-                ''',
-                (message_id, message, user_id, timestamp, server_id, channel_id, parent_message_id, assets_json)
-            )
+            if is_bot:
+                await cur.execute(
+                    '''
+                    INSERT INTO bot_messages 
+                    (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed, parent_message_id, assets)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ''',
+                    (message_id, message, account_id, timestamp, None, False, server_id, channel_id, command, user_id, embed_str, parent_message_id, assets_json)
+                )
+            else:
+                await cur.execute(
+                    '''
+                    INSERT INTO messages 
+                    (id, message, sent_by, created_at, updated_at, edited, server_id, channel_id, parent_message_id, assets)
+                    VALUES (%s, %s, %s, %s, NULL, FALSE, %s, %s, %s, %s)
+                    ''',
+                    (message_id, message, account_id, timestamp, server_id, channel_id, parent_message_id, assets_json)
+                )
+
+            await conn.commit() # idk if this is necessary, it exists in bot_message_helpers
             print(f"[send_message] Message inserted: id={message_id} user={username} message={message} server={server_id} channel={channel_id} parent_message_id={parent_message_id} assets={assets_json} at {timestamp}")
 
             server_channel_sids = await get_server_channel_sids(cur, server_id, channel_id)
@@ -104,21 +130,24 @@ async def send_message(sid, data):
 
     await sio_instance.sio.emit('new_message', {
         'id': message_id,
-        'bot_message': 0,
+        'bot_message': is_bot and 1 or 0,
         'username': username,
         'message': message,
         'created_at': timestamp.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z'),
         'server_id': server_id,
         'channel_id': channel_id,
-        'sent_by': user_id,
+        'sent_by': (not is_bot) and account_id or None,
         'parent_message_id': parent_message_id,
         'profile_picture': profile_picture,
-        'assets': json.loads(assets_json) if assets_json else []
+        'assets': json.loads(assets_json) if assets_json else [],
+        'command': command,
+        'command_user_id': user_id,
+        'embed': embed
     }, to=server_channel_sids)
     
     send_server_notifications(cur, server_id, channel_id)
     
-    await sio_instance.sio.emit('send_message_response', {'success': True}, to=sid)
+    await sio_instance.sio.emit('send_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
     print("[send_message] send_message_response sent")
     
 async def get_messages(sid, data):
