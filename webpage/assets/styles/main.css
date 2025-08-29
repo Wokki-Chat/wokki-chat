@@ -1028,6 +1028,14 @@ h2 {
     
 }
 
+.premium-tag img,
+.bot-tag img,
+.staff-tag img {
+    width: 17px;
+    height: 17px;
+    object-fit: cover;
+}
+
 .bot-tag {
     background-color: var(--clr-primary-a0);
 }

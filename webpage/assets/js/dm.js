@@ -263,6 +263,7 @@ function createMessageElement({ username, message, created_at, sent_by, id, from
   if (from_id !== dm_id && sent_by === dm_id) return null;
 
   const isPremium = usersList.find(user => user.id === String(sent_by))?.premium ?? false;
+  const isStaff = usersList.find(user => user.id === String(sent_by))?.staff ?? false;
   const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
 
   let hideHeader = false;
@@ -328,7 +329,8 @@ function createMessageElement({ username, message, created_at, sent_by, id, from
         <div class="name-text">
             <div class="username-date" style="display: ${hideHeader && !parent_message_id? 'none' : 'flex'};">
               <p class="username">${sanitizedUsername}</p>
-              ${isPremium ? '<div class="premium-tag"><span class="material-symbols-rounded">star</span>PREMIUM</div>' : ''}
+              ${isPremium ? '<div class="premium-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_premium.svg">PREMIUM</div>' : ''}
+              ${isStaff ? '<div class="staff-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_staff.svg">STAFF</div>' : ''}
               <p class="date" data-timestamp="${created_at}">${formatDate(created_at)}</p>
             </div>
           <div class="message-text">${sanitizedMessage}</div>
