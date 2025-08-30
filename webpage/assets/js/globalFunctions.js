@@ -63,34 +63,27 @@ async function addCodeblockInfo() {
   }
 }
 
-async function scrollToBottomWhenHeightStable(container, timeout = 100) {
+async function scrollToBottomWhenStable(container) {
   return new Promise((resolve) => {
     let lastHeight = container.scrollHeight;
-    let sameCount = 0;
-
-    const interval = setInterval(() => {
-      const currentHeight = container.scrollHeight;
-
-      if (currentHeight === lastHeight) {
-        sameCount++;
-        if (sameCount >= 3) { 
-          clearInterval(interval);
-          container.scrollTop = container.scrollHeight;
-          resolve();
-        }
-      } else {
-        sameCount = 0;
-        lastHeight = currentHeight;
+    const observer = new MutationObserver(() => {
+      const newHeight = container.scrollHeight;
+      if (newHeight !== lastHeight) {
+        lastHeight = newHeight;
+        container.scrollTop = container.scrollHeight;
       }
-    }, 10); 
+    });
+
+    observer.observe(container, { childList: true, subtree: true, characterData: true });
 
     setTimeout(() => {
-      clearInterval(interval);
+      observer.disconnect();
       container.scrollTop = container.scrollHeight;
       resolve();
-    }, timeout);
+    }, 500);
   });
 }
+
 
 
 function formatDate(created_at) {

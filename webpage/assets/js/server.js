@@ -95,24 +95,27 @@ socket.on("all_messages", async (messages) => {
       pendingMessages.push({ msg });
       continue;
     }
-
     const parentData = await getParentData(msg.parent_message_id);
     processMessage(msg, parentData, fragment);
   }
 
   const oldScrollHeight = messageContainer.scrollHeight;
+  const oldScrollTop = messageContainer.scrollTop;
+
   messageContainer.insertBefore(fragment, messageContainer.firstChild);
-  const newScrollHeight = messageContainer.scrollHeight;
-  messageContainer.scrollTop += (newScrollHeight - oldScrollHeight);
+
+  if (!isAtBottom) {
+    const newScrollHeight = messageContainer.scrollHeight;
+    messageContainer.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
+  }
 
   await highlightAll();
   await addCodeblockInfo();
+  emojis.replaceAll();
 
   if (isAtBottom) {
-    await scrollToBottomWhenHeightStable(messageContainer, 250);
+    await scrollToBottomWhenStable(messageContainer);
   }
-  
-  emojis.replaceAll();
 });
 
 
@@ -605,7 +608,7 @@ function createMessageElement({ username, message, created_at, sent_by, id, chan
         <img class="profile-picture" src="${profile_picture}" style="opacity: ${hideHeader && !parent_message_id && !command ? '0' : '1'}; height: ${hideHeader && !parent_message_id && !command ? '0' : '30px'};" />
         <div class="name-text">
             <div class="username-date" style="display: ${hideHeader && !parent_message_id && !command ? 'none' : 'flex'};">
-              <p class="username">${sanitizedUsername}</p>
+              <p class="username" onclick="scrollToUser('${sent_by}')">${sanitizedUsername}</p>
               ${isPremium ? '<div class="premium-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_premium.svg">PREMIUM</div>' : ''}
               ${isStaff ? '<div class="staff-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_staff.svg">STAFF</div>' : ''}
               ${bot_message == 1 ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
@@ -1795,3 +1798,17 @@ function createInvite(expiry) {
 
 
 hljs.highlightAll();
+
+
+function scrollToUser(user) {
+  const userInfoProfile = document.querySelector(`.info-profile[data-user-id="${user}"]`);
+  if (userInfoProfile) {
+    userInfoProfile.scrollIntoView({ behavior: "smooth", block: "center" });
+    requestAnimationFrame(() => {
+      if (userInfoProfile.getBoundingClientRect().top > 0) {
+        userInfoProfile.click();
+      }
+    });
+  }
+}
+

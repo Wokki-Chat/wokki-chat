@@ -243,12 +243,11 @@ socket.on("all_direct_messages", async (messages) => {
 
   await highlightAll();
   await addCodeblockInfo();
+  emojis.replaceAll();
 
   if (isAtBottom) {
-    await scrollToBottomWhenHeightStable(messageContainer);
+    await scrollToBottomWhenStable(messageContainer);
   }
-  
-  emojis.replaceAll();
 });
 
 
