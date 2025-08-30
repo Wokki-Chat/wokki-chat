@@ -440,6 +440,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
 
     <div class="top-bar">
         <div class="top-bar-left">
+            <span class="material-symbols-rounded top-bar-menu" id="top-bar-menu">menu</span>
             <?php
             $channelIcon = ($channel['channel_type'] === "text") ? "tag" : "tag";
             ?>

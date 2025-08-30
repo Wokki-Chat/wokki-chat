@@ -170,6 +170,7 @@ if (isset($_COOKIE['dm_active_user']) && !empty($_COOKIE['dm_active_user'])) {
 
     <div class="top-bar">
         <div class="top-bar-left">
+            <span class="material-symbols-rounded top-bar-menu" id="top-bar-menu">menu</span>
             
         </div>
     </div>

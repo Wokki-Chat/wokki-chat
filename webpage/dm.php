@@ -281,6 +281,7 @@ setcookie(
 
     <div class="top-bar">
         <div class="top-bar-left">
+            <span class="material-symbols-rounded top-bar-menu" id="top-bar-menu">menu</span>
             <div class="top-bar-item dm_with">
                 <img draggable="false" src="<?php echo $dm_info['profile_picture']; ?>">
                 <p><?php echo $dm_info['username']; ?></p>

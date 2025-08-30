@@ -168,6 +168,7 @@ $profile = $profileRow;
 
     <div class="top-bar" style="left: calc(15px + 67px + 15px + 15px); width: calc(100% - 15px - 67px - 15px - 15px - 45px);">
         <div class="top-bar-left">
+            <span class="material-symbols-rounded top-bar-menu" id="top-bar-menu">menu</span>
             
         </div>
     </div>

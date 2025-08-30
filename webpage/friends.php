@@ -164,6 +164,7 @@ $friendsStmt->close();
 
     <div class="top-bar">
         <div class="top-bar-left">
+            <span class="material-symbols-rounded top-bar-menu" id="top-bar-menu">menu</span>
             <div class="top-bar-item">
                 <span class="material-symbols-rounded top-bar-channel-icon">group</span>
                 <p class="top-bar-channel-name">friends</p>
