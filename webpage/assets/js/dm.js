@@ -212,6 +212,21 @@ if (textarea) {
 
     preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
   });
+
+  textarea.addEventListener('paste', (e) => {
+    e.preventDefault();
+
+    const text = e.clipboardData.getData('text/plain');
+
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    selection.deleteFromDocument();
+    selection.getRangeAt(0).insertNode(document.createTextNode(text));
+
+    selection.collapseToEnd();
+
+    textarea.dispatchEvent(new Event('input'));
+  });
 }
 
 

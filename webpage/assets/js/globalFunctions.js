@@ -852,9 +852,7 @@ function showAvailableCommands(command, textarea) {
 
           if (!textarea || !preview) return;
 
-          textarea.innerText = "";
-          preview.innerHTML  = "";
-
+          textarea.innerHTML = "\u200B";
           textarea.style.color  = "transparent";
           preview.style.display = "block";
 
@@ -868,8 +866,12 @@ function showAvailableCommands(command, textarea) {
 
           textarea.dispatchEvent(new InputEvent("input", { bubbles: true }));
 
-          setTimeout(() => textarea.focus(), 0);
+          setTimeout(() => {
+            textarea.focus();
+            if (textarea.textContent === "\u200B") textarea.textContent = "";
+          }, 1);
         }
+
 
 
         function adjustWidth(el) {

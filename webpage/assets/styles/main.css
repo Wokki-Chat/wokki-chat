@@ -953,11 +953,11 @@ h2 {
     transition: background-color 0.1s ease;
     text-decoration: none;
     color: var(--clr-text-a20);
-    overflow: hidden;
 }
 
 .info-profile {
     position: relative;
+    overflow: hidden;
 }
 .info-profile:hover {
     background-color: var(--clr-popup-a10);

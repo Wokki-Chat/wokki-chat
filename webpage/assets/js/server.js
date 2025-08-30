@@ -511,6 +511,22 @@ if (textarea) {
 
     preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
   });
+
+  textarea.addEventListener('paste', (e) => {
+    e.preventDefault();
+
+    const text = e.clipboardData.getData('text/plain');
+
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    selection.deleteFromDocument();
+    selection.getRangeAt(0).insertNode(document.createTextNode(text));
+
+    selection.collapseToEnd();
+
+    textarea.dispatchEvent(new Event('input'));
+  });
+
 }
 
 
@@ -956,7 +972,7 @@ function send_message(textareaEl, uploadedFileNames = null) {
     payload.file_names = uploadedFileNames;
   }
 
-  socket.emit("send_message", payload);
+  if (message !== '\u200B') socket.emit("send_message", payload);
   textareaEl.style.minHeight = minHeight + 'px';
   textareaEl.innerText = "";
   replyingTo = null;
