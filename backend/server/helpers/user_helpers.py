@@ -137,7 +137,7 @@ async def broadcast_user_update(user_id, is_bot=False):
 
 async def get_user_info_from_id(cur, user_id):
     query = """
-        SELECT u.id, u.username, u.status, u.profile_picture, u.created_at,
+        SELECT u.id, u.username, u.status, u.profile_picture, u.created_at, u.bio,
                t.tag_name, t.tag_icon, t.created_at
         FROM users u
         LEFT JOIN tags t ON u.id = t.user_id
@@ -159,7 +159,8 @@ async def get_user_info_from_id(cur, user_id):
         "tags": [],
         "staff": await is_user_staff(cur, user_id),
         "developer": await is_user_developer(cur, user_id),
-        "created_at": str(rows[0]["created_at"].isoformat())
+        "created_at": str(rows[0]["created_at"].isoformat()),
+        "bio": rows[0]["bio"]
     }
 
     for row in rows:
