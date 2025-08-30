@@ -114,6 +114,7 @@ const saveChangesBtn = document.getElementById("save-bot-button");
 
 saveChangesBtn.addEventListener("click", () => {
     const botName = document.getElementById("name").value;
+    const botBio = document.getElementById("bio").value;
 
     if (botName === "") {
         Toastify({
@@ -132,7 +133,7 @@ saveChangesBtn.addEventListener("click", () => {
         return;
     }
 
-    if (botName === originalBotName && !profilePictureChanged) {
+    if (botName === originalBotName && !profilePictureChanged && botBio === originalBotBio) {
         return;
     }
 
@@ -142,6 +143,9 @@ saveChangesBtn.addEventListener("click", () => {
     }
     if (botName !== originalBotName) {
         formData.append("bot_name", botName);
+    }
+    if (botBio !== originalBotBio) {
+        formData.append("bot_bio", botBio);
     }
     formData.append("bot_id", bot_id);
 

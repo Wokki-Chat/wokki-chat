@@ -355,7 +355,7 @@ setcookie(
                     <p class="dm-info-created-at-key">Joined on</p>
                     <p class="dm-info-created-at-date"><?php echo date('M j, Y', strtotime($dm_info['created_at'])); ?></p>
                 </div>
-                <a class="link" href="/profile/@<?php echo $dm_info['username']; ?>">View full profile</a>
+                <a class="link" href="/profile/@<?php echo urlencode($dm_info['username']); ?>">View full profile</a>
             </div>
         </div>
     </div>

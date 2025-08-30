@@ -49,12 +49,17 @@ if (!$bot_id) {
     exit;
 }
 
-$botsStmt = $mysqli->prepare("SELECT name, profile_picture, bot_token FROM bots WHERE id = ?");
+$botsStmt = $mysqli->prepare("SELECT name, profile_picture, bot_token, bio FROM bots WHERE id = ?");
 $botsStmt->bind_param("s", $bot_id);
 $botsStmt->execute();
 $botsResult = $botsStmt->get_result();
 $bot = $botsResult->fetch_assoc();
 $botsStmt->close();
+
+if (!$bot) {
+    header('Location: /developer/bots');
+    exit;
+}
 
 ?>
 <!DOCTYPE html>
@@ -85,7 +90,10 @@ $botsStmt->close();
                 <div class="developer-bot-profile-info">
                     <div class="developer-bot-profile-info-container">
                         <label for="name">Name:</label>
-                        <input type="text" id="name" name="name" class="input-text-dark-bg w270" value="<?php echo $bot['name']; ?>">
+                        <input type="text" id="name" name="name" class="input-text-dark-bg w270" value="<?php echo htmlspecialchars($bot['name']); ?>">
+                        <br>
+                        <label for="bio">Bio:</label>
+                        <input type="text" id="bio" name="bio" class="input-text-dark-bg w270" value="<?php echo htmlspecialchars($bot['bio']); ?>" placeholder="Give your bot a short bio">
                         <br>
                         <label for="bot-token">Bot Token:</label>
                         <input type="password" id="bot-token" name="bot-token" class="input-text-dark-bg w270" value="<?php echo $bot['bot_token']; ?>" readonly>
@@ -114,8 +122,9 @@ $botsStmt->close();
         const access_token = "<?php echo $access_token; ?>";
         const user_id = "<?php echo $user_id; ?>";
 
-        const originalBotName = "<?php echo $bot['name']; ?>";
+        const originalBotName = "<?php echo htmlspecialchars($bot['name']); ?>";
         const bot_id = "<?php echo $bot_id; ?>";
+        const originalBotBio = "<?php echo htmlspecialchars($bot['bio']); ?>";
     </script>
 </body>
 </html>

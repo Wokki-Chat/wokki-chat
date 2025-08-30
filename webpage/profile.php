@@ -27,7 +27,7 @@ $segments = explode('/', trim($path, '/'));
 
 $profile_user_name = null;
 if (isset($segments[0]) && $segments[0] === 'profile' && !empty($segments[1])) {
-    $profile_user_name = substr($segments[1], 1);
+    $profile_user_name = substr(urldecode($segments[1]), 1);
 }
 
 if (!$profile_user_name) {

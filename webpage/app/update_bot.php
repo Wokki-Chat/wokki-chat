@@ -165,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $profilePictureSuccess = false;
     $botNameSuccess = false;
+    $botBioSuccess = false;
 
     if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
         $file = $_FILES['profile_picture'];
@@ -281,8 +282,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $botNameSuccess = true;
     }
+
+    if (isset($_POST['bot_bio']) && !empty($_POST['bot_bio'])) {
+        $bio = $_POST['bot_bio'];
+        
+        if (strlen($bio) > 250) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Bot bio cannot be longer than 250 characters',
+                'return_code' => 17
+            ]);
+            exit;
+        }
+        if (preg_match('/^\s*$/', $bio)) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Bot name cannot contain only spaces',
+                'return_code' => 18
+            ]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("UPDATE bots SET bio = ? WHERE id = ?");
+        $stmt->bind_param("ss", $bio, $bot_id);
+        $stmt->execute();
+        $stmt->close();
+
+        $botBioSuccess = true;
+    }
     
-    if ($profilePictureSuccess && $botNameSuccess) {
+    if ($profilePictureSuccess && $botNameSuccess && $botBioSuccess) {
         echo json_encode([
             'status' => 'success',
             'description' => 'Bot updated',
@@ -300,6 +329,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         exit;
     } else if ($botNameSuccess) {
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'Bot updated',
+            'return_code' => 0
+        ]);
+        exit;
+    } else if ($botBioSuccess) {
         echo json_encode([
             'status' => 'success',
             'description' => 'Bot updated',
