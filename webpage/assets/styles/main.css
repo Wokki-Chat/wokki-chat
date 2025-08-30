@@ -165,6 +165,12 @@ h2 {
     background-color: var(--clr-primary-a10);
 }
 
+.button-primary-filled:disabled {
+    opacity: 0.7;
+    background-color: var(--clr-primary-a0);
+    cursor: not-allowed;
+}
+
 .button-primary-outline {
     background-color: transparent;
     color: var(--clr-text-a0);

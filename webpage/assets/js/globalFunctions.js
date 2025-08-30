@@ -315,6 +315,7 @@ function sanitizeMsg(text) {
             let serverImage = "";
             let serverCreatedAt = "Unknown Date";
             let serverId = "";
+            let inviteExpired = false;
             if (xhr.status === 200) {
                 const html = xhr.responseText;
                 const match = html.match(/<meta\s+name=["']server_name["']\s+content=["']([^"']+)["']\s*\/?>/i);
@@ -325,7 +326,16 @@ function sanitizeMsg(text) {
                 if (match3) serverCreatedAt = match3[1];
                 const match5 = html.match(/<meta\s+name=["']server_id["']\s+content=["']([^"']+)["']\s*\/?>/i);
                 if (match5) serverId = match5[1];
+                const match6 = html.match(/<meta\s+name=["']invite_expired["']\s+content=["']([^"']+)["']\s*\/?>/i);
+                if (match6) inviteExpired = match6[1];
             }
+
+            let formattedDate = "Unknown Date";
+            const parsedDate = new Date(serverCreatedAt);
+            if (!isNaN(parsedDate)) {
+                formattedDate = new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric', year: 'numeric'}).format(parsedDate);
+            }
+
 
             const xhr2 = new XMLHttpRequest();
             xhr2.open("GET", `https://chat.wokki20.nl/server/${serverId}`, false);
@@ -345,17 +355,23 @@ function sanitizeMsg(text) {
                   <img src="${serverImage}" alt="Server Icon" class="invite-item-icon">
                   <div class="invite-item-name-date-container">
                     <p class="invite-item-name">${sanitize(serverName)}</p>
-                    <p class="invite-item-date">${new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric', year: 'numeric'}).format(new Date(serverCreatedAt))}</p>
+                    <p class="invite-item-date">${formattedDate}</p>
                   </div>
                 </div>
-                <button class="invite-item-join-button button-primary-filled" data-invite-id="${inviteId}" onclick="window.location.href = \`https://chat.wokki20.nl/server/${serverId}?invite=${inviteId}\`;">${isMember ? "Go To Server" : "Join Server"}</button>
+                <button class="invite-item-join-button button-primary-filled" data-invite-id="${inviteId}" ${inviteExpired ? "disabled" : ""} ${inviteExpired ? '' : `onclick="window.location.href = \`https://chat.wokki20.nl/server/${serverId}?invite=${inviteId}\`;"`}> ${isMember ? "Go To Server" : inviteExpired ? "Invite Expired" : "Join Server"}</button>
             </div>
             `;
         } catch (err) {
+            console.error(err);
             return `
-                <div class="invite-item-container">
-
-                </div
+            <a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>
+            <div class="invite-item-container">
+                <div class="invite-item-name-icon-container">
+                  <div class="invite-item-name-date-container">
+                    <p class="invite-item-name">This invite is invalid</p>
+                  </div>
+                </div>
+            </div>
             `;
         }
       });

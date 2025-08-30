@@ -31,7 +31,7 @@ $invite_id = null;
 if (isset($segments[0]) && $segments[0] === 'invite' && !empty($segments[1])) {
     $invite_id = $segments[1]; 
 }
-
+$invite_expired = false;
 $error_message = null;
 if (!$invite_id) {
     $error_message = "Invite code is missing.";
@@ -51,6 +51,7 @@ if (!$invite_id) {
             $expireDate = new DateTime($expires_at);
             if ($now > $expireDate) {
                 $error_message = "This invite link has expired.";
+                $invite_expired = true;
             }
         }
     } else {
@@ -59,7 +60,7 @@ if (!$invite_id) {
     $inviteStmt->close();
 }
 
-if (!$error_message) {
+if ($server_id) {
     $stmt = $mysqli->prepare("SELECT name, image, created_at FROM servers WHERE id = ?");
     $stmt->bind_param("s", $server_id);
     $stmt->execute();
@@ -140,7 +141,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error_message) {
     <meta name="server_name" content="<?php echo htmlspecialchars($server_name) ?>">
     <meta name="server_image" content="<?php echo $server_image ?>">
     <meta name="server_created_at" content="<?php echo $server_created_at ?>">
-    <meta name="server_id" content="<?php echo $server_id ?>">
+    <?php if (isset($server_id)): ?>
+        <meta name="server_id" content="<?php echo $server_id ?>">
+    <?php endif; ?>
+    <meta name="invite_expired" content="<?php echo $invite_expired ?>">
 </head>
 <body>
     <div class="login-form">
