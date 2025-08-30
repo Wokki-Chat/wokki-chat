@@ -1,5 +1,6 @@
 <?php
 include 'app/config.php';
+include 'global.php';
 
 $access_token = $_COOKIE['access_token'];
 header("Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate");
@@ -130,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error_message) {
 ?>
 
 <!DOCTYPE html>
-<html lang="en" class="dark login">
+<html lang="en" class="<?php echo $theme ?> login">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

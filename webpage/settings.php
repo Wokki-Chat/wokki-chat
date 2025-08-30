@@ -1,5 +1,6 @@
 <?php
 include 'app/config.php';
+include 'global.php';
 
 $access_token = $_COOKIE['access_token'];
 header("Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate");
@@ -91,7 +92,7 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
 
 ?>
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="<?php echo $theme; ?>">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -116,6 +117,10 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
                 <span class="material-symbols-rounded">account_circle</span>
                 <p>My Account</p>
             </div>
+            <div class="settings-tab <?php echo ($active_tab === "appearance") ? "active" : ""; ?>" onclick="window.location.href = '/settings/appearance?from=' + returnUrl ">
+                <span class="material-symbols-rounded">format_paint</span>
+                <p>Appearance</p>
+            </div>
         </div>
         <div class="setting-page">
             <div class="close-settings-container" onclick="window.location.href = 'https://chat.wokki20.nl' + returnUrl">
@@ -132,6 +137,15 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
                 $settingsHtml = str_replace("{{status}}", $status, $settingsHtml);
                 $settingsHtml = str_replace("{{premium_badge}}", ($premium_active ? '<div class="premium-tag"><span class="material-symbols-rounded">star</span>PREMIUM</div>' : ''), $settingsHtml);
                 echo $settingsHtml;
+            }
+            ?>
+            <?php 
+            if ($active_tab === "appearance") {
+                $appearanceHtml = file_get_contents('settings_html/settings_appearance.html');
+                $appearanceHtml = str_replace("{{light_active}}", ($theme === "light" ? "active" : ""), $appearanceHtml);
+                $appearanceHtml = str_replace("{{dark_active}}", ($theme === "dark" ? "active" : ""), $appearanceHtml);
+                $appearanceHtml = str_replace("{{night_active}}", ($theme === "night" ? "active" : ""), $appearanceHtml);
+                echo $appearanceHtml;   
             }
             ?>
         </div>

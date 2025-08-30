@@ -1,5 +1,6 @@
 <?php
 include 'app/config.php';
+include 'global.php';
 
 if (!isset($_COOKIE['access_token'])) {
     header('Location: login');
@@ -121,7 +122,7 @@ $profile = $profileRow;
 
 ?>
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="<?php echo $theme; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

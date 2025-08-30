@@ -1,5 +1,6 @@
 <?php
 include 'app/config.php';
+include 'global.php';
 
 $access_token = $_COOKIE['access_token'];
 header("Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate");
@@ -315,7 +316,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="<?php echo $theme; ?>">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
