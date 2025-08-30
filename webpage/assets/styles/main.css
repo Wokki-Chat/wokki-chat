@@ -479,6 +479,13 @@ h2 {
     font-size: 16px !important;
     max-width: calc(300px - 20px - 60px - 10px);
 }
+.user-info-profile-popup-username-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(300px - 20px - 60px - 10px);
+}
 
 .self-info-status,
 .dm-info-status,
@@ -2878,7 +2885,6 @@ h6 {
     flex-direction: column;
     gap: 10px;
     position: absolute;
-    top: calc(35px + 15px + 15px + 20px);
     right: calc(356px + 15px + 10px);
     z-index: 10;
     animation: pop-in-withouth-translate 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);

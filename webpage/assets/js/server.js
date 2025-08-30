@@ -1161,50 +1161,61 @@ function renderUser(user) {
       let popup = document.createElement("div");
       popup.className = "user-info-profile-popup";
       popup.innerHTML = `
-        <div class="user-info-profile-popup-profile-picture-username-status">
-            <div class="user-info-profile-popup-profile-status">
-                <img draggable="false" class="dm-info-profile-picture" src="${user.profile_picture}">
-                <div class="user-info-profile-popup-status-circle-outer">
-                    <div class="user-info-profile-popup-status-circle-inner ${user.status}"></div>
-                </div>
-            </div>
-            <div class="user-info-profile-popup-status-username">
-                <p class="user-info-profile-popup-username">${sanitize(user.username)}</p>
-                <p class="user-info-profile-popup-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
-            </div>
-        </div>
-        <div class="dm-info-bio-created-at">
-            <div class="dm-info-tags" ${!user.premium && !user.tags ? 'style="display: none;"' : ''}>
-                ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
-            </div>
-
-            <div class="bio">
-                <p class="dm-info-bio-key">Bio</p>
-                <p class="dm-info-bio">${user.bio ? sanitize(user.bio) : 'This user has no bio yet'}</p>
-            </div>
-            <div class="created-at">
-                <p class="dm-info-created-at-key">Joined on</p>
-                <p class="dm-info-created-at-date">${formatDate(user.created_at)}</p>
-            </div>
-            <a class="link" href="/profile/@${encodeURIComponent(user.username)}">View full profile</a>
-        </div>
+          <div class="user-info-profile-popup-profile-picture-username-status">
+              <div class="user-info-profile-popup-profile-status">
+                  <img draggable="false" class="dm-info-profile-picture" src="${user.profile_picture}">
+                  <div class="user-info-profile-popup-status-circle-outer">
+                      <div class="user-info-profile-popup-status-circle-inner ${user.status}"></div>
+                  </div>
+              </div>
+              <div class="user-info-profile-popup-status-username">
+                  <div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
+                  <p class="user-info-profile-popup-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
+              </div>
+          </div>
+          <div class="dm-info-bio-created-at">
+              <div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
+                  ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
+              </div>
+              <div class="bio">
+                  <p class="dm-info-bio-key">Bio</p>
+                  <p class="dm-info-bio">${user.bio ? sanitize(user.bio) : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</p>
+              </div>
+              <div class="created-at">
+                  <p class="dm-info-created-at-key">Joined on</p>
+                  <p class="dm-info-created-at-date">${new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric', year: 'numeric'}).format(new Date(user.created_at))}</p>
+              </div>
+              ${user.bot ? '' : `<a class="link" href="/profile/@${encodeURIComponent(user.username)}">View full profile</a>`}
+          </div>
       `;
 
       user.tags.forEach(tag => {
-        const tagEl = document.createElement("div");
-        tagEl.classList.add("dm-info-tag");
-        tagEl.innerHTML = `
-            <img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/${tag.tag_icon}.svg">
-            <p class="dm-info-tag-tooltip">${tag.tag_name}</p>
-        `;
-        popup.querySelector(".dm-info-tags").appendChild(tagEl);
-      })
-
-      let rect = userEl.getBoundingClientRect();
-      let top = rect.top + window.scrollY;
-      popup.style.top = `${top}px`;
+          const tagEl = document.createElement("div");
+          tagEl.classList.add("dm-info-tag");
+          tagEl.innerHTML = `
+              <img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/${tag.tag_icon}.svg">
+              <p class="dm-info-tag-tooltip">${tag.tag_name}</p>
+          `;
+          popup.querySelector(".dm-info-tags").appendChild(tagEl);
+      });
 
       document.body.appendChild(popup);
+
+      let rect = userEl.getBoundingClientRect();
+      let popupHeight = popup.offsetHeight;
+      let viewportHeight = window.innerHeight;
+
+      let top = rect.top + window.scrollY;
+
+      popup.style.top = "";
+      popup.style.bottom = "";
+
+      if (top + popupHeight > window.scrollY + viewportHeight - 15) {
+          popup.style.bottom = "15px";
+          popup.style.top = "";
+      } else {
+          popup.style.top = top + "px";
+      }
 
       if (!document.body.hasAttribute("data-popup-listener")) {
           document.addEventListener("click", (e) => {
@@ -1219,6 +1230,7 @@ function renderUser(user) {
           document.body.setAttribute("data-popup-listener", "true");
       }
   };
+
 
 }
 

@@ -65,7 +65,7 @@ $profileStmt = $mysqli->prepare("
         u.profile_picture,
         u.status,
         u.premium,
-        u.created_at,
+        u.created_at AS u_created_at,
         u.bio,
         u.is_developer,
         u.is_staff,
@@ -99,7 +99,7 @@ while ($row = $profileResult->fetch_assoc()) {
             'profile_picture' => $row['profile_picture'],
             'status' => $row['status'],
             'premium' => $row['premium'],
-            'created_at' => $row['created_at'],
+            'p_created_at' => $row['u_created_at'],
             'bio' => $row['bio'],
             'is_developer' => $row['is_developer'],
             'is_staff' => $row['is_staff'],
@@ -118,7 +118,6 @@ while ($row = $profileResult->fetch_assoc()) {
 }
 
 $profile = $profileRow;
-
 
 ?>
 <!DOCTYPE html>
@@ -192,7 +191,7 @@ $profile = $profileRow;
                     </div>
                     <div class="created-at">
                         <p class="profile-item-info-key">Joined on:</p>
-                        <p class="profile-item-info-date"><?php echo date('M j, Y', strtotime($profile['created_at'])); ?></p>
+                        <p class="profile-item-info-date"><?php echo (new DateTime($profile['p_created_at']))->format('M j, Y'); ?></p>
                     </div>
                     <div class="profile-item-info-tags" <?php if (!$profile['premium'] == 1 && empty($profile['tags']) && !$profile['is_staff'] == 1 && !$profile['is_developer'] == 1) { echo 'style="display: none;"'; } ?>>
                         <p class="profile-item-info-key">Tags:</p>
