@@ -400,6 +400,7 @@ h2 {
     height: calc(100vh - 30px);
     width: 67px;
     border-radius: 16px;
+    overflow-y: auto;
 }
 
 .server-bar-dms,
@@ -570,6 +571,7 @@ h2 {
     height: calc(100vh - 30px);
     border-radius: 16px;
     z-index: -1;
+    overflow-y: auto;
 }
 
 .self-info {
@@ -1100,7 +1102,7 @@ h2 {
 }
 
 .top-bar-menu {
-    display: none;
+    display: none !important;
     cursor: pointer;
     padding-right: 15px;
     border-right: 1px solid var(--clr-input-border-bg-darkest);
@@ -1141,7 +1143,7 @@ h2 {
 
 @media screen and (max-width: 1190px) {
     .users {
-        display: none;
+        display: none !important;
     }
     .main-content {
         width: calc(100% - 15px - 67px - 15px - 278px - 15px - 15px);
@@ -1154,12 +1156,13 @@ h2 {
         bottom: calc(30px + 58px);
         top: unset;
         height: calc(100vh - 30px - 58px - 15px);
+        max-height: calc(100vh - 30px - 58px - 15px);
     }
 }
 
 @media screen and (max-width: 920px) {
     .top-bar-menu {
-        display: block;
+        display: block !important;
     }
     .channel-bar {
         display: none;
@@ -1169,11 +1172,13 @@ h2 {
         position: fixed;
         z-index: 500;
         height: calc(100vh - 30px - 58px - 15px - 35px - 30px - 15px);
+        max-height: calc(100vh - 30px - 58px - 15px - 35px - 30px - 15px);
         width: calc(100% - 98px - 30px);
         padding: 15px;
         border-radius: 0px;
         padding-top: 0px;
         border-bottom: 1px solid var(--clr-input-border-bg-darkest);
+        top: calc(55px + 15px + 10px);
     }
     .self-info.active {
         display: flex;
@@ -1207,9 +1212,9 @@ h2 {
         display: block;
         position: fixed;
         z-index: 502;
-        height: calc(100vh - 30px - 35px - 30px);
+        height: calc(100vh - 30px - 35px);
         bottom: 0px;
-        top: unset;
+        top: 55px;
         left: 0px;
         padding: 15px;
         padding-top: 0px;
@@ -1217,9 +1222,19 @@ h2 {
         border-right: 1px solid var(--clr-input-border-bg-darkest);
         border-bottom: 1px solid var(--clr-popup-a0);
     }
+
+    .channel-bar {
+        height: calc(100vh - 30px - 58px - 15px - 35px - 15px) !important;
+        max-height: calc(100vh - 30px - 58px - 15px - 35px - 15px) !important;
+        top: 55px !important;
+        bottom: unset;
+    }
+
     .top-bar {
-        left: 15px;
-        width: calc(100% - 30px - 30px);
+        left: 0px;
+        width: calc(100%);
+        top: 0px;
+        border-radius: 0px;
         right: unset;
     }
     .main-content {
