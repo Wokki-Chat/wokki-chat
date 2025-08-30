@@ -101,7 +101,7 @@ async def is_bot_in_server(cur, bot_id, server_id):
     return bool(server)
 
 async def get_bot_info_from_id(cur, bot_id):
-    await cur.execute('SELECT id, name, status, profile_picture FROM bots WHERE id = %s', (bot_id,))
+    await cur.execute('SELECT id, name, status, profile_picture, created_at FROM bots WHERE id = %s', (bot_id,))
     bot = await cur.fetchone()
     if bot:
         bot['id'] = str(bot['id'])
@@ -111,6 +111,7 @@ async def get_bot_info_from_id(cur, bot_id):
         bot['tags'] = []
         bot['staff'] = False
         bot['developer'] = False
+        bot['created_at'] = str(bot['created_at'].isoformat())
         del bot['name']
         return dict(bot)
 

@@ -434,7 +434,8 @@ h2 {
 
 .self-info-left,
 .self-info-right,
-.dm-info-profile-picture-username-status {
+.dm-info-profile-picture-username-status,
+.user-info-profile-popup-profile-picture-username-status {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -444,7 +445,8 @@ h2 {
     height: calc(100% - 20px);
 }
 .self-info-status-username,
-.dm-info-status-username {
+.dm-info-status-username,
+.user-info-profile-popup-status-username {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -452,7 +454,8 @@ h2 {
 }
 
 .self-info-username,
-.dm-info-username {
+.dm-info-username,
+.user-info-profile-popup-username {
     margin: 0px;
     font-size: 16px;
     font-weight: var(--font-weight-semibold);
@@ -467,20 +470,32 @@ h2 {
     max-width: calc(278px - 20px - 41px - 10px);
 }
 
-.dm-info-username {
+.dm-info-username,
+.user-info-profile-popup-username {
     font-size: 20px !important;
 }
 
+.user-info-profile-popup-username {
+    font-size: 16px !important;
+    max-width: calc(300px - 20px - 60px - 10px);
+}
+
 .self-info-status,
-.dm-info-status {
+.dm-info-status,
+.user-info-profile-popup-status {
     margin: 0px;
     color: var(--clr-text-a30);
     font-size: 10px;
     font-weight: var(--font-weight-semibold);
 }
 
-.dm-info-status {
+.dm-info-status,
+.user-info-profile-popup-status {
     font-size: 14px !important;
+}
+
+.user-info-profile-popup-status {
+    font-size: 12px !important;
 }
 
 
@@ -491,10 +506,16 @@ h2 {
     position: relative;
 }
 
-.dm-info-profile-status {
+.dm-info-profile-status,
+.user-info-profile-popup-profile-status {
     width: 80px;
     height: 80px;
     position: relative;
+}
+
+.user-info-profile-popup-profile-status {
+    width: 60px;
+    height: 60px;
 }
 
 .self-info-profile-picture {
@@ -505,12 +526,18 @@ h2 {
     user-select: none;
 }
 
-.dm-info-profile-status img {
+.dm-info-profile-status img,
+.user-info-profile-popup-profile-status img {
     border-radius: 50%;
     width: 80px;
     height: 80px;
     object-fit: cover;
     user-select: none;
+}
+
+.user-info-profile-popup-profile-status img {
+    width: 60px;
+    height: 60px;
 }
 
 .self-info-profile-username-container {
@@ -540,7 +567,8 @@ h2 {
     height: 37px;
 }
 
-.dm-info-status-circle-outer {
+.dm-info-status-circle-outer,
+.user-info-profile-popup-status-circle-outer {
     width: 27px;
     height: 27px;
     border-radius: 50%;
@@ -551,6 +579,11 @@ h2 {
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.user-info-profile-popup-status-circle-outer {
+    width: 20px;
+    height: 20px;
 }
 
 .self-info-status-circle-inner,
@@ -566,23 +599,32 @@ h2 {
     height: 25px;
 }
 
-.dm-info-status-circle-inner {
+.dm-info-status-circle-inner,
+.user-info-profile-popup-status-circle-inner {
     width: 17px;
     height: 17px;
     border-radius: 50%;
     background-color: var(--clr-status-online);
 }
 
+.user-info-profile-popup-status-circle-inner {
+    width: 13px;
+    height: 13px;
+}
+
 .self-info-status-circle-inner.offline,
-.dm-info-status-circle-inner.offline {
+.dm-info-status-circle-inner.offline,
+.user-info-profile-popup-status-circle-inner.offline {
     background-color: var(--clr-status-offline);
 }
 .self-info-status-circle-inner.busy,
-.dm-info-status-circle-inner.busy {
+.dm-info-status-circle-inner.busy,
+.user-info-profile-popup-status-circle-inner.busy {
     background-color: var(--clr-status-busy);
 }
 .self-info-status-circle-inner.idle,
-.dm-info-status-circle-inner.idle {
+.dm-info-status-circle-inner.idle,
+.user-info-profile-popup-status-circle-inner.idle {
     background-color: var(--clr-status-idle);
 }
 
@@ -904,8 +946,12 @@ h2 {
     transition: background-color 0.1s ease;
     text-decoration: none;
     color: var(--clr-text-a20);
+    overflow: hidden;
 }
 
+.info-profile {
+    position: relative;
+}
 .info-profile:hover {
     background-color: var(--clr-popup-a10);
 }
@@ -2821,4 +2867,19 @@ h6 {
 
 .profile-item-info-bio .no-bio {
     color: var(--clr-text-a30);
+}
+
+.user-info-profile-popup {
+    width: 300px;
+    padding: 10px;
+    background-color: var(--clr-popup-a0);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: absolute;
+    top: calc(35px + 15px + 15px + 20px);
+    right: calc(356px + 15px + 10px);
+    z-index: 10;
+    animation: pop-in-withouth-translate 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }

@@ -5,7 +5,6 @@ import server.config as config
 import server.sio_instance as sio_instance
 import aiomysql
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server, verify_bot_token
-from server.helpers.server_helpers import is_user_in_server
 
 async def verify_access_token(cur, access_token):
     await cur.execute('SELECT user_id, access_token_expires_at FROM user_tokens WHERE access_token = %s', (access_token,))
@@ -29,6 +28,7 @@ async def verify_access_token(cur, access_token):
     return user_id
     
 def auth_required(allow_bots=True):
+    from server.helpers.server_helpers import is_user_in_server
     """
     Decorator to validate tokens.
     1. Input function must be async.
@@ -137,7 +137,7 @@ async def broadcast_user_update(user_id, is_bot=False):
 
 async def get_user_info_from_id(cur, user_id):
     query = """
-        SELECT u.id, u.username, u.status, u.profile_picture,
+        SELECT u.id, u.username, u.status, u.profile_picture, u.created_at,
                t.tag_name, t.tag_icon, t.created_at
         FROM users u
         LEFT JOIN tags t ON u.id = t.user_id
@@ -158,7 +158,8 @@ async def get_user_info_from_id(cur, user_id):
         "bot": False,
         "tags": [],
         "staff": await is_user_staff(cur, user_id),
-        "developer": await is_user_developer(cur, user_id)
+        "developer": await is_user_developer(cur, user_id),
+        "created_at": str(rows[0]["created_at"].isoformat())
     }
 
     for row in rows:
