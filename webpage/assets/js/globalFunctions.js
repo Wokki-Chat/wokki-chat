@@ -167,14 +167,11 @@ function sanitizeMsg(text) {
         });
       }
       replaceWithCheck(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, linkText, url) => {
-        if (!url.startsWith('https://chat.jonazwetsloot.nl/posts/')) {
-          return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${linkText}</a>`;
-        }
-        return match;
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${linkText}</a>`;
       });
 
       replaceWithCheck(/(?<!["'>])(https?:\/\/[^\s<]+)/g, (url) => {
-        if (!url.startsWith('https://chat.jonazwetsloot.nl/posts/')) {
+        if (!url.startsWith('https://chat.jonazwetsloot.nl/posts/') && !url.startsWith('https://chat.wokki20.nl/invite/')) {
           return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>`;
         }
         return url;
@@ -304,6 +301,64 @@ function sanitizeMsg(text) {
         return `<time datetime="${isoTime}" data-type="${type}" class="dynamic-time">${formatted}</time>`;
       });
 
+      escaped = escaped.replace(/\n/g, '<br>');
+
+      replaceWithCheck(/(?<!["'>])(https?:\/\/chat\.wokki20\.nl\/invite\/[^\s)]+)/g, (url) => {
+        const inviteId = url.split("/").pop();
+
+        try {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", url, false);
+            xhr.send();
+
+            let serverName = "Unknown Server";
+            let serverImage = "";
+            let serverCreatedAt = "Unknown Date";
+            let serverId = "";
+            if (xhr.status === 200) {
+                const html = xhr.responseText;
+                const match = html.match(/<meta\s+name=["']server_name["']\s+content=["']([^"']+)["']\s*\/?>/i);
+                if (match) serverName = match[1];
+                const match2 = html.match(/<meta\s+name=["']server_image["']\s+content=["']([^"']+)["']\s*\/?>/i);
+                if (match2) serverImage = match2[1];
+                const match3 = html.match(/<meta\s+name=["']server_created_at["']\s+content=["']([^"']+)["']\s*\/?>/i);
+                if (match3) serverCreatedAt = match3[1];
+                const match5 = html.match(/<meta\s+name=["']server_id["']\s+content=["']([^"']+)["']\s*\/?>/i);
+                if (match5) serverId = match5[1];
+            }
+
+            const xhr2 = new XMLHttpRequest();
+            xhr2.open("GET", `https://chat.wokki20.nl/server/${serverId}`, false);
+            xhr2.send();
+
+            let isMember = false;
+            if (xhr2.status === 200) {
+                const html2 = xhr2.responseText;
+                const match4 = html2.match(/<meta\s+name=["']is_in_server["']\s+content=["']([^"']+)["']\s*\/?>/i);
+                if (match4) isMember = match4[1];
+            }
+
+            return `
+            <a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>
+            <div class="invite-item-container">
+                <div class="invite-item-name-icon-container">
+                  <img src="${serverImage}" alt="Server Icon" class="invite-item-icon">
+                  <div class="invite-item-name-date-container">
+                    <p class="invite-item-name">${sanitize(serverName)}</p>
+                    <p class="invite-item-date">${new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric', year: 'numeric'}).format(new Date(serverCreatedAt))}</p>
+                  </div>
+                </div>
+                <button class="invite-item-join-button button-primary-filled" data-invite-id="${inviteId}" onclick="window.location.href = \`https://chat.wokki20.nl/server/${serverId}?invite=${inviteId}\`;">${isMember ? "Go To Server" : "Join Server"}</button>
+            </div>
+            `;
+        } catch (err) {
+            return `
+                <div class="invite-item-container">
+
+                </div
+            `;
+        }
+      });
 
       replaceWithCheck(/(?<!["'>])(https?:\/\/chat\.jonazwetsloot\.nl\/posts\/[^\s)]+)/g, (url) => {
           const messageId = url.split("/").pop();
@@ -376,7 +431,6 @@ function sanitizeMsg(text) {
       });
 
       escaped = escaped.replace(/\\([*_\-~`\\[\](){}])/g, '$1');
-      escaped = escaped.replace(/\n/g, '<br>');
 
       return escaped;
     }

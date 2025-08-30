@@ -60,7 +60,7 @@ if (!$invite_id) {
 }
 
 if (!$error_message) {
-    $stmt = $mysqli->prepare("SELECT name FROM servers WHERE id = ?");
+    $stmt = $mysqli->prepare("SELECT name, image, created_at FROM servers WHERE id = ?");
     $stmt->bind_param("s", $server_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -71,6 +71,8 @@ if (!$error_message) {
     } else {
         $row = $result->fetch_assoc();
         $server_name = $row['name'];
+        $server_image = $row['image'];
+        $server_created_at = $row['created_at'];
     }
     $stmt->close();
 }
@@ -135,6 +137,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error_message) {
     <link rel="stylesheet" href="/assets/styles/main.css" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <meta name="server_name" content="<?php echo htmlspecialchars($server_name) ?>">
+    <meta name="server_image" content="<?php echo $server_image ?>">
+    <meta name="server_created_at" content="<?php echo $server_created_at ?>">
+    <meta name="server_id" content="<?php echo $server_id ?>">
 </head>
 <body>
     <div class="login-form">

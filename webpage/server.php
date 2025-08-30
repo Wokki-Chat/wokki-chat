@@ -330,7 +330,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
     <link rel="stylesheet" href="/assets/styles/main.css" />
     <link rel="prerender" href="/settings">
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
-
+    <meta name="is_in_server" content="<?php echo $is_in_server ?>">
 </head>
 <body>
     <div class="server-bar">
@@ -481,6 +481,76 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         <?php endif; ?>
         <?php if (!$is_in_server): ?>
             <?php
+                if (isset($_GET['invite'])) {
+                    $invite_id = $_GET['invite'];
+                    $checkStmt = $mysqli->prepare("SELECT expires_at FROM invites WHERE code = ? AND server_id = ?");
+                    $checkStmt->bind_param("ss", $invite_id, $server_id);
+                    $checkStmt->execute();
+                    $result = $checkStmt->get_result();
+                    $invite = $result->fetch_assoc();
+                    $expires_at = $invite['expires_at'];
+                    if (!$invite) {
+                        header('Location: /server/' . $server_id);
+                        return;
+                    }
+                    if ($invite) {
+                        if ($expires_at !== '0000-00-00 00:00:00') {
+                            $now = new DateTime();
+                            $expireDate = new DateTime($expires_at);
+                            if ($now > $expireDate) {
+                                return;
+                            }
+                            $findUserInServerStmt = $mysqli->prepare("SELECT user_id FROM server_members WHERE server_id = ? AND user_id = ?");
+                            $findUserInServerStmt->bind_param("si", $server_id, $user_id);
+                            $findUserInServerStmt->execute();
+                            $findUserInServerResult = $findUserInServerStmt->get_result();
+
+                            $user_found = false;
+
+                            if ($findUserInServerResult->num_rows > 0) {
+                                $error_message = "You are already a member of this server.";
+                                $user_found = true;
+                                $findUserInServerStmt->close();
+                            } else {
+                                $findUserInServerStmt->close();
+                            }
+
+                            if (!$user_found) {
+                                $stmt = $mysqli->prepare("SELECT role_id FROM server_roles WHERE add_on_join = 1 AND server_id = ?");
+                                $stmt->bind_param("s", $server_id);
+                                $stmt->execute();
+                                $result = $stmt->get_result();
+                                $addOnJoinRoles = [];
+                                if ($result->num_rows > 0) {
+                                    while ($row = $result->fetch_assoc()) {
+                                        $addOnJoinRoles[] = [
+                                            'role_id' => $row['role_id']
+                                        ];
+                                    }
+                                }
+                                $stmt->close();
+
+                                $joined_at = date('Y-m-d H:i:s');
+
+                                $updateMembersStmt = $mysqli->prepare("INSERT INTO server_members (server_id, user_id, joined_at) VALUES (?, ?, ?)");
+                                $updateMembersStmt->bind_param("sis", $server_id, $user_id, $joined_at);
+                                $updateMembersStmt->execute();
+                                $updateMembersStmt->close();
+
+                                $updateMemberRolesStmt = $mysqli->prepare("INSERT INTO user_server_roles (user_id, server_id, role_id) VALUES (?, ?, ?)");
+                                foreach ($addOnJoinRoles as $role) {
+                                    $updateMemberRolesStmt->bind_param("iss", $user_id, $server_id, $role['role_id']);
+                                    $updateMemberRolesStmt->execute();
+                                }
+                                $updateMemberRolesStmt->close();
+                            }
+
+                            header('Location: /server/' . $server_id);
+                            exit;
+                        }
+                    }
+                }
+
                 $description_text = "You are not a member of this server. Please contact a server member with the appropriate permissions to provide you with an invitation.";
                 
                 if ($join_without_invite) {

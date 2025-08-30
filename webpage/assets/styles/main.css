@@ -2889,3 +2889,56 @@ h6 {
     z-index: 10;
     animation: pop-in-withouth-translate 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
+.invite-item-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    background-color: var(--clr-input-border-bg-dark);
+    border: 1.5px solid var(--clr-input-bg-dark);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: var(--clr-text-a20);
+    width: max-content;
+    margin-top: 10px;
+}
+
+.invite-item-name-icon-container {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+}
+
+.invite-item-name-date-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.invite-item-name {
+    font-size: 16px;
+    font-weight: var(--font-weight-bold);
+    margin: 0px;
+    color: var(--clr-text-a0);
+}
+
+.invite-item-date {
+    font-size: 14px;
+    margin: 0px;
+    color: var(--clr-text-a30);
+}
+
+.invite-item-icon {
+    border-radius: 9px;
+    width: 47px;
+    height: 47px;
+    object-fit: contain;
+}
+
+.invite-item-join-button {
+    margin-top: 5px;
+    font-size: 14px;
+}
