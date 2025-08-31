@@ -407,7 +407,7 @@ async def command(sid, data):
                 }, to=bot_sid)
                 await addMessageToLogs(f"Emitted bot_command_received for command, command: {command}, bot id: {bot_id}", "INFO")
             else:
-                await addMessageToLogs(f"Bot not found for command, bot id: {bot_id}", "INFO")
+                await addMessageToLogs(f"Bot not found for command, bot id: {bot_id}, sid_to_bot_id: {sid_to_bot_id}", "INFO")
                 await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Bot not found'}, to=sid)
                 return
 
