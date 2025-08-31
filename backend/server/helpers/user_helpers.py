@@ -7,11 +7,22 @@ import aiomysql
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server, verify_bot_token
 from server.helpers.logs import addMessageToLogs
 
+from datetime import datetime, timezone
+from dateutil import parser
+from server.helpers.logs import addMessageToLogs
+
 async def verify_access_token(cur, access_token):
-    await cur.execute('SELECT user_id, access_token_expires_at FROM user_tokens WHERE access_token = %s', (access_token,))
+    await cur.execute(
+        'SELECT user_id, access_token_expires_at FROM user_tokens WHERE access_token = %s',
+        (access_token,)
+    )
     row = await cur.fetchone()
+
     if not row:
+        await addMessageToLogs(f"verify_access_token: invalid token {access_token}", "INFO")
         return None
+
+    await addMessageToLogs(f"verify_access_token: raw row -> {row}", "INFO")
 
     user_id = row['user_id']
     expires_at = row['access_token_expires_at']
@@ -23,13 +34,18 @@ async def verify_access_token(cur, access_token):
         expires_at = expires_at.replace(tzinfo=timezone.utc)
 
     now = datetime.now(timezone.utc)
+
     if expires_at < now:
-        await cur.execute('DELETE FROM user_tokens WHERE user_id = %s AND access_token = %s', (user_id, access_token))
-        await addMessageToLogs(f"Deleted expired access token for user {user_id}", "INFO")
+        await cur.execute(
+            'DELETE FROM user_tokens WHERE user_id = %s AND access_token = %s',
+            (user_id, access_token)
+        )
+        await addMessageToLogs(f"verify_access_token: expired token for user {user_id}, deleted", "INFO")
         return None
 
-    await addMessageToLogs(f"Verified access token for user {user_id}", "INFO")
+    await addMessageToLogs(f"verify_access_token: valid for user {user_id}, expires at {expires_at}", "INFO")
     return user_id
+
     
 def auth_required(allow_bots=True):
     from server.helpers.server_helpers import is_user_in_server
@@ -49,7 +65,7 @@ def auth_required(allow_bots=True):
             account_id = None
 
             async with config.pool.acquire() as conn:
-                async with conn.cursor() as cur:
+                async with conn.cursor(aiomysql.DictCursor) as cur:
                     if bot_token:
                         if not allow_bots:
                             await addMessageToLogs("Bots not allowed", "INFO")
