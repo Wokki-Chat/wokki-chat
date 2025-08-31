@@ -109,8 +109,7 @@ def auth_required(allow_bots=True):
                             )
                             return
                         account_id = user_id
-
-            return await func(sid, data, *args, is_bot=is_bot, account_id=account_id, **kwargs)
+            return await func(sid, is_bot, account_id, data, *args, **kwargs)
 
         return wrapper
     return decorator
