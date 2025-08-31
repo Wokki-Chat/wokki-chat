@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import json
 import uuid
-from server.config import user_to_sid, sid_to_bot_id
+from server.config import user_to_sid
 import server.sio_instance as sio_instance
 from server.helpers.user_helpers import get_user_info_from_id, verify_access_token
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server, verify_bot_token
@@ -86,7 +86,7 @@ async def get_server_channel_sids(cur, server_id, channel_id):
 
         if bot_id:
             bot_sid = None
-            for s, b_id in sid_to_bot_id.items():
+            for s, b_id in config.sid_to_bot_id.items():
                 if b_id == bot_id:
                     bot_sid = s
                     break
@@ -392,7 +392,7 @@ async def command(sid, data):
                                 return
                         
             bot_sid = None
-            for s, b_id in sid_to_bot_id.items():
+            for s, b_id in config.sid_to_bot_id.items():
                 if b_id == bot_id:
                     bot_sid = s
                     break
@@ -407,7 +407,7 @@ async def command(sid, data):
                 }, to=bot_sid)
                 await addMessageToLogs(f"Emitted bot_command_received for command, command: {command}, bot id: {bot_id}", "INFO")
             else:
-                await addMessageToLogs(f"Bot not found for command, bot id: {bot_id}, sid_to_bot_id: {sid_to_bot_id}", "INFO")
+                await addMessageToLogs(f"Bot not found for command, bot id: {bot_id}, sid_to_bot_id: {config.sid_to_bot_id}", "INFO")
                 await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Bot not found'}, to=sid)
                 return
 

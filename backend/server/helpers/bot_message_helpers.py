@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import json
-from server.config import MAX_MESSAGES, TIME_WINDOW_SECONDS, bot_message_timestamps, sid_to_bot_id
+from server.config import MAX_MESSAGES, TIME_WINDOW_SECONDS, bot_message_timestamps
 import server.config as config
 from server.helpers.server_helpers import get_server_channel_sids, is_user_in_server
 from server.helpers.bot_helpers import validate_embed, verify_bot_token, is_bot_in_server
@@ -105,10 +105,11 @@ async def send_bot_message(sid, data):
                 '''
                 INSERT INTO bot_messages 
                 (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed, parent_message_id, assets)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ''',
                 (message_id, message, bot_id, timestamp, None, False, server_id, channel_id, command, user_id, embed_str, parent_message_id, assets_json)
             )
+
             await conn.commit()
             
             await addMessageToLogs(f"sent bot message ({message_id}) to server id: {server_id}, channel id: {channel_id}, bot id: {bot_id}", "INFO")
@@ -333,7 +334,7 @@ async def embed_button(sid, data):
                 return
                         
             bot_sid = None
-            for s, b_id in sid_to_bot_id.items():
+            for s, b_id in config.sid_to_bot_id.items():
                 if b_id == bot_id:
                     bot_sid = s
                     break

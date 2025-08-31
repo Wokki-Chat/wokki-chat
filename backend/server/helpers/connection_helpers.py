@@ -1,4 +1,4 @@
-from server.config import user_to_sid, pending_disconnects, sid_to_bot_id, typing_lock, typing_users, user_current_room
+from server.config import user_to_sid, pending_disconnects, typing_lock, typing_users, user_current_room
 from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status
 from server.helpers.server_helpers import is_user_in_server, get_member_ids_from_server
 from server.helpers.bot_helpers import is_bot_in_server, verify_bot_token
@@ -78,7 +78,8 @@ async def handle_connect(sid, environ):
                 await addMessageToLogs(f"Bot {bot_id} connected", "INFO")                
                 await sio_instance.sio.emit('bot_connected', {'bot_id': bot_id, 'server_id': server_id}, to=sid)
                 
-                sid_to_bot_id[sid] = bot_id
+                config.sid_to_bot_id[sid] = bot_id
+                await addMessageToLogs(f"Stored bot_id {bot_id} for sid {sid} in sid_to_bot_id ({config.sid_to_bot_id})", "INFO")
             
                 if not server_id:
                     return
@@ -138,7 +139,7 @@ async def handle_disconnect(sid):
             user_id = uid
             break
     
-    bot_id = sid_to_bot_id.get(sid)
+    bot_id = config.sid_to_bot_id.get(sid)
     
     if not user_id and not bot_id:
         await addMessageToLogs(f"User not found for sid {sid}", "INFO")
@@ -169,7 +170,7 @@ async def handle_disconnect(sid):
                 await conn.commit()
                 await broadcast_user_update(bot_id, is_bot=True)
         
-        sid_to_bot_id.pop(sid, None)
+        config.sid_to_bot_id.pop(sid, None)
         await addMessageToLogs(f"Bot {bot_id} disconnected", "INFO")
         return
 
