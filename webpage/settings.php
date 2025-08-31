@@ -195,7 +195,8 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
 
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape') {
-            window.location.href = 'https://chat.wokki20.nl' + returnUrl;
+            window.location.replace('https://chat.wokki20.nl' + returnUrl);
+            event.preventDefault();
             }
         });
 

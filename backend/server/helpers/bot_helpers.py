@@ -86,28 +86,28 @@ def validate_single_embed(embed):
     return True
 
 async def verify_bot_token(cur, bot_token):
-    addMessageToLogs(f"verifying bot token ({bot_token})", "INFO")
+    await addMessageToLogs(f"verifying bot token ({bot_token})", "INFO")
     await cur.execute('SELECT id FROM bots WHERE bot_token = %s', (bot_token,))
     row = await cur.fetchone()
     if not row:
-        addMessageToLogs(f"bot token ({bot_token}) not found", "INFO")
+        await addMessageToLogs(f"bot token ({bot_token}) not found", "INFO")
         return None
     
-    addMessageToLogs(f"bot token ({bot_token}) found. Bot id: {row['id']}", "INFO")
+    await addMessageToLogs(f"bot token ({bot_token}) found. Bot id: {row['id']}", "INFO")
     return row['id']
 
 async def is_bot_in_server(cur, bot_id, server_id):
-    addMessageToLogs(f"checking if bot ({bot_id}) is in server ({server_id})", "INFO")
+    await addMessageToLogs(f"checking if bot ({bot_id}) is in server ({server_id})", "INFO")
     await cur.execute(
         "SELECT 1 FROM server_members WHERE server_id = %s AND bot_id = %s LIMIT 1",
         (server_id, bot_id)
     )
     server = await cur.fetchone()
-    addMessageToLogs(f"Bot ({bot_id}) in server ({server_id}): {bool(server)}", "INFO")
+    await addMessageToLogs(f"Bot ({bot_id}) in server ({server_id}): {bool(server)}", "INFO")
     return bool(server)
 
 async def get_bot_info_from_id(cur, bot_id):
-    addMessageToLogs(f"getting bot info from id ({bot_id})", "INFO")
+    await addMessageToLogs(f"getting bot info from id ({bot_id})", "INFO")
     await cur.execute('SELECT id, name, status, profile_picture, created_at, bio FROM bots WHERE id = %s', (bot_id,))
     bot = await cur.fetchone()
     if bot:
@@ -121,10 +121,10 @@ async def get_bot_info_from_id(cur, bot_id):
         bot['created_at'] = str(bot['created_at'].isoformat()),
         bot['bio'] = bot['bio']
         del bot['name']
-        addMessageToLogs(f"got bot info from id ({bot_id})", "INFO")
+        await addMessageToLogs(f"got bot info from id ({bot_id})", "INFO")
         return dict(bot)
 
-    addMessageToLogs(f"bot ({bot_id}) not found", "INFO")
+    await addMessageToLogs(f"bot ({bot_id}) not found", "INFO")
     return None
 
 
@@ -133,7 +133,7 @@ async def initialize_commands(sid, data):
     commands = data.get('commands')
 
     if not bot_token or commands is None:
-        addMessageToLogs(f"Missing required fields for initialize_commands", "INFO")
+        await addMessageToLogs(f"Missing required fields for initialize_commands", "INFO")
         await sio_instance.sio.emit('initialize_commands_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
     
@@ -141,7 +141,7 @@ async def initialize_commands(sid, data):
         async with conn.cursor(aiomysql.DictCursor) as cur:
             bot_id = await verify_bot_token(cur, bot_token)
             if not bot_id:
-                addMessageToLogs(f"Invalid token for initialize_commands. Bot token: {bot_token}", "INFO")
+                await addMessageToLogs(f"Invalid token for initialize_commands. Bot token: {bot_token}", "INFO")
                 await sio_instance.sio.emit('initialize_commands_response', {'success': False, 'error': 'Invalid token'}, to=sid)
                 return
 
@@ -158,7 +158,7 @@ async def initialize_commands(sid, data):
             if commands:
                 removed_commands = existing_command_names - new_command_names
                 for cmd in removed_commands:
-                    addMessageToLogs(f"Removing command: {cmd} from bot {bot_id}", "INFO")
+                    await addMessageToLogs(f"Removing command: {cmd} from bot {bot_id}", "INFO")
                     await cur.execute(
                         'DELETE FROM bot_commands WHERE bot_id = %s AND command = %s',
                         (bot_id, cmd)
@@ -168,7 +168,7 @@ async def initialize_commands(sid, data):
                 cmd_name = command['command']
                 options = json.dumps(command.get('options', {}), sort_keys=True)
 
-                addMessageToLogs(f"Initializing command: {cmd_name} for bot {bot_id}", "INFO")
+                await addMessageToLogs(f"Initializing command: {cmd_name} for bot {bot_id}", "INFO")
                 await cur.execute(
                     'SELECT options FROM bot_commands WHERE bot_id = %s AND command = %s',
                     (bot_id, cmd_name)
@@ -177,17 +177,17 @@ async def initialize_commands(sid, data):
 
                 if existing:
                     if existing['options'] != options:
-                        addMessageToLogs(f"Updating command: {cmd_name} for bot {bot_id}", "INFO")
+                        await addMessageToLogs(f"Updating command: {cmd_name} for bot {bot_id}", "INFO")
                         await cur.execute(
                             'UPDATE bot_commands SET options = %s WHERE bot_id = %s AND command = %s',
                             (options, bot_id, cmd_name)
                         )
                 else:
-                    addMessageToLogs(f"Adding command: {cmd_name} for bot {bot_id}", "INFO")
+                    await addMessageToLogs(f"Adding command: {cmd_name} for bot {bot_id}", "INFO")
                     await cur.execute(
                         'INSERT INTO bot_commands (bot_id, command, options) VALUES (%s, %s, %s)',
                         (bot_id, cmd_name, options)
                     )
                     
-            addMessageToLogs(f"Initialized commands for bot {bot_id}", "INFO")
+            await addMessageToLogs(f"Initialized commands for bot {bot_id}", "INFO")
             await sio_instance.sio.emit('initialize_commands_response', {'success': True}, to=sid)

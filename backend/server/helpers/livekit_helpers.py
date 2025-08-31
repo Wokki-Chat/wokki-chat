@@ -1,7 +1,6 @@
 from livekit.api import LiveKitAPI, CreateRoomRequest, ListRoomsRequest
 from livekit import api 
 from server.config import LIVEKIT_BASE_URL, API_KEY, API_SECRET
-from server.helpers.logs import addMessageToLogs
 async def livekit_room_exists(room_name: str) -> bool:
     async with LiveKitAPI(
         url=LIVEKIT_BASE_URL,

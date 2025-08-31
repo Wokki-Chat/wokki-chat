@@ -23,13 +23,13 @@ async def send_bot_message(sid, data):
     file_names = data.get('file_names')
 
     if not all([bot_token, server_id, channel_id, (message or embed)]):
-        addMessageToLogs(f"Missing required fields for send_bot_message", "INFO")
+        await addMessageToLogs(f"Missing required fields for send_bot_message", "INFO")
         await sio_instance.sio.emit('send_bot_message_response', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
         return
     
     if embed is not None:
         if not validate_embed(embed):
-            addMessageToLogs(f"Invalid embed data for send_bot_message, bot token: {bot_token}", "INFO")
+            await addMessageToLogs(f"Invalid embed data for send_bot_message, bot token: {bot_token}", "INFO")
             await sio_instance.sio.emit('send_bot_message_response', {'success': False, 'error': 'Invalid embed data', 'req_id': req_id}, to=sid)
             return
     
@@ -39,12 +39,12 @@ async def send_bot_message(sid, data):
         async with conn.cursor(aiomysql.DictCursor) as cur:
             bot_id = await verify_bot_token(cur, bot_token)
             if not bot_id:
-                addMessageToLogs(f"Invalid token for send_bot_message, bot token: {bot_token}", "INFO")
+                await addMessageToLogs(f"Invalid token for send_bot_message, bot token: {bot_token}", "INFO")
                 await sio_instance.sio.emit('send_bot_message_response', {'success': False, 'error': 'Invalid token', 'req_id': req_id}, to=sid)
                 return
             
             if not await is_bot_in_server(cur, bot_id, server_id):
-                addMessageToLogs(f"Bot is not in server for send_bot_message, bot id: {bot_id}, server id: {server_id}", "INFO")
+                await addMessageToLogs(f"Bot is not in server for send_bot_message, bot id: {bot_id}, server id: {server_id}", "INFO")
                 await sio_instance.sio.emit('send_bot_message_response', {'success': False, 'error': 'Bot is not in server', 'req_id': req_id}, to=sid)
                 return
         
@@ -60,7 +60,7 @@ async def send_bot_message(sid, data):
                 timestamps.popleft()
 
             if len(timestamps) >= MAX_MESSAGES:
-                addMessageToLogs(f"Rate limit exceeded for send_bot_message, bot id: {bot_id}", "INFO")
+                await addMessageToLogs(f"Rate limit exceeded for send_bot_message, bot id: {bot_id}", "INFO")
                 await sio_instance.sio.emit('send_bot_message_response', {
                     'success': False,
                     'error': f'Rate limit exceeded. Max {MAX_MESSAGES} messages every {TIME_WINDOW_SECONDS} seconds.',
@@ -71,14 +71,14 @@ async def send_bot_message(sid, data):
             timestamps.append(now)
             
             if len(message) > 3000:
-                addMessageToLogs(f"Message too long for send_bot_message, bot id: {bot_id}", "INFO")
+                await addMessageToLogs(f"Message too long for send_bot_message, bot id: {bot_id}", "INFO")
                 await sio_instance.sio.emit('send_bot_message_response', {'success': False, 'error': 'Message too long', 'req_id': req_id}, to=sid)
                 return
             
             await cur.execute('SELECT name, profile_picture FROM bots WHERE id = %s', (bot_id,))
             bot_row = await cur.fetchone()
             if not bot_row:
-                addMessageToLogs(f"Bot not found for send_bot_message, bot id: {bot_id}", "INFO")
+                await addMessageToLogs(f"Bot not found for send_bot_message, bot id: {bot_id}", "INFO")
                 await sio_instance.sio.emit('send_bot_message_response', {'success': False, 'error': 'Bot not found', 'req_id': req_id}, to=sid)
                 return
 
@@ -111,7 +111,7 @@ async def send_bot_message(sid, data):
             )
             await conn.commit()
             
-            addMessageToLogs(f"sent bot message ({message_id}) to server id: {server_id}, channel id: {channel_id}, bot id: {bot_id}", "INFO")
+            await addMessageToLogs(f"sent bot message ({message_id}) to server id: {server_id}, channel id: {channel_id}, bot id: {bot_id}", "INFO")
             
             server_channel_sids = await get_server_channel_sids(cur, server_id, channel_id)
 
@@ -134,9 +134,9 @@ async def send_bot_message(sid, data):
         'command_user_id': user_id,
         'embed': embed
     }, to=server_channel_sids)
-    addMessageToLogs(f"Emited new_message for server id: {server_id}, channel id: {channel_id}, bot id: {bot_id}, message id: {message_id}", "INFO")
+    await addMessageToLogs(f"Emited new_message for server id: {server_id}, channel id: {channel_id}, bot id: {bot_id}, message id: {message_id}", "INFO")
     await sio_instance.sio.emit('send_bot_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
-    addMessageToLogs(f"Emited send_bot_message_response for server id: {server_id}, channel id: {channel_id}, bot id: {bot_id}, message id: {message_id}", "INFO")
+    await addMessageToLogs(f"Emited send_bot_message_response for server id: {server_id}, channel id: {channel_id}, bot id: {bot_id}, message id: {message_id}", "INFO")
     
 async def edit_bot_message(sid, data):
     bot_token = data.get('bot_token')
@@ -146,20 +146,20 @@ async def edit_bot_message(sid, data):
     req_id = data.get('req_id')
     
     if not all([bot_token, (message or embed), message_id]):
-        addMessageToLogs(f"Missing required fields for edit_bot_message", "INFO")
+        await addMessageToLogs(f"Missing required fields for edit_bot_message", "INFO")
         await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
         return
     
     if embed is not None:
         if not validate_embed(embed):
-            addMessageToLogs(f"Invalid embed data for edit_bot_message, bot token: {bot_token}, message id: {message_id}", "INFO")
+            await addMessageToLogs(f"Invalid embed data for edit_bot_message, bot token: {bot_token}, message id: {message_id}", "INFO")
             await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Invalid embed data', 'req_id': req_id}, to=sid)
             return
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             bot_id = await verify_bot_token(cur, bot_token)
             if not bot_id:
-                addMessageToLogs(f"Invalid token for edit_bot_message, bot token: {bot_token}", "INFO")
+                await addMessageToLogs(f"Invalid token for edit_bot_message, bot token: {bot_token}", "INFO")
                 await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Invalid token', 'req_id': req_id}, to=sid)
                 return
             
@@ -172,7 +172,7 @@ async def edit_bot_message(sid, data):
             )
             message_row = await cur.fetchone()
             if not message_row:
-                addMessageToLogs(f"Message not found for edit_bot_message, bot token: {bot_token}, message id: {message_id}", "INFO")
+                await addMessageToLogs(f"Message not found for edit_bot_message, bot token: {bot_token}, message id: {message_id}", "INFO")
                 await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Message not found', 'req_id': req_id}, to=sid)
                 return
         
@@ -183,14 +183,14 @@ async def edit_bot_message(sid, data):
             
             if message is not None:
                 if len(message) > 3000:
-                    addMessageToLogs(f"Message too long for edit_bot_message, bot token: {bot_token}, message id: {message_id}", "INFO")
+                    await addMessageToLogs(f"Message too long for edit_bot_message, bot token: {bot_token}, message id: {message_id}", "INFO")
                     await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Message too long', 'req_id': req_id}, to=sid)
                     return
             
             await cur.execute('SELECT name, profile_picture FROM bots WHERE id = %s', (bot_id,))
             bot_row = await cur.fetchone()
             if not bot_row:
-                addMessageToLogs(f"Bot not found for edit_bot_message, bot token: {bot_token}", "INFO")
+                await addMessageToLogs(f"Bot not found for edit_bot_message, bot token: {bot_token}", "INFO")
                 await sio_instance.sio.emit('edit_bot_message_response', {'success': False, 'error': 'Bot not found', 'req_id': req_id}, to=sid)
                 return
             
@@ -228,7 +228,7 @@ async def edit_bot_message(sid, data):
                 await cur.execute(sql, values)
                 await conn.commit()
                 
-                addMessageToLogs(f"updated bot message for server id: bot id: {bot_id}, message id: {message_id}", "INFO")
+                await addMessageToLogs(f"updated bot message for server id: bot id: {bot_id}, message id: {message_id}", "INFO")
                 
             server_id = message_row['server_id']
             channel_id = message_row['channel_id']
@@ -243,9 +243,9 @@ async def edit_bot_message(sid, data):
         'updated_at': timestamp,
         'embed': embed
     }, to=server_channel_sids)
-    addMessageToLogs(f"Emited update_message for server id: {server_id}, channel id: {channel_id}, message id: {message_id}", "INFO")
+    await addMessageToLogs(f"Emited update_message for server id: {server_id}, channel id: {channel_id}, message id: {message_id}", "INFO")
     await sio_instance.sio.emit('edit_bot_message_response', {'success': True, 'req_id': req_id}, to=sid)
-    addMessageToLogs(f"Emited edit_bot_message_response for bot token: {bot_token}, message id: {message_id}", "INFO")
+    await addMessageToLogs(f"Emited edit_bot_message_response for bot token: {bot_token}, message id: {message_id}", "INFO")
 
 
 async def delete_bot_message(sid, data):
@@ -254,14 +254,14 @@ async def delete_bot_message(sid, data):
     req_id = data.get('req_id')
     
     if not all([bot_token, message_id]):
-        addMessageToLogs(f"Missing required fields for delete_bot_message", "INFO")
+        await addMessageToLogs(f"Missing required fields for delete_bot_message", "INFO")
         await sio_instance.sio.emit('delete_bot_message_response', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
         return
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             bot_id = await verify_bot_token(cur, bot_token)
             if not bot_id:
-                addMessageToLogs(f"Invalid token for delete_bot_message, bot token: {bot_token}", "INFO")
+                await addMessageToLogs(f"Invalid token for delete_bot_message, bot token: {bot_token}", "INFO")
                 await sio_instance.sio.emit('delete_bot_message_response', {'success': False, 'error': 'Invalid token', 'req_id': req_id}, to=sid)
                 return
             
@@ -274,21 +274,21 @@ async def delete_bot_message(sid, data):
             )
             message_row = await cur.fetchone()
             if not message_row:
-                addMessageToLogs(f"Message not found for delete_bot_message, bot token: {bot_token}, message id: {message_id}", "INFO")
+                await addMessageToLogs(f"Message not found for delete_bot_message, bot token: {bot_token}, message id: {message_id}", "INFO")
                 await sio_instance.sio.emit('delete_bot_message_response', {'success': False, 'error': 'Message not found', 'req_id': req_id}, to=sid)
                 return        
                     
             await cur.execute('SELECT name, profile_picture FROM bots WHERE id = %s', (bot_id,))
             bot_row = await cur.fetchone()
             if not bot_row:
-                addMessageToLogs(f"Bot not found for delete_bot_message, bot token: {bot_token}, bot id: {bot_id}", "INFO")
+                await addMessageToLogs(f"Bot not found for delete_bot_message, bot token: {bot_token}, bot id: {bot_id}", "INFO")
                 await sio_instance.sio.emit('delete_bot_message_response', {'success': False, 'error': 'Bot not found', 'req_id': req_id}, to=sid)
                 return
             
             await cur.execute('DELETE FROM bot_messages WHERE id = %s AND bot_id = %s', (message_id, bot_id))
             await conn.commit()
             
-            addMessageToLogs(f"deleted bot message for bot id: {bot_id}, message id: {message_id}", "INFO")
+            await addMessageToLogs(f"deleted bot message for bot id: {bot_id}, message id: {message_id}", "INFO")
                 
             server_id = message_row['server_id']
             channel_id = message_row['channel_id']
@@ -297,9 +297,9 @@ async def delete_bot_message(sid, data):
             
                 
     await sio_instance.sio.emit('message_deleted', message_id, to=server_channel_sids)
-    addMessageToLogs(f"Emitted message_deleted for server id: {server_id}, channel id: {channel_id}, message id: {message_id}", "INFO")
+    await addMessageToLogs(f"Emitted message_deleted for server id: {server_id}, channel id: {channel_id}, message id: {message_id}", "INFO")
     await sio_instance.sio.emit('delete_bot_message_response', {'success': True, 'req_id': req_id}, to=sid)
-    addMessageToLogs(f"Emitted delete_bot_message_response for bot token: {bot_token}, message id: {message_id}", "INFO")
+    await addMessageToLogs(f"Emitted delete_bot_message_response for bot token: {bot_token}, message id: {message_id}", "INFO")
     
 
 async def embed_button(sid, data):
@@ -310,7 +310,7 @@ async def embed_button(sid, data):
     button_id = data.get('button_id')
     
     if not all([access_token, bot_id, button_id, server_id, channel_id]):
-        addMessageToLogs(f"Missing required fields for embed_button", "INFO")
+        await addMessageToLogs(f"Missing required fields for embed_button", "INFO")
         await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
     
@@ -318,17 +318,17 @@ async def embed_button(sid, data):
         async with conn.cursor(aiomysql.DictCursor) as cur:
             user_id = await verify_access_token(cur, access_token)
             if not user_id:
-                addMessageToLogs(f"Invalid token for embed_button, access token: {access_token}", "INFO")
+                await addMessageToLogs(f"Invalid token for embed_button, access token: {access_token}", "INFO")
                 await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'Invalid token'}, to=sid)
                 return
             
             if not await is_user_in_server(cur, user_id, server_id):
-                addMessageToLogs(f"User is not in server for embed_button, user id: {user_id}, server id: {server_id}", "INFO")
+                await addMessageToLogs(f"User is not in server for embed_button, user id: {user_id}, server id: {server_id}", "INFO")
                 await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'User is not in server'}, to=sid)
                 return
             
             if not await is_bot_in_server(cur, bot_id, server_id):
-                addMessageToLogs(f"Bot is not in server for embed_button, bot id: {bot_id}, server id: {server_id}", "INFO")
+                await addMessageToLogs(f"Bot is not in server for embed_button, bot id: {bot_id}, server id: {server_id}", "INFO")
                 await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'Bot is not in server'}, to=sid)
                 return
                         
@@ -339,7 +339,7 @@ async def embed_button(sid, data):
                     break
                 
             if not bot_sid:
-                addMessageToLogs(f"Bot not found for embed_button, bot id: {bot_id}", "INFO")
+                await addMessageToLogs(f"Bot not found for embed_button, bot id: {bot_id}", "INFO")
                 await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'Bot not found'}, to=sid)
                 return
 
@@ -350,11 +350,11 @@ async def embed_button(sid, data):
                     'server_id': server_id,
                     'channel_id': channel_id
                 }, to=bot_sid)
-                addMessageToLogs(f"Emitted embed_button_pressed for bot id: {bot_id}, button id: {button_id}, user id: {user_id}, server id: {server_id}, channel id: {channel_id}", "INFO")
+                await addMessageToLogs(f"Emitted embed_button_pressed for bot id: {bot_id}, button id: {button_id}, user id: {user_id}, server id: {server_id}, channel id: {channel_id}", "INFO")
             else:
-                addMessageToLogs(f"Bot not found for embed_button, bot id: {bot_id}", "INFO")
+                await addMessageToLogs(f"Bot not found for embed_button, bot id: {bot_id}", "INFO")
                 await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'Bot not found'}, to=sid)
                 return            
 
             await sio_instance.sio.emit('embed_button_response', {'success': True}, to=sid)
-            addMessageToLogs(f"Emited embed_button_response for bot id: {bot_id}, button id: {button_id}", "INFO")
+            await addMessageToLogs(f"Emited embed_button_response for bot id: {bot_id}, button id: {button_id}", "INFO")

@@ -16,7 +16,7 @@ async def handle_connect(sid, environ):
     bot_token = params.get('bot_token')
 
     if not access_token and not bot_token:
-        addMessageToLogs(f"Missing access_token or bot_token for sid {sid}", "INFO")
+        await addMessageToLogs(f"Missing access_token or bot_token for sid {sid}", "INFO")
         await sio_instance.sio.disconnect(sid)
         return
     
@@ -25,7 +25,7 @@ async def handle_connect(sid, environ):
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 user_id = await verify_access_token(cur, access_token)
                 if not user_id:
-                    addMessageToLogs(f"Invalid access_token for sid {sid}", "INFO")
+                    await addMessageToLogs(f"Invalid access_token for sid {sid}", "INFO")
                     await sio_instance.sio.disconnect(sid)
                     return
 
@@ -34,14 +34,14 @@ async def handle_connect(sid, environ):
                     for t in tasks:
                         t.cancel()
                     await asyncio.gather(*tasks, return_exceptions=True)
-                    addMessageToLogs(f"User {user_id} reconnected", "INFO")
+                    await addMessageToLogs(f"User {user_id} reconnected", "INFO")
 
 
                 await cur.execute("UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = FALSE", (user_id,))
                 await conn.commit()
                 await broadcast_user_update(user_id)
 
-                addMessageToLogs(f"User {user_id} connected", "INFO")
+                await addMessageToLogs(f"User {user_id} connected", "INFO")
                 await sio_instance.sio.emit('user_connected', {'user_id': user_id, 'server_id': server_id}, to=sid)
                 
                 if not user_to_sid.get(user_id, []): 
@@ -55,7 +55,7 @@ async def handle_connect(sid, environ):
                     return
 
                 if not await is_user_in_server(cur, user_id, server_id):
-                    addMessageToLogs(f"User {user_id} not in server {server_id}", "INFO")
+                    await addMessageToLogs(f"User {user_id} not in server {server_id}", "INFO")
                     await sio_instance.sio.emit('user_not_in_server', {'user_id': user_id, 'server_id': server_id}, to=sid)
                     return
                 
@@ -67,7 +67,7 @@ async def handle_connect(sid, environ):
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 bot_id = await verify_bot_token(cur, bot_token)
                 if not bot_id:
-                    addMessageToLogs(f"Invalid bot_token for sid {sid}", "INFO")
+                    await addMessageToLogs(f"Invalid bot_token for sid {sid}", "INFO")
                     await sio_instance.sio.disconnect(sid)
                     return
 
@@ -75,7 +75,7 @@ async def handle_connect(sid, environ):
                 await conn.commit()
                 await broadcast_user_update(bot_id, is_bot=True)
 
-                addMessageToLogs(f"Bot {bot_id} connected", "INFO")                
+                await addMessageToLogs(f"Bot {bot_id} connected", "INFO")                
                 await sio_instance.sio.emit('bot_connected', {'bot_id': bot_id, 'server_id': server_id}, to=sid)
                 
                 sid_to_bot_id[sid] = bot_id
@@ -84,7 +84,7 @@ async def handle_connect(sid, environ):
                     return
 
                 if not await is_bot_in_server(cur, bot_id, server_id):
-                    addMessageToLogs(f"Bot {bot_id} not in server {server_id}", "INFO")
+                    await addMessageToLogs(f"Bot {bot_id} not in server {server_id}", "INFO")
                     await sio_instance.sio.emit('bot_not_in_server', {'bot_id': bot_id, 'server_id': server_id}, to=sid)
                     return
                 
@@ -128,7 +128,7 @@ async def handle_connect(sid, environ):
                             users.append(bot)
 
                 await sio_instance.sio.emit("server_users", users, to=sid)
-                addMessageToLogs(f"Emited user list to sid: {sid}, server id: {server_id}, bot id: {bot_id}", "INFO")
+                await addMessageToLogs(f"Emited user list to sid: {sid}, server id: {server_id}, bot id: {bot_id}", "INFO")
                 return
             
 async def handle_disconnect(sid):
@@ -141,11 +141,11 @@ async def handle_disconnect(sid):
     bot_id = sid_to_bot_id.get(sid)
     
     if not user_id and not bot_id:
-        addMessageToLogs(f"User not found for sid {sid}", "INFO")
+        await addMessageToLogs(f"User not found for sid {sid}", "INFO")
         return
 
     if user_id:
-        addMessageToLogs(f"Disconnecting user {user_id}", "INFO")
+        await addMessageToLogs(f"Disconnecting user {user_id}", "INFO")
         user_to_sid[user_id].remove(sid)
         if len(user_to_sid[user_id]) == 0:
             del user_to_sid[user_id]
@@ -154,12 +154,12 @@ async def handle_disconnect(sid):
         if room:
             await sio_instance.sio.leave_room(sid, room)
             await sio_instance.sio.emit('user_disconnected', {'user_id': user_id}, room=room)
-            addMessageToLogs(f"User {user_id} disconnected from room {room}", "INFO")
+            await addMessageToLogs(f"User {user_id} disconnected from room {room}", "INFO")
             user_current_room.pop(user_id, None)
 
         task = asyncio.create_task(handle_delayed_disconnect(user_id, sid))
         pending_disconnects.setdefault(user_id, []).append(task)
-        addMessageToLogs(f"Added user {user_id} to pending disconnects", "INFO")
+        await addMessageToLogs(f"Added user {user_id} to pending disconnects", "INFO")
         return
     
     if bot_id:
@@ -170,7 +170,7 @@ async def handle_disconnect(sid):
                 await broadcast_user_update(bot_id, is_bot=True)
         
         sid_to_bot_id.pop(sid, None)
-        addMessageToLogs(f"Bot {bot_id} disconnected", "INFO")
+        await addMessageToLogs(f"Bot {bot_id} disconnected", "INFO")
         return
 
 
@@ -183,7 +183,7 @@ async def handle_delayed_disconnect(user_id, sid):
                     (user_id,)
                 )
                 await conn.commit()
-                addMessageToLogs(f"User {user_id} set to idle (if not overridden manually)", "INFO")
+                await addMessageToLogs(f"User {user_id} set to idle (if not overridden manually)", "INFO")
                 await broadcast_user_update(user_id)
 
         await asyncio.sleep(25)
@@ -195,13 +195,13 @@ async def handle_delayed_disconnect(user_id, sid):
                     (user_id,)
                 )
                 await conn.commit()
-                addMessageToLogs(f"User {user_id} set to offline (if not overridden manually)", "INFO")
+                await addMessageToLogs(f"User {user_id} set to offline (if not overridden manually)", "INFO")
                 await broadcast_user_update(user_id)
 
         async with typing_lock:
             if user_id in typing_users:
                 typing_users.discard(user_id)
-                addMessageToLogs(f"Removed user {user_id} from typing_users", "INFO")
+                await addMessageToLogs(f"Removed user {user_id} from typing_users", "INFO")
                 await sio_instance.sio.emit('users_typing', {'user_ids': list(typing_users), 'channel_id': None})
 
         if user_id in user_to_sid:
@@ -212,5 +212,5 @@ async def handle_delayed_disconnect(user_id, sid):
         pending_disconnects.pop(user_id, None)
 
     except asyncio.CancelledError:
-        addMessageToLogs(f"Disconnect for user {user_id} cancelled due to reconnect", "INFO")
+        await addMessageToLogs(f"Disconnect for user {user_id} cancelled due to reconnect", "INFO")
         return

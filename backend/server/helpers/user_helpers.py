@@ -25,10 +25,10 @@ async def verify_access_token(cur, access_token):
     now = datetime.now(timezone.utc)
     if expires_at < now:
         await cur.execute('DELETE FROM user_tokens WHERE user_id = %s AND access_token = %s', (user_id, access_token))
-        addMessageToLogs(f"Deleted expired access token for user {user_id}", "INFO")
+        await addMessageToLogs(f"Deleted expired access token for user {user_id}", "INFO")
         return None
 
-    addMessageToLogs(f"Verified access token for user {user_id}", "INFO")
+    await addMessageToLogs(f"Verified access token for user {user_id}", "INFO")
     return user_id
     
 def auth_required(allow_bots=True):
@@ -52,20 +52,20 @@ def auth_required(allow_bots=True):
                 async with conn.cursor() as cur:
                     if bot_token:
                         if not allow_bots:
-                            addMessageToLogs("Bots not allowed", "INFO")
+                            await addMessageToLogs("Bots not allowed", "INFO")
                             await sio_instance.sio.emit(
                                 'error', {'success': False, 'error': 'Bots not allowed'}, to=sid
                             )
                             return
                         bot_id = await verify_bot_token(cur, bot_token)
                         if not bot_id:
-                            addMessageToLogs(f"Invalid bot token, bot token: {bot_token}", "INFO")
+                            await addMessageToLogs(f"Invalid bot token, bot token: {bot_token}", "INFO")
                             await sio_instance.sio.emit(
                                 'error', {'success': False, 'error': 'Invalid bot token'}, to=sid
                             )
                             return
                         if not await is_bot_in_server(cur, bot_id, server_id):
-                            addMessageToLogs(f"Bot not in server, bot id: {bot_id}, server id: {server_id}", "INFO")
+                            await addMessageToLogs(f"Bot not in server, bot id: {bot_id}, server id: {server_id}", "INFO")
                             await sio_instance.sio.emit(
                                 'error', {'success': False, 'error': 'Bot not in server'}, to=sid
                             )
@@ -74,20 +74,20 @@ def auth_required(allow_bots=True):
                         account_id = bot_id
                     else:
                         if not access_token:
-                            addMessageToLogs("Missing access token", "INFO")
+                            await addMessageToLogs("Missing access token", "INFO")
                             await sio_instance.sio.emit(
                                 'error', {'success': False, 'error': 'Missing access token'}, to=sid
                             )
                             return
                         user_id = await verify_access_token(cur, access_token)
                         if not user_id:
-                            addMessageToLogs(f"Invalid access token, access token: {access_token}", "INFO")
+                            await addMessageToLogs(f"Invalid access token, access token: {access_token}", "INFO")
                             await sio_instance.sio.emit(
                                 'error', {'success': False, 'error': 'Invalid access token'}, to=sid
                             )
                             return
                         if not await is_user_in_server(cur, user_id, server_id):
-                            addMessageToLogs(f"User not in server, user id: {user_id}, server id: {server_id}", "INFO")
+                            await addMessageToLogs(f"User not in server, user id: {user_id}, server id: {server_id}", "INFO")
                             await sio_instance.sio.emit(
                                 'error', {'success': False, 'error': 'User not in server'}, to=sid
                             )
@@ -127,22 +127,22 @@ async def broadcast_user_update(user_id, is_bot=False):
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 user_info = await get_user_info_from_id(cur, user_id)
                 if not user_info:
-                    addMessageToLogs(f"User not found, user id: {user_id}", "INFO")
+                    await addMessageToLogs(f"User not found, user id: {user_id}", "INFO")
                     return
                 
                 await sio_instance.sio.emit('user_updated', user_info)
-                addMessageToLogs(f"Broadcasted for user {user_id}", "INFO")
+                await addMessageToLogs(f"Broadcasted for user {user_id}", "INFO")
                 return
     if is_bot:
         async with config.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 bot_info = await get_bot_info_from_id(cur, user_id)
                 if not bot_info:
-                    addMessageToLogs(f"Bot not found, bot id: {user_id}", "INFO")
+                    await addMessageToLogs(f"Bot not found, bot id: {user_id}", "INFO")
                     return
                 
                 await sio_instance.sio.emit('user_updated', bot_info)
-                addMessageToLogs(f"Broadcasted for bot {user_id}", "INFO")
+                await addMessageToLogs(f"Broadcasted for bot {user_id}", "INFO")
                 return
             
 
@@ -211,27 +211,27 @@ async def get_user_info(sid, data):
             if bot_token:
                 caller_bot_id = await verify_bot_token(cur, bot_token)
                 if not caller_bot_id:
-                    addMessageToLogs(f"Invalid bot token for user info, bot token: {bot_token}", "INFO")
+                    await addMessageToLogs(f"Invalid bot token for user info, bot token: {bot_token}", "INFO")
                     await sio_instance.sio.emit('user_info', {'error': 'Invalid bot token', 'req_id': req_id}, to=sid)
                     return
             elif access_token:
                 caller_user_id = await verify_access_token(cur, access_token)
                 if not caller_user_id:
-                    addMessageToLogs(f"Invalid access token for user info, access token: {access_token}", "INFO")
+                    await addMessageToLogs(f"Invalid access token for user info, access token: {access_token}", "INFO")
                     await sio_instance.sio.emit('user_info', {'error': 'Invalid access token', 'req_id': req_id}, to=sid)
                     return
             else:
-                addMessageToLogs(f"No authentication provided for user info", "INFO")
+                await addMessageToLogs(f"No authentication provided for user info", "INFO")
                 await sio_instance.sio.emit('user_info', {'error': 'No authentication provided', 'req_id': req_id}, to=sid)
                 return
 
             if requested_user_id:
                 user_info = await get_user_info_from_id(cur, requested_user_id)
                 if not user_info:
-                    addMessageToLogs(f"User not found for user info, user id: {requested_user_id}", "INFO")
+                    await addMessageToLogs(f"User not found for user info, user id: {requested_user_id}", "INFO")
                     await sio_instance.sio.emit('user_info', {'error': 'User not found', 'req_id': req_id}, to=sid)
                     return
-                addMessageToLogs(f"User found for user info, user id: {requested_user_id}", "INFO")
+                await addMessageToLogs(f"User found for user info, user id: {requested_user_id}", "INFO")
                 await sio_instance.sio.emit('user_info', {'info': user_info, 'req_id': req_id}, to=sid)
                 return
 
@@ -239,34 +239,34 @@ async def get_user_info(sid, data):
             elif requested_bot_id:
                 bot_info = await get_bot_info_from_id(cur, requested_bot_id)
                 if not bot_info:
-                    addMessageToLogs(f"Bot not found for user info, bot id: {requested_bot_id}", "INFO")
+                    await addMessageToLogs(f"Bot not found for user info, bot id: {requested_bot_id}", "INFO")
                     await sio_instance.sio.emit('user_info', {'error': 'Bot not found', 'req_id': req_id}, to=sid)
                     return
-                addMessageToLogs(f"Bot found for user info, bot id: {requested_bot_id}", "INFO")
+                await addMessageToLogs(f"Bot found for user info, bot id: {requested_bot_id}", "INFO")
                 await sio_instance.sio.emit('user_info', {'info': bot_info, 'req_id': req_id}, to=sid)
                 return
 
             if caller_user_id:
                 user_info = await get_user_info_from_id(cur, caller_user_id)
                 if not user_info:
-                    addMessageToLogs(f"User not found for user info, user id: {caller_user_id}", "INFO")
+                    await addMessageToLogs(f"User not found for user info, user id: {caller_user_id}", "INFO")
                     await sio_instance.sio.emit('user_info', {'error': 'User not found', 'req_id': req_id}, to=sid)
                     return
-                addMessageToLogs(f"User found for user info, user id: {caller_user_id}", "INFO")
+                await addMessageToLogs(f"User found for user info, user id: {caller_user_id}", "INFO")
                 await sio_instance.sio.emit('user_info', {'info': user_info, 'req_id': req_id}, to=sid)
                 return
 
             elif caller_bot_id:
                 bot_info = await get_bot_info_from_id(cur, caller_bot_id)
                 if not bot_info:
-                    addMessageToLogs(f"Bot not found for user info, bot id: {caller_bot_id}", "INFO")
+                    await addMessageToLogs(f"Bot not found for user info, bot id: {caller_bot_id}", "INFO")
                     await sio_instance.sio.emit('user_info', {'error': 'Bot not found', 'req_id': req_id}, to=sid)
                     return
-                addMessageToLogs(f"Bot found for user info, bot id: {caller_bot_id}", "INFO")
+                await addMessageToLogs(f"Bot found for user info, bot id: {caller_bot_id}", "INFO")
                 await sio_instance.sio.emit('user_info', {'info': bot_info, 'req_id': req_id}, to=sid)
                 return
 
-            addMessageToLogs(f"User/bot not found for user info", "INFO")
+            await addMessageToLogs(f"User/bot not found for user info", "INFO")
             await sio_instance.sio.emit('user_info', {'error': 'User/bot not found', 'req_id': req_id}, to=sid)
             return
             
