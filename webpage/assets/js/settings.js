@@ -123,7 +123,47 @@ window.addEventListener("load", () => {
       }
     });
   }
+    
+  if (active_tab === "logs") {
+      fetch("https://chat.wokki20.nl/developer/official/logs", {
+          method: "GET",
+          headers: {
+              "Authorization": `Bearer ${access_token}`
+          }
+      })
+      .then(response => {
+          if (!response.ok) throw new Error("Failed to fetch logs");
+          return response.text();
+      })
+      .then(text => { 
+          const logs = document.getElementById("logs");
 
+          const lines = text.split("\n");
+
+          const escapeHTML = str =>
+              str.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+
+          const coloredLines = lines.map(line => {
+              const parts = line.match(/\[.*?\]/g);
+              if (!parts || parts.length < 4) return escapeHTML(line);
+
+              const restOfLine = escapeHTML(line.split(parts[3])[1] || "");
+
+              return `
+                  <span style="color: var(--clr-logs-green);">${parts[0]}</span>
+                  <span style="color: var(--clr-logs-blue);">${parts[1]}</span>
+                  <span style="color: var(--clr-logs-purple);">${parts[2]}</span>
+                  <span style="color: var(--clr-logs-orange);">${parts[3]}</span>
+                  ${restOfLine}
+              `;
+          });
+
+          logs.innerHTML = coloredLines.join("<br>");
+          logs.scrollTop = logs.scrollHeight;
+      });
+  }
   
 });
 

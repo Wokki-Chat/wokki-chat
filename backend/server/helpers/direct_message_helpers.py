@@ -7,6 +7,7 @@ from server.helpers.other_helpers import get_sid_from_dm_id
 import aiomysql
 import server.sio_instance as sio_instance
 import server.config as config
+from server.helpers.logs import addMessageToLogs
 
 async def get_direct_messages(sid, data):
     access_token = data.get('access_token')
@@ -14,6 +15,7 @@ async def get_direct_messages(sid, data):
     offset = data.get('offset', 0)
 
     if not all([access_token, dm_id]):
+        addMessageToLogs(f"Missing required fields for get_direct_messages", "INFO")
         await sio_instance.sio.emit('get_direct_messages_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
 
@@ -30,10 +32,12 @@ async def get_direct_messages(sid, data):
         async with conn.cursor(aiomysql.DictCursor) as cur:
             user_id = await verify_access_token(cur, access_token)
             if not user_id:
+                addMessageToLogs(f"Invalid or expired token for get_direct_messages, access token: {access_token}", "INFO")
                 await sio_instance.sio.emit('get_direct_messages_response', {'success': False, 'error': 'Invalid or expired token'}, to=sid)
                 return
             
             if not await is_user_friends_with(cur, user_id, dm_id):
+                addMessageToLogs(f"User is not friends with dm_id for get_direct_messages, user id: {user_id}, dm_id: {dm_id}", "INFO")
                 await sio_instance.sio.emit('get_direct_messages_response', {'success': False, 'error': 'User is not in server'}, to=sid)
                 return
             
@@ -44,6 +48,7 @@ async def get_direct_messages(sid, data):
                 (dm_id, user_id, user_id, dm_id)
             )
             total_count = (await cur.fetchone())['COUNT(*)']
+            addMessageToLogs(f"Total count for get_direct_messages: {total_count}, user id: {user_id}, dm_id: {dm_id}", "INFO")
 
             await cur.execute(
                 '''
@@ -81,7 +86,9 @@ async def get_direct_messages(sid, data):
                     msg['assets'] = []
 
     await sio_instance.sio.emit('all_direct_messages', messages, to=sid)
+    addMessageToLogs(f"Emitted all_direct_messages for get_direct_messages, user id: {user_id}, dm_id: {dm_id}", "INFO")
     await sio_instance.sio.emit('get_direct_messages_response', {'success': True, 'count': len(messages), 'total': total_count, 'offset': offset}, to=sid)
+    addMessageToLogs(f"Emitted get_direct_messages_response for get_direct_messages, user id: {user_id}, dm_id: {dm_id}", "INFO")
     
     
 
@@ -93,6 +100,7 @@ async def send_direct_message(sid, data):
     file_names = data.get('file_names')
 
     if not all([access_token, dm_id, message]):
+        addMessageToLogs(f"Missing required fields for send_direct_message", "INFO")
         await sio_instance.sio.emit('send_direct_message_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
 
@@ -104,6 +112,7 @@ async def send_direct_message(sid, data):
             timestamps = user_message_timestamps[user_id]
             
             if not await is_user_friends_with(cur, user_id, dm_id):
+                addMessageToLogs(f"User is not friends with dm_id for send_direct_message, user id: {user_id}, dm_id: {dm_id}", "INFO")
                 await sio_instance.sio.emit('send_direct_message_response', {'success': False, 'error': 'User is not in server'}, to=sid)
                 return
             
@@ -111,6 +120,7 @@ async def send_direct_message(sid, data):
                 timestamps.popleft()
 
             if len(timestamps) >= MAX_MESSAGES:
+                addMessageToLogs(f"Rate limit exceeded for send_direct_message, user id: {user_id}", "INFO")
                 await sio_instance.sio.emit('send_direct_message_response', {
                     'success': False,
                     'error': f'Rate limit exceeded. Max {MAX_MESSAGES} messages every {TIME_WINDOW_SECONDS} seconds.'
@@ -120,6 +130,7 @@ async def send_direct_message(sid, data):
             timestamps.append(now)
 
             if not user_id:
+                addMessageToLogs(f"Invalid or expired token for send_direct_message, access token: {access_token}", "INFO")
                 await sio_instance.sio.emit('send_direct_message_response', {'success': False, 'error': 'Invalid or expired token'}, to=sid)
                 return
 
@@ -127,6 +138,7 @@ async def send_direct_message(sid, data):
             print(is_premium)
             limit = 10000 if is_premium else 3000
             if len(message) > limit:
+                addMessageToLogs(f"Message too long for send_direct_message, user id: {user_id}, premium: {is_premium}, limit: {limit}", "INFO")
                 await sio_instance.sio.emit('send_direct_message_response', {
                     'success': False,
                     'error': f'Message too long. Limit is {limit} characters.'
@@ -136,6 +148,7 @@ async def send_direct_message(sid, data):
             await cur.execute('SELECT username, profile_picture FROM users WHERE id = %s', (user_id,))
             user_row = await cur.fetchone()
             if not user_row:
+                addMessageToLogs(f"User not found for send_direct_message, user id: {user_id}", "INFO")
                 await sio_instance.sio.emit('send_direct_message_response', {'success': False, 'error': 'User not found'}, to=sid)
                 return
             
@@ -164,6 +177,8 @@ async def send_direct_message(sid, data):
                 ''',
                 (message_id, message, user_id, dm_id, timestamp, parent_message_id, assets_json)
             )
+            
+            addMessageToLogs(f"Inserted message for send_direct_message, user id: {user_id}, dm_id: {dm_id}", "INFO")
 
     dm_sid = get_sid_from_dm_id(user_to_sid, dm_id)
     if isinstance(timestamp, str):
@@ -179,7 +194,9 @@ async def send_direct_message(sid, data):
         'profile_picture': profile_picture,
         'assets': json.loads(assets_json) if assets_json else []
     }, to=[dm_sid, sid])
+    addMessageToLogs(f"Emitted new_direct_message for send_direct_message, user id: {user_id}, dm_id: {dm_id}", "INFO")
     await sio_instance.sio.emit('send_direct_message_response', {'success': True}, to=sid)
+    addMessageToLogs(f"Emitted send_direct_message_response for send_direct_message, user id: {user_id}, dm_id: {dm_id}", "INFO")
     
 
 async def get_direct_message_by_id(sid, data):
@@ -188,16 +205,21 @@ async def get_direct_message_by_id(sid, data):
     dm_id = data.get('dm_id')
 
     if access_token is None or message_id is None or dm_id is None:
+        addMessageToLogs(f"Missing required fields for get_direct_message_by_id", "INFO")
+        await sio_instance.sio.emit('direct_message_by_id', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             user_id = await verify_access_token(cur, access_token)
             if not user_id:
+                addMessageToLogs(f"Invalid or expired token for get_direct_message_by_id, access token: {access_token}", "INFO")
+                await sio_instance.sio.emit('direct_message_by_id', {'success': False, 'error': 'Invalid or expired token'}, to=sid)
                 return
             
             if not await is_user_friends_with(cur, user_id, dm_id):
-                await sio_instance.sio.emit('direct_message_by_id', None, to=sid)
+                addMessageToLogs(f"User is not friends with dm_id for get_direct_message_by_id, user id: {user_id}, dm_id: {dm_id}", "INFO")
+                await sio_instance.sio.emit('direct_message_by_id', {'success': False, 'error': 'User is not friends'}, to=sid)
                 return
 
             await cur.execute(

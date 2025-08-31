@@ -8,6 +8,7 @@ from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server, v
 import aiomysql
 import re
 import server.config as config
+from server.helpers.logs import addMessageToLogs
 
 async def does_user_have_server_permission(cur, user_id, server_id, permission_identifier):
     query = """
@@ -50,6 +51,7 @@ async def does_user_have_server_permission(cur, user_id, server_id, permission_i
         for row in results
     ]
 
+    addMessageToLogs(f"User {user_id} has roles {user_roles} for server {server_id}", "INFO")
     return bool(set(user_roles) & set(permitted_role_ids))
 
 async def is_user_in_server(cur, user_id, server_id):
@@ -58,6 +60,7 @@ async def is_user_in_server(cur, user_id, server_id):
         (server_id, user_id)
     )
     server = await cur.fetchone()
+    addMessageToLogs(f"User {user_id} in server {server_id}: {bool(server)}", "INFO")
     return bool(server)
 
 async def get_server_channel_sids(cur, server_id, channel_id):
@@ -130,6 +133,7 @@ async def send_server_notifications(cur, server_id, channel_id):
                     },
                     to=sid
                 )
+                addMessageToLogs(f"Server notification sent to user {user_id} in server {server_id}", "INFO")
                 
 async def get_member_ids_from_server(cur, server_id):
     await cur.execute(
@@ -158,6 +162,7 @@ async def get_server_users(sid, data):
     server_id = data.get('server_id')
 
     if not server_id:
+        addMessageToLogs("Missing required fields for get_server_users", "INFO")
         await sio_instance.sio.emit('get_server_users_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
 
@@ -166,8 +171,9 @@ async def get_server_users(sid, data):
             users = await get_server_users_info(cur, server_id)
                 
     await sio_instance.sio.emit('server_users', users, to=sid)
+    addMessageToLogs(f"Emitted server_users for get_server_users, server id: {server_id}", "INFO")
     await sio_instance.sio.emit('get_server_users_response', {'success': True, 'count': len(users)}, to=sid)
-    print("[get_server_users] server_users and get_server_users_response sent")
+    addMessageToLogs(f"Emitted get_server_users_response for get_server_users, server id: {server_id}", "INFO")
 
 async def get_server_users_info(cur, server_id):
     member_entries = await get_member_ids_from_server(cur, server_id)
@@ -203,6 +209,7 @@ async def server_commands(sid, data):
     server_id = data.get('server_id')
             
     if not access_token or not server_id:
+        addMessageToLogs("Missing required fields for server_commands", "INFO")
         await sio_instance.sio.emit('server_commands_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
     
@@ -210,10 +217,12 @@ async def server_commands(sid, data):
         async with conn.cursor(aiomysql.DictCursor) as cur:
             user_id = await verify_access_token(cur, access_token)
             if not user_id:
+                addMessageToLogs(f"Invalid token for server_commands, access token: {access_token}", "INFO")
                 await sio_instance.sio.emit('server_commands_response', {'success': False, 'error': 'Invalid token'}, to=sid)
                 return
             
             if not await is_user_in_server(cur, user_id, server_id):
+                addMessageToLogs(f"User is not in server for server_commands, user id: {user_id}, server id: {server_id}", "INFO")
                 await sio_instance.sio.emit('server_commands_response', {'success': False, 'error': 'User is not in server'}, to=sid)
                 return
             
@@ -226,6 +235,7 @@ async def server_commands(sid, data):
                 uid = entry["id"]
                 
                 if not await is_bot_in_server(cur, uid, server_id):
+                    addMessageToLogs(f"Bot is not in server for server_commands, bot id: {uid}, server id: {server_id}", "INFO")
                     continue
                 
                 await cur.execute(
@@ -241,6 +251,7 @@ async def server_commands(sid, data):
                     bots.append(bot) 
             
             if not bots:
+                addMessageToLogs(f"No bots in server for server_commands, server id: {server_id}", "INFO")
                 await sio_instance.sio.emit('server_commands_response', {'success': False, 'error': 'No bots in server'}, to=sid)
                 return
             
@@ -262,6 +273,7 @@ async def server_commands(sid, data):
                     bots_with_commands.append(bot)
                     
             await sio_instance.sio.emit('server_commands_response', {'success': True, 'bots': bots_with_commands}, to=sid)
+            addMessageToLogs(f"Emitted server_commands_response for server_commands, server id: {server_id}", "INFO")
             
 async def command(sid, data):
     access_token = data.get('access_token')
@@ -272,6 +284,7 @@ async def command(sid, data):
     bot_id = data.get('bot_id')
 
     if not all([access_token, command, server_id, channel_id, bot_id]):
+        addMessageToLogs("Missing required fields for command", "INFO")
         await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
     
@@ -279,14 +292,17 @@ async def command(sid, data):
         async with conn.cursor(aiomysql.DictCursor) as cur:
             user_id = await verify_access_token(cur, access_token)
             if not user_id:
+                addMessageToLogs(f"Invalid token for command, access token: {access_token}", "INFO")
                 await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Invalid token'}, to=sid)
                 return
             
             if not await is_user_in_server(cur, user_id, server_id):
+                addMessageToLogs(f"User is not in server for command, user id: {user_id}, server id: {server_id}", "INFO")
                 await sio_instance.sio.emit('command_response', {'success': False, 'error': 'User is not in server'}, to=sid)
                 return
             
             if not await is_bot_in_server(cur, bot_id, server_id):
+                addMessageToLogs(f"Bot is not in server for command, bot id: {bot_id}, server id: {server_id}", "INFO")
                 await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Bot is not in server'}, to=sid)
                 return
 
@@ -296,6 +312,7 @@ async def command(sid, data):
             )
             row = await cur.fetchone()
             if not row:
+                addMessageToLogs(f"Command not found for command, command: {command}, bot id: {bot_id}", "INFO")
                 await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Command not found'}, to=sid)
                 return
             
@@ -314,6 +331,7 @@ async def command(sid, data):
                     required = opt_def.get('required', False)
 
                     if required and name not in options_input:
+                        addMessageToLogs(f"Missing required option '{name}' for command", "INFO")
                         await sio_instance.sio.emit('command_response', {
                             'success': False,
                             'error': f"Missing required option '{name}'"
@@ -325,6 +343,7 @@ async def command(sid, data):
 
                         if opt_type == 'boolean':
                             if not isinstance(val, bool):
+                                addMessageToLogs(f"Option '{name}' must be boolean for command", "INFO")
                                 await sio_instance.sio.emit('command_response', {
                                     'success': False,
                                     'error': f"Option '{name}' must be boolean"
@@ -332,6 +351,7 @@ async def command(sid, data):
                                 return
                         elif opt_type == 'string':
                             if not isinstance(val, str):
+                                addMessageToLogs(f"Option '{name}' must be string for command", "INFO")
                                 await sio_instance.sio.emit('command_response', {
                                     'success': False,
                                     'error': f"Option '{name}' must be string"
@@ -339,6 +359,7 @@ async def command(sid, data):
                                 return
                         elif opt_type == 'number':
                             if not (isinstance(val, int) or isinstance(val, float)):
+                                addMessageToLogs(f"Option '{name}' must be number for command", "INFO")
                                 await sio_instance.sio.emit('command_response', {
                                     'success': False,
                                     'error': f"Option '{name}' must be number"
@@ -346,6 +367,7 @@ async def command(sid, data):
                                 return
                         elif opt_type == 'user':
                             if not isinstance(val, str):
+                                addMessageToLogs(f"Option '{name}' must be string for command", "INFO")
                                 await sio_instance.sio.emit('command_response', {
                                     'success': False,
                                     'error': f"Option '{name}' must be string"
@@ -353,6 +375,7 @@ async def command(sid, data):
                                 return
 
                             if not re.match(r'^[^#]+#\d+$', val):
+                                addMessageToLogs(f"User '{val}' must be in format username#user_id for command", "INFO")
                                 await sio_instance.sio.emit('command_response', {
                                     'success': False,
                                     'error': f"User '{val}' must be in format username#user_id"
@@ -361,6 +384,7 @@ async def command(sid, data):
 
                             user_id_val = int(val.split('#')[1])
                             if not await is_user_in_server(cur, user_id_val, server_id):
+                                addMessageToLogs(f"User '{val}' is not in server for command", "INFO")
                                 await sio_instance.sio.emit('command_response', {
                                     'success': False,
                                     'error': f"User '{val}' is not in server"
@@ -381,62 +405,11 @@ async def command(sid, data):
                     'server_id': server_id,
                     'channel_id': channel_id
                 }, to=bot_sid)
-
-            await sio_instance.sio.emit('command_response', {'success': True}, to=sid)
-            
-async def initialize_commands(sid, data):
-    bot_token = data.get('bot_token')
-    commands = data.get('commands')
-
-    if not bot_token or commands is None:
-        await sio_instance.sio.emit('initialize_commands_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
-        return
-    
-    async with config.pool.acquire() as conn:
-        async with conn.cursor(aiomysql.DictCursor) as cur:
-            bot_id = await verify_bot_token(cur, bot_token)
-            if not bot_id:
-                await sio_instance.sio.emit('initialize_commands_response', {'success': False, 'error': 'Invalid token'}, to=sid)
+                addMessageToLogs(f"Emitted bot_command_received for command, command: {command}, bot id: {bot_id}", "INFO")
+            else:
+                addMessageToLogs(f"Bot not found for command, bot id: {bot_id}", "INFO")
+                await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Bot not found'}, to=sid)
                 return
 
-            valid_commands = [
-                cmd for cmd in commands
-                if isinstance(cmd, dict) and cmd.get('command', '').startswith('/')
-            ]
-            new_command_names = set(cmd['command'] for cmd in valid_commands)
-
-            await cur.execute('SELECT command FROM bot_commands WHERE bot_id = %s', (bot_id,))
-            existing_commands = await cur.fetchall()
-            existing_command_names = set(cmd['command'] for cmd in existing_commands)
-
-            if commands:
-                removed_commands = existing_command_names - new_command_names
-                for cmd in removed_commands:
-                    await cur.execute(
-                        'DELETE FROM bot_commands WHERE bot_id = %s AND command = %s',
-                        (bot_id, cmd)
-                    )
-
-            for command in valid_commands:
-                cmd_name = command['command']
-                options = json.dumps(command.get('options', {}), sort_keys=True)
-
-                await cur.execute(
-                    'SELECT options FROM bot_commands WHERE bot_id = %s AND command = %s',
-                    (bot_id, cmd_name)
-                )
-                existing = await cur.fetchone()
-
-                if existing:
-                    if existing['options'] != options:
-                        await cur.execute(
-                            'UPDATE bot_commands SET options = %s WHERE bot_id = %s AND command = %s',
-                            (options, bot_id, cmd_name)
-                        )
-                else:
-                    await cur.execute(
-                        'INSERT INTO bot_commands (bot_id, command, options) VALUES (%s, %s, %s)',
-                        (bot_id, cmd_name, options)
-                    )
-
-            await sio_instance.sio.emit('initialize_commands_response', {'success': True}, to=sid)
+            await sio_instance.sio.emit('command_response', {'success': True}, to=sid)
+            addMessageToLogs(f"Emitted command_response for command, command: {command}", "INFO")

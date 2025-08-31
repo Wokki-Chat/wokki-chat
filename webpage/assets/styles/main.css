@@ -76,6 +76,11 @@
     --clr-light: #ffffff;
     --clr-dark: #1f1f1f;
     --clr-night: #101010;
+
+    --clr-logs-orange: orange;
+    --clr-logs-green: green;
+    --clr-logs-blue: blue;
+    --clr-logs-purple: purple;
 }
 
 :root.dark {
@@ -154,6 +159,11 @@
     --clr-light: #ffffff;
     --clr-dark: #1f1f1f;
     --clr-night: #101010;
+
+    --clr-logs-orange: orange;
+    --clr-logs-green: green;
+    --clr-logs-blue: rgb(77, 77, 255);
+    --clr-logs-purple: rgb(189, 0, 189);
 }
 
 :root.night {
@@ -232,6 +242,11 @@
     --clr-light: #ffffff;
     --clr-dark: #1f1f1f;
     --clr-night: #101010;
+
+    --clr-logs-orange: orange;
+    --clr-logs-green: green;
+    --clr-logs-blue: rgb(72, 72, 255);
+    --clr-logs-purple: rgb(207, 0, 207);
 }
 
 
@@ -3307,4 +3322,25 @@ h6 {
     .message-content .username-date .premium-tag {
         display: none;
     }
+}
+
+.logs-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.logs-textarea {
+    width: calc(100% - 100px);
+    height: calc(100% - 20px);
+    resize: none;
+    border: none;
+    background-color: var(--clr-popup-a10);
+    padding: 10px;
+    border-radius: 16px;
+    overflow: auto;
+    color: var(--clr-text-a0);
+    font-size: 14px;
+    font-family: 'Roboto Mono', monospace;
+    
 }

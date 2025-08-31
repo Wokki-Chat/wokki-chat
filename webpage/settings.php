@@ -25,7 +25,7 @@ if ($result->num_rows > 0) {
 }
 $stmt->close();
 
-$userStmt = $mysqli->prepare("SELECT username, premium, premium_expires_at, premium_know, profile_picture, status FROM users WHERE id = ?");
+$userStmt = $mysqli->prepare("SELECT username, premium, premium_expires_at, premium_know, profile_picture, status, is_developer FROM users WHERE id = ?");
 $userStmt->bind_param("i", $user_id);
 $userStmt->execute();
 $userResult = $userStmt->get_result();
@@ -37,6 +37,7 @@ if ($userResult->num_rows > 0) {
     $premium_know = $row['premium_know'];
     $profile_picture = $row['profile_picture'];
     $status = $row['status'];
+    $is_developer = $row['is_developer'];
 } else {
     $username = "Unknown";
     $premium = false;
@@ -44,6 +45,7 @@ if ($userResult->num_rows > 0) {
     $premium_know = false;
     $profile_picture = "/uploads/profile-pictures/default-profile.png";
     $status = "online";
+    $is_developer = false;
 }
 $userStmt->close();
 
@@ -121,6 +123,12 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
                 <span class="material-symbols-rounded">format_paint</span>
                 <p>Appearance</p>
             </div>
+            <?php if ($is_developer): ?>
+            <div class="settings-tab <?php echo ($active_tab === "logs") ? "active" : ""; ?>" onclick="window.location.href = '/settings/logs?from=' + returnUrl ">
+                <span class="material-symbols-rounded">contract</span>
+                <p>Logs</p>
+            </div>
+            <?php endif; ?>
         </div>
         <div class="setting-page">
             <div class="close-settings-container" onclick="window.location.href = 'https://chat.wokki20.nl' + returnUrl">
@@ -146,6 +154,15 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
                 $appearanceHtml = str_replace("{{dark_active}}", ($theme === "dark" ? "active" : ""), $appearanceHtml);
                 $appearanceHtml = str_replace("{{night_active}}", ($theme === "night" ? "active" : ""), $appearanceHtml);
                 echo $appearanceHtml;   
+            }
+            ?>
+            <?php 
+            if ($active_tab === "logs") {
+                if ($is_developer === false) {
+                    header('Location: /');
+                }
+                $logsHtml = file_get_contents('settings_html/settings_logs.html');
+                echo $logsHtml;
             }
             ?>
         </div>
