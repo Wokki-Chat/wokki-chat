@@ -201,6 +201,7 @@ if (isset($_COOKIE['dm_active_user']) && !empty($_COOKIE['dm_active_user'])) {
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/assets/js/home.js"></script>
     <script src="/assets/js/notifiers.js"></script>
+    <script src="/assets/js/globalFunctions.js"></script>
     <script>
         // DO NOT TOUCH OR EDIT
         const access_token = "<?php echo $access_token; ?>";

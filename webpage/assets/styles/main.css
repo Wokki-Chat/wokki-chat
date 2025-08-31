@@ -54,6 +54,13 @@
     --clr-text-a40: #666666;
     --clr-text-a50: #808080;
 
+    --clr-text-white-a0: #ffffff;
+    --clr-text-white-a10: #e0e0e0;
+    --clr-text-white-a20: #c4c4c4;
+    --clr-text-white-a30: #B2B2B2;
+    --clr-text-white-a40: #8c8c8c;
+    --clr-text-white-a50: #707070;
+
     --clr-error-a0: #ff00007e;
 
     --font-weight-semibold: 600;
@@ -125,6 +132,13 @@
     --clr-text-a40: #8c8c8c;
     --clr-text-a50: #707070;
 
+    --clr-text-white-a0: #ffffff;
+    --clr-text-white-a10: #e0e0e0;
+    --clr-text-white-a20: #c4c4c4;
+    --clr-text-white-a30: #B2B2B2;
+    --clr-text-white-a40: #8c8c8c;
+    --clr-text-white-a50: #707070;
+
     --clr-error-a0: #ff00007e;
 
     --font-weight-semibold: 600;
@@ -195,6 +209,13 @@
     --clr-text-a30: #B2B2B2;
     --clr-text-a40: #8c8c8c;
     --clr-text-a50: #707070;
+
+    --clr-text-white-a0: #ffffff;
+    --clr-text-white-a10: #e0e0e0;
+    --clr-text-white-a20: #c4c4c4;
+    --clr-text-white-a30: #B2B2B2;
+    --clr-text-white-a40: #8c8c8c;
+    --clr-text-white-a50: #707070;
 
     --clr-error-a0: #ff00007e;
 
@@ -305,7 +326,7 @@ h2 {
 
 .button-primary-filled {
     background-color: var(--clr-primary-a0);
-    color: var(--clr-text-a0);
+    color: var(--clr-text-white-a0);
     border: none;
     border-radius: 9px;
     padding: 10px 15px;
@@ -1170,7 +1191,7 @@ h2 {
     .channel-bar.active {
         display: block;
         position: fixed;
-        z-index: 500;
+        z-index: 502;
         height: calc(100vh - 30px - 58px - 15px - 35px - 30px - 15px);
         max-height: calc(100vh - 30px - 58px - 15px - 35px - 30px - 15px);
         width: calc(100% - 98px - 30px);
@@ -1179,6 +1200,7 @@ h2 {
         padding-top: 0px;
         border-bottom: 1px solid var(--clr-input-border-bg-darkest);
         top: calc(55px + 15px + 10px);
+        border-top-left-radius: 16px;
     }
     .self-info.active {
         display: flex;
@@ -1211,7 +1233,7 @@ h2 {
     .server-bar.active {
         display: block;
         position: fixed;
-        z-index: 502;
+        z-index: 503;
         height: calc(100vh - 30px - 35px);
         bottom: 0px;
         top: 55px;
@@ -1228,6 +1250,7 @@ h2 {
         max-height: calc(100vh - 30px - 58px - 15px - 35px - 15px) !important;
         top: 55px !important;
         bottom: unset;
+        border-top-left-radius: 0px !important;
     }
 
     .top-bar {
@@ -1236,6 +1259,8 @@ h2 {
         top: 0px;
         border-radius: 0px;
         right: unset;
+        border-bottom: 1px solid var(--clr-input-border-bg-darkest);
+        z-index: 504;
     }
     .main-content {
         left: 15px;

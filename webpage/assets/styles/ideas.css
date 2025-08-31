@@ -54,6 +54,13 @@
     --clr-text-a40: #666666;
     --clr-text-a50: #808080;
 
+    --clr-text-white-a0: #ffffff;
+    --clr-text-white-a10: #e0e0e0;
+    --clr-text-white-a20: #c4c4c4;
+    --clr-text-white-a30: #B2B2B2;
+    --clr-text-white-a40: #8c8c8c;
+    --clr-text-white-a50: #707070;
+
     --clr-error-a0: #ff00007e;
 
     --font-weight-semibold: 600;
@@ -125,6 +132,13 @@
     --clr-text-a40: #8c8c8c;
     --clr-text-a50: #707070;
 
+    --clr-text-white-a0: #ffffff;
+    --clr-text-white-a10: #e0e0e0;
+    --clr-text-white-a20: #c4c4c4;
+    --clr-text-white-a30: #B2B2B2;
+    --clr-text-white-a40: #8c8c8c;
+    --clr-text-white-a50: #707070;
+
     --clr-error-a0: #ff00007e;
 
     --font-weight-semibold: 600;
@@ -191,6 +205,13 @@
     --clr-text-a30: #B2B2B2;
     --clr-text-a40: #8c8c8c;
     --clr-text-a50: #707070;
+
+    --clr-text-white-a0: #ffffff;
+    --clr-text-white-a10: #e0e0e0;
+    --clr-text-white-a20: #c4c4c4;
+    --clr-text-white-a30: #B2B2B2;
+    --clr-text-white-a40: #8c8c8c;
+    --clr-text-white-a50: #707070;
 
     --clr-error-a0: #ff00007e;
 
@@ -319,7 +340,7 @@ h2 {
 
 .button-primary-filled {
     background-color: var(--clr-primary-a0);
-    color: var(--clr-text-a0);
+    color: var(--clr-text-white-a0);
     border: none;
     border-radius: 9px;
     padding: 10px 15px;
