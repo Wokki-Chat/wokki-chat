@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import json
-from server.config import MAX_MESSAGES, TIME_WINDOW_SECONDS, bot_message_timestamps
+from server.config import MAX_MESSAGES, TIME_WINDOW_SECONDS, bot_message_timestamps, get_bot_sid_from_id
 import server.config as config
 from server.helpers.server_helpers import get_server_channel_sids, is_user_in_server
 from server.helpers.bot_helpers import validate_embed, verify_bot_token, is_bot_in_server
@@ -333,11 +333,7 @@ async def embed_button(sid, data):
                 await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'Bot is not in server'}, to=sid)
                 return
                         
-            bot_sid = None
-            for s, b_id in config.sid_to_bot_id.items():
-                if b_id == bot_id:
-                    bot_sid = s
-                    break
+            bot_sid = await get_bot_sid_from_id(bot_id)
                 
             if not bot_sid:
                 await addMessageToLogs(f"Bot not found for embed_button, bot id: {bot_id}", "INFO")

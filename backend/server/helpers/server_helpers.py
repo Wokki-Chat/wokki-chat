@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import json
 import uuid
-from server.config import user_to_sid
+from server.config import get_sids_for_user, get_bot_sid_from_id
 import server.sio_instance as sio_instance
 from server.helpers.user_helpers import get_user_info_from_id, verify_access_token
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server, verify_bot_token
@@ -80,16 +80,12 @@ async def get_server_channel_sids(cur, server_id, channel_id):
         bot_id = member.get('bot_id') if isinstance(member, dict) else member[1]
 
         if user_id:
-            user_sids = user_to_sid.get(user_id)
+            user_sids = await get_sids_for_user(user_id)
             if user_sids:
                 sids.extend(user_sids)
 
         if bot_id:
-            bot_sid = None
-            for s, b_id in config.sid_to_bot_id.items():
-                if b_id == bot_id:
-                    bot_sid = s
-                    break
+            bot_sid = await get_bot_sid_from_id(bot_id)
             if bot_sid:
                 sids.append(bot_sid)
 
@@ -112,7 +108,7 @@ async def send_server_notifications(cur, server_id, channel_id):
         if not user_id:
             continue
         
-        user_sids = user_to_sid.get(user_id)
+        user_sids = await get_sids_for_user(user_id)
         notification_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc)
 
@@ -391,11 +387,7 @@ async def command(sid, data):
                                 }, to=sid)
                                 return
                         
-            bot_sid = None
-            for s, b_id in config.sid_to_bot_id.items():
-                if b_id == bot_id:
-                    bot_sid = s
-                    break
+            bot_sid = await get_bot_sid_from_id(bot_id)
 
             if bot_sid:
                 await sio_instance.sio.emit('bot_command_received', {
@@ -407,7 +399,7 @@ async def command(sid, data):
                 }, to=bot_sid)
                 await addMessageToLogs(f"Emitted bot_command_received for command, command: {command}, bot id: {bot_id}", "INFO")
             else:
-                await addMessageToLogs(f"Bot not found for command, bot id: {bot_id}, sid_to_bot_id: {config.sid_to_bot_id}", "INFO")
+                await addMessageToLogs(f"Bot not found for command, bot id: {bot_id}, bot sid: {bot_sid}", "INFO")
                 await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Bot not found'}, to=sid)
                 return
 

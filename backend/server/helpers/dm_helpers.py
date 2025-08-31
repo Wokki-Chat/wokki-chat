@@ -1,11 +1,11 @@
-from server.config import user_to_sid
+from server.config import get_sids_for_user
 
-def get_sid_from_dm_id(dm_id):
+async def get_sid_from_dm_id(dm_id: str):
     """
     Given a DM ID, return the first connected SID for that user.
     Returns None if no SID is found.
     """
-    sids = user_to_sid.get(dm_id)
-    if sids and len(sids) > 0:
-        return sids[0]
+    sids = await get_sids_for_user(dm_id)
+    if sids:
+        return next(iter(s.decode() for s in sids), None)
     return None

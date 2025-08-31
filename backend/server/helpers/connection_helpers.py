@@ -1,4 +1,4 @@
-from server.config import user_to_sid, pending_disconnects, typing_lock, typing_users, user_current_room
+from server.config import typing_lock, user_current_room, add_user_to_sid, get_sids_for_user, remove_user_sid, get_user_from_sid, get_bot_sid_from_id, add_sid_to_bot, get_bot_id_from_sid, remove_sid, get_typing_users, remove_typing_user, redis_client
 from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status
 from server.helpers.server_helpers import is_user_in_server, get_member_ids_from_server
 from server.helpers.bot_helpers import is_bot_in_server, verify_bot_token
@@ -29,27 +29,24 @@ async def handle_connect(sid, environ):
                     await sio_instance.sio.disconnect(sid)
                     return
 
-                tasks = pending_disconnects.pop(user_id, [])
-                if tasks:
-                    for t in tasks:
-                        t.cancel()
-                    await asyncio.gather(*tasks, return_exceptions=True)
-                    await addMessageToLogs(f"User {user_id} reconnected", "INFO")
+                pending_key = f"user_disconnect:{user_id}"
+                pending_task_id = await redis_client.get(pending_key)
+                if pending_task_id:
+                    await redis_client.delete(pending_key)
+                    await addMessageToLogs(f"User {user_id} reconnected, canceled pending disconnect", "INFO")
 
-
-                await cur.execute("UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = FALSE", (user_id,))
+                await cur.execute(
+                    "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = FALSE", (user_id,)
+                )
                 await conn.commit()
                 await broadcast_user_update(user_id)
 
                 await addMessageToLogs(f"User {user_id} connected", "INFO")
                 await sio_instance.sio.emit('user_connected', {'user_id': user_id, 'server_id': server_id}, to=sid)
                 
-                if not user_to_sid.get(user_id, []): 
-                    user_to_sid[user_id] = []
-                
-                if sid not in user_to_sid[user_id]:
-                    user_to_sid[user_id].append(sid)
-
+                sids = await get_sids_for_user(user_id)
+                if sid not in sids:
+                    await add_user_to_sid(user_id, sid)
 
                 if not server_id:
                     return
@@ -60,7 +57,6 @@ async def handle_connect(sid, environ):
                     return
                 
                 return
-
 
     if bot_token:
         async with config.pool.acquire() as conn:
@@ -78,8 +74,8 @@ async def handle_connect(sid, environ):
                 await addMessageToLogs(f"Bot {bot_id} connected", "INFO")                
                 await sio_instance.sio.emit('bot_connected', {'bot_id': bot_id, 'server_id': server_id}, to=sid)
                 
-                config.sid_to_bot_id[sid] = bot_id
-                await addMessageToLogs(f"Stored bot_id {bot_id} for sid {sid} in sid_to_bot_id ({config.sid_to_bot_id})", "INFO")
+                await redis_client.set(f"bot_sid:{bot_id}", sid)
+                await addMessageToLogs(f"Stored bot_id {bot_id} for sid {sid} in redis ({await redis_client.get(f'bot_sid:{bot_id}')})", "INFO")
             
                 if not server_id:
                     return
@@ -129,17 +125,12 @@ async def handle_connect(sid, environ):
                             users.append(bot)
 
                 await sio_instance.sio.emit("server_users", users, to=sid)
-                await addMessageToLogs(f"Emited user list to sid: {sid}, server id: {server_id}, bot id: {bot_id}", "INFO")
+                await addMessageToLogs(f"Emitted user list to sid: {sid}, server id: {server_id}, bot id: {bot_id}", "INFO")
                 return
-            
+
 async def handle_disconnect(sid):
-    user_id = None
-    for uid, sid_list in user_to_sid.items():
-        if sid in sid_list:
-            user_id = uid
-            break
-    
-    bot_id = config.sid_to_bot_id.get(sid)
+    user_id = await get_user_from_sid(sid)
+    bot_id = await get_bot_id_from_sid(sid)
     
     if not user_id and not bot_id:
         await addMessageToLogs(f"User not found for sid {sid}", "INFO")
@@ -147,9 +138,7 @@ async def handle_disconnect(sid):
 
     if user_id:
         await addMessageToLogs(f"Disconnecting user {user_id}", "INFO")
-        user_to_sid[user_id].remove(sid)
-        if len(user_to_sid[user_id]) == 0:
-            del user_to_sid[user_id]
+        await remove_user_sid(user_id, sid)
 
         room = user_current_room.get(user_id)
         if room:
@@ -158,24 +147,32 @@ async def handle_disconnect(sid):
             await addMessageToLogs(f"User {user_id} disconnected from room {room}", "INFO")
             user_current_room.pop(user_id, None)
 
-        task = asyncio.create_task(handle_delayed_disconnect(user_id, sid))
-        pending_disconnects.setdefault(user_id, []).append(task)
-        await addMessageToLogs(f"Added user {user_id} to pending disconnects", "INFO")
+        task_key = f"user_disconnect:{user_id}"
+        await redis_client.set(task_key, sid, ex=30)
+        asyncio.create_task(handle_delayed_disconnect(user_id, sid))
+        await addMessageToLogs(f"Stored pending disconnect for user {user_id} in Redis", "INFO")
         return
-    
+
     if bot_id:
         async with config.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 await cur.execute("UPDATE bots SET status = 'offline' WHERE id = %s", (bot_id,))
                 await conn.commit()
                 await broadcast_user_update(bot_id, is_bot=True)
-        
-        config.sid_to_bot_id.pop(sid, None)
+
+        await remove_sid(bot_id, sid)
         await addMessageToLogs(f"Bot {bot_id} disconnected", "INFO")
         return
 
 
 async def handle_delayed_disconnect(user_id, sid):
+    task_key = f"user_disconnect:{user_id}"
+    
+    stored_sid = await redis_client.get(task_key)
+    if not stored_sid or stored_sid.decode() != sid:
+        await addMessageToLogs(f"Disconnect for user {user_id} skipped because user reconnected", "INFO")
+        return
+
     try:
         async with config.pool.acquire() as conn:
             async with conn.cursor() as cur:
@@ -200,17 +197,18 @@ async def handle_delayed_disconnect(user_id, sid):
                 await broadcast_user_update(user_id)
 
         async with typing_lock:
+            typing_users = await get_typing_users()
             if user_id in typing_users:
-                typing_users.discard(user_id)
+                await remove_typing_user(user_id)
                 await addMessageToLogs(f"Removed user {user_id} from typing_users", "INFO")
                 await sio_instance.sio.emit('users_typing', {'user_ids': list(typing_users), 'channel_id': None})
 
-        if user_id in user_to_sid:
-            for sid_key in user_to_sid[user_id]:
-                pass
-            user_to_sid.pop(user_id, None)
+            sids_left = await get_sids_for_user(user_id)
+            for sid_key in sids_left:
+                await remove_user_sid(user_id, sid_key)
 
-        pending_disconnects.pop(user_id, None)
+        await redis_client.delete(task_key)
+        await addMessageToLogs(f"Removed pending disconnect for user {user_id} from Redis", "INFO")
 
     except asyncio.CancelledError:
         await addMessageToLogs(f"Disconnect for user {user_id} cancelled due to reconnect", "INFO")

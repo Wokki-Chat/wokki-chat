@@ -1,6 +1,5 @@
-from server.config import user_to_sid
 from server.helpers.user_helpers import verify_access_token, is_user_friends_with
-from server.helpers.other_helpers import get_sid_from_dm_id
+from server.helpers.dm_helpers import get_sid_from_dm_id
 import aiomysql
 import server.sio_instance as sio_instance
 import server.config as config
@@ -47,7 +46,7 @@ async def send_friend_request(sid, data):
             await cur.execute("SELECT username, profile_picture FROM users WHERE id = %s", (user_id,))
             user_data = await cur.fetchone()
             
-            friend_sid = get_sid_from_dm_id(user_to_sid, friend_row['id'])
+            friend_sid = get_sid_from_dm_id(friend_row['id'])
             if friend_sid:
                 await addMessageToLogs(f"Friend request received for send_friend_request, user id: {user_id}, friend id: {friend_row['id']}", "INFO")
                 await sio_instance.sio.emit('friend_request_received', {'user_id': user_id, 'username': user_data['username'], 'profile_picture': user_data['profile_picture']}, to=friend_sid)
@@ -89,7 +88,7 @@ async def accept_friend_request(sid, data):
             await cur.execute("SELECT username, profile_picture FROM users WHERE id = %s", (user_id,))
             user_data = await cur.fetchone()
 
-            friend_sid = get_sid_from_dm_id(user_to_sid, friend_row['id'])
+            friend_sid = get_sid_from_dm_id(friend_row['id'])
             if friend_sid:
                 await sio_instance.sio.emit('friend_request_accepted', {
                     'user_id': user_id,

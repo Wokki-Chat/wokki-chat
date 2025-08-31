@@ -1,4 +1,4 @@
-from server.config import typing_lock, typing_users
+from server.config import typing_lock, add_typing_user, remove_typing_user, get_typing_users
 import server.sio_instance as sio_instance
 from server.helpers.user_helpers import verify_access_token
 from server.helpers.server_helpers import is_user_in_server, get_server_channel_sids
@@ -33,11 +33,12 @@ async def typing(sid, data):
 
     async with typing_lock:
         if typing_state:
-            typing_users.add(user_id)
+            await add_typing_user(user_id, channel_id, server_id)
             await addMessageToLogs(f"User is typing, user id: {user_id}, channel id: {channel_id}, server id: {server_id}", "INFO")
         else:
-            typing_users.discard(user_id)
+            await remove_typing_user(user_id, channel_id, server_id)
             await addMessageToLogs(f"User is not typing, user id: {user_id}, channel id: {channel_id}, server id: {server_id}", "INFO")
 
+        typing_users = await get_typing_users()
         await sio_instance.sio.emit('users_typing', {'user_ids': list(typing_users), 'channel_id': channel_id, 'server_id': server_id}, to=server_channel_sids)
         await addMessageToLogs(f"Emitted users_typing, user ids: {list(typing_users)}, channel id: {channel_id}, server id: {server_id}", "INFO")

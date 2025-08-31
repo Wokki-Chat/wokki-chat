@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 import json
 import uuid
-from server.config import user_message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, user_to_sid
+from server.config import user_message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS
 from server.helpers.user_helpers import verify_access_token, is_user_friends_with, get_user_premium_status
-from server.helpers.other_helpers import get_sid_from_dm_id
+from server.helpers.dm_helpers import get_sid_from_dm_id
 import aiomysql
 import server.sio_instance as sio_instance
 import server.config as config
@@ -180,7 +180,8 @@ async def send_direct_message(sid, data):
             
             await addMessageToLogs(f"Inserted message for send_direct_message, user id: {user_id}, dm_id: {dm_id}", "INFO")
 
-    dm_sid = get_sid_from_dm_id(user_to_sid, dm_id)
+    dm_sid = await get_sid_from_dm_id(dm_id)
+
     if isinstance(timestamp, str):
         timestamp = datetime.fromisoformat(timestamp)
 
@@ -259,7 +260,7 @@ async def delete_direct_message(sid, data):
             if result == 0:
                 return
 
-            dm_sid = get_sid_from_dm_id(user_to_sid, dm_id)
+            dm_sid = await get_sid_from_dm_id(dm_id)
 
             await conn.commit()
             await sio_instance.sio.emit('direct_message_deleted', message_id, to=[dm_sid, sid])
