@@ -185,6 +185,12 @@ async def handle_delayed_disconnect(user_id, sid):
                 await broadcast_user_update(user_id)
 
         await asyncio.sleep(25)
+        
+        stored_sid = await redis_client.get(task_key)
+        if not stored_sid or stored_sid != sid:
+            await addMessageToLogs(f"Disconnect for user {user_id} skipped before going offline (user reconnected)", "INFO")
+            return
+
 
         async with config.pool.acquire() as conn:
             async with conn.cursor() as cur:
