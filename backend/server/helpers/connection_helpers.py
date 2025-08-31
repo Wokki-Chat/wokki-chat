@@ -169,7 +169,7 @@ async def handle_delayed_disconnect(user_id, sid):
     task_key = f"user_disconnect:{user_id}"
     
     stored_sid = await redis_client.get(task_key)
-    if not stored_sid or stored_sid.decode() != sid:
+    if not stored_sid or stored_sid != sid:
         await addMessageToLogs(f"Disconnect for user {user_id} skipped because user reconnected", "INFO")
         return
 

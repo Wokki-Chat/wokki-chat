@@ -185,7 +185,8 @@ window.addEventListener("load", () => {
 
 
             logs.innerHTML = coloredLines.join("<br>");
-            if (logs.scrollTop + logs.clientHeight === logs.scrollHeight && !firstload) logs.scrollTop = logs.scrollHeight;
+            const offset = 10;
+            if (logs.scrollTop + logs.clientHeight >= logs.scrollHeight - offset && !firstload) logs.scrollTop = logs.scrollHeight;
             if (firstload) logs.scrollTop = logs.scrollHeight;
         });
     }
