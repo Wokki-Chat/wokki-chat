@@ -2,6 +2,7 @@ import os
 import re
 from collections import defaultdict, deque
 from dotenv import load_dotenv
+import asyncio
 
 load_dotenv()
 
@@ -30,7 +31,7 @@ room = {}
 pool = None
 
 typing_users = set()
-typing_lock = None
+typing_lock = asyncio.Lock()
 
 # --------------------
 # Rate limiting
