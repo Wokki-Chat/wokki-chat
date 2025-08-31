@@ -19,21 +19,21 @@ header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $headers = getallheaders();
-    if (
-        !isset($headers['Authorization']) ||
-        !preg_match('/Bearer\s(\S+)/', $headers['Authorization'], $matches)
-    )
-    {
+    if (isset($headers['Authorization']) && preg_match('/Bearer\s(\S+)/', $headers['Authorization'], $matches)) {
+        $access_token = $matches[1];
+    } elseif (isset($_COOKIE['access_token'])) {
+        $access_token = $_COOKIE['access_token'];
+    }
+
+    if (!$access_token) {
         http_response_code(401);
         echo json_encode([
             'status' => 'error',
-            'description' => 'Unauthorized: Missing or invalid Authorization header',
+            'description' => 'Unauthorized: Missing or invalid Authorization header or cookie',
             'return_code' => 32
         ]);
         exit;
     }
-
-    $access_token = $matches[1];
 
     $stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?");
     $stmt->bind_param("s", $access_token);
@@ -65,8 +65,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $logFile = __DIR__ . "/../../_private/logs/logs.txt";
 
             if (file_exists($logFile)) {
+                $linesToShow = 100;
+                if (isset($_GET['lines']) && is_numeric($_GET['lines'])) {
+                    $linesToShow = (int) $_GET['lines'];
+                }
+
+                $file = new SplFileObject($logFile, 'r');
+                $file->seek(PHP_INT_MAX);
+                $totalLines = $file->key() + 1;
+
+                $startLine = max(0, $totalLines - $linesToShow);
+
+                $file->seek($startLine);
                 header("Content-Type: text/plain");
-                readfile($logFile);
+                while (!$file->eof()) {
+                    echo $file->current();
+                    $file->next();
+                }
             } else {
                 http_response_code(404);
                 echo json_encode([

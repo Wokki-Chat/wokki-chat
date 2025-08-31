@@ -3,6 +3,7 @@ import inspect
 from datetime import datetime
 
 logs_file = "/home/lvwij/wokki20_chat/webpage/_private/logs/logs.txt"
+MAX_LINES = 500
 
 def addMessageToLogs(message, type):
     caller_frame = inspect.stack()[1]
@@ -15,5 +16,16 @@ def addMessageToLogs(message, type):
     
     log_line = f"[Worker PID: {worker_pid}] [{timestamp}] [{caller_file}:{caller_line}] [{type}] -> {message}\n"
     
-    with open(logs_file, "a") as f:
-        f.write(log_line)
+    if os.path.exists(logs_file):
+        with open(logs_file, "r") as f:
+            lines = f.readlines()
+    else:
+        lines = []
+    
+    if len(lines) >= MAX_LINES:
+        lines = lines[-(MAX_LINES-1):]
+    
+    lines.append(log_line)
+    
+    with open(logs_file, "w") as f:
+        f.writelines(lines)
