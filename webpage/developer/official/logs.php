@@ -75,11 +75,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $totalLines = $file->key() + 1;
 
                 $startLine = max(0, $totalLines - $linesToShow);
-
                 $file->seek($startLine);
+
+                $hideWorkerPid = isset($_GET['hide_worker_pid']);
+                $hideTimestamp = isset($_GET['hide_timestamp']);
+                $hideFileName = isset($_GET['hide_file_name']);
+                $hideType = isset($_GET['hide_type']);
+                $hideMessage = isset($_GET['hide_message']);
+
                 header("Content-Type: text/plain");
+
                 while (!$file->eof()) {
-                    echo $file->current();
+                    $line = $file->current();
+                    
+                    if (preg_match('/^\[Worker PID: (.*?)\] \[(.*?)\] \[(.*?):(\d+)\] \[(.*?)\] -> (.*)$/', $line, $matches)) {
+                        list(, $workerPid, $timestamp, $fileName, $lineNum, $type, $message) = $matches;
+
+                        $parts = [];
+                        if (!$hideWorkerPid) $parts[] = "[Worker PID: $workerPid]";
+                        if (!$hideTimestamp) $parts[] = "[$timestamp]";
+                        if (!$hideFileName) $parts[] = "[$fileName:$lineNum]";
+                        if (!$hideType) $parts[] = "[$type]";
+                        if (!$hideMessage) $parts[] = "-> $message";
+
+                        echo implode(' ', $parts) . PHP_EOL;
+                    } else {
+                        echo $line;
+                    }
+
                     $file->next();
                 }
             } else {

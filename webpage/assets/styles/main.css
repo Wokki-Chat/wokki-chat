@@ -3332,7 +3332,7 @@ h6 {
 
 .logs-textarea {
     width: calc(100% - 100px);
-    height: calc(100% - 20px);
+    height: calc(100% - 60px);
     resize: none;
     border: none;
     background-color: var(--clr-popup-a10);
@@ -3343,4 +3343,18 @@ h6 {
     font-size: 14px;
     font-family: 'Roboto Mono', monospace;
     
+}
+
+.logs-options-container {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+}
+.log-option {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    font-size: 14px;
+    color: var(--clr-text-a0);
+    user-select: none;
 }

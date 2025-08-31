@@ -125,45 +125,81 @@ window.addEventListener("load", () => {
   }
     
   if (active_tab === "logs") {
-      fetch("https://chat.wokki20.nl/developer/official/logs", {
-          method: "GET",
-          headers: {
-              "Authorization": `Bearer ${access_token}`
-          }
-      })
-      .then(response => {
-          if (!response.ok) throw new Error("Failed to fetch logs");
-          return response.text();
-      })
-      .then(text => { 
-          const logs = document.getElementById("logs");
+    function loadLogs(firstload = false) {
+        if (active_tab !== "logs") return;
 
-          const lines = text.split("\n");
+        const params = new URLSearchParams();
 
-          const escapeHTML = str =>
-              str.replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;");
+        if (document.getElementById("worker-checkbox").checked) params.append("hide_worker_pid", "true");
+        if (document.getElementById("timestamp-checkbox").checked) params.append("hide_timestamp", "true");
+        if (document.getElementById("file-checkbox").checked) params.append("hide_file_name", "true");
+        if (document.getElementById("type-checkbox").checked) params.append("hide_type", "true");
+        if (document.getElementById("message-checkbox").checked) params.append("hide_message", "true");
+        
 
-          const coloredLines = lines.map(line => {
-              const parts = line.match(/\[.*?\]/g);
-              if (!parts || parts.length < 4) return escapeHTML(line);
+        const url = `https://chat.wokki20.nl/developer/official/logs?${params.toString()}`;
 
-              const restOfLine = escapeHTML(line.split(parts[3])[1] || "");
+        fetch(url, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${access_token}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to fetch logs");
+            return response.text();
+        })
+        .then(text => { 
+            const logs = document.getElementById("logs");
+            const lines = text.split("\n");
 
-              return `
-                  <span style="color: var(--clr-logs-green);">${parts[0]}</span>
-                  <span style="color: var(--clr-logs-blue);">${parts[1]}</span>
-                  <span style="color: var(--clr-logs-purple);">${parts[2]}</span>
-                  <span style="color: var(--clr-logs-orange);">${parts[3]}</span>
-                  ${restOfLine}
-              `;
-          });
+            const escapeHTML = str =>
+                str.replace(/&/g, "&amp;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;");
 
-          logs.innerHTML = coloredLines.join("<br>");
-          logs.scrollTop = logs.scrollHeight;
-      });
+            const enableColor = document.getElementById("color-checkbox").checked;
+
+            const coloredLines = lines.map(line => {
+                if (!enableColor) return escapeHTML(line);
+
+                const parts = line.match(/\[.*?\]/g) || [];
+                let restOfLine = line;
+
+                const coloredParts = parts.map(part => {
+                    let color = 'inherit';
+
+                    if (part.startsWith('[Worker PID:')) color = 'var(--clr-logs-green)';
+                    else if (/^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]$/.test(part)) color = 'var(--clr-logs-blue)';
+                    else if (/^\[.*\.\w+(:\d+)?\]$/.test(part)) color = 'var(--clr-logs-purple)';
+                    else if (/^\[.*\]$/.test(part)) color = 'var(--clr-logs-orange)';
+
+                    restOfLine = restOfLine.replace(part, '');
+                    return `<span style="color: ${color};">${part}</span> `;
+                });
+
+                return coloredParts.join('') + escapeHTML(restOfLine);
+            });
+
+
+
+
+            logs.innerHTML = coloredLines.join("<br>");
+            if (logs.scrollTop + logs.clientHeight === logs.scrollHeight && !firstload) logs.scrollTop = logs.scrollHeight;
+            if (firstload) logs.scrollTop = logs.scrollHeight;
+        });
+    }
+
+    loadLogs(true);
+
+    const checkboxes = document.querySelectorAll(".log-option-checkbox");
+    checkboxes.forEach(cb => cb.addEventListener("change", loadLogs));
+    document.getElementById("color-checkbox").addEventListener("change", loadLogs);
+
+    setInterval(loadLogs, 10000);
+
   }
+
   
 });
 
