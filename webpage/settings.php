@@ -115,6 +115,14 @@ if ($connectionsResult->num_rows > 0) {
 }
 $connectionsStmt->close();
 
+$kudosStmt = $mysqli->prepare("SELECT SUM(kudo_amount) AS total_kudos FROM Kudos WHERE user_id = ?");
+$kudosStmt->bind_param("i", $user_id);
+$kudosStmt->execute();
+$kudosResult = $kudosStmt->get_result();
+$row = $kudosResult->fetch_assoc();
+$totalKudos = $row['total_kudos'] ?? 0;
+$kudosStmt->close();
+
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme; ?>">
@@ -150,6 +158,10 @@ $connectionsStmt->close();
                 <span class="material-symbols-rounded">link</span>
                 <p>Connections</p>
             </div>
+            <div class="settings-tab <?php echo ($active_tab === "kudos") ? "active" : ""; ?>" onclick="window.location.href = '/settings/kudos?from=' + returnUrl ">
+                <span class="material-symbols-rounded">poker_chip</span>
+                <p>Kudos</p>
+            </div>
             <?php if ($is_developer): ?>
             <div class="settings-tab <?php echo ($active_tab === "logs") ? "active" : ""; ?>" onclick="window.location.href = '/settings/logs?from=' + returnUrl ">
                 <span class="material-symbols-rounded">contract</span>
@@ -180,6 +192,12 @@ $connectionsStmt->close();
                 $appearanceHtml = str_replace("{{light_active}}", ($theme === "light" ? "active" : ""), $appearanceHtml);
                 $appearanceHtml = str_replace("{{dark_active}}", ($theme === "dark" ? "active" : ""), $appearanceHtml);
                 $appearanceHtml = str_replace("{{night_active}}", ($theme === "night" ? "active" : ""), $appearanceHtml);
+                $appearanceHtml = str_replace("{{hidden_1}}", ($chat_connected === "Connected" ? "chat_light_blue" : "hidden_1_disabled"), $appearanceHtml);
+                $appearanceHtml = str_replace("{{hidden_1_active}}", ($theme === "chat_light_blue" ? "active" : ""), $appearanceHtml);
+                $appearanceHtml = str_replace("{{hidden_2}}", ($chat_connected === "Connected" ? "chat_dark_blue" : "hidden_2_disabled"), $appearanceHtml);
+                $appearanceHtml = str_replace("{{hidden_2_active}}", ($theme === "chat_dark_blue" ? "active" : ""), $appearanceHtml);
+                $appearanceHtml = str_replace("{{hidden_container_1}}", ($chat_connected === "Connected" ? "" : "chat-account-only"), $appearanceHtml);
+                $appearanceHtml = str_replace("{{connect_chat_account_text}}", ($chat_connected === "Connected" ? "Go even further with personalizing, and use one of the familiar Chat themes. Only available for users who have their Chat account connected." : "Please <a href='/settings/connections' class='link'>connect your Chat account</a> to unlock Chat themes!"), $appearanceHtml);
                 echo $appearanceHtml;   
             }
             ?>
@@ -188,6 +206,13 @@ $connectionsStmt->close();
                 $connectionsHtml = file_get_contents('settings_html/settings_connections.html');
                 $connectionsHtml = str_replace("{{connection_status.chat}}", $chat_connected, $connectionsHtml);
                 $connectionsHtml = str_replace("{{onclick_event.chat}}", $onclickEventChat, $connectionsHtml);
+                echo $connectionsHtml;
+            }
+            ?>
+            <?php 
+            if ($active_tab === "kudos") {
+                $connectionsHtml = file_get_contents('settings_html/settings_kudos.html');
+                $connectionsHtml = str_replace("{{kudos_amount}}", $totalKudos, $connectionsHtml);
                 echo $connectionsHtml;
             }
             ?>

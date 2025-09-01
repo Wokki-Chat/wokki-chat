@@ -205,6 +205,7 @@ window.addEventListener("load", () => {
 });
 
 function setTheme(theme) {
+  if (theme === "hidden_1_disabled" || theme === "hidden_2_disabled") return;
   document.cookie = `theme=${theme}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=None; Secure;`;
   window.location.reload();
 }

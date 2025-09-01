@@ -8,6 +8,7 @@ import uuid
 import server.sio_instance as sio_instance
 import server.config as config
 from server.helpers.logs import addMessageToLogs
+from server.helpers.other_helpers import addKudos
 
 @auth_required(allow_bots=True)
 async def send_message(sid, is_bot, account_id, data):
@@ -126,6 +127,8 @@ async def send_message(sid, is_bot, account_id, data):
                     (message_id, message, account_id, timestamp, server_id, channel_id, parent_message_id, assets_json)
                 )
                 await addMessageToLogs(f"Inserted message for user id: {account_id}", "INFO")
+                
+                await addKudos(cur, account_id, 1, message, server_id, channel_id)
 
             await conn.commit() # idk if this is necessary, it exists in bot_message_helpers
             

@@ -132,7 +132,7 @@ $stmt->bind_param(
 $stmt->execute();
 $stmt->close();
 
-$stmt = $mysqli->prepare("SELECT premium, premium_expires_at FROM users WHERE id = ?");
+$stmt = $mysqli->prepare("SELECT premium, premium_expires_at, added_chat_account_once FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -140,11 +140,12 @@ if ($result->num_rows > 0) {
     $row = $result->fetch_assoc();
     $premium = $row['premium'];
     $premium_expires_at = $row['premium_expires_at'];
+    $already_added_chat_account_once = $row['added_chat_account_once'] === 1;
 }
 $stmt->close();
 
-if (!$premium || ($premium_expires_at !== null && $premium_expires_at <= time())) {
-    $stmt = $mysqli->prepare("UPDATE users SET premium = 1, premium_expires_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), premium_know = 0 WHERE id = ?");
+if ((!$premium || ($premium_expires_at !== null && $premium_expires_at <= time())) && !$already_added_chat_account_once) {
+    $stmt = $mysqli->prepare("UPDATE users SET premium = 1, premium_expires_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), premium_know = 0, added_chat_account_once = 1 WHERE id = ?");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $stmt->close();

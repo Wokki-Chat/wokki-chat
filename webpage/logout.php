@@ -15,6 +15,9 @@ if ($access_token) {
     $stmt->close();
     setcookie('access_token', '', time() - 3600, '/');
     setcookie('dm_active_user', '', time() - 3600, '/');
+    if (isset($_COOKIE['theme']) && str_starts_with($_COOKIE['theme'], 'chat_')) {
+        setcookie('theme', 'dark', 0, '/');
+    }
 
     header('Location: ' . $from);
     exit;

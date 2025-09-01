@@ -28,5 +28,9 @@ $unlinkStmt->bind_param("i", $user_id);
 $unlinkStmt->execute();
 $unlinkStmt->close();
 
+if (isset($_COOKIE['theme']) && str_starts_with($_COOKIE['theme'], 'chat_')) {
+    setcookie('theme', 'dark', 0, '/');
+}
+
 header("Location: /settings/connections");
 ?>
