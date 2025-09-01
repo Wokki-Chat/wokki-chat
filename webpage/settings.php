@@ -68,15 +68,19 @@ function formatPremiumExpiration($timestamp) {
     if ($timestamp === null) {
         return "never";
     }
+
+    if (!is_numeric($timestamp)) {
+        $timestamp = strtotime($timestamp);
+    }
     
     $now = time();
     $diff = $timestamp - $now;
     
     if ($diff <= 0) {
-        return "0 days"; // Already expired or due now
+        return "0 days";
     }
     
-    $days = ceil($diff / 86400); // 86400 seconds in a day
+    $days = ceil($diff / 86400);
     
     return $days . " days";
 }
@@ -91,6 +95,25 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
     $active_tab = $segments[1]; 
 }
 
+$chat_connected = "Not Connected";
+$onclickEventChat = "window.location.href = '/connections/chat'";
+
+$connectionsStmt = $mysqli->prepare("SELECT connection_user_id, connection_user_name, connection_user_url, connected_at, connection_user_image, connection_name FROM user_connections WHERE user_id = ?");
+$connectionsStmt->bind_param("i", $user_id);
+$connectionsStmt->execute();
+$connectionsResult = $connectionsStmt->get_result();
+if ($connectionsResult->num_rows > 0) {
+    $connections = $connectionsResult->fetch_all(MYSQLI_ASSOC);
+    foreach ($connections as $index => $connection) {
+        if ($connection['connection_name'] === "Chat") {
+            $chat_connected = "Connected";
+            $onclickEventChat = "openConnectionModal('Chat')";
+        }
+    }
+} else {
+    $connections = [];
+}
+$connectionsStmt->close();
 
 ?>
 <!DOCTYPE html>
@@ -122,6 +145,10 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
             <div class="settings-tab <?php echo ($active_tab === "appearance") ? "active" : ""; ?>" onclick="window.location.href = '/settings/appearance?from=' + returnUrl ">
                 <span class="material-symbols-rounded">format_paint</span>
                 <p>Appearance</p>
+            </div>
+            <div class="settings-tab <?php echo ($active_tab === "connections") ? "active" : ""; ?>" onclick="window.location.href = '/settings/connections?from=' + returnUrl ">
+                <span class="material-symbols-rounded">link</span>
+                <p>Connections</p>
             </div>
             <?php if ($is_developer): ?>
             <div class="settings-tab <?php echo ($active_tab === "logs") ? "active" : ""; ?>" onclick="window.location.href = '/settings/logs?from=' + returnUrl ">
@@ -157,6 +184,14 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
             }
             ?>
             <?php 
+            if ($active_tab === "connections") {
+                $connectionsHtml = file_get_contents('settings_html/settings_connections.html');
+                $connectionsHtml = str_replace("{{connection_status.chat}}", $chat_connected, $connectionsHtml);
+                $connectionsHtml = str_replace("{{onclick_event.chat}}", $onclickEventChat, $connectionsHtml);
+                echo $connectionsHtml;
+            }
+            ?>
+            <?php 
             if ($active_tab === "logs") {
                 if ($is_developer === false) {
                     header('Location: /');
@@ -167,11 +202,30 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
             ?>
         </div>
     </div>
+
+    <?php if ($premium_popup): ?>
+        <div class="premium-popup">
+            <div class="premium-popup-content">
+                <div class="premium-popup-icon">
+                    <span class="material-symbols-rounded premium-popup-icon-icon">star</span>
+                </div>
+                <div class="premium-popup-text">
+                    <h3>You got upgraded to premium</h3>
+                    <p>You unlocked all premium features</p>
+                    <p>Premium expires in <?php echo formatPremiumExpiration($premium_expires_at); ?></p>
+                </div>
+                <div class="premium-popup-close">
+                    <button class="button-primary-filled" onclick="this.parentElement.parentElement.parentElement.remove();">Okay</button>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/assets/js/settings.js"></script>
     <script src="/assets/js/notifiers.js"></script>
+    <script src="/assets/js/globalFunctions.js"></script>
     <script>
         // DO NOT TOUCH OR EDIT
         const access_token = "<?php echo $access_token; ?>";
@@ -183,6 +237,8 @@ if (isset($segments[0]) && $segments[0] === 'settings' && !empty($segments[1])) 
         const returnUrl = "<?php echo htmlspecialchars($from, ENT_QUOTES); ?>";
 
         const active_tab = "<?php echo $active_tab; ?>";
+
+        const connections = <?php echo json_encode($connections); ?>;
 
         const profile_picture = "<?php echo $profile_picture; ?>";
         const socket = io("https://chat.wokki20.nl", {

@@ -296,18 +296,23 @@ function formatPremiumExpiration($timestamp) {
     if ($timestamp === null) {
         return "never";
     }
+
+    if (!is_numeric($timestamp)) {
+        $timestamp = strtotime($timestamp);
+    }
     
     $now = time();
     $diff = $timestamp - $now;
     
     if ($diff <= 0) {
-        return "0 days"; // Already expired or due now
+        return "0 days";
     }
     
-    $days = ceil($diff / 86400); // 86400 seconds in a day
+    $days = ceil($diff / 86400);
     
     return $days . " days";
 }
+
 
 $is_in_server = true;
 
@@ -332,6 +337,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
     <link rel="prerender" href="/settings">
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
     <meta name="is_in_server" content="<?php echo $is_in_server ?>">
+    
 </head>
 <body>
     <div class="server-bar">

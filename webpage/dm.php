@@ -62,6 +62,27 @@ if ($premium && !$premium_know && ($premium_expires_at > time() || $premium_expi
 
 $premium_active = $premium && ($premium_expires_at > time() || $premium_expires_at === null);
 
+function formatPremiumExpiration($timestamp) {
+    if ($timestamp === null) {
+        return "never";
+    }
+
+    if (!is_numeric($timestamp)) {
+        $timestamp = strtotime($timestamp);
+    }
+    
+    $now = time();
+    $diff = $timestamp - $now;
+    
+    if ($diff <= 0) {
+        return "0 days";
+    }
+    
+    $days = ceil($diff / 86400);
+    
+    return $days . " days";
+}
+
 
 $serverStmt = $mysqli->prepare("
     SELECT s.*
@@ -380,6 +401,24 @@ setcookie(
             <span class="material-symbols-rounded self-info-right-settings" onclick="window.location.href = '/settings'">settings</span>
         </div>
     </div>
+
+    <?php if ($premium_popup): ?>
+        <div class="premium-popup">
+            <div class="premium-popup-content">
+                <div class="premium-popup-icon">
+                    <span class="material-symbols-rounded premium-popup-icon-icon">star</span>
+                </div>
+                <div class="premium-popup-text">
+                    <h3>You got upgraded to premium</h3>
+                    <p>You unlocked all premium features</p>
+                    <p>Premium expires in <?php echo formatPremiumExpiration($premium_expires_at); ?></p>
+                </div>
+                <div class="premium-popup-close">
+                    <button class="button-primary-filled" onclick="this.parentElement.parentElement.parentElement.remove();">Okay</button>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/assets/js/create_server.js"></script>

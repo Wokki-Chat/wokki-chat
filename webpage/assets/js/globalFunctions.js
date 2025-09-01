@@ -113,6 +113,17 @@ function formatDate(created_at) {
   return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
+function formatFullDate(created_at) {
+  const date = new Date(created_at);
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 function sanitize(text) {
   const div = document.createElement("div");
   div.innerText = text;

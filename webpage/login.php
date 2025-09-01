@@ -143,7 +143,7 @@ if (isset($_POST['email']) && isset($_POST['password']) && $_SERVER['REQUEST_MET
                     'path' => '/',
                     'secure' => true,
                     'httponly' => true,
-                    'samesite' => 'Strict'
+                    'samesite' => 'Lax'
                 ]);
                 setcookie('refresh_token', $refresh_token, [
                     'expires' => time() + getTokenExpirationTime('refresh'),

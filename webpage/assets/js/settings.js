@@ -208,3 +208,56 @@ function setTheme(theme) {
   document.cookie = `theme=${theme}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=None; Secure;`;
   window.location.reload();
 }
+
+function openConnectionModal(connection) {
+    connections.forEach(conn => {
+        if (conn["connection_name"] === connection) {
+            connection = conn;
+        }
+    })
+    let modalHtml = `
+    <div class="modal" id="connection-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">${connection["connection_name"]}</h2>
+                <span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
+            </div>
+            <div class="modal-body connection-modal">
+                <img src="${connection["connection_user_image"]}" alt="Connection Image" class="connection-modal-userimage">
+                <p class="connection-modal-username">${connection["connection_user_name"]}</p>
+                <div class="connection-modal-connected-since"><p class="connection-modal-connected-since-title">Connected since:</p><p class="connection-modal-connected-since-date">${formatFullDate(connection["connected_at"])}</p></div>
+                <div class="connection-modal-buttons">
+                    <button class="connection-modal-button button-primary-filled" onclick="window.open('${connection["connection_user_url"]}', '_blank')">Open Profile Page</button>
+                    <button class="connection-modal-button button-primary-outline" onclick="unlinkConnection('${connection["connection_name"]}')">Unlink</button>
+                </div>
+            </div>
+        </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+  const modal = document.getElementById("connection-modal");
+  const modalContent = modal.querySelector(".modal-content");
+
+  setTimeout(() => {
+      function handleClickOutside(event) {
+          if (!modalContent.contains(event.target)) {
+              modal.remove();
+              document.removeEventListener("click", handleClickOutside);
+          }
+      }
+
+      document.addEventListener("click", handleClickOutside);
+  }, 10);
+
+  const modalCloseBtn = document.getElementById("close-modal-btn");
+  modalCloseBtn.addEventListener("click", () => {
+      modal.remove();
+  });
+}
+
+function unlinkConnection(connection) {
+    const connectionNameLower = connection.toLowerCase();
+    window.location.href = `/connections/${connectionNameLower}_unlink`;
+}

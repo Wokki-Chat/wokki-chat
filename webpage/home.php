@@ -23,7 +23,7 @@ if (!$user_id) {
     exit;
 }
 
-$stmt = $mysqli->prepare("SELECT username, profile_picture FROM users WHERE id = ?");
+$stmt = $mysqli->prepare("SELECT username, profile_picture, premium, premium_expires_at, premium_know FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -31,6 +31,9 @@ if ($result->num_rows > 0) {
     $row = $result->fetch_assoc();
     $username = $row['username'];
     $profile_picture = $row['profile_picture'];
+    $premium = $row['premium'];
+    $premium_expires_at = $row['premium_expires_at'];
+    $premium_know = $row['premium_know'];
 }
 $stmt->close();
 
@@ -84,6 +87,42 @@ if (isset($_COOKIE['dm_active_user']) && !empty($_COOKIE['dm_active_user'])) {
     $dm_active_user = $_COOKIE['dm_active_user'];
     header('Location: dm/@' . urlencode($dm_active_user));
     exit;
+}
+
+$premium_popup = false;
+
+if ($premium && !$premium_know && ($premium_expires_at > time() || $premium_expires_at === null)) {
+    $premium_know = true;
+    $stmt = $mysqli->prepare("UPDATE users SET premium_know = ? WHERE id = ?");
+    $stmt->bind_param("ii", $premium_know, $user_id);
+    $stmt->execute();
+    $stmt->close();
+
+    $premium_popup = true;
+
+}
+
+$premium_active = $premium && ($premium_expires_at > time() || $premium_expires_at === null);
+
+function formatPremiumExpiration($timestamp) {
+    if ($timestamp === null) {
+        return "never";
+    }
+
+    if (!is_numeric($timestamp)) {
+        $timestamp = strtotime($timestamp);
+    }
+    
+    $now = time();
+    $diff = $timestamp - $now;
+    
+    if ($diff <= 0) {
+        return "0 days";
+    }
+    
+    $days = ceil($diff / 86400);
+    
+    return $days . " days";
 }
 
 ?>
@@ -197,6 +236,24 @@ if (isset($_COOKIE['dm_active_user']) && !empty($_COOKIE['dm_active_user'])) {
             <span class="material-symbols-rounded self-info-right-settings" onclick="window.location.href = '/settings'">settings</span>
         </div>
     </div>
+
+    <?php if ($premium_popup): ?>
+        <div class="premium-popup">
+            <div class="premium-popup-content">
+                <div class="premium-popup-icon">
+                    <span class="material-symbols-rounded premium-popup-icon-icon">star</span>
+                </div>
+                <div class="premium-popup-text">
+                    <h3>You got upgraded to premium</h3>
+                    <p>You unlocked all premium features</p>
+                    <p>Premium expires in <?php echo formatPremiumExpiration($premium_expires_at); ?></p>
+                </div>
+                <div class="premium-popup-close">
+                    <button class="button-primary-filled" onclick="this.parentElement.parentElement.parentElement.remove();">Okay</button>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
     <script src="/assets/js/create_server.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/assets/js/home.js"></script>
