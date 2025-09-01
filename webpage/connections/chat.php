@@ -114,11 +114,11 @@ $stmt = $mysqli->prepare("
     SELECT ?, ?, ?, ?, ?, ?
     FROM DUAL
     WHERE NOT EXISTS (
-        SELECT 1 FROM user_connections WHERE user_id = ? AND connection_user_id = ?
+        SELECT 1 FROM user_connections WHERE user_id = ? AND connection_user_id = ? AND connection_user_name = ?
     )
 ");
 $stmt->bind_param(
-    "sissssis",
+    "sissssiss",
     $connection_name,
     $user_id,
     $connection_user_id,
@@ -126,7 +126,8 @@ $stmt->bind_param(
     $connection_user_url,
     $connection_user_image,
     $user_id,
-    $connection_user_id
+    $connection_user_id,
+    $connection_user_name
 );
 $stmt->execute();
 $stmt->close();
