@@ -42,6 +42,15 @@ function saveImageAsWebp($imageResource, $savePath) {
     imagedestroy($imageResource);
 }
 
+function getPriceForKudo($kudoId) {
+    $kudoItems = json_decode(file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/app/assets/kudos/items.json'), true);
+    foreach ($kudoItems as $kudoItem) {
+        if ($kudoItem['id'] === $kudoId) {
+            return $kudoItem['price'];
+        }
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $allowedOrigin = 'https://chat.wokki20.nl';
@@ -112,6 +121,174 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $user_id = $row['user_id'];
+
+    if (!isset($_POST['kudo_id'])) {
+        http_response_code(400);
+        echo json_encode([
+            'status' => 'error',
+            'description' => 'Bad request: Missing kudo_id',
+            'return_code' => 30
+        ]);
+        exit;
+    }
+
+    $kudo_id = $_POST['kudo_id'];
+
+    if ($kudo_id == 1) {
+        $price = getPriceForKudo(1);
+
+        $kudosStmt = $mysqli->prepare("SELECT id, kudo_amount FROM Kudos WHERE user_id = ? ORDER BY id ASC");
+        $kudosStmt->bind_param("i", $user_id);
+        $kudosStmt->execute();
+        $kudosResult = $kudosStmt->get_result();
+        $kudos = $kudosResult->fetch_all(MYSQLI_ASSOC);
+        $kudosStmt->close();
+
+        $remaining = $price;
+
+        foreach ($kudos as $kudo) {
+            if ($remaining <= 0) break;
+
+            $kudoId = $kudo['id'];
+            $amount = $kudo['kudo_amount'];
+
+            if ($amount >= $remaining) {
+                if ($amount == $remaining) {
+                    $deleteStmt = $mysqli->prepare("DELETE FROM Kudos WHERE id = ?");
+                    $deleteStmt->bind_param("i", $kudoId);
+                    $deleteStmt->execute();
+                    $deleteStmt->close();
+                } else {
+                    $updateStmt = $mysqli->prepare("UPDATE Kudos SET kudo_amount = kudo_amount - ? WHERE id = ?");
+                    $updateStmt->bind_param("ii", $remaining, $kudoId);
+                    $updateStmt->execute();
+                    $updateStmt->close();
+                }
+                $remaining = 0;
+
+                $userStmtPremium = $mysqli->prepare("SELECT premium, premium_expires_at FROM users WHERE id = ?");
+                $userStmtPremium->bind_param("i", $user_id);
+                $userStmtPremium->execute();
+                $userResultPremium = $userStmtPremium->get_result();
+                $userPremium = $userResultPremium->fetch_assoc();
+                $userStmtPremium->close();
+
+                if ($userPremium['premium'] == 0) {
+                    $updatePremiumStmt = $mysqli->prepare("UPDATE users SET premium = 1, premium_expires_at = DATE_ADD(NOW(), INTERVAL 30 DAY), premium_know = 0 WHERE id = ?");
+                    $updatePremiumStmt->bind_param("i", $user_id);
+                    $updatePremiumStmt->execute();
+                    $updatePremiumStmt->close();
+                } else {
+                    if ($userPremium['premium_expires_at'] !== null) {
+                        $updatePremiumStmt = $mysqli->prepare("UPDATE users SET premium_expires_at = DATE_ADD(premium_expires_at, INTERVAL 30 DAY), premium_know = 0 WHERE id = ?");
+                        $updatePremiumStmt->bind_param("i", $user_id);
+                        $updatePremiumStmt->execute();
+                        $updatePremiumStmt->close();
+                    }
+                }
+
+            } else {
+                $deleteStmt = $mysqli->prepare("DELETE FROM Kudos WHERE id = ?");
+                $deleteStmt->bind_param("i", $kudoId);
+                $deleteStmt->execute();
+                $deleteStmt->close();
+                $remaining -= $amount;
+            }
+        }
+
+        if ($remaining > 0) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Bad request: Not enough kudos',
+                'return_code' => 30
+            ]);
+            exit;
+        }
+
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'Kudos successfully spent',
+            'return_code' => 0
+        ]);
+    } else if ($kudo_id == 2) {
+        $price = getPriceForKudo(2);
+
+        $kudosStmt = $mysqli->prepare("SELECT id, kudo_amount FROM Kudos WHERE user_id = ? ORDER BY id ASC");
+        $kudosStmt->bind_param("i", $user_id);
+        $kudosStmt->execute();
+        $kudosResult = $kudosStmt->get_result();
+        $kudos = $kudosResult->fetch_all(MYSQLI_ASSOC);
+        $kudosStmt->close();
+
+        $remaining = $price;
+
+        foreach ($kudos as $kudo) {
+            if ($remaining <= 0) break;
+
+            $kudoId = $kudo['id'];
+            $amount = $kudo['kudo_amount'];
+
+            if ($amount >= $remaining) {
+                if ($amount == $remaining) {
+                    $deleteStmt = $mysqli->prepare("DELETE FROM Kudos WHERE id = ?");
+                    $deleteStmt->bind_param("i", $kudoId);
+                    $deleteStmt->execute();
+                    $deleteStmt->close();
+                } else {
+                    $updateStmt = $mysqli->prepare("UPDATE Kudos SET kudo_amount = kudo_amount - ? WHERE id = ?");
+                    $updateStmt->bind_param("ii", $remaining, $kudoId);
+                    $updateStmt->execute();
+                    $updateStmt->close();
+                }
+                $remaining = 0;
+
+                $userStmtPremium = $mysqli->prepare("SELECT premium, premium_expires_at FROM users WHERE id = ?");
+                $userStmtPremium->bind_param("i", $user_id);
+                $userStmtPremium->execute();
+                $userResultPremium = $userStmtPremium->get_result();
+                $userPremium = $userResultPremium->fetch_assoc();
+                $userStmtPremium->close();
+
+                if ($userPremium['premium'] == 0) {
+                    $updatePremiumStmt = $mysqli->prepare("UPDATE users SET premium = 1, premium_expires_at = DATE_ADD(NOW(), INTERVAL 1 YEAR), premium_know = 0 WHERE id = ?");
+                    $updatePremiumStmt->bind_param("i", $user_id);
+                    $updatePremiumStmt->execute();
+                    $updatePremiumStmt->close();
+                } else {
+                    if ($userPremium['premium_expires_at'] !== null) {
+                        $updatePremiumStmt = $mysqli->prepare("UPDATE users SET premium_expires_at = DATE_ADD(premium_expires_at, INTERVAL 1 YEAR), premium_know = 0 WHERE id = ?");
+                        $updatePremiumStmt->bind_param("i", $user_id);
+                        $updatePremiumStmt->execute();
+                        $updatePremiumStmt->close();
+                    }
+                }
+
+            } else {
+                $deleteStmt = $mysqli->prepare("DELETE FROM Kudos WHERE id = ?");
+                $deleteStmt->bind_param("i", $kudoId);
+                $deleteStmt->execute();
+                $deleteStmt->close();
+                $remaining -= $amount;
+            }
+        }
+
+        if ($remaining > 0) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Bad request: Not enough kudos',
+                'return_code' => 30
+            ]);
+            exit;
+        }
+
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'Kudos successfully spent',
+            'return_code' => 0
+        ]);        
+    }
 
     
 } else {

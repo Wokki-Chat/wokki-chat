@@ -4007,3 +4007,76 @@ h6 {
     opacity: 1;
     transform: translateY(0px);
 }
+
+.kudo-item-modal-image-container {
+    width: 100%;
+    height: 300px;
+    background-color: var(--clr-popup-a0);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+    border-bottom: 1.5px solid var(--clr-popup-a30);
+}
+
+.kudo-item-modal-name {
+    font-size: 20px;
+    font-weight: var(--font-weight-bold);
+    margin: 0px;
+    color: var(--clr-text-a10);
+    user-select: none;
+    max-width: calc(100% - 20px);
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-top: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kudo-item-modal-price-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-left: 10px;
+    margin-right: 10px;
+    max-width: calc(100% - 20px);
+    color: var(--clr-text-a30);
+    gap: 5px;
+    font-size: 16px;
+    user-select: none;
+}
+
+.kudo-item-modal-button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-weight: normal;
+    width: 100%;
+}
+.kudo-item-modal-button * {
+    margin: 0px;
+}
+
+.kudos-amount {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    max-width: calc(100% - 20px);
+    color: var(--clr-text-a30);
+}
+
+.kudo-item-modal-description {
+    font-size: 16px;
+    margin: 0px;
+    color: var(--clr-text-a30);
+    user-select: none;
+    max-width: calc(100% - 20px);
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-top: 10px;
+}

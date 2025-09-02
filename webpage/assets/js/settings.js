@@ -201,6 +201,58 @@ window.addEventListener("load", () => {
 
   }
 
+  if (active_tab === "kudos") {
+    document.querySelectorAll(".kudos-item").forEach(item => {
+      item.addEventListener("click", () => {
+        const kudosItemId = item.getAttribute("data-id");
+        kudoItem = kudo_items.find(item => item["id"].toString() === kudosItemId);
+        let modalHtml = `
+        <div class="modal" id="kudo-item-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">${kudoItem["name"]}</h2>
+                    <span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
+                </div>
+                <div class="modal-body kudo-item-modal">
+                    <div class="kudo-item-modal-image-container"><img draggable="false" src="${kudoItem["image"]}" alt="Kudo Shop Item Image" class="kudo-item-modal-image"></div>
+                    <p class="kudo-item-modal-name">${kudoItem["name"]}</p>
+                    <p class="kudo-item-modal-description">${kudoItem["description"]}</p>
+                    <div class="kudo-item-modal-price-container">
+                        <span class="material-symbols-rounded">poker_chip</span>
+                        <p class="kudo-item-modal-price">${kudoItem["price"] > 9999 ? kudoItem["price"].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : kudoItem["price"]}</p>
+                    </div>
+                    <div class="kudo-item-modal-buttons">
+                        <button class="kudo-item-modal-button button-primary-filled" onclick="buyKudo('${kudoItem["id"]}')" ${kudos >= kudoItem["price"] ? "" : "disabled"} >Buy for <span class="material-symbols-rounded">poker_chip</span>${kudoItem["price"] > 9999 ? kudoItem["price"].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : kudoItem["price"]}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+      const modal = document.getElementById("kudo-item-modal");
+      const modalContent = modal.querySelector(".modal-content");
+
+      setTimeout(() => {
+          function handleClickOutside(event) {
+              if (!modalContent.contains(event.target)) {
+                  modal.remove();
+                  document.removeEventListener("click", handleClickOutside);
+              }
+          }
+
+          document.addEventListener("click", handleClickOutside);
+      }, 10);
+
+      const modalCloseBtn = document.getElementById("close-modal-btn");
+      modalCloseBtn.addEventListener("click", () => {
+          modal.remove();
+      });
+        
+      });
+    });
+  }
   
 });
 
@@ -261,4 +313,24 @@ function openConnectionModal(connection) {
 function unlinkConnection(connection) {
     const connectionNameLower = connection.toLowerCase();
     window.location.href = `/connections/${connectionNameLower}_unlink`;
+}
+
+function buyKudo(kudoId) {
+    let formData = new FormData();
+    formData.append("kudo_id", kudoId);
+
+    fetch(`/app/buy_item`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${access_token}`,
+        },
+        body: formData,
+    })
+    .then((response) => response.json())
+    .then((data) => {
+        window.location.reload();
+    })
+    .catch((error) => {
+        console.error(error);
+    });
 }

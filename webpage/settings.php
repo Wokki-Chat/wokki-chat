@@ -214,12 +214,12 @@ $kudosArray = json_decode($kudosJson, true);
             <?php 
             if ($active_tab === "kudos") {
                 $connectionsHtml = file_get_contents('settings_html/settings_kudos.html');
-                $connectionsHtml = str_replace("{{kudos_amount}}", $totalKudos, $connectionsHtml);
+                $connectionsHtml = str_replace("{{kudos_amount}}", '<div class="kudos-amount"><span class="material-symbols-rounded">poker_chip</span><p class="kudos-amount-value">' . number_format($totalKudos, 0, '.', ','). '</p></div>', $connectionsHtml);
                 $kudosHtml = '';
                 if (is_array($kudosArray)) {
                     foreach ($kudosArray as $index => $kudo) {
                         $kudosHtml .= '
-                        <div class="kudos-item">
+                        <div class="kudos-item" data-id="' . $kudo['id'] . '" id="kudos-item">
                             <div class="kudos-item-image">
                                 <img draggable="false" src="' . $kudo['image'] . '" alt="' . $kudo['name'] . '" />
                                 ' . ($kudo['extra_message'] !== "" ? '<p class="kudos-item-extra-message">' . $kudo['extra_message'] . '</p>' : '') . '
@@ -287,6 +287,10 @@ $kudosArray = json_decode($kudosJson, true);
         const active_tab = "<?php echo $active_tab; ?>";
 
         const connections = <?php echo json_encode($connections); ?>;
+
+        const kudo_items = <?php echo json_encode($kudosArray); ?>;
+
+        const kudos = <?php echo json_encode($totalKudos); ?>;
 
         const profile_picture = "<?php echo $profile_picture; ?>";
         const socket = io("https://chat.wokki20.nl", {

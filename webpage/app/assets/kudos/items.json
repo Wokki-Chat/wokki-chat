@@ -5,7 +5,8 @@
         "price": 50000,
         "extra_message": "",
         "image": "/assets/images/kudos/premium_30.svg",
-        "grand_deal": true
+        "grand_deal": true,
+        "description": "30 Days Premium Membership, if you already have a membership, it will be extended by 30 days."
     },
     {
         "id": 2,
@@ -13,6 +14,7 @@
         "price": 540000,
         "extra_message": "Save 10% vs monthly pricing",
         "image": "/assets/images/kudos/premium_1y.svg",
-        "grand_deal": true
+        "grand_deal": true,
+        "description": "1 Year Premium Membership, if you already have a membership, it will be extended by 1 year."
     }
 ]
