@@ -3,7 +3,7 @@ from server.helpers.logs import addMessageToLogs
 from datetime import datetime
 from gibberish_classifier.classify import classify
 
-GIBBERISH_THRESHOLD = 30 
+GIBBERISH_THRESHOLD = 20 
 
 def is_gibberish(message: str) -> bool:
     """
@@ -53,7 +53,7 @@ async def addKudos(cur, user_id, kudos_to_add, message, server_id, channel_id):
     if len(recent) >= 2:
         t1 = recent[0][0] if isinstance(recent[0], tuple) else recent[0].get('created_at')
         t2 = recent[1][0] if isinstance(recent[1], tuple) else recent[1].get('created_at')
-        if t1 and t2 and (t1 - t2).total_seconds() < 5:
+        if t1 and t2 and (t1 - t2).total_seconds() < 20:
             await addMessageToLogs(f"Rejected spam message from user id: {user_id}", "WARN")
             return False
 

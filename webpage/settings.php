@@ -123,6 +123,8 @@ $row = $kudosResult->fetch_assoc();
 $totalKudos = $row['total_kudos'] ?? 0;
 $kudosStmt->close();
 
+$kudosJson = file_get_contents('app/assets/kudos/items.json');
+$kudosArray = json_decode($kudosJson, true);
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme; ?>">
@@ -182,7 +184,7 @@ $kudosStmt->close();
                 $settingsHtml = str_replace("{{profile_picture_url}}", $profile_picture, $settingsHtml);
                 $settingsHtml = str_replace("{{username}}", $username, $settingsHtml);
                 $settingsHtml = str_replace("{{status}}", $status, $settingsHtml);
-                $settingsHtml = str_replace("{{premium_badge}}", ($premium_active ? '<div class="premium-tag"><span class="material-symbols-rounded">star</span>PREMIUM</div>' : ''), $settingsHtml);
+                $settingsHtml = str_replace("{{premium_badge}}", ($premium_active ? '<div class="premium-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_premium.svg">PREMIUM</div>' : ''), $settingsHtml);
                 echo $settingsHtml;
             }
             ?>
@@ -213,6 +215,27 @@ $kudosStmt->close();
             if ($active_tab === "kudos") {
                 $connectionsHtml = file_get_contents('settings_html/settings_kudos.html');
                 $connectionsHtml = str_replace("{{kudos_amount}}", $totalKudos, $connectionsHtml);
+                $kudosHtml = '';
+                if (is_array($kudosArray)) {
+                    foreach ($kudosArray as $index => $kudo) {
+                        $kudosHtml .= '
+                        <div class="kudos-item">
+                            <div class="kudos-item-image">
+                                <img draggable="false" src="' . $kudo['image'] . '" alt="' . $kudo['name'] . '" />
+                                ' . ($kudo['extra_message'] !== "" ? '<p class="kudos-item-extra-message">' . $kudo['extra_message'] . '</p>' : '') . '
+                            </div>
+                            <div class="kudos-item-name">
+                                ' . $kudo['name'] . '
+                            </div>
+                            <div class="kudos-item-amount">
+                                <span class="material-symbols-rounded">poker_chip</span><p class="kudos-item-amount-value">' . number_format($kudo['price'], 0, '.', ',') . '</p>
+                            </div>
+                            <button class="kudos-item-view-details-button button-primary-filled">View Details</button>
+                        </div>
+                        ';
+                    }
+                }
+                $connectionsHtml = str_replace("{{kudos_items}}", $kudosHtml, $connectionsHtml);
                 echo $connectionsHtml;
             }
             ?>

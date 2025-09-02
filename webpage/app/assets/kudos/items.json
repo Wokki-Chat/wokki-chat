@@ -1,0 +1,18 @@
+[
+    {
+        "id": 1,
+        "name": "Premium Membership For 30 days",
+        "price": 50000,
+        "extra_message": "",
+        "image": "/assets/images/kudos/premium_30.svg",
+        "grand_deal": true
+    },
+    {
+        "id": 2,
+        "name": "Premium Membership For 1 year",
+        "price": 540000,
+        "extra_message": "Save 10% vs monthly pricing",
+        "image": "/assets/images/kudos/premium_1y.svg",
+        "grand_deal": true
+    }
+]
