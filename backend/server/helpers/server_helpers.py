@@ -3,8 +3,8 @@ import json
 import uuid
 from server.config import get_sids_for_user, get_bot_sid_from_id
 import server.sio_instance as sio_instance
-from server.helpers.user_helpers import get_user_info_from_id, verify_access_token
-from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server, verify_bot_token
+from server.helpers.user_helpers import auth_required, get_user_info_from_id
+from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server
 import aiomysql
 import re
 import server.config as config
@@ -199,29 +199,18 @@ async def get_server_users_info(cur, server_id):
                 
     return users
 
-
-async def server_commands(sid, data):
-    access_token = data.get('access_token')
+@auth_required(server_required=True, allow_bots=False)
+async def server_commands(sid, metadata, data):
     server_id = data.get('server_id')
+    user_id = metadata.get('account_id')
             
-    if not access_token or not server_id:
-        await addMessageToLogs("Missing required fields for server_commands", "INFO")
+    if not server_id:
+        await addMessageToLogs("Missing required field server_id for server_commands", "INFO")
         await sio_instance.sio.emit('server_commands_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
     
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
-            if not user_id:
-                await addMessageToLogs(f"Invalid token for server_commands, access token: {access_token}", "INFO")
-                await sio_instance.sio.emit('server_commands_response', {'success': False, 'error': 'Invalid token'}, to=sid)
-                return
-            
-            if not await is_user_in_server(cur, user_id, server_id):
-                await addMessageToLogs(f"User is not in server for server_commands, user id: {user_id}, server id: {server_id}", "INFO")
-                await sio_instance.sio.emit('server_commands_response', {'success': False, 'error': 'User is not in server'}, to=sid)
-                return
-            
             member_entries = await get_member_ids_from_server(cur, server_id)
 
             bots = []
@@ -271,32 +260,23 @@ async def server_commands(sid, data):
             await sio_instance.sio.emit('server_commands_response', {'success': True, 'bots': bots_with_commands}, to=sid)
             await addMessageToLogs(f"Emitted server_commands_response for server_commands, server id: {server_id}", "INFO")
             
-async def command(sid, data):
-    access_token = data.get('access_token')
+@auth_required(server_required=True, allow_bots=False)
+async def command(sid, metadata, data):
     command = data.get('command')
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
     options_input = data.get('options') or {}
     bot_id = data.get('bot_id')
 
-    if not all([access_token, command, server_id, channel_id, bot_id]):
+    user_id = metadata.get('account_id')
+
+    if not all([command, server_id, channel_id, bot_id]):
         await addMessageToLogs("Missing required fields for command", "INFO")
         await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
     
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
-            if not user_id:
-                await addMessageToLogs(f"Invalid token for command, access token: {access_token}", "INFO")
-                await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Invalid token'}, to=sid)
-                return
-            
-            if not await is_user_in_server(cur, user_id, server_id):
-                await addMessageToLogs(f"User is not in server for command, user id: {user_id}, server id: {server_id}", "INFO")
-                await sio_instance.sio.emit('command_response', {'success': False, 'error': 'User is not in server'}, to=sid)
-                return
-            
             if not await is_bot_in_server(cur, bot_id, server_id):
                 await addMessageToLogs(f"Bot is not in server for command, bot id: {bot_id}, server id: {server_id}", "INFO")
                 await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Bot is not in server'}, to=sid)

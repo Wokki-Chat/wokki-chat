@@ -47,7 +47,7 @@ async def verify_access_token(cur, access_token):
     return user_id
 
     
-def auth_required(server_required:bool=True, allow_bots:bool=True):
+def auth_required(server_required:bool=True, allow_bots:bool=True): # problem: it doesn't send correct name upon error!
     from server.helpers.server_helpers import is_user_in_server
     """
     Decorator to validate tokens.
@@ -214,7 +214,7 @@ async def is_user_friends_with(cur, user_id, friend_id):
     return row1 is not None and row2 is not None
 
 
-async def get_user_info(sid, data):
+async def get_user_info(sid, data): # add auth required to this
     access_token = data.get('access_token')
     bot_token = data.get('bot_token')
     requested_user_id = data.get('user_id')

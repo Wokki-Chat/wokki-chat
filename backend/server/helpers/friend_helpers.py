@@ -1,26 +1,22 @@
-from server.helpers.user_helpers import verify_access_token, is_user_friends_with
+from server.helpers.user_helpers import auth_required, is_user_friends_with
 from server.helpers.dm_helpers import get_sid_from_dm_id
 import aiomysql
 import server.sio_instance as sio_instance
 import server.config as config
 from server.helpers.logs import addMessageToLogs
 
-async def send_friend_request(sid, data):
-    access_token = data.get('access_token')
+@auth_required(server_required=False, allow_bots=False)
+async def send_friend_request(sid, metadata, data):
     friend_username = data.get('friend_username')
+
+    user_id = metadata.get('account_id')
     
-    if access_token is None or friend_username is None:
-        await addMessageToLogs(f"Missing required fields for send_friend_request", "INFO")
+    if friend_username is None:
+        await addMessageToLogs(f"Missing required field friend_username for send_friend_request", "INFO")
         return
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
-            if not user_id:
-                await addMessageToLogs(f"Invalid access token for send_friend_request, access token: {access_token}", "INFO")
-                await sio_instance.sio.emit('friend_request_sent', {'success': False, 'msg': 'Invalid access token'}, to=sid)
-                return
-
             await cur.execute("SELECT id FROM users WHERE username = %s", (friend_username,))
             friend_row = await cur.fetchone()
             if not friend_row:
@@ -51,23 +47,17 @@ async def send_friend_request(sid, data):
                 await addMessageToLogs(f"Friend request received for send_friend_request, user id: {user_id}, friend id: {friend_row['id']}", "INFO")
                 await sio_instance.sio.emit('friend_request_received', {'user_id': user_id, 'username': user_data['username'], 'profile_picture': user_data['profile_picture']}, to=friend_sid)
    
-
-async def accept_friend_request(sid, data):
-    access_token = data.get('access_token')
+@auth_required(server_required=False, allow_bots=False)
+async def accept_friend_request(sid, metadata, data):
     requested_friend_id = data.get('requested_friend_id')
+    user_id = metadata.get('account_id')
     
-    if access_token is None or requested_friend_id is None:
-        await addMessageToLogs(f"Invalid data for accept_friend_request", "INFO")
+    if requested_friend_id is None:
+        await addMessageToLogs(f"Invalid field requested_friend_id for accept_friend_request", "INFO")
         return
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
-            if not user_id:
-                await addMessageToLogs(f"Invalid access token for accept_friend_request, access token: {access_token}", "INFO")
-                await sio_instance.sio.emit('accept_friend_request_response', {'success': False, 'msg': 'Invalid access token'}, to=sid)
-                return
-
             await cur.execute("SELECT id FROM users WHERE id = %s", (requested_friend_id,))
             friend_row = await cur.fetchone()
             if not friend_row:
@@ -97,21 +87,12 @@ async def accept_friend_request(sid, data):
                 }, to=friend_sid)       
                 await addMessageToLogs(f"Friend request accepted for accept_friend_request, user id: {user_id}, friend id: {friend_row['id']}", "INFO")
 
-async def pending_friend_requests(sid, data):
-    access_token = data.get('access_token')
-    
-    if access_token is None:
-        await addMessageToLogs(f"Invalid data for pending_friend_requests", "INFO")
-        return
+@auth_required(server_required=False, allow_bots=False)
+async def pending_friend_requests(sid, metadata, data):
+    user_id = metadata.get('account_id')
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
-            if not user_id:
-                await addMessageToLogs(f"Invalid access token for pending_friend_requests, access token: {access_token}", "INFO")
-                await sio_instance.sio.emit('pending_friend_requests', {'friend_requests': []}, to=sid)
-                return
-
             await cur.execute("""
                 SELECT u.id AS user_id, u.username, u.profile_picture
                 FROM friends f
@@ -132,22 +113,12 @@ async def pending_friend_requests(sid, data):
             }, to=sid)
             await addMessageToLogs(f"Pending friend requests for pending_friend_requests, user id: {user_id}", "INFO")
             
-
-async def outgoing_friend_requests(sid, data):
-    access_token = data.get('access_token')
-    
-    if access_token is None:
-        await addMessageToLogs(f"Invalid data for outgoing_friend_requests", "INFO")
-        return
+@auth_required(server_required=False, allow_bots=False)
+async def outgoing_friend_requests(sid, metadata, data):
+    user_id = metadata.get('account_id')
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
-            if not user_id:
-                await addMessageToLogs(f"Invalid access token for outgoing_friend_requests, access token: {access_token}", "INFO")
-                await sio_instance.sio.emit('outgoing_friend_requests', {'outgoing_friend_requests': []}, to=sid)
-                return
-
             await cur.execute("""
                 SELECT u.id AS user_id, u.username, u.profile_picture
                 FROM friends f
@@ -168,23 +139,17 @@ async def outgoing_friend_requests(sid, data):
             }, to=sid)
             await addMessageToLogs(f"Outgoing friend requests for outgoing_friend_requests, user id: {user_id}", "INFO")
             
-
-async def cancel_outgoing_friend_request(sid, data):
-    access_token = data.get('access_token')
+@auth_required(server_required=False, allow_bots=False)
+async def cancel_outgoing_friend_request(sid, metadata, data):
     friend_id = data.get('friend_id')
+    user_id = metadata.get('account_id')
     
-    if access_token is None or friend_id is None:
-        await addMessageToLogs(f"Invalid data for cancel_outgoing_friend_request", "INFO")
+    if friend_id is None:
+        await addMessageToLogs(f"Invalid field friend_id for cancel_outgoing_friend_request", "INFO")
         return
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
-            if not user_id:
-                await addMessageToLogs(f"Invalid access token for cancel_outgoing_friend_request, access token: {access_token}, friend id: {friend_id}", "INFO")
-                await sio_instance.sio.emit('cancel_outgoing_friend_request_response', {'success': False, 'msg': 'Invalid access token'}, to=sid)
-                return
-            
             if await is_user_friends_with(cur, user_id, friend_id):
                 await addMessageToLogs(f"Already friends for cancel_outgoing_friend_request, user id: {user_id}, friend id: {friend_id}", "INFO")
                 await sio_instance.sio.emit('cancel_outgoing_friend_request_response', {'success': False, 'msg': 'Already friends'}, to=sid)
@@ -196,22 +161,17 @@ async def cancel_outgoing_friend_request(sid, data):
             await sio_instance.sio.emit('cancel_outgoing_friend_request_response', {'success': True, 'msg': 'Outgoing friend request canceled'}, to=sid)
             await addMessageToLogs(f"Outgoing friend request canceled for cancel_outgoing_friend_request, user id: {user_id}, friend id: {friend_id}", "INFO")
 
-async def deny_friend_request(sid, data):
-    access_token = data.get('access_token')
+@auth_required(server_required=False, allow_bots=False)
+async def deny_friend_request(sid, metadata, data):
     friend_id = data.get('friend_id')
+    user_id = metadata.get('account_id')
     
-    if access_token is None or friend_id is None:
-        await addMessageToLogs(f"Invalid data for deny_friend_request", "INFO")
+    if friend_id is None:
+        await addMessageToLogs(f"Invalid field friend_id for deny_friend_request", "INFO")
         return
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
-            if not user_id:
-                await addMessageToLogs(f"Invalid access token for deny_friend_request, access token: {access_token}, friend id: {friend_id}", "INFO")
-                await sio_instance.sio.emit('deny_friend_request_response', {'success': False, 'msg': 'Invalid access token'}, to=sid)
-                return
-            
             if await is_user_friends_with(cur, user_id, friend_id):
                 await addMessageToLogs(f"Already friends for deny_friend_request, user id: {user_id}, friend id: {friend_id}", "INFO")
                 await sio_instance.sio.emit('deny_friend_request_response', {'success': False, 'msg': 'Already friends'}, to=sid)

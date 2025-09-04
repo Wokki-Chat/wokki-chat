@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 import json
 from server.config import user_message_timestamps, bot_message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS
-from server.helpers.user_helpers import verify_access_token, get_user_premium_status, auth_required
-from server.helpers.server_helpers import is_user_in_server, does_user_have_server_permission, send_server_notifications, get_server_channel_sids, get_server_users_info
+from server.helpers.user_helpers import get_user_premium_status, auth_required
+from server.helpers.server_helpers import does_user_have_server_permission, send_server_notifications, get_server_channel_sids, get_server_users_info
 import aiomysql
 import uuid
 import server.sio_instance as sio_instance
@@ -315,11 +315,6 @@ async def get_message_by_id(sid, metadata, data):
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            if not await is_user_in_server(cur, user_id, server_id):
-                await addMessageToLogs(f"User not in server for get_message_by_id, user id: {user_id}, server id: {server_id}", "INFO")
-                await sio_instance.sio.emit('message_by_id', None, to=sid)
-                return
-
             await cur.execute(
                 "SELECT id, sent_by, message, created_at FROM messages WHERE id = %s AND server_id = %s AND channel_id = %s",
                 (message_id, server_id, channel_id)
@@ -352,11 +347,13 @@ async def get_message_by_id(sid, metadata, data):
 @auth_required(server_required=True, allow_bots=True)
 async def delete_message(sid, metadata, data):
     message_id = data.get('message_id')
+    req_id = data.get('req_id')
 
     is_bot = metadata.get('is_bot')
     account_id = metadata.get('account_id')
 
     if message_id is None:
+        await sio_instance.sio.emit('message_deleted', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=server_channel_sids)
         await addMessageToLogs(f"Missing required fields for delete_message", "INFO")
         return
 
@@ -370,6 +367,7 @@ async def delete_message(sid, metadata, data):
                 message = await cur.fetchone()
 
             if not message:
+                await sio_instance.sio.emit('message_deleted', {'success': False, 'error': 'Message not found', 'req_id': req_id}, to=server_channel_sids)
                 await addMessageToLogs(f"Message not found for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
                 return
 
@@ -382,11 +380,12 @@ async def delete_message(sid, metadata, data):
                 result = await cur.execute("DELETE FROM messages WHERE id = %s AND sent_by = %s", (message_id, account_id))
             
             if result == 0:
-                await addMessageToLogs(f"Message not found for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
+                await sio_instance.sio.emit('message_deleted', {'success': False, 'error': 'Message couldn\'t be deleted', 'req_id': req_id}, to=server_channel_sids)
+                await addMessageToLogs(f"Message couldn't be deleted for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
                 return
 
             server_channel_sids = await get_server_channel_sids(cur, server_id, channel_id)
 
             await conn.commit()
-            await sio_instance.sio.emit('message_deleted', message_id, to=server_channel_sids)
+            await sio_instance.sio.emit('message_deleted', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=server_channel_sids)
             await addMessageToLogs(f"Emitted message_deleted to {server_id}", "INFO")

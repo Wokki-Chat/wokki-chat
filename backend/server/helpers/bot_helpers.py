@@ -19,7 +19,6 @@ def validate_embed(embed):
     else:
         return False
 
-
 def validate_single_embed(embed):
     if not isinstance(embed, dict):
         return False
@@ -126,7 +125,6 @@ async def get_bot_info_from_id(cur, bot_id):
 
     await addMessageToLogs(f"bot ({bot_id}) not found", "INFO")
     return None
-
 
 async def initialize_commands(sid, data):
     bot_token = data.get('bot_token')
