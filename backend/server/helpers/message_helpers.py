@@ -10,8 +10,8 @@ import server.config as config
 from server.helpers.logs import addMessageToLogs
 from server.helpers.other_helpers import addKudos
 
-@auth_required(allow_bots=True)
-async def send_message(sid, is_bot, account_id, data):
+@auth_required(server_required=True, allow_bots=True)
+async def send_message(sid, metadata, data):
     message = data.get('message')
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
@@ -22,6 +22,9 @@ async def send_message(sid, is_bot, account_id, data):
     req_id = data.get('req_id')
     command = data.get('command')
     user_id = data.get('user_id')
+
+    is_bot = metadata.get('is_bot', False)
+    account_id = metadata.get('account_id')
 
     if not all([message, server_id, channel_id]):
         await addMessageToLogs(f"Missing required fields for send_message", "INFO")
@@ -91,7 +94,7 @@ async def send_message(sid, is_bot, account_id, data):
             profile_picture = row['profile_picture']
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
-            if is_bot: # perhaps add feature for users to have embeds too? would be funny
+            if is_bot: # perhaps add feature for users to have embeds too? would be a funny idea for selfbots (wokkicord 🤑)
                 embed_str = json.dumps(embed) if embed is not None else None
 
             assets_json = None
@@ -160,13 +163,15 @@ async def send_message(sid, is_bot, account_id, data):
     await sio_instance.sio.emit('send_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
     await addMessageToLogs(f"send_message_response emitted for sid: {sid}", "INFO")
     
-async def get_messages(sid, data):
-    access_token = data.get('access_token')
+@auth_required(server_required=True, allow_bots=False)
+async def get_messages(sid, metadata, data):
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
     offset = data.get('offset', 0)
 
-    if not all([access_token, server_id, channel_id]):
+    user_id = metadata.get('account_id')
+
+    if not all([server_id, channel_id]):
         await addMessageToLogs(f"Missing required fields for get_messages", "INFO")
         await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
@@ -182,17 +187,6 @@ async def get_messages(sid, data):
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
-            if not user_id:
-                await addMessageToLogs(f"Invalid or expired token for get_messages, access token: {access_token}", "INFO")
-                await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'Invalid or expired token'}, to=sid)
-                return
-
-            if not await is_user_in_server(cur, user_id, server_id):
-                await addMessageToLogs(f"User is not in server for get_messages, user id: {user_id}, server id: {server_id}", "INFO")
-                await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'User is not in server'}, to=sid)
-                return
-
             if not await does_user_have_server_permission(cur, user_id, server_id, 'view_channels'):
                 await addMessageToLogs(f"User does not have permission to view channels for get_messages, user id: {user_id}, server id: {server_id}", "INFO")
                 await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'User does not have permission to view channels'}, to=sid)
@@ -306,26 +300,21 @@ async def get_messages(sid, data):
     await sio_instance.sio.emit('get_messages_response', {'success': True, 'count': len(messages), 'total': total_count, 'offset': offset}, to=sid)
     await addMessageToLogs(f"get_messages_response emitted to {user_id}", "INFO")
     
-
-async def get_message_by_id(sid, data):
-    access_token = data.get('access_token')
+@auth_required(server_required=True, allow_bots=False)
+async def get_message_by_id(sid, metadata, data):
     message_id = data.get('message_id')
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
 
-    if access_token is None or message_id is None or server_id is None or channel_id is None:
+    user_id = metadata.get('account_id')
+
+    if message_id is None or server_id is None or channel_id is None:
         await addMessageToLogs(f"Missing required fields for get_message_by_id", "INFO")
         await sio_instance.sio.emit('message_by_id', None, to=sid)
         return
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
-            if not user_id:
-                await addMessageToLogs(f"Invalid access token for get_message_by_id, access token: {access_token}", "INFO")
-                await sio_instance.sio.emit('message_by_id', None, to=sid)
-                return
-
             if not await is_user_in_server(cur, user_id, server_id):
                 await addMessageToLogs(f"User not in server for get_message_by_id, user id: {user_id}, server id: {server_id}", "INFO")
                 await sio_instance.sio.emit('message_by_id', None, to=sid)
@@ -360,34 +349,40 @@ async def get_message_by_id(sid, data):
             await sio_instance.sio.emit('message_by_id', message, to=sid)
             await addMessageToLogs(f"Emitted message_by_id to {user_id}", "INFO")
             
-
-async def delete_message(sid, data):
-    access_token = data.get('access_token')
+@auth_required(server_required=True, allow_bots=True)
+async def delete_message(sid, metadata, data):
     message_id = data.get('message_id')
 
-    if access_token is None or message_id is None:
+    is_bot = metadata.get('is_bot')
+    account_id = metadata.get('account_id')
+
+    if message_id is None:
         await addMessageToLogs(f"Missing required fields for delete_message", "INFO")
         return
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_id = await verify_access_token(cur, access_token)
-            if not user_id:
-                await addMessageToLogs(f"Invalid access token for delete_message, access token: {access_token}", "INFO")
-                return
-            
-            await cur.execute("SELECT server_id, channel_id FROM messages WHERE id = %s AND sent_by = %s", (message_id, user_id))
-            message = await cur.fetchone()
+            if is_bot:
+                await cur.execute("SELECT server_id, channel_id FROM messages WHERE id = %s AND sent_by = %s", (message_id, account_id))
+                message = await cur.fetchone()
+            else:
+                await cur.execute("SELECT server_id, channel_id FROM bot_messages WHERE id = %s AND bot_id = %s", (message_id, account_id))
+                message = await cur.fetchone()
+
             if not message:
-                await addMessageToLogs(f"Message not found for delete_message, message id: {message_id}, user id: {user_id}", "INFO")
+                await addMessageToLogs(f"Message not found for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
                 return
 
             server_id = message['server_id']
             channel_id = message['channel_id']
 
-            result = await cur.execute("DELETE FROM messages WHERE id = %s AND sent_by = %s", (message_id, user_id))
+            if is_bot:
+                result = await cur.execute('DELETE FROM bot_messages WHERE id = %s AND bot_id = %s', (message_id, account_id))
+            else:
+                result = await cur.execute("DELETE FROM messages WHERE id = %s AND sent_by = %s", (message_id, account_id))
+            
             if result == 0:
-                await addMessageToLogs(f"Message not found for delete_message, message id: {message_id}, user id: {user_id}", "INFO")
+                await addMessageToLogs(f"Message not found for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
                 return
 
             server_channel_sids = await get_server_channel_sids(cur, server_id, channel_id)

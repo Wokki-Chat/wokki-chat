@@ -47,12 +47,12 @@ async def verify_access_token(cur, access_token):
     return user_id
 
     
-def auth_required(allow_bots=True):
+def auth_required(server_required:bool=True, allow_bots:bool=True):
     from server.helpers.server_helpers import is_user_in_server
     """
     Decorator to validate tokens.
     1. Input function must be async.
-    2. Passes `is_bot` and `account_id` (user/bot id) into the input function.
+    2. Passes `metadata` containing `is_bot`, `server_id` and `account_id` (user/bot id) into the input function.
     """
     def decorator(func):
         @wraps(func)
@@ -80,7 +80,7 @@ def auth_required(allow_bots=True):
                                 'error', {'success': False, 'error': 'Invalid bot token'}, to=sid
                             )
                             return
-                        if not await is_bot_in_server(cur, bot_id, server_id):
+                        if server_required and not await is_bot_in_server(cur, bot_id, server_id):
                             await addMessageToLogs(f"Bot not in server, bot id: {bot_id}, server id: {server_id}", "INFO")
                             await sio_instance.sio.emit(
                                 'error', {'success': False, 'error': 'Bot not in server'}, to=sid
@@ -102,15 +102,19 @@ def auth_required(allow_bots=True):
                                 'error', {'success': False, 'error': 'Invalid access token'}, to=sid
                             )
                             return
-                        if not await is_user_in_server(cur, user_id, server_id):
+                        if server_required and not await is_user_in_server(cur, user_id, server_id):
                             await addMessageToLogs(f"User not in server, user id: {user_id}, server id: {server_id}", "INFO")
                             await sio_instance.sio.emit(
                                 'error', {'success': False, 'error': 'User not in server'}, to=sid
                             )
                             return
                         account_id = user_id
-            return await func(sid, is_bot, account_id, data, *args, **kwargs)
 
+            metadata = {
+                'is_bot': is_bot,
+                'account_id': account_id
+            }
+            return await func(sid, metadata, data, *args, **kwargs)
         return wrapper
     return decorator
 
