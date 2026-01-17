@@ -3,6 +3,7 @@ import inspect
 from datetime import datetime
 import asyncio
 import aiofiles
+from server.config import server_name
 
 logs_file = "/home/lvwij/wokki20_chat/webpage/_private/logs/logs.txt"
 MAX_LINES = 500
@@ -13,9 +14,8 @@ async def addMessageToLogs(message, type):
     caller_line = caller_frame.lineno
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    worker_pid = os.getpid()
     
-    log_line = f"[Worker PID: {worker_pid}] [{timestamp}] [{caller_file}:{caller_line}] [{type}] -> {message}\n"
+    log_line = f"[Worker Name: {server_name}] [{timestamp}] [{caller_file}:{caller_line}] [{type}] -> {message}\n"
 
     lines = []
     if os.path.exists(logs_file):

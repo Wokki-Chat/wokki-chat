@@ -17,6 +17,13 @@ header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 header('Content-Type: application/json');
 
+function investigateUser($mysqli, $user_id) {
+    $stmt = $mysqli->prepare("UPDATE users SET needs_investigation = 1 WHERE id = ?");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $stmt->close();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $headers = getallheaders();
     if (isset($headers['Authorization']) && preg_match('/Bearer\s(\S+)/', $headers['Authorization'], $matches)) {
@@ -88,11 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 while (!$file->eof()) {
                     $line = $file->current();
                     
-                    if (preg_match('/^\[Worker PID: (.*?)\] \[(.*?)\] \[(.*?):(\d+)\] \[(.*?)\] -> (.*)$/', $line, $matches)) {
+                    if (preg_match('/^\[Worker Name: (.*?)\] \[(.*?)\] \[(.*?):(\d+)\] \[(.*?)\] -> (.*)$/', $line, $matches)) {
                         list(, $workerPid, $timestamp, $fileName, $lineNum, $type, $message) = $matches;
 
                         $parts = [];
-                        if (!$hideWorkerPid) $parts[] = "[Worker PID: $workerPid]";
+                        if (!$hideWorkerPid) $parts[] = "[Worker Name: $workerPid]";
                         if (!$hideTimestamp) $parts[] = "[$timestamp]";
                         if (!$hideFileName) $parts[] = "[$fileName:$lineNum]";
                         if (!$hideType) $parts[] = "[$type]";
@@ -115,22 +122,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 exit;
             }
         } else {
-            http_response_code(403);
-            echo json_encode([
-                'status' => 'error',
-                'description' => 'Forbidden: User is not a developer',
-                'return_code' => 34
-            ]);
+            header("Content-Type: text/plain");
+            echo "
+            You are not a developer, you cannot access this page.
+            Your account will be investigated. You will be banned if found guilty.
+            You can appeal your investigation here: info@wokki20.nl
+            ";
+            investigateUser($mysqli, $user_id);
             exit;
         }
     } else {
-        http_response_code(403);
-        echo json_encode([
-            'status' => 'error',
-            'description' => 'Forbidden: User is not a developer',
-            'return_code' => 34
-        ]);
-        exit;
+            header("Content-Type: text/plain");
+            echo "
+            You are not a developer, you cannot access this page.
+            Your account will be investigated. You will be banned if found guilty.
+            You can appeal your investigation here: info@wokki20.nl
+            ";
+            investigateUser($mysqli, $user_id);
+            exit;
     }
 
 } else {

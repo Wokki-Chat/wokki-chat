@@ -8,7 +8,10 @@ from server.db import get_db_pool
 import server.config as config
 import server.sio_config
 from server.helpers.logs import addMessageToLogs
+import os
 
+
+WORKER_NAME = os.getenv("WORKER_NAME", "Unknown")
 app = web.Application()
 sio.attach(app)
 
@@ -36,7 +39,7 @@ async def startup(app):
     try:
         config.pool = await get_db_pool()
         config.typing_lock = asyncio.Lock()
-        await addMessageToLogs("Server started", "INFO")
+        await addMessageToLogs(f"Worker {WORKER_NAME} started", "INFO")
     except Exception:
         exc_type, exc_value, exc_tb = sys.exc_info()
         await addMessageToLogs(''.join(traceback.format_exception(exc_type, exc_value, exc_tb)), "ERROR")
@@ -48,13 +51,13 @@ async def cleanup(app):
         if config.pool:
             config.pool.close()
             await config.pool.wait_closed()
-        await addMessageToLogs("Server stopped", "INFO")
+        await addMessageToLogs(f"Worker {WORKER_NAME} stopped", "INFO")
     except Exception:
         exc_type, exc_value, exc_tb = sys.exc_info()
         await addMessageToLogs(''.join(traceback.format_exception(exc_type, exc_value, exc_tb)), "ERROR")
         raise
 
-if __name__ == "__main__":
+if __name__ == "__main__" and "gunicorn" not in sys.modules:
     try:
         web.run_app(app, host="0.0.0.0", port=5000)
     except Exception:

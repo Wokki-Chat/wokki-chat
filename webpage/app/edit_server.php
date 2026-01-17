@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $category_name = $_POST['category_name'];
         $server_id = $_POST['server_id'];
 
-        $stmt = $mysqli->prepare("SELECT created_by FROM servers WHERE id = ?");
+        $stmt = $mysqli->prepare("SELECT created_by, server_type FROM servers WHERE id = ?");
         $stmt->bind_param("s", $server_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if ($row['created_by'] !== $user_id) {
+        if ($row['created_by'] !== $user_id && $row['server_type'] !== 'normal') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'You do not have permission to create a category for this server',
@@ -158,45 +158,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             exit;
         }
-
-        $stmt = $mysqli->prepare("SELECT channel_groups FROM servers WHERE id = ?");
-        $stmt->bind_param("s", $server_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        $stmt->close();
-
-        if (!$row || !isset($row['channel_groups'])) {
-            echo json_encode([
-                'status' => 'error',
-                'description' => 'Server not found',
-                'return_code' => 49
-            ]);
-            exit;
-        }
-
-        $categories_raw = json_decode($row['channel_groups'], true);
-
         $category_id_new = generateUUIDv4();
-        $category_new_raw = [
-            "channel_group_id" => $category_id_new,
-            "channel_group_name" => $category_name,
-            "channel_group_created_at" => date('Y-m-d H:i:s'),
-            "channel_group_updated_at" => date('Y-m-d H:i:s')
-        ];
 
-        if (!is_array($categories_raw)) {
-            $categories_raw = [];
-        }
-
-        $categories_raw[] = $category_new_raw;
-
-        $updated_json = json_encode($categories_raw);
-
-        $stmt = $mysqli->prepare("UPDATE servers SET channel_groups = ? WHERE id = ?");
-        $stmt->bind_param("ss", $updated_json, $server_id);
+        $stmt = $mysqli->prepare("INSERT INTO channel_groups (channel_group_id, channel_group_name, server_id) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $category_id_new, $category_name, $server_id);
         $stmt->execute();
         $stmt->close();
+
+        $category_new_raw = [
+            'id' => $category_id_new,
+            'name' => $category_name
+        ];
 
         echo json_encode([
             'status' => 'success',
@@ -230,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $stmt = $mysqli->prepare("SELECT created_by FROM servers WHERE id = ?");
+        $stmt = $mysqli->prepare("SELECT created_by, server_type FROM servers WHERE id = ?");
         $stmt->bind_param("s", $server_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -246,7 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if ($row['created_by'] !== $user_id) {
+        if ($row['created_by'] !== $user_id && $row['server_type'] !== 'normal') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'You do not have permission to create a category for this server',
@@ -255,31 +227,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $stmt = $mysqli->prepare("SELECT channel_groups FROM servers WHERE id = ?");
-        $stmt->bind_param("s", $server_id);
+        $stmt = $mysqli->prepare("SELECT channel_group_id FROM channel_groups WHERE channel_group_id = ? AND server_id = ?");
+        $stmt->bind_param("ss", $channel_category_id, $server_id);
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
         $stmt->close();
 
-        if (!$row || !isset($row['channel_groups'])) {
-            echo json_encode([
-                'status' => 'error',
-                'description' => 'Server not found',
-                'return_code' => 53
-            ]);
-            exit;
-        }
-
-        $categories_raw = json_decode($row['channel_groups'], true);
-
-        $category_exists = false;
-        foreach ($categories_raw as $category) {
-            if ($category['channel_group_id'] === $channel_category_id) {
-                $category_exists = true;
-                break;
-            }
-        }
+        $category_exists = $row && isset($row['channel_group_id']);
 
         if (!$category_exists) {
             echo json_encode([
@@ -290,40 +245,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $stmt = $mysqli->prepare("SELECT channels FROM servers WHERE id = ?");
-        $stmt->bind_param("s", $server_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        $stmt->close();
-
-        if (!$row || !isset($row['channels'])) {
-            echo json_encode([
-                'status' => 'error',
-                'description' => 'No channels found',
-                'return_code' => 55
-            ]);
-            exit;
-        }
-
-        $channels_raw = json_decode($row['channels'], true);
-
         $channel_id_new = generateUUIDv4();
-        $channel_new_raw = [
-            "channel_id" => $channel_id_new,
-            "channel_name" => $channel_name,
-            "channel_type" => $channel_type,
-            "channel_group_id" => $channel_category_id,
-            "channel_created_at" => date('Y-m-d H:i:s'),
-            "channel_updated_at" => date('Y-m-d H:i:s')
-        ];
-
-        $channels_raw[] = $channel_new_raw;
-
-        $channels_updated_json = json_encode($channels_raw);
-
-        $stmt = $mysqli->prepare("UPDATE servers SET channels = ? WHERE id = ?");
-        $stmt->bind_param("ss", $channels_updated_json, $server_id);
+        
+        $stmt = $mysqli->prepare("INSERT INTO channels (channel_id, channel_name, channel_type, channel_group_id, server_id, is_default) VALUES (?, ?, ?, ?, ?, 0)");
+        $stmt->bind_param("sssss", $channel_id_new, $channel_name, $channel_type, $channel_category_id, $server_id);
         $success = $stmt->execute();
         $stmt->close();
 
@@ -335,6 +260,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             exit;
         }
+
+        $channel_new_raw = [
+            'channel_id' => $channel_id_new,
+            'channel_name' => $channel_name,
+            'channel_type' => $channel_type,
+        ];
 
         echo json_encode([
             'status' => 'success',
@@ -467,6 +398,228 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         exit;
 
+    } else if ($action === 'edit_channel_index') {
+        if (
+            !isset($_POST['server_id']) ||
+            !isset($_POST['channel_id']) ||
+            !isset($_POST['index']) ||
+            !isset($_POST['channel_group'])
+        ) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Missing required fields',
+                'missing_fields' => ['server_id', 'channel_id', 'index'],
+                'return_code' => 67
+            ]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+        $channel_id = $_POST['channel_id'];
+        $index = intval($_POST['index']);
+        $channel_group = $_POST['channel_group'];
+        $other_channel_indexes = isset($_POST['other_channel_indexes'])
+            ? json_decode($_POST['other_channel_indexes'], true)
+            : [];
+
+        $mysqli->begin_transaction();
+
+        $stmt = $mysqli->prepare("UPDATE channels SET channel_index = ?, channel_group_id = ? WHERE server_id = ? AND channel_id = ?");
+        $stmt->bind_param("isss", $index, $channel_group, $server_id, $channel_id);
+        $success = $stmt->execute();
+        $stmt->close();
+
+        if (!$success) {
+            $mysqli->rollback();
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Failed to update channel index in database',
+                'return_code' => 68
+            ]);
+            exit;
+        }
+
+        if (is_array($other_channel_indexes)) {
+            $stmt = $mysqli->prepare("UPDATE channels SET channel_index = ? WHERE server_id = ? AND channel_id = ?");
+
+            foreach ($other_channel_indexes as $other_channel_id => $other_index) {
+                $other_index = intval($other_index);
+                $stmt->bind_param("iss", $other_index, $server_id, $other_channel_id);
+                if (!$stmt->execute()) {
+                    $stmt->close();
+                    $mysqli->rollback();
+                    echo json_encode([
+                        'status' => 'error',
+                        'description' => 'Failed to update other channel indexes',
+                        'return_code' => 70
+                    ]);
+                    exit;
+                }
+            }
+
+            $stmt->close();
+        }
+
+        $mysqli->commit();
+
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'Channel indexes updated',
+            'return_code' => 69
+        ]);
+        exit;
+        }   else if ($action === 'edit_channel_group') {
+        if (
+            !isset($_POST['server_id']) ||
+            !isset($_POST['group_id']) ||
+            !isset($_POST['index'])
+        ) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Missing required fields',
+                'missing_fields' => ['server_id', 'group_id', 'index'],
+                'return_code' => 71
+            ]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+        $channel_group_id = $_POST['group_id'];
+        $channel_group_index = intval($_POST['index']);
+
+        $other_channel_group_indexes = isset($_POST['other_group_indexes'])
+            ? json_decode($_POST['other_group_indexes'], true)
+            : [];
+
+        $mysqli->begin_transaction();
+
+        $stmt = $mysqli->prepare("
+            UPDATE channel_groups 
+            SET channel_group_index = ?
+            WHERE server_id = ? AND channel_group_id = ?
+        ");
+        $stmt->bind_param(
+            "iss",
+            $channel_group_index,
+            $server_id,
+            $channel_group_id
+        );
+        $success = $stmt->execute();
+        $stmt->close();
+
+        if (!$success) {
+            $mysqli->rollback();
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Failed to update channel group in database',
+                'return_code' => 72
+            ]);
+            exit;
+        }
+
+        if (is_array($other_channel_group_indexes)) {
+            $stmt = $mysqli->prepare("UPDATE channel_groups SET channel_group_index = ? WHERE server_id = ? AND channel_group_id = ?");
+            
+            foreach ($other_channel_group_indexes as $other_group_id => $other_index) {
+                $other_index = intval($other_index);
+                $stmt->bind_param("iss", $other_index, $server_id, $other_group_id);
+                if (!$stmt->execute()) {
+                    $stmt->close();
+                    $mysqli->rollback();
+                    echo json_encode([
+                        'status' => 'error',
+                        'description' => 'Failed to update other channel group indexes',
+                        'return_code' => 73
+                    ]);
+                    exit;
+                }
+            }
+
+            $stmt->close();
+        }
+
+        $mysqli->commit();
+
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'Channel groups updated',
+            'return_code' => 74
+        ]);
+        exit;
+    } else if ($action === 'edit_server_positioning') {
+        if (
+            !isset($_POST['server_id']) ||
+            !isset($_POST['position']) ||
+            !isset($_POST['other_positions'])
+        ) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Missing required fields',
+                'missing_fields' => ['server_id', 'position', 'other_positions'],
+                'return_code' => 75
+            ]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+        $position = intval($_POST['position']);
+        $other_positions = json_decode($_POST['other_positions'], true);
+
+        $mysqli->begin_transaction();
+
+        $stmt = $mysqli->prepare("
+            UPDATE server_members 
+            SET position = ?
+            WHERE server_id = ? AND user_id = ?
+        ");
+        $stmt->bind_param(
+            "iss",
+            $position,
+            $server_id,
+            $user_id
+        );
+        $success = $stmt->execute();
+        $stmt->close();
+
+        if (!$success) {
+            $mysqli->rollback();
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Failed to update position in database',
+                'return_code' => 76
+            ]);
+            exit;
+        }
+
+        if (is_array($other_positions)) {
+            $stmt = $mysqli->prepare("UPDATE server_members SET position = ? WHERE server_id = ? AND user_id = ?");
+            
+            foreach ($other_positions as $other_server_id => $other_position) {
+                $other_position = intval($other_position);
+                $stmt->bind_param("iss", $other_position, $other_server_id, $user_id);
+                if (!$stmt->execute()) {
+                    $stmt->close();
+                    $mysqli->rollback();
+                    echo json_encode([
+                        'status' => 'error',
+                        'description' => 'Failed to update other positions',
+                        'return_code' => 77
+                    ]);
+                    exit;
+                }
+            }
+
+            $stmt->close();
+        }
+
+        $mysqli->commit();
+
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'Position updated',
+            'return_code' => 78
+        ]);
+        exit;
     }
 
     echo json_encode([
@@ -476,7 +629,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'return_code' => 46
     ]);
     exit;
-
 
 }
 else {

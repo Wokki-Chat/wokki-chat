@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import json
 import uuid
-from server.config import get_sids_for_user, get_bot_sid_from_id
+from server.config import get_sids_for_user, get_bot_sid_from_id, get_cached_users, cache_users
 import server.sio_instance as sio_instance
 from server.helpers.user_helpers import auth_required, get_user_info_from_id
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server
@@ -9,8 +9,18 @@ import aiomysql
 import re
 import server.config as config
 from server.helpers.logs import addMessageToLogs
+import asyncio
 
-async def does_user_have_server_permission(cur, user_id, server_id, permission_identifier):
+async def server_permissions(cur, user_id, server_id, permission_identifier):
+    u_owns_server_query = """
+        SELECT created_by
+        FROM servers
+        WHERE id = %s AND created_by = %s AND server_type = 'normal'
+    """
+    await cur.execute(u_owns_server_query, (server_id, user_id))
+    if await cur.fetchone():
+        return True
+    
     query = """
         SELECT role_id, permissions
         FROM server_roles
@@ -154,23 +164,6 @@ async def get_member_ids_from_server(cur, server_id):
 
     return member_ids
 
-async def get_server_users(sid, data):
-    server_id = data.get('server_id')
-
-    if not server_id:
-        await addMessageToLogs("Missing required fields for get_server_users", "INFO")
-        await sio_instance.sio.emit('get_server_users_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
-        return
-
-    async with config.pool.acquire() as conn:
-        async with conn.cursor(aiomysql.DictCursor) as cur:
-            users = await get_server_users_info(cur, server_id)
-                
-    await sio_instance.sio.emit('server_users', users, to=sid)
-    await addMessageToLogs(f"Emitted server_users for get_server_users, server id: {server_id}", "INFO")
-    await sio_instance.sio.emit('get_server_users_response', {'success': True, 'count': len(users)}, to=sid)
-    await addMessageToLogs(f"Emitted get_server_users_response for get_server_users, server id: {server_id}", "INFO")
-
 async def get_server_users_info(cur, server_id):
     member_entries = await get_member_ids_from_server(cur, server_id)
 
@@ -260,6 +253,31 @@ async def server_commands(sid, metadata, data):
             await sio_instance.sio.emit('server_commands_response', {'success': True, 'bots': bots_with_commands}, to=sid)
             await addMessageToLogs(f"Emitted server_commands_response for server_commands, server id: {server_id}", "INFO")
             
+@auth_required(server_required=True, allow_bots=False)
+async def get_server_users(sid, metadata, data):
+    server_id = data.get('server_id')
+    user_id = metadata.get('account_id')
+
+    if not all([server_id]):
+        await addMessageToLogs(f"Missing required fields for get_messages", "INFO")
+        await sio_instance.sio.emit('get_server_users_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
+        return
+        
+    cached_users = await get_cached_users(server_id)
+    if cached_users:
+        await sio_instance.sio.emit('server_users', cached_users, to=sid)
+        
+        
+    async def get_users():
+        async with config.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                users = await get_server_users_info(cur, server_id)
+                await cache_users(server_id, users)
+                await sio_instance.sio.emit("server_users", users, to=sid)
+                await addMessageToLogs(f"Emitted server_users to {user_id}, Sent {len(users)} users to {user_id}", "INFO")
+        
+    asyncio.create_task(get_users())
+    
 @auth_required(server_required=True, allow_bots=False)
 async def command(sid, metadata, data):
     command = data.get('command')

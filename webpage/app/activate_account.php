@@ -21,21 +21,7 @@ header('Content-Type: text/html; charset=utf-8');
 
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    echo '
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Invalid Request</title>
-        </head>
-        <body>
-            <h1>Invalid Request</h1>
-            <p>The request is invalid.</p>
-            <p>return_code: 19</p>
-        </body>
-        </html>
-    ';
+    header('Location: /login?return_code=19');
     exit;
 }
 
@@ -60,58 +46,14 @@ if (isset($_GET['activatecode']) && isset($_GET['user_id'])) {
         $stmt->execute();
         $stmt->close();
 
-        echo '
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Account Activated</title>
-            </head>
-            <body>
-                <h1>Account Activated</h1>
-                <p>Your account has been successfully activated.</p>
-                <p>You can now close this window.</p>
-                <p>return_code: 20</p>
-            </body>
-            </html>
-
-        ';
+        header('Location: /login?return_code=20');
+        exit;
     } else {
         $stmt->close();
-        echo '
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Invalid Activation Code</title>
-            </head>
-            <body>
-                <h1>Invalid Activation Code</h1>
-                <p>The activation code you provided is invalid or has expired.</p>
-                <p>You may have already activated your account, or the activation code may have been used by someone else.</p>
-                <p>return_code: 21</p>
-            </body>
-            </html>
-
-        ';
+        header('Location: /login?return_code=21');
+        exit;
     }
 } else {
-    echo '
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Invalid Request</title>
-        </head>
-        <body>
-            <h1>Invalid Request</h1>
-            <p>The request is invalid or missing required parameters.</p>
-            <p>return_code: 22</p>
-        </body>
-        </html>
-
-    ';
+    header('Location: /login?return_code=22');
+    exit;
 }

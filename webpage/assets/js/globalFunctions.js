@@ -1,3 +1,4 @@
+const uploadContainer = document.querySelector(".input-container-2 .file-upload-container");
 
 async function highlightAll() {
   await hljs.highlightAll();
@@ -130,7 +131,7 @@ function sanitize(text) {
   return div.innerHTML;
 }
 
-function sanitizeMsg(text) {
+async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
   function escapeHtml(str) {
     return str.replace(/[&<>"']/g, ch => ({
       '&': '&amp;',
@@ -151,13 +152,9 @@ function sanitizeMsg(text) {
     return index >= openTagIndex && index < closeTagIndex + 4;
   }
 
-  function unescapeMarkdown(str) {
-    return str.replace(/\\([*_\-~`\\[\](){}])/g, '$1');
-  }
-
   const parts = text.split(/(```(\w+)?\n[\s\S]*?```)/g);
 
-  let processed = parts.map(part => {
+  let processed = await Promise.all(parts.map(async part => {
     if (!part) return '';
     if (part.startsWith('```')) {
       const match = part.match(/```(\w+)?\n([\s\S]*?)```/);
@@ -169,72 +166,50 @@ function sanitizeMsg(text) {
     } else {
       let escaped = escapeHtml(part);
 
-      function replaceWithCheck(regex, replacer) {
-        escaped = escaped.replace(regex, (...args) => {
-          const match = args[0];
-          const offset = args[args.length - 2];
-          if (isInsideATag(escaped, offset)) return match;
-          return replacer(...args);
-        });
+      async function replaceWithCheck(regex, replacer) {
+        const matches = [...escaped.matchAll(regex)];
+        for (const match of matches.reverse()) {
+          const offset = match.index;
+          if (isInsideATag(escaped, offset)) continue;
+          escaped = escaped.slice(0, offset) + await replacer(...match) + escaped.slice(offset + match[0].length);
+        }
       }
-      replaceWithCheck(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, linkText, url) => {
+
+      await replaceWithCheck(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, linkText, url) => {
         return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${linkText}</a>`;
       });
 
-      replaceWithCheck(/(?<!["'>])(https?:\/\/[^\s<]+)/g, (url) => {
-        if (!url.startsWith('https://chat.jonazwetsloot.nl/posts/') && !url.startsWith('https://chat.wokki20.nl/invite/')) {
+      await replaceWithCheck(/(?<!["'>])(https?:\/\/[^\s<]+)/g, (url) => {
+        if (!url.startsWith('https://open.spotify.com/track/') && !url.startsWith('https://chat.wokki20.nl/invite/')) {
           return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>`;
         }
         return url;
       });
 
-      replaceWithCheck(/^#{1,6} .*/gm, (line) => {
+      await replaceWithCheck(/^#{1,6} .*/gm, (line) => {
         const level = line.match(/^#+/)[0].length;
         const content = line.slice(level + 1).trim();
         return `<h${level} style="margin: 0;">${content}</h${level}>`;
       });
 
-      replaceWithCheck(/(^|\n)((- .+\n?)+)/g, (match, before, list) => {
+      await replaceWithCheck(/(^|\n)((- .+\n?)+)/g, (match, before, list) => {
         const items = list.trim().split('\n').map(i => i.replace(/^- /, '').trim());
         const lis = items.map(i => `<li>${i}</li>`).join('');
         return `${before}<ul>${lis}</ul>`;
       });
 
-      replaceWithCheck(/(?<!\\)~~(.+?)~~/g, (match, content) => {
-        return `<del>${content}</del>`;
-      });
+      await replaceWithCheck(/(?<!\\)~~(.+?)~~/g, (match, content) => `<del>${content}</del>`);
+      await replaceWithCheck(/(?<!\\)`([^`\n]+)`/g, (match, code) => `<code>${code}</code>`);
+      await replaceWithCheck(/(?<!\\)\*\*(.+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
+      await replaceWithCheck(/(?<!\\)(\*|_)(.+?)\1/g, (match, wrap, content) => content.includes('**') ? match : `<em>${content}</em>`);
 
-      replaceWithCheck(/(?<!\\)~~(.+?)~~/g, (match, content) => {
-        return `<del>${content}</del>`;
-      });
-
-      replaceWithCheck(/(?<!\\)`([^`\n]+)`/g, (match, code) => {
-        return `<code>${code}</code>`;
-      });
-
-      replaceWithCheck(/(?<!\\)\*\*(.+?)\*\*/g, (match, content) => {
-        return `<strong>${content}</strong>`;
-      });
-
-      replaceWithCheck(/(?<!\\)(\*|_)(.+?)\1/g, (match, wrap, content) => {
-        if (content.includes('**')) return match;
-        return `<em>${content}</em>`;
-      });
-
-      replaceWithCheck(/(^|\n)((?:&gt; ?.*(?:\n|$))+)/g, (match, before, quoteBlock) => {
-        const lines = quoteBlock
-          .trim()
-          .split('\n')
-          .map(line => line.replace(/^&gt; ?/, ''))
-          .join('<br>');
+      await replaceWithCheck(/(^|\n)((?:&gt; ?.*(?:\n|$))+)/g, (match, before, quoteBlock) => {
+        const lines = quoteBlock.trim().split('\n').map(line => line.replace(/^&gt; ?/, '')).join('<br>');
         return `${before}<div class="quote">${lines}</div>`;
       });
 
-
-
-      replaceWithCheck(/#([^\s#<]+)/g, (match, channelName) => {
-        if (typeof channels === 'undefined' || !Array.isArray(channels)) return match;
-
+      await replaceWithCheck(/#([^\s#<]+)/g, (match, channelName) => {
+        if (!Array.isArray(channels)) return match;
         const channel = channels.find(c => c.name.toLowerCase() === channelName.toLowerCase());
         if (channel) {
           const url = `https://chat.wokki20.nl/server/${server_id}/channel/${channel.channel_id}`;
@@ -242,226 +217,86 @@ function sanitizeMsg(text) {
         }
         return match;
       });
-      
-      replaceWithCheck(/&lt;@([^&]+)&gt;/g, (match, username) => {
-        const cleanUsername = username.trim();
 
+      await replaceWithCheck(/&lt;@([^&]+)&gt;/g, (match, username) => {
+        const cleanUsername = username.trim();
         if (cleanUsername.toLowerCase() === "everyone") {
           return `<a href="#" rel="noopener noreferrer" class="user-link everyone self" data-user-id="everyone">@everyone</a>`;
         }
-
         const user = usersList.find(u => u.username.toLowerCase() === cleanUsername.toLowerCase());
-
         if (user) {
           const url = `https://chat.wokki20.nl/profile/@${encodeURIComponent(cleanUsername)}`;
           return `<a href="${url}" rel="noopener noreferrer" class="user-link ${user.id == user_id ? "self" : ""}" data-user-id="${user.id}">@${cleanUsername}</a>`;
         }
-
         return match;
       });
 
-      replaceWithCheck(/&lt;t:(\d+):(\w+)&gt;/g, (match, timeNumber, type) => {
+      await replaceWithCheck(/&lt;t:(\d+):(\w+)&gt;/g, (match, timeNumber, type) => {
         const timestamp = parseInt(timeNumber, 10) * 1000;
         const date = new Date(timestamp);
         const isoTime = date.toISOString();
-
         let formatted = '';
         switch (type) {
           case 'R': {
             const now = Date.now();
             const diff = timestamp - now;
             const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-
             const seconds = Math.round(diff / 1000);
             const minutes = Math.round(diff / 60000);
             const hours = Math.round(diff / 3600000);
             const days = Math.round(diff / 86400000);
-
-            if (Math.abs(seconds) < 60) {
-              formatted = rtf.format(seconds, 'second');
-            } else if (Math.abs(minutes) < 60) {
-              formatted = rtf.format(minutes, 'minute');
-            } else if (Math.abs(hours) < 24) {
-              formatted = rtf.format(hours, 'hour');
-            } else {
-              formatted = rtf.format(days, 'day');
-            }
+            if (Math.abs(seconds) < 60) formatted = rtf.format(seconds, 'second');
+            else if (Math.abs(minutes) < 60) formatted = rtf.format(minutes, 'minute');
+            else if (Math.abs(hours) < 24) formatted = rtf.format(hours, 'hour');
+            else formatted = rtf.format(days, 'day');
             break;
           }
           case 'F':
-            formatted = date.toLocaleString(undefined, {
-              dateStyle: 'long',
-              timeStyle: 'short',
-            });
+            formatted = date.toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
             break;
           case 'D':
-            formatted = date.toLocaleDateString(undefined, {
-              dateStyle: 'long',
-            });
+            formatted = date.toLocaleDateString(undefined, { dateStyle: 'long' });
             break;
           case 'T':
-            formatted = date.toLocaleTimeString(undefined, {
-              hour: 'numeric',
-              minute: '2-digit',
-            });
+            formatted = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
             break;
           default:
             formatted = isoTime;
         }
-
         return `<time datetime="${isoTime}" data-type="${type}" class="dynamic-time">${formatted}</time>`;
       });
 
       escaped = escaped.replace(/\n/g, '<br>');
 
-      replaceWithCheck(/(?<!["'>])(https?:\/\/chat\.wokki20\.nl\/invite\/[^\s)]+)/g, (url) => {
+      await replaceWithCheck(/(?<!["'>])(https?:\/\/chat\.wokki20\.nl\/invite\/[^\s)]+)/g, (url) => {
         const inviteId = url.split("/").pop();
-
-        try {
-            const xhr = new XMLHttpRequest();
-            xhr.open("GET", url, false);
-            xhr.send();
-
-            let serverName = "Unknown Server";
-            let serverImage = "";
-            let serverCreatedAt = "Unknown Date";
-            let serverId = "";
-            let inviteExpired = false;
-            if (xhr.status === 200) {
-                const html = xhr.responseText;
-                const match = html.match(/<meta\s+name=["']server_name["']\s+content=["']([^"']+)["']\s*\/?>/i);
-                if (match) serverName = match[1];
-                const match2 = html.match(/<meta\s+name=["']server_image["']\s+content=["']([^"']+)["']\s*\/?>/i);
-                if (match2) serverImage = match2[1];
-                const match3 = html.match(/<meta\s+name=["']server_created_at["']\s+content=["']([^"']+)["']\s*\/?>/i);
-                if (match3) serverCreatedAt = match3[1];
-                const match5 = html.match(/<meta\s+name=["']server_id["']\s+content=["']([^"']+)["']\s*\/?>/i);
-                if (match5) serverId = match5[1];
-                const match6 = html.match(/<meta\s+name=["']invite_expired["']\s+content=["']([^"']+)["']\s*\/?>/i);
-                if (match6) inviteExpired = match6[1];
-            }
-
-            let formattedDate = "Unknown Date";
-            const parsedDate = new Date(serverCreatedAt);
-            if (!isNaN(parsedDate)) {
-                formattedDate = new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric', year: 'numeric'}).format(parsedDate);
-            }
-
-
-            const xhr2 = new XMLHttpRequest();
-            xhr2.open("GET", `https://chat.wokki20.nl/server/${serverId}`, false);
-            xhr2.send();
-
-            let isMember = false;
-            if (xhr2.status === 200) {
-                const html2 = xhr2.responseText;
-                const match4 = html2.match(/<meta\s+name=["']is_in_server["']\s+content=["']([^"']+)["']\s*\/?>/i);
-                if (match4) isMember = match4[1];
-            }
-
-            return `
-            <a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>
-            <div class="invite-item-container">
-                <div class="invite-item-name-icon-container">
-                  <img src="${serverImage}" alt="Server Icon" class="invite-item-icon">
-                  <div class="invite-item-name-date-container">
-                    <p class="invite-item-name">${sanitize(serverName)}</p>
-                    <p class="invite-item-date">${formattedDate}</p>
-                  </div>
-                </div>
-                <button class="invite-item-join-button button-primary-filled" data-invite-id="${inviteId}" ${inviteExpired ? "disabled" : ""} ${inviteExpired ? '' : `onclick="window.location.href = \`https://chat.wokki20.nl/server/${serverId}?invite=${inviteId}\`;"`}> ${isMember ? "Go To Server" : inviteExpired ? "Invite Expired" : "Join Server"}</button>
-            </div>
-            `;
-        } catch (err) {
-            console.error(err);
-            return `
-            <a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>
-            <div class="invite-item-container">
-                <div class="invite-item-name-icon-container">
-                  <div class="invite-item-name-date-container">
-                    <p class="invite-item-name">This invite is invalid</p>
-                  </div>
-                </div>
-            </div>
-            `;
-        }
+        return `
+          <a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>
+          <div class="invite-item-container loading"
+              data-invite-url="${url}"
+              data-invite-id="${inviteId}">
+            <p>Loading invite…</p>
+          </div>
+        `;
       });
 
-      replaceWithCheck(/(?<!["'>])(https?:\/\/chat\.jonazwetsloot\.nl\/posts\/[^\s)]+)/g, (url) => {
-          const messageId = url.split("/").pop();
-          const client_id = "A81E404E-6F93-4347-89D2-A56A0BD962B9";
-          const client_secret = "jLM3ig32A51wjN5qkCVPyLAbnglLizbqt77s";
-
-          const tokenRequest = new XMLHttpRequest();
-          tokenRequest.open("POST", "https://chat.jonazwetsloot.nl/api/v1/token", false);
-          const formData = new FormData();
-          formData.append("grant_type", "client_credentials");
-          formData.append("client_id", client_id);
-          formData.append("client_secret", client_secret);
-
-          tokenRequest.send(formData);
-
-          if (tokenRequest.status !== 200) return "Failed to get access token";
-
-          const tokenData = JSON.parse(tokenRequest.responseText);
-          if (!tokenData.access_token) return "Failed to get access token";
-
-          const accessToken = tokenData.access_token;
-
-          const postRequest = new XMLHttpRequest();
-          postRequest.open("GET", `https://chat.jonazwetsloot.nl/api/v1/timeline?offset_id=${messageId}&limit=1&sort=time&format=html`, false);
-          postRequest.setRequestHeader("Authorization", `Bearer ${accessToken}`);
-          postRequest.send();
-
-          if (postRequest.status !== 200) return "Failed to fetch post";
-
-          const postData = JSON.parse(postRequest.responseText);
-          if (postData.error) return "Failed to fetch post";
-
-          console.log(postData);
-
-          function convertTime(time) {
-            const now = Date.now() / 1000;
-            const diff = now - time;
-
-            if (diff < 120) {
-              const seconds = Math.round(diff);
-              if (seconds === 0) {
-                return "Just now";
-              } else {
-                return `${seconds} second${seconds > 1 ? 's' : ''}`;
-              }
-            } else if (diff < 60 * 60) {
-              const minutes = Math.round(diff / 60);
-              return `${minutes} minute${minutes > 1 ? 's' : ''}`;
-            } else if (diff < 24 * 60 * 60) {
-              const hours = Math.round(diff / (60 * 60));
-              return `${hours} hour${hours > 1 ? 's' : ''}`;
-            } else if (diff < 30 * 24 * 60 * 60) {
-              const days = Math.round(diff / (24 * 60 * 60));
-              return `${days} day${days > 1 ? 's' : ''}`;
-            } else if (diff < 12 * 30 * 24 * 60 * 60) {
-              const months = Math.round(diff / (30 * 24 * 60 * 60));
-              return `${months} month${months > 1 ? 's' : ''}`;
-            } else {
-              const years = Math.round(diff / (12 * 30 * 24 * 60 * 60));
-              return `${years} year${years > 1 ? 's' : ''}`;
-            }
-          }
-
-          let post = `<link rel="stylesheet" href="https://chat.jonazwetsloot.nl/resources/stylesheet.css?v=1.8.3.17" /><div id="13291" class="message event" style="margin: 0px;"><div class="bar"><img class="profile-picture event" alt="Profile picture of ${postData[0].user}" src="https://chat.jonazwetsloot.nl/uploads/${postData[0].picture}"><div class="info"><a class="username js-link" target="_blank" href="https://chat.jonazwetsloot.nl/users/${postData[0].user}">${postData[0].user} <img src="https://chat.jonazwetsloot.nl/svg/verified.svg" title="This account has been verified"></a><p class="friendly-time" data-time="${postData[0].time}">${convertTime(postData[0].time)}</p></div><div class="like"><button></button><p>${postData[0].likes}</p></div></div><div class="content"><p>${postData[0].message}</p>${postData[0].attachments !== "" ? `<div class="gallery blurred event"><div class="blur-info blur-iframe"><h3>This post contains attachments</h3><p>Attachments are hidden for security reasons, you can view them on Chat.</p><p><a style="display: block;" class="button" target="_blank" href="https://chat.jonazwetsloot.nl/posts/${messageId}">View post</a></p></div></div>` : ""}</div></div>`;
-
-          const endHtml = `<iframe style="max-width: 823px; width: 100%; height: 100%; border: none; outline: none; overflow: hidden; border-radius: 16px; " onload="this.style.height = this.contentWindow.document.body.scrollHeight + 'px';" srcdoc='${post}' scrolling="no" ></iframe>`;
-
-          return endHtml;
-
+      await replaceWithCheck(/(?<!["'>])(https?:\/\/open\.spotify\.com\/track\/[0-9A-Za-z]+)(\?[^\s]*)?/g, (url) => {
+        const trackId = url.split("/").pop().split("?")[0];
+        return `
+          <a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>
+          <div class="spotify-track-container loading"
+            data-spotify-track-url="${url}"
+            data-spotify-track-id="${trackId}">
+            <p>Loading Spotify Embed…</p>
+          </div>
+        `;
       });
 
       escaped = escaped.replace(/\\([*_\-~`\\[\](){}])/g, '$1');
 
       return escaped;
     }
-  });
+  }));
 
   const result = processed.join('');
 
@@ -470,6 +305,153 @@ function sanitizeMsg(text) {
   }, 0);
 
   return result.trim();
+}
+
+async function sanitizeMrk(text) {
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, ch => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[ch]);
+  }
+
+  text = escapeHtml(text);
+
+  async function replaceWithCheck(str, regex, replacer) {
+    const matches = [...str.matchAll(regex)];
+    for (const match of matches.reverse()) {
+      const offset = match.index;
+      str = str.slice(0, offset) + await replacer(...match) + str.slice(offset + match[0].length);
+    }
+    return str;
+  }
+
+  text = await replaceWithCheck(text, /(^|\n)((- .+\n?)+)/g, (match, before, list) => {
+    const items = list.trim().split('\n').map(i => i.replace(/^- /, '').trim());
+    const lis = items.map(i => `<li>${i}</li>`).join('');
+    return `${before}<ul>${lis}</ul>`;
+  });
+
+  text = await replaceWithCheck(text, /(?<!\\)~~(.+?)~~/g, (match, content) => `<del>${content}</del>`);
+  text = await replaceWithCheck(text, /(?<!\\)`([^`\n]+)`/g, (match, code) => `<code>${code}</code>`);
+  text = await replaceWithCheck(text, /(?<!\\)\*\*(.+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
+  text = await replaceWithCheck(text, /(?<!\\)(\*|_)(.+?)\1/g, (match, wrap, content) => content.includes('**') ? match : `<em>${content}</em>`);
+
+  text = await replaceWithCheck(text, /(^|\n)((?:&gt; ?.*(?:\n|$))+)/g, (match, before, quoteBlock) => {
+    const lines = quoteBlock.trim().split('\n').map(line => line.replace(/^&gt; ?/, '')).join('<br>');
+    return `${before}<div class="quote">${lines}</div>`;
+  });
+
+  text = await replaceWithCheck(text, /&lt;t:(\d+):(\w+)&gt;/g, (match, timeNumber, type) => {
+    const timestamp = parseInt(timeNumber, 10) * 1000;
+    const date = new Date(timestamp);
+    const isoTime = date.toISOString();
+    let formatted = '';
+    switch (type) {
+      case 'R': {
+        const now = Date.now();
+        const diff = timestamp - now;
+        const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+        const seconds = Math.round(diff / 1000);
+        const minutes = Math.round(diff / 60000);
+        const hours = Math.round(diff / 3600000);
+        const days = Math.round(diff / 86400000);
+        if (Math.abs(seconds) < 60) formatted = rtf.format(seconds, 'second');
+        else if (Math.abs(minutes) < 60) formatted = rtf.format(minutes, 'minute');
+        else if (Math.abs(hours) < 24) formatted = rtf.format(hours, 'hour');
+        else formatted = rtf.format(days, 'day');
+        break;
+      }
+      case 'F':
+        formatted = date.toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
+        break;
+      case 'D':
+        formatted = date.toLocaleDateString(undefined, { dateStyle: 'long' });
+        break;
+      case 'T':
+        formatted = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        break;
+      default:
+        formatted = isoTime;
+    }
+    return `<time datetime="${isoTime}" data-type="${type}" class="dynamic-time">${formatted}</time>`;
+  });
+
+  text = text.replace(/\n/g, '<br>');
+  text = text.replace(/\\([*_\-~`\\[\](){}])/g, '$1');
+
+  return text;
+}
+
+async function hydrateSpotifyTracks(root = document) {
+	const tracks = root.querySelectorAll('.spotify-track-container.loading');
+
+	tracks.forEach(async el => {
+		const trackId = el.dataset.spotifyTrackId;
+		if (!trackId) return;
+
+		const iframe = document.createElement('iframe');
+		iframe.src = `https://open.spotify.com/embed/track/${trackId}`;
+		iframe.width = '100%';
+		iframe.height = '152';
+		iframe.frameBorder = '0';
+		iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+		iframe.allowFullscreen = true;
+		iframe.style.borderRadius = '12px';
+		iframe.loading = 'lazy';
+
+		el.innerHTML = '';
+		el.appendChild(iframe);
+		el.classList.remove('loading');
+	});
+}
+
+async function hydrateInvites(root = document) {
+  const invites = root.querySelectorAll('.invite-item-container.loading');
+
+  invites.forEach(async el => {
+    const url = el.dataset.inviteUrl;
+    const inviteId = el.dataset.inviteId;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw 0;
+
+      const html = await res.text();
+
+      const serverName = html.match(/server_name["'] content=["']([^"']+)/i)?.[1] ?? "Unknown Server";
+      const serverImage = html.match(/server_image["'] content=["']([^"']+)/i)?.[1] ?? "";
+      const serverCreatedAt = html.match(/server_created_at["'] content=["']([^"']+)/i)?.[1];
+      const serverId = html.match(/server_id["'] content=["']([^"']+)/i)?.[1];
+      const expired = html.match(/invite_expired["'] content=["']([^"']+)/i)?.[1];
+
+      const date = serverCreatedAt
+        ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            .format(new Date(serverCreatedAt))
+        : "Unknown Date";
+
+      el.innerHTML = `
+        <div class="invite-item-name-icon-container">
+          <img src="${serverImage}" class="invite-item-icon">
+          <div>
+            <p>${serverName}</p>
+            <p>${date}</p>
+          </div>
+        </div>
+        <button class="button-primary-filled ${expired ? "disabled" : ""} invite-join-button"
+                onclick="${expired ? "" : `window.location.href='https://chat.wokki20.nl/server/${serverId}?invite=${inviteId}'`}">
+          ${expired ? "Invite Expired" : "Join Server"}
+        </button>
+      `;
+
+      el.classList.remove('loading');
+    } catch {
+      el.innerHTML = `<p>This invite is invalid</p>`;
+    }
+  });
 }
 
 function formatDynamicTime() {
@@ -534,7 +516,7 @@ setInterval(formatDynamicTime, 1 * 1000);
 document.addEventListener('DOMContentLoaded', formatDynamicTime);
 
 
-function show_mentions(query) {
+function show_mentions(query, usersList) {
   const existingPopup = document.querySelector(".mentions-popup");
   if (existingPopup) existingPopup.remove();
 
@@ -603,7 +585,7 @@ function placeCaretAtEnd(el) {
   }
 }
 
-function showAvailableCommands(command, textarea) {
+function showAvailableCommands(command, textarea, available_commands) {
     const existingPopup = document.querySelector(".available-commands");
     if (existingPopup) existingPopup.remove();
     if (available_commands.length === 0) return;
@@ -940,349 +922,6 @@ function getCleanMessageFromTextarea(textareaEl) {
   return clone.innerText.trim();
 }
 
-const MAX_FILES = 10;
-const MAX_SIZE = 25 * 1024 * 1024;
-const fileInput = document.getElementById('file-input');
-
-const ALLOWED_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/gif",
-  "image/webp",
-  "image/bmp",
-  "video/mp4",
-  "video/webm",
-  "video/ogg",
-  "audio/mpeg",
-  "audio/wav",
-  "audio/ogg",
-  "application/pdf",
-  "text/plain"
-];
-
-if (fileInput) {
-  
-  fileInput.addEventListener('change', async (e) => {
-    const files = Array.from(e.target.files);
-
-    const dotFrames = ["", ".", "..", "...", "..", "."];
-    let dotIndex = 0;
-
-    const uploadingToast = Toastify({
-      text: `Uploading ${files.length} file${files.length > 1 ? 's' : ''}${dotFrames[dotIndex]}`,
-      duration: -1,
-      gravity: "bottom",
-      position: "right",
-      close: true,
-      stopOnFocus: true,
-      style: {
-        background: "var(--clr-popup-a20)",
-        borderRadius: "12px",
-        boxShadow: "none"
-      }
-    });
-    uploadingToast.showToast();
-
-    const intervalId = setInterval(() => {
-      dotIndex = (dotIndex + 1) % dotFrames.length;
-      uploadingToast.text = `Uploading ${files.length} file${files.length > 1 ? 's' : ''}${dotFrames[dotIndex]}`;
-
-      const toastElem = document.querySelector(".toastify");
-      if (toastElem) {
-        for (const node of toastElem.childNodes) {
-          if (node.nodeType === Node.TEXT_NODE) {
-            node.textContent = uploadingToast.text + ' ';
-            break;
-          }
-        }
-      }
-    }, 500);
-
-    if ((selectedFiles.length + files.length) > MAX_FILES) {
-      clearInterval(intervalId);
-      uploadingToast.hideToast();
-      Toastify({
-        text: `You can only upload up to ${MAX_FILES} files at once.`,
-        duration: 5000,
-        gravity: "bottom",
-        position: "right",
-        close: true,
-        stopOnFocus: true,
-        style: {
-          background: "var(--clr-popup-a20)",
-          borderRadius: "12px",
-          boxShadow: "none"
-        }
-      }).showToast();
-      fileInput.value = '';
-      return;
-    }
-
-    for (const file of files) {
-      if (file.size > MAX_SIZE) {
-        clearInterval(intervalId);
-        uploadingToast.hideToast();
-        Toastify({
-          text: `File size exceeds the 25MB upload limit.`,
-          duration: 5000,
-          gravity: "bottom",
-          position: "right",
-          close: true,
-          stopOnFocus: true,
-          style: {
-            background: "var(--clr-popup-a20)",
-            borderRadius: "12px",
-            boxShadow: "none"
-          }
-        }).showToast();
-        fileInput.value = '';
-        return;
-      }
-    }
-
-    fileInput.value = '';
-
-    for (const file of files) {
-      try {
-        const savedName = await upload_single_file(file);
-        selectedFiles.push({ file, savedName, originalName: file.name });
-      } catch (err) {
-        clearInterval(intervalId);
-        uploadingToast.hideToast();
-        Toastify({
-          text: `Failed to upload ${file.name}`,
-          duration: 5000,
-          gravity: "bottom",
-          position: "right",
-          close: true,
-          stopOnFocus: true,
-          style: {
-            background: "#ff3b3b",
-            borderRadius: "12px",
-            boxShadow: "none"
-          }
-        }).showToast();
-      }
-    }
-
-    clearInterval(intervalId);
-    uploadingToast.hideToast();
-
-    if (selectedFiles.length > 0) {
-      Toastify({
-        text: `Successfully uploaded ${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''}.`,
-        duration: 5000,
-        gravity: "bottom",
-        position: "right",
-        close: true,
-        stopOnFocus: true,
-        style: {
-          background: "var(--clr-popup-a20)",
-          borderRadius: "12px",
-          boxShadow: "none"
-        }
-      }).showToast();
-    }
-
-    renderPreviews();
-  });
-
-  document.addEventListener('paste', async (event) => {
-    const items = event.clipboardData?.items;
-    if (!items) return;
-
-    for (const item of items) {
-      if (item.kind !== 'file') continue;
-
-      const file = item.getAsFile();
-      if (!file) continue;
-
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        Toastify({
-          text: `File type not allowed: ${file.type}`,
-          duration: 5000,
-          gravity: "bottom",
-          position: "right",
-          close: true,
-          stopOnFocus: true,
-          style: {
-            background: "#ff3b3b",
-            borderRadius: "12px",
-            boxShadow: "none"
-          }
-        }).showToast();
-        continue;
-      }
-
-      if (selectedFiles.length >= MAX_FILES) {
-        Toastify({
-          text: `You can only upload up to ${MAX_FILES} files.`,
-          duration: 5000,
-          gravity: "bottom",
-          position: "right",
-          close: true,
-          stopOnFocus: true,
-          style: {
-            background: "var(--clr-popup-a20)",
-            borderRadius: "12px",
-            boxShadow: "none"
-          }
-        }).showToast();
-        return;
-      }
-
-      if (file.size > MAX_SIZE) {
-        Toastify({
-          text: `Pasted file is too big (limit: 25MB).`,
-          duration: 5000,
-          gravity: "bottom",
-          position: "right",
-          close: true,
-          stopOnFocus: true,
-          style: {
-            background: "#ff3b3b",
-            borderRadius: "12px",
-            boxShadow: "none"
-          }
-        }).showToast();
-        return;
-      }
-
-      const toast = Toastify({
-        text: `Uploading pasted file...`,
-        duration: -1,
-        gravity: "bottom",
-        position: "right",
-        close: true,
-        stopOnFocus: true,
-        style: {
-          background: "var(--clr-popup-a20)",
-          borderRadius: "12px",
-          boxShadow: "none"
-        }
-      });
-      toast.showToast();
-
-      try {
-        const savedName = await upload_single_file(file);
-        selectedFiles.push({ file, savedName, originalName: file.name });
-        renderPreviews();
-
-        toast.hideToast();
-        Toastify({
-          text: `Pasted file uploaded successfully!`,
-          duration: 5000,
-          gravity: "bottom",
-          position: "right",
-          close: true,
-          stopOnFocus: true,
-          style: {
-            background: "var(--clr-popup-a20)",
-            borderRadius: "12px",
-            boxShadow: "none"
-          }
-        }).showToast();
-      } catch (err) {
-        console.error("Upload failed:", err);
-        toast.hideToast();
-        Toastify({
-          text: `Failed to upload pasted file.`,
-          duration: 5000,
-          gravity: "bottom",
-          position: "right",
-          close: true,
-          stopOnFocus: true,
-          style: {
-            background: "#ff3b3b",
-            borderRadius: "12px",
-            boxShadow: "none"
-          }
-        }).showToast();
-      }
-    }
-  });
-
-
-  function renderPreviews() {
-    uploadContainer.innerHTML = '';
-
-    const audioIcon = `<span class="material-symbols-rounded audio-icon-upload">music_note</span>`;
-    const textIcon = `<span class="material-symbols-rounded text-icon-upload">description</span>`;
-
-    selectedFiles.forEach(({ file, savedName, originalName }, index) => {
-      const fileType = file.type || '';
-      let previewHTML = '';
-
-      if (fileType.startsWith('image/')) {
-        const url = URL.createObjectURL(file);
-        previewHTML = `<div class="upload-preview"><img src="${url}" alt="preview" class="image-preview" /></div>`;
-      } else if (fileType.startsWith('video/')) {
-        const url = URL.createObjectURL(file);
-        previewHTML = `<div class="upload-preview"><video src="${url}" class="video-preview" muted pause loop></video></div>`;
-      } else if (fileType.startsWith('audio/')) {
-        previewHTML = `<div class="upload-preview">${audioIcon}</div>`;
-      } else if (fileType === 'text/plain') {
-        previewHTML = `<div class="upload-preview">${textIcon}</div>`;
-      } else {
-        previewHTML = `<div class="upload-preview">${textIcon}</div>`;
-      }
-
-      const fileBlock = document.createElement('div');
-      fileBlock.classList.add('file-preview');
-
-      fileBlock.innerHTML = `
-        ${previewHTML}
-        <div class="file-name">${file.name}</div>
-        <div class="file-options">
-          <span class="material-symbols-rounded file-remove-icon" style="cursor:pointer;">delete</span>
-        </div>
-      `;
-
-      fileBlock.querySelector('.file-remove-icon').addEventListener('click', async () => {
-        const removed = selectedFiles.splice(index, 1)[0];
-        if (removed.savedName) {
-          try {
-            const formData = new FormData();
-            formData.append('savedName', removed.savedName);
-
-            await fetch('https://chat.wokki20.nl/app/delete_file', {
-              method: 'POST',
-              headers: {
-                "Authorization": `Bearer ${access_token}`
-              },
-              body: formData
-            });
-          } catch (err) {
-            console.error("Failed to delete file from server", err);
-          }
-        }
-        renderPreviews();
-      });
-
-      uploadContainer.appendChild(fileBlock);
-    });
-  }
-  async function upload_single_file(file) {
-    const formData = new FormData();
-    formData.append("files[]", file);
-
-    const response = await fetch("https://chat.wokki20.nl/app/upload_file", {
-      method: "POST",
-      body: formData,
-      headers: {
-        "Authorization": `Bearer ${access_token}`
-      }
-    });
-
-    const result = await response.json();
-
-    if (result.status === 'success' && Array.isArray(result.files) && result.files[0]) {
-      return result.files[0].saved_name;
-    } else {
-      throw new Error("Upload failed");
-    }
-  }
-};
 
 function getAssetType(fileName) {
   const parts = fileName.toLowerCase().split('.');
@@ -1597,4 +1236,141 @@ window.addEventListener("load", () => {
           disconnectModal.remove();
       }
   }
+
+  let draggedServerClone = null;
+	let originalServerElement = null;
+	let lastServerTarget = null;
+	let originalServerParent = null;
+	let originalServerNextSibling = null;
+
+	const serverDragStart = (e) => {
+		if (e.target !== e.currentTarget) return;
+		originalServerElement = e.currentTarget;
+		originalServerParent = originalServerElement.parentElement;
+		originalServerNextSibling = originalServerElement.nextElementSibling;
+
+		const img = new Image();
+		img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgCMW3YkAAAAASUVORK5CYII=';
+		e.dataTransfer.setDragImage(img, 0, 0);
+
+		draggedServerClone = originalServerElement.cloneNode(true);
+		draggedServerClone.style.position = 'absolute';
+		draggedServerClone.style.pointerEvents = 'none';
+		draggedServerClone.style.opacity = '0.8';
+		draggedServerClone.style.zIndex = '1000';
+    draggedServerClone.style.background = 'transparent';
+    draggedServerClone.style.width = '69px';
+		document.body.appendChild(draggedServerClone);
+
+		moveServer(e);
+
+		document.addEventListener('dragover', moveServer);
+		document.addEventListener('dragend', stopServerDragging);
+	};
+
+	const moveServer = (e) => {
+		if (!draggedServerClone) return;
+
+		const rect = draggedServerClone.getBoundingClientRect();
+		draggedServerClone.style.left = e.pageX - rect.width / 2 + 'px';
+		draggedServerClone.style.top = e.pageY - rect.height / 2 + 'px';
+
+		let target = document.elementFromPoint(e.clientX, e.clientY);
+		if (target === draggedServerClone) target = target.parentElement;
+
+		target = target.closest('.server-bar-item');
+
+		if (target === originalServerElement) target = null;
+
+		if (target) {
+			if (lastServerTarget && lastServerTarget !== target) {
+				lastServerTarget.classList.remove('server-position-line');
+				lastServerTarget.removeAttribute('data-line');
+			}
+
+			target.classList.add('server-position-line');
+
+			const targetRect = target.getBoundingClientRect();
+			if (e.clientY - targetRect.top < targetRect.height / 2) {
+				target.setAttribute('data-line', 'top');
+			} else {
+				target.setAttribute('data-line', 'bottom');
+			}
+
+			lastServerTarget = target;
+		} else if (lastServerTarget) {
+			lastServerTarget.classList.remove('server-position-line');
+			lastServerTarget.removeAttribute('data-line');
+			lastServerTarget = null;
+		}
+	};
+
+	const stopServerDragging = () => {
+		if (draggedServerClone) {
+			draggedServerClone.remove();
+			draggedServerClone = null;
+		}
+
+		if (lastServerTarget && originalServerElement) {
+			const linePosition = lastServerTarget.getAttribute('data-line');
+			if (linePosition) {
+				if (linePosition === 'top') {
+					lastServerTarget.parentElement.insertBefore(originalServerElement, lastServerTarget);
+				} else {
+					lastServerTarget.parentElement.insertBefore(originalServerElement, lastServerTarget.nextSibling);
+				}
+			}
+
+			lastServerTarget.classList.remove('server-position-line');
+			lastServerTarget.removeAttribute('data-line');
+		}
+
+		const cleanup = () => {
+			lastServerTarget = null;
+			originalServerElement = null;
+			originalServerParent = null;
+			originalServerNextSibling = null;
+			document.removeEventListener('dragover', moveServer);
+			document.removeEventListener('dragend', stopServerDragging);
+		};
+
+		const sendServerUpdate = () => {
+			const servers = Array.from(document.querySelectorAll('.server-bar-item'));
+			const serverId = originalServerElement.dataset.serverId;
+
+			const position = servers.length - 1 - servers.indexOf(originalServerElement);
+
+			const otherPositions = {};
+			servers.forEach((server) => {
+				if (server === originalServerElement) return;
+				const id = server.dataset.serverId;
+				const idx = servers.length - 1 - servers.indexOf(server);
+				otherPositions[id] = idx;
+			});
+
+			fetch('https://chat.wokki20.nl/app/edit_server', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+					Authorization: `Bearer ${access_token}`,
+				},
+				body: new URLSearchParams({
+					action: 'edit_server_positioning',
+					server_id: serverId,
+					position: position,
+					other_positions: JSON.stringify(otherPositions)
+				})
+			});
+		};
+
+		sendServerUpdate();
+		cleanup();
+	};
+
+	const movableServers = document.querySelectorAll('.server-bar-item');
+	movableServers.forEach((server) => {
+		server.setAttribute('draggable', 'true');
+		server.addEventListener('dragstart', serverDragStart, false);
+	});
+
 });

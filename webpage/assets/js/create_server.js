@@ -1,3 +1,4 @@
+const access_token = document.getElementById("access-token").getAttribute("value");
 function openCreateServerModal() {
   let modalHtml = `
     <div class="modal" id="create-server-modal">

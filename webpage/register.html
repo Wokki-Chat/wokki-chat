@@ -7,6 +7,12 @@
     <link rel="stylesheet" href="assets/styles/main.css">
 </head>
 <body>
+    <div class="login-bg">
+        <img class="bg-img" id="bg-super-low" src="/assets/images/login-bg-super-low.png" />
+        <img class="bg-img" id="bg-low" />
+        <img class="bg-img" id="bg-normal" />
+        <img class="bg-img" id="bg-full" />
+    </div>
     <div class="register-form">
         <div class="register-form-content">
             <h2>Create Account</h2>
@@ -21,6 +27,15 @@
             <div class="input-container">
                 <label for="password">Password:</label>
                 <input type="password" name="password" placeholder="myVeryStrongPassword123" required class="input-text-dark-bg w270" minlength="8" autocomplete="off" id="password">
+            </div>
+            <div class="input-container">
+                <div class="terms-container">
+                    <input type="checkbox" id="accept-terms" required>
+                    <label for="accept-terms">
+                        I accept the <a href="https://chat.wokki20.nl/legal/privacy" class="link" target="_blank">Privacy Policy</a> and 
+                        <a href="https://chat.wokki20.nl/legal/terms" class="link" target="_blank">Terms of Service</a>
+                    </label>
+                </div>
             </div>
             <button type="submit" class="button-primary-filled" onclick="create_account()">Create Account</button>
             <p>Already have an account? <a href="login" class="link">Login</a></p>

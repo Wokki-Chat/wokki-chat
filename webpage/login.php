@@ -60,6 +60,12 @@ if (!isset($_POST['email']) || !isset($_POST['password']) && $_SERVER['REQUEST_M
             <link rel="icon" type="image/x-icon" href="favicon.ico">
         </head>
         <body>
+            <div class="login-bg">
+                <img class="bg-img" id="bg-super-low" src="/assets/images/login-bg-super-low.png" />
+                <img class="bg-img" id="bg-low" />
+                <img class="bg-img" id="bg-normal" />
+                <img class="bg-img" id="bg-full" />
+            </div>
             <form action="login" method="post" class="login-form">
                 <div class="login-form-content">
                     <h2>Login</h2>
@@ -74,12 +80,15 @@ if (!isset($_POST['email']) || !isset($_POST['password']) && $_SERVER['REQUEST_M
                     <input type="hidden" name="redirect" value="' . $redirect . '">
                     <button type="submit" class="button-primary-filled">Login</button>
                     <p>Don\'t have an account? <a href="register" class="link">Register</a></p>
-                    <p class="error-message">An unknown error occurred, please try again</p>
+                    <p class="error-message"></p>
+                    <p class="success-message"></p>
                 </div>
             </form>
+            <script src="assets/js/login.js"></script>
             <script>
                 const returnCode = new URLSearchParams(window.location.search).get(\'return_code\');
                 const errorMessage = document.querySelector(\'.error-message\');
+                const successMessage = document.querySelector(\'.success-message\');
 
                 if (returnCode === \'23\') {
                     errorMessage.textContent = \'The request could not be processed.\';
@@ -92,6 +101,18 @@ if (!isset($_POST['email']) || !isset($_POST['password']) && $_SERVER['REQUEST_M
                     errorMessage.style.display = \'block\';
                 } else if (returnCode === \'26\') {
                     errorMessage.textContent = \'Please verify your email address before attempting to sign in.\';
+                    errorMessage.style.display = \'block\';
+                } else if (returnCode === \'20\') {
+                    successMessage.textContent = \'Your email has been verified!\';
+                    successMessage.style.display = \'block\';
+                } else if (returnCode === \'21\') {
+                    errorMessage.textContent = \'Your email verification link has expired or is invalid. Please try again.\';
+                    errorMessage.style.display = \'block\';
+                } else if (returnCode === \'22\') {
+                    errorMessage.textContent = \'The request is invalid or missing required parameters.\';
+                    errorMessage.style.display = \'block\';
+                } else if (returnCode === \'19\') {
+                    errorMessage.textContent = \'The request is invalid or missing required parameters.\';
                     errorMessage.style.display = \'block\';
                 }
 

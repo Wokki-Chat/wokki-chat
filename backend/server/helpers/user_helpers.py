@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dateutil import parser
 from functools import wraps
 import server.config as config
@@ -6,10 +6,7 @@ import server.sio_instance as sio_instance
 import aiomysql
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server, verify_bot_token
 from server.helpers.logs import addMessageToLogs
-
-from datetime import datetime, timezone
-from dateutil import parser
-from server.helpers.logs import addMessageToLogs
+import aiohttp
 
 async def verify_access_token(cur, access_token):
     await cur.execute(
@@ -163,12 +160,75 @@ async def broadcast_user_update(user_id, is_bot=False):
                 await sio_instance.sio.emit('user_updated', bot_info)
                 await addMessageToLogs(f"Broadcasted for bot {user_id}", "INFO")
                 return
-            
 
+async def broadcast_user_widget_update(user_id, widget_name):
+    async with config.pool.acquire() as conn:
+        async with conn.cursor(aiomysql.DictCursor) as cur:
+            user_info = await get_user_widgets(cur, user_id, widget_name)
+            if not user_info:
+                return
+            
+            user_info["user_id"] = user_id
+            
+            await sio_instance.sio.emit('user_widget_updated', user_info)
+            return
+
+async def get_user_widgets(cur, user_id, widget_name=None):
+    query = """
+        SELECT widget_name, widget_access_token, widget_refresh_token, show_on_profile, widget_access_token_valid_until
+        FROM profile_widgets
+        WHERE user_id = %s
+    """
+    await cur.execute(query, (user_id,))
+    widgets = await cur.fetchall() or []
+
+    if not widgets:
+        return {}
+
+    result = {}
+    for widget in widgets:
+        if widget_name and widget["widget_name"] != widget_name:
+            continue
+
+        if widget["widget_name"] == "Spotify" and widget["show_on_profile"] == 1:
+            try:
+                now = datetime.now(timezone.utc)
+                token_valid_until = widget.get("widget_access_token_valid_until")
+
+                if token_valid_until and token_valid_until.tzinfo is None:
+                    token_valid_until = token_valid_until.replace(tzinfo=timezone.utc)
+
+                if not token_valid_until or token_valid_until <= now:
+                    access_token, new_refresh_token, valid_until = await refresh_spotify_token(widget["widget_refresh_token"])
+                    if access_token:
+                        await cur.execute(
+                            """
+                            UPDATE profile_widgets
+                            SET widget_access_token = %s, widget_refresh_token = %s, widget_access_token_valid_until = %s
+                            WHERE user_id = %s AND widget_name = 'Spotify'
+                            """,
+                            (access_token, new_refresh_token or widget["widget_refresh_token"], valid_until, user_id)
+                        )
+                else:
+                    access_token = widget["widget_access_token"]
+
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(
+                        "https://api.spotify.com/v1/me/player",
+                        headers={"Authorization": f"Bearer {access_token}"}
+                    ) as resp:
+                        if resp.status == 200:
+                            result["Spotify"] = await resp.json()
+            except Exception:
+                pass
+        else:
+            result[widget["widget_name"]] = True
+
+    return result
 
 async def get_user_info_from_id(cur, user_id):
     query = """
-        SELECT u.id, u.username, u.status, u.profile_picture, u.created_at, u.bio,
+        SELECT u.id, u.username, u.status, u.profile_picture, u.created_at, u.bio, u.profile_color_primary, u.profile_color_accent, u.nickname, u.profile_banner,
                t.tag_name, t.tag_icon, t.created_at
         FROM users u
         LEFT JOIN tags t ON u.id = t.user_id
@@ -180,18 +240,26 @@ async def get_user_info_from_id(cur, user_id):
     if not rows:
         return None
 
+    resolved_user_id = rows[0]["id"]
+    haspremium = await get_user_premium_status(cur, resolved_user_id)
+
     user = {
-        "id": str(rows[0]["id"]),
+        "id": str(resolved_user_id),
         "username": rows[0]["username"],
+        "display_name": rows[0]["nickname"],
         "status": rows[0]["status"],
         "profile_picture": rows[0]["profile_picture"],
-        "premium": await get_user_premium_status(cur, user_id),
+        "profile_banner": rows[0]["profile_banner"],
+        "premium": haspremium,
         "bot": False,
         "tags": [],
-        "staff": await is_user_staff(cur, user_id),
-        "developer": await is_user_developer(cur, user_id),
+        "staff": await is_user_staff(cur, resolved_user_id),
+        "developer": await is_user_developer(cur, resolved_user_id),
         "created_at": str(rows[0]["created_at"].isoformat()),
-        "bio": rows[0]["bio"]
+        "bio": rows[0]["bio"],
+        "profile_color_primary": rows[0]["profile_color_primary"] if haspremium else None,
+        "profile_color_accent": rows[0]["profile_color_accent"] if haspremium else None,
+        "widgets": {}
     }
 
     for row in rows:
@@ -202,7 +270,31 @@ async def get_user_info_from_id(cur, user_id):
                 "created_at": row["created_at"].isoformat() if row["created_at"] else None
             })
 
+    if user["status"] == "online":
+        user["widgets"] = await get_user_widgets(cur, resolved_user_id)
+
     return user
+
+async def refresh_spotify_token(refresh_token):
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://accounts.spotify.com/api/token",
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": config.SPOTIFY_CLIENT_ID,
+                "client_secret": config.SPOTIFY_CLIENT_SECRET
+            }
+        ) as resp:
+            if resp.status != 200:
+                return None, None, None
+
+            data = await resp.json()
+            new_access_token = data.get("access_token")
+            new_refresh_token = data.get("refresh_token")
+            expires_in = data.get("expires_in")
+            valid_until = datetime.now(timezone.utc) + timedelta(seconds=expires_in) if expires_in else None
+            return new_access_token, new_refresh_token, valid_until
 
 async def is_user_friends_with(cur, user_id, friend_id):
     await cur.execute("SELECT 1 FROM friends WHERE user_id = %s AND friend_id = %s LIMIT 1", (user_id, friend_id))
@@ -213,8 +305,7 @@ async def is_user_friends_with(cur, user_id, friend_id):
     
     return row1 is not None and row2 is not None
 
-
-async def get_user_info(sid, data): # add auth required to this
+async def get_user_info(sid, data):
     access_token = data.get('access_token')
     bot_token = data.get('bot_token')
     requested_user_id = data.get('user_id')

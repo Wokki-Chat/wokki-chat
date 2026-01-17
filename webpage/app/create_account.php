@@ -52,7 +52,7 @@ function getTokenExpirationTime($tokenType = 'access') {
 }
 
 
-function registerUser($mysqli, $username, $email, $password) {
+function registerUser($mysqli, $username, $email, $password, $mail_password) {
     $stmt = $mysqli->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
     $stmt->bind_param("ss", $email, $username);
     $stmt->execute();
@@ -81,7 +81,7 @@ function registerUser($mysqli, $username, $email, $password) {
         $stmt->execute();
         $stmt->close();
 
-        if (!sendVerificationEmail($email, $activatecode, $user_id)) {
+        if (!sendVerificationEmail($email, $activatecode, $user_id, $mail_password)) {
             return [
                 'status' => 'error',
                 'description' => 'Failed to send verification email',
@@ -124,7 +124,7 @@ function registerUser($mysqli, $username, $email, $password) {
 
 }
 
-function sendVerificationEmail($email, $activatecode, $user_id) {
+function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) {
     $mail = new PHPMailer(true);
 
     try {
@@ -210,6 +210,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $create_email = $mysqli->real_escape_string($_POST['email']);
         $create_password = $mysqli->real_escape_string($_POST['password']);
         
+        if (empty($create_username) || empty($create_email) || empty($create_password)) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'All fields are required',
+                'return_code' => 7
+            ]);
+            exit;
+        }
 
         if (strlen($create_password) < 8) {
             echo json_encode([
@@ -277,7 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $response = registerUser($mysqli, $create_username, $create_email, $create_password);
+        $response = registerUser($mysqli, $create_username, $create_email, $create_password, $mail_password);
 
         echo json_encode($response);
     } else {

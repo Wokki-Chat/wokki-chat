@@ -4,6 +4,7 @@ from collections import defaultdict, deque
 from dotenv import load_dotenv
 import asyncio
 import redis.asyncio as redis
+import json
 
 load_dotenv()
 
@@ -16,7 +17,7 @@ redis_client = redis.Redis(host="localhost", port=6379, db=0, decode_responses=T
 # Local per-worker state
 # --------------------
 typing_lock = asyncio.Lock()
-
+server_name = os.getenv("WORKER_NAME", "Unknown")
 pool = None
 
 # --------------------
@@ -24,6 +25,8 @@ pool = None
 # --------------------
 API_KEY = os.getenv("API_KEY")
 API_SECRET = os.getenv("API_SECRET")
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 # --------------------
 # LiveKit / voice
@@ -106,3 +109,44 @@ async def get_typing_users():
         members = await redis_client.smembers(key)
         users.update(members)
     return users
+
+
+# --------------------
+# CACHING
+# --------------------
+CHANNEL_CACHE_LIMIT = 100
+
+async def cache_message(server_id: str, channel_id: str, message: dict):
+    key = f"channel_messages:{server_id}:{channel_id}"
+    await redis_client.rpush(key, json.dumps(message))
+    await redis_client.ltrim(key, 0, CHANNEL_CACHE_LIMIT - 1)
+
+async def get_cached_messages(server_id: str, channel_id: str, offset: int = 0, limit: int = 50):
+    key = f"channel_messages:{server_id}:{channel_id}"
+    total = await redis_client.llen(key)
+    if offset >= total:
+        return []
+    start = offset
+    end = min(offset + limit - 1, total - 1)
+    cached = await redis_client.lrange(key, start, end)
+    return [json.loads(msg) for msg in cached]
+
+async def delete_cached_message(server_id: str, channel_id: str, message_id: str):
+    key = f"channel_messages:{server_id}:{channel_id}"
+    cached = await redis_client.lrange(key, 0, -1)
+    for msg in cached:
+        data = json.loads(msg)
+        if data.get("id") == message_id:
+            await redis_client.lrem(key, 0, msg)
+            break
+
+async def get_cached_users(server_id: str):
+    key = f"server_users:{server_id}"
+    cached = await redis_client.lrange(key, 0, -1)
+    return [json.loads(msg) for msg in cached]
+
+async def cache_users(server_id: str, users: list):
+    key = f"server_users:{server_id}"
+    await redis_client.delete(key)
+    for user in users:
+        await redis_client.rpush(key, json.dumps(user))

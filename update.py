@@ -49,7 +49,7 @@ def rolling_restart():
 
         time.sleep(1)
 
-    print("Rolling restart complete ✅")
+    print("Rolling restart complete")
 
 if __name__ == "__main__":
     rolling_restart()

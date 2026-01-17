@@ -1,5 +1,7 @@
 .env
 *.env
 *.pyc
-config.php
+*config.php
 livekit.yaml
+.cloudflared
+/webpage/connections/*

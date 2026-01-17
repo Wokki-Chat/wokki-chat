@@ -1,13 +1,4 @@
 <?php
-echo '<script>
-if (window.location.hash && window.location.hash.includes("code=")) {
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    const code = params.get("code");
-    if (code) {
-        window.location.href = window.location.pathname + "?code=" + encodeURIComponent(code);
-    }
-}
-</script>';
 
 include '../app/config.php';
 session_start();
@@ -33,18 +24,19 @@ if (!$user_id) {
     exit;
 }
 
-$CLIENT_ID = "078B229B-792E-48A9-859D-FE4FAEE2941E";
-$CLIENT_SECRET = "myVTlgqGOkQ2eGV8JgIbWDghrQCpCK8Qc8vU";
+$CLIENT_ID = "17671397377916288815";
+$CLIENT_SECRET = "5C7IUraIVMX5DxxMdOsWyokSJcQU1uxzkMjB";
 $REDIRECT_URI = "https://chat.wokki20.nl/connections/chat";
 
 if (!isset($_GET['code']) && !isset($_SESSION['chat_access_token'])) {
     $state = substr(bin2hex(random_bytes(5)), 0, 10);
 
-    $authUrl = "https://chat.jonazwetsloot.nl/api/v1/authorize?" . http_build_query([
+    $authUrl = "https://chat.jonazwetsloot.nl/oauth/authorize?" . http_build_query([
         'response_type' => 'code',
         'client_id' => $CLIENT_ID,
         'redirect_uri' => $REDIRECT_URI,
-        'scope' => 'accounts'
+        'scope' => 'profile',
+        'force_login' => true,
     ]);
 
     echo "<script>
@@ -62,7 +54,7 @@ if (isset($_GET['code'])) {
         'client_secret' => $CLIENT_SECRET
     ];
 
-    $ch = curl_init("https://chat.jonazwetsloot.nl/api/v1/token");
+    $ch = curl_init("https://chat.jonazwetsloot.nl/oauth/token");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
     $response = curl_exec($ch);
@@ -75,7 +67,6 @@ if (isset($_GET['code'])) {
     }
 
     $_SESSION['chat_access_token'] = $data['access_token'];
-    $_SESSION['chat_refresh_token'] = $data['refresh_token'];
 
     header("Location: $REDIRECT_URI");
     exit;
@@ -85,7 +76,7 @@ if (!isset($_SESSION['chat_access_token'])) {
     die("Not logged in. Please log in first.");
 }
 
-$apiUrl = "https://chat.jonazwetsloot.nl/api/v1/profile";
+$apiUrl = "https://chat.jonazwetsloot.nl/oauth/userinfo";
 
 $ch = curl_init($apiUrl);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -103,11 +94,11 @@ if ($httpCode !== 200 || isset($data['error'])) {
     header("Location: /home");
 }
 
-$connection_user_id = $data['id'];
-$connection_user_name = $data['user'];
-$connection_user_url = "https://chat.jonazwetsloot.nl/users/" . $connection_user_name;
+$connection_user_id = null;
+$connection_user_name = $data['name'];
+$connection_user_url = $data['profile'];
 $connection_name = "Chat";
-$connection_user_image = "https://chat.jonazwetsloot.nl/uploads/" . $data['picture'];
+$connection_user_image = $data['picture'];
 
 $stmt = $mysqli->prepare("
     INSERT INTO user_connections (connection_name, user_id, connection_user_id, connection_user_name, connection_user_url, connection_user_image)
@@ -152,7 +143,6 @@ if ((!$premium || ($premium_expires_at !== null && $premium_expires_at <= time()
 }
 
 $_SESSION['chat_access_token'] = null;
-$_SESSION['chat_refresh_token'] = null;
 
 header("Location: /settings/connections");
 ?>

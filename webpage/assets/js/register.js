@@ -14,8 +14,18 @@ function create_account() {
     const username = document.getElementById('username').value;
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+    const acceptTerms = document.getElementById('accept-terms').checked;
 
-    // === Client-side Validation ===
+    if (!email) {
+        showError('Email is required');
+        return;
+    }
+
+    if (!acceptTerms) {
+        showError('You must accept the Privacy Policy and Terms of Service');
+        return;
+    }
+
     if (password.length < 8) {
         showError('Password must be at least 8 characters long');
         return;
@@ -56,7 +66,6 @@ function create_account() {
         return;
     }
 
-    // === Send request ===
     const formData = new FormData();
     formData.append('username', username);
     formData.append('email', email);
@@ -79,3 +88,22 @@ function create_account() {
         showError('An unknown error occurred');
     });
 }
+
+const images = [
+    { id: 'bg-super-low', src: '/assets/images/login-bg-super-low.png', width: 853 },
+    { id: 'bg-low', src: '/assets/images/login-bg-low.png', width: 1365 },
+    { id: 'bg-normal', src: '/assets/images/login-bg-normal.png', width: 1920 },
+    { id: 'bg-full', src: '/assets/images/login-bg.png', width: 3840 }
+];
+function getBestBg() {
+    const w = window.innerWidth;
+    return images.find(img => img.width >= w) || images[images.length - 1];
+}
+async function loadBg() {
+    const bestBg = getBestBg();
+    const img = document.getElementById(bestBg.id);
+    if (!img.src) img.src = bestBg.src;
+    await new Promise(resolve => img.onload = resolve);
+    img.classList.add('visible');
+}
+loadBg();

@@ -1,5 +1,5 @@
-from server.config import typing_lock, user_current_room, add_user_to_sid, get_sids_for_user, remove_user_sid, get_user_from_sid, get_bot_sid_from_id, add_sid_to_bot, get_bot_id_from_sid, remove_sid, get_typing_users, remove_typing_user, redis_client
-from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status
+from server.config import typing_lock, user_current_room, add_user_to_sid, get_sids_for_user, remove_user_sid, get_user_from_sid, get_bot_sid_from_id, add_sid_to_bot, get_bot_id_from_sid, remove_sid, get_typing_users, remove_typing_user, redis_client, server_name
+from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status, broadcast_user_widget_update
 from server.helpers.server_helpers import is_user_in_server, get_member_ids_from_server
 from server.helpers.bot_helpers import is_bot_in_server, verify_bot_token
 import server.sio_instance as sio_instance
@@ -7,6 +7,37 @@ import server.config as config
 import asyncio
 import aiomysql
 from server.helpers.logs import addMessageToLogs
+from server.helpers.user_helpers import refresh_spotify_token
+import aiohttp
+
+async def poll_spotify(user_id, access_token=None, refresh_token=None):
+    interval = 10 if access_token else 300
+    key = f"spotify_polling:{user_id}"
+    await redis_client.set(key, "1")
+
+    try:
+        while await redis_client.get(key) == "1":
+            if access_token and refresh_token:
+                new_access_token, new_refresh_token, valid_until = await refresh_spotify_token(refresh_token)
+                headers = {"Authorization": f"Bearer {new_access_token}"}
+                async with aiohttp.ClientSession() as session:
+                    async with session.get("https://api.spotify.com/v1/me/player", headers=headers) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            await broadcast_user_widget_update(user_id, "Spotify")
+                        elif resp.status == 204:
+                            await broadcast_user_widget_update(user_id, "Spotify")
+                        else:
+                            await addMessageToLogs(f"Spotify API returned {resp.status} for user {user_id}", "INFO")
+            else:
+                await broadcast_user_widget_update(user_id, "Spotify")
+
+            await asyncio.sleep(interval)
+    except asyncio.CancelledError:
+        await addMessageToLogs(f"Spotify polling for user {user_id} cancelled", "INFO")
+    finally:
+        await redis_client.delete(key)
+        await asyncio.sleep(0)
 
 async def handle_connect(sid, environ):
     query = environ.get('QUERY_STRING', '')
@@ -19,7 +50,7 @@ async def handle_connect(sid, environ):
         await addMessageToLogs(f"Missing access_token or bot_token for sid {sid}", "INFO")
         await sio_instance.sio.disconnect(sid)
         return
-    
+
     if access_token:
         async with config.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -28,6 +59,27 @@ async def handle_connect(sid, environ):
                     await addMessageToLogs(f"Invalid access_token for sid {sid}", "INFO")
                     await sio_instance.sio.disconnect(sid)
                     return
+
+                await cur.execute(
+                    """
+                    SELECT widget_name, widget_access_token, widget_refresh_token, show_on_profile
+                    FROM profile_widgets
+                    WHERE user_id = %s
+                    """,
+                    (user_id,)
+                )
+                widgets = await cur.fetchall()
+                spotify_tokens = None
+                for w in widgets:
+                    if w["widget_name"] == "Spotify" and w["show_on_profile"] == 1:
+                        spotify_tokens = (w["widget_access_token"], w["widget_refresh_token"])
+                        break
+
+                if spotify_tokens:
+                    access_token, refresh_token = spotify_tokens
+                    asyncio.create_task(poll_spotify(user_id, access_token, refresh_token))
+                else:
+                    asyncio.create_task(poll_spotify(user_id))
 
                 pending_key = f"user_disconnect:{user_id}"
                 pending_task_id = await redis_client.get(pending_key)
@@ -41,7 +93,8 @@ async def handle_connect(sid, environ):
                 await conn.commit()
                 await broadcast_user_update(user_id)
 
-                await addMessageToLogs(f"User {user_id} connected", "INFO")
+                await addMessageToLogs(f"User {user_id} connected to server {server_name}", "INFO")
+                await sio_instance.sio.emit('connected to server', {'server_name': server_name}, to=sid)
                 await sio_instance.sio.emit('user_connected', {'user_id': user_id, 'server_id': server_id}, to=sid)
                 
                 sids = await get_sids_for_user(user_id)
@@ -71,8 +124,9 @@ async def handle_connect(sid, environ):
                 await conn.commit()
                 await broadcast_user_update(bot_id, is_bot=True)
 
-                await addMessageToLogs(f"Bot {bot_id} connected", "INFO")                
+                await addMessageToLogs(f"Bot {bot_id} connected to server {server_name}", "INFO")      
                 await sio_instance.sio.emit('bot_connected', {'bot_id': bot_id, 'server_id': server_id}, to=sid)
+                await sio_instance.sio.emit('connected to server', {'server_name': server_name}, to=sid)
                 
                 await redis_client.set(f"bot_sid:{bot_id}", sid)
                 await addMessageToLogs(f"Stored bot_id {bot_id} for sid {sid} in redis ({await redis_client.get(f'bot_sid:{bot_id}')})", "INFO")
@@ -191,7 +245,6 @@ async def handle_delayed_disconnect(user_id, sid):
             await addMessageToLogs(f"Disconnect for user {user_id} skipped before going offline (user reconnected)", "INFO")
             return
 
-
         async with config.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(
@@ -199,6 +252,8 @@ async def handle_delayed_disconnect(user_id, sid):
                     (user_id,)
                 )
                 await conn.commit()
+                await redis_client.set(f"spotify_polling:{user_id}", "0")
+                await addMessageToLogs(f"Stopped Spotify polling for user {user_id} due to disconnect", "INFO")
                 await addMessageToLogs(f"User {user_id} set to offline (if not overridden manually)", "INFO")
                 await broadcast_user_update(user_id)
 

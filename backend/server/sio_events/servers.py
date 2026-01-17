@@ -1,5 +1,5 @@
 from server.sio_instance import sio
-from server.helpers.server_helpers import get_server_users, server_commands, command
+from server.helpers.server_helpers import server_commands, command, get_server_users
 
 @sio.on('get_server_users')
 async def handle_get_server_users(sid, data):

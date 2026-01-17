@@ -4,7 +4,7 @@ session_start();
 $access_token = $_COOKIE['access_token'];
 
 if (!$access_token) {
-    header('Location: /login?redirect=/connections/chat');
+    header('Location: /login?redirect=/settings/connections');
     exit;
 }
 
@@ -19,7 +19,7 @@ if ($result->num_rows > 0) {
 $stmt->close();
 
 if (!$user_id) {
-    header('Location: /login?redirect=/developer/bots');
+    header('Location: /login?redirect=/settings/connections');
     exit;
 }
 

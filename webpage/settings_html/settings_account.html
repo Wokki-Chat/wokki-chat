@@ -1,23 +1,111 @@
 <h2 class="settings-page-title">My Account</h2>
 <div class="profile-container">
-    <div class="profile-picture-name-status-edit-container">
-        <div class="profile-picture-name-status-container">
-            <div class="profile-picture-status-container">
-                <div class="profile-picture-preview-container">
-                    <img src="{{profile_picture_url}}" alt="Profile Picture" class="profile-picture-preview">
-                    <span class="hover-text material-symbols-rounded">upload</span>
+    <div class="edit-options">
+        <div class="profile-edit-option">
+            <label for="display-name" class="profile-input-label">Display Name</label>
+            <input type="text" placeholder="{{username}}" value="{{display_name}}" class="input-text-dark-bg w270" minlength="3" maxlength="20" autocomplete="off" id="display-name">
+        </div>
+        <div class="profile-edit-option">
+            <label for="bio" class="profile-input-label">Bio</label>
+            <div class="input-container-2 input-container-2-inline">
+                <div class="textarea-container">
+                    <div class="message-input-wrapper">
+                        <div class="message-input-bg" id="message-input-bg">{{bio}}</div>
+                        <div class="message-input" id="message-input" contenteditable="true">{{bio}}</div>
+                    </div>
                 </div>
-                <div class="profile-status-circle-outer">
-                    <div class="profile-status-circle-inner {{status}}"></div>
+                <div class="max-message-length">
+                    <p class="max-characters-left"></p>
                 </div>
-            </div>
-            <div class="profile-name-status-container">
-                <div class="profile-name">{{username}}{{premium_badge}}</div>
-                <p class="profile-status">{{status}}</p>
             </div>
         </div>
-        <div class="profile-edit-container">
-            <button class="button-primary-filled" id="edit-profile-button">Edit Profile</button>
+        <div class="profile-edit-option">
+            <div class="profile-input-labels-container">
+                <label for="banner" class="profile-input-label">Banner</label>
+                <p class="profile-input-label-description">The preferred image dimensions are 300 &times; 150 px.</p>
+            </div>
+            <div class="dm-info-banner-picture-upload-wrapper">
+                <div class="profile-banner-options">
+                    <span class="material-symbols-rounded profile-banner-option profile-banner-option-delete" id="profile-banner-option-delete">delete</span>
+                </div>
+                <img draggable="false" class="dm-info-banner-picture-upload" src="{{banner_url}}">
+                <span class="hover-text material-symbols-rounded">upload</span>
+            </div>
+        </div>
+        <div class="profile-edit-option">
+            <label for="display-name" class="profile-input-label"><span>Profile Colors</span><div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Only available to premium users</p></div></label>
+            <div class="profile-color-buttons">
+                <div class="profile-color-button">
+                    <input type="text" class="profile-color profile-color-primary" id="profile-color-primary" value="{{profile_color_primary}}" style="background-color: {{profile_color_primary}};" readonly>
+                    <p class="profile-color-text">Primary</p>
+                </div>
+                <div class="profile-color-button">
+                    <input type="text" class="profile-color profile-color-accent" id="profile-color-accent" value="{{profile_color_accent}}" style="background-color: {{profile_color_accent}};" readonly>
+                    <p class="profile-color-text">Accent</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="profile-previews">
+        <div class="profile-preview">
+            <p class="profile-preview-title">Preview</p>
+            <div class="user-info-profile-static" {{profile_style}}>
+                {{banner}}
+                <div class="user-info-profile-popup-profile-picture-username-status">
+                    <div class="user-info-profile-popup-profile-status">
+                        <div class="profile-picture-preview-wrapper">
+                            <img draggable="false" class="dm-info-profile-picture user-preview-picture" src="{{profile_picture_url}}">
+                            <span class="hover-text material-symbols-rounded">upload</span>
+                        </div>
+                        <div class="user-info-profile-popup-status-circle-outer">
+                            <div class="user-info-profile-popup-status-circle-inner {{status}}"></div>
+                        </div>
+                    </div>
+                    <div class="user-info-profile-popup-status-username">
+                        <div class="user-info-profile-popup-username-container">
+                            <p class="user-info-profile-popup-username">{{username}}</p>
+                        </div>
+                        <p class="user-info-profile-popup-status">{{status}}</p>
+                    </div>
+                </div>
+
+                <div class="dm-info-container" style="{{container_style}}">
+                    <div class="dm-info-item">
+						<p class="dm-info-item-value dm-info-item-username-original">{{username}}</p>
+					</div>
+                    <div class="dm-info-tags" style="{{tags_style}}">
+                        {{premium_badge}}
+                    </div>
+                    <div class="dm-info-item">
+                        <p class="dm-info-item-key">Bio</p>
+                        <p class="dm-info-item-value" id="bio-profile">{{bio_profile}}</p>
+                    </div>
+                    <div class="dm-info-item">
+                        <p class="dm-info-item-key">Joined on</p>
+                        <p class="dm-info-item-value">{{created_at}}</p>
+                    </div>
+                    <a class="button-primary-filled no-underline dm-info-profile-link" {{profile_link_style}}>
+                        Example Button
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="profile-preview">
+            <p class="profile-preview-title">Message Preview</p>
+            <div>
+                <div class="message message-static">
+                    <div class="message-content">
+                        <img class="profile-picture" src="{{profile_picture_url}}" style="opacity: 1; height: 30px;">
+                        <div class="name-text">
+                            <div class="username-date" style="display: flex;">
+                                <p class="username">{{username}}</p>
+                                <p class="date">Now</p>
+                            </div>
+                            <div class="message-text">Does anyone read this?</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

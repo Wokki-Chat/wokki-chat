@@ -191,28 +191,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     $server_id = generateUUIDv4();
-    
-    $channel_groups_raw = [
-        [
-            'channel_group_id' => generateUUIDv4(),
-            'channel_group_name' => 'Text channels',
-            'channel_group_created_at' => date('Y-m-d H:i:s'),
-            'channel_group_updated_at' => date('Y-m-d H:i:s'),
-        ]
-    ];
-    $channel_groups = json_encode($channel_groups_raw);
 
-    $channels = json_encode([
-        [
-            'channel_id' => generateUUIDv4(),
-            'channel_name' => 'general',
-            'channel_type' => 'text',
-            'channel_created_at' => date('Y-m-d H:i:s'),
-            'channel_updated_at' => date('Y-m-d H:i:s'),
-            'channel_group_id' => $channel_groups_raw[0]['channel_group_id'],
-            'default' => true
-        ]
-    ]);
+    $channel_group_id = generateUUIDv4();
+    $channel_group_name = 'Text channels';
+
+    $channel_general_id = generateUUIDv4();
+    $channel_general_name = 'general';
+    $channel_general_type = 'text';
+    $channel_general_group_id = $channel_group_id;
     
     $general_role_id = generateUUIDv4();
 
@@ -282,11 +268,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $general_role_name = 'General';
     $role_color = '#ffffff';
-    
-    $image_path = '/uploads/servers/default.webp'; 
-    
-    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/uploads/servers/';
 
+    $image_path = '/uploads/servers/default.webp'; 
+    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/uploads/servers/';
     $filename = $server_id;
 
     if (isset($_FILES['image'])) {
@@ -299,6 +283,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $filename .= '.webp';
                 $savePath = $uploadDir . $filename;
                 imagewebp($srcImage, $savePath, 80);
+
+                $lowImage = imagescale($srcImage, 50, 50);
+                $lowPath = $uploadDir . $server_id . '-low.webp';
+                imagewebp($lowImage, $lowPath, 80);
+                imagedestroy($lowImage);
                 imagedestroy($srcImage);
                 break;
 
@@ -307,6 +296,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $filename .= '.webp';
                 $savePath = $uploadDir . $filename;
                 imagewebp($srcImage, $savePath, 80);
+
+                $lowImage = imagescale($srcImage, 50, 50);
+                $lowPath = $uploadDir . $server_id . '-low.webp';
+                imagewebp($lowImage, $lowPath, 80);
+                imagedestroy($lowImage);
                 imagedestroy($srcImage);
                 break;
 
@@ -345,14 +339,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $filename = $server_id . '.webp';
         $savePath = $uploadDir . $filename;
         imagewebp($avatarImg, $savePath, 80);
+
+        $lowImage = imagescale($avatarImg, 50, 50);
+        $lowPath = $uploadDir . $server_id . '-low.webp';
+        imagewebp($lowImage, $lowPath, 80);
+        imagedestroy($lowImage);
         imagedestroy($avatarImg);
 
         $image_path = '/uploads/servers/' . $filename;
     }
 
+    $stmt = $mysqli->prepare("INSERT INTO servers (id, name, created_by, image) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssis", $server_id, $server_name, $user_id, $image_path);
+    $stmt->execute();
+    $stmt->close();
 
-    $stmt = $mysqli->prepare("INSERT INTO servers (id, name, channel_groups, channels, created_by, image) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssis", $server_id, $server_name, $channel_groups, $channels, $user_id, $image_path);
+    $stmt = $mysqli->prepare("INSERT INTO channel_groups (channel_group_id, channel_group_name, server_id) VALUES (?, ?, ?)");
+    $stmt->bind_param("sss", $channel_group_id, $channel_group_name, $server_id);
+    $stmt->execute();
+    $stmt->close();
+
+    $stmt = $mysqli->prepare("INSERT INTO channels (channel_id, channel_name, channel_type, channel_group_id, server_id, is_default) VALUES (?, ?, ?, ?, ?, 1)");
+    $stmt->bind_param("sssss", $channel_general_id, $channel_general_name, $channel_general_type, $channel_group_id, $server_id);
     $stmt->execute();
     $stmt->close();
 
@@ -361,8 +369,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute();
     $stmt->close();
 
-    $stmt = $mysqli->prepare("INSERT INTO server_members (server_id, user_id, joined_at) VALUES (?, ?, ?)");
-    $stmt->bind_param("sis", $server_id, $user_id, $joined_at);
+    $stmt = $mysqli->prepare("INSERT INTO server_members (server_id, user_id) VALUES (?, ?)");
+    $stmt->bind_param("si", $server_id, $user_id);
     $stmt->execute();
     $stmt->close();
 

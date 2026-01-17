@@ -3,7 +3,7 @@
     <div class="logs-options-container">
         <div class="log-option">
             <input type="checkbox" id="worker-checkbox" class="log-option-checkbox">
-            <label for="worker-checkbox">Hide worker PID</label>
+            <label for="worker-checkbox">Hide Worker Name</label>
         </div>
         <div class="log-option">
             <input type="checkbox" id="timestamp-checkbox" class="log-option-checkbox">
@@ -25,6 +25,9 @@
             <input type="checkbox" id="color-checkbox" checked class="log-option-checkbox">
             <label for="color-checkbox">Colorize</label>
         </div>
+    </div>
+    <div>
+        <p class="connected-server">You are connected to <span id="connected-server"></span></p>
     </div>
     <div id="logs" class="logs-textarea"></div>
 </div>
