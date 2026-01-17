@@ -1,0 +1,509 @@
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:24] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:24] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:24] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:24] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:24] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:24] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:24] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:24] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:24] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:26] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:26] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:26] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:26] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:26] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:26] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:26] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:26] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:26] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:28] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:28] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:28] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:28] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:28] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:28] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:28] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:28] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:28] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:30] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:30] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:30] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:30] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:30] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:30] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:30] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:30] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:30] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:32] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:32] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:32] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:32] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:32] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:32] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:32] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:32] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:32] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:34] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:34] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:34] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:34] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:34] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:34] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:34] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:34] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:34] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:36] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:36] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:36] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:36] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:36] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:36] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:36] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:36] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:36] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:37] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:37] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:37] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:38] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:38] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:38] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:38] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:38] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:38] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:39] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:39] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:39] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:40] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:40] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:40] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:40] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:40] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:40] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:41] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:41] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:41] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:42] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:42] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:42] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:42] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:42] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:42] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:44] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:44] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:44] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:44] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:44] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:44] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:44] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:44] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:44] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:46] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:46] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:46] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:46] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:46] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:46] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:46] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:46] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:46] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:48] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:48] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:48] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:48] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:48] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:48] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:48] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:48] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:48] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Aqua] [2026-01-17 16:42:50] [main.py:52] [INFO] -> Worker Aqua started
+[Worker Name: Aqua] [2026-01-17 16:42:50] [main.py:71] [INFO] -> Worker Aqua stopped
+[Worker Name: Aqua] [2026-01-17 16:42:50] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Ignis] [2026-01-17 16:42:50] [main.py:52] [INFO] -> Worker Ignis started
+[Worker Name: Ignis] [2026-01-17 16:42:50] [main.py:71] [INFO] -> Worker Ignis stopped
+[Worker Name: Ignis] [2026-01-17 16:42:50] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+
+[Worker Name: Terra] [2026-01-17 16:42:50] [main.py:52] [INFO] -> Worker Terra started
+[Worker Name: Terra] [2026-01-17 16:42:50] [main.py:71] [INFO] -> Worker Terra stopped
+[Worker Name: Terra] [2026-01-17 16:42:50] [events.py:80] [ERROR] -> Traceback (most recent call last):
+  File "/home/lvwij/wokki20_chat/backend/main.py", line 79, in <module>
+    web.run_app(app, host="0.0.0.0", port=5000)
+  File "/home/lvwij/wokki20_chat/wokki20_chat/lib/python3.11/site-packages/aiohttp/web.py", line 530, in run_app
+    loop.run_until_complete(main_task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 5000): address already in use
+

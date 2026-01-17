@@ -12,6 +12,7 @@ import os
 import time
 
 WORKER_NAME = os.getenv("WORKER_NAME", "Unknown")
+PORT = int(os.getenv("PORT", 5000))
 HEARTBEAT_FILE = f"/home/lvwij/wokki20_chat/webpage/_private/heartbeats/worker_{WORKER_NAME}.heartbeat"
 
 app = web.Application()
@@ -35,7 +36,6 @@ loop = asyncio.get_event_loop()
 loop.set_exception_handler(handle_async_exception)
 
 async def heartbeat():
-    """Async heartbeat writer to file."""
     while True:
         try:
             with open(HEARTBEAT_FILE, "w") as f:
@@ -49,7 +49,7 @@ async def startup(app):
     try:
         config.pool = await get_db_pool()
         config.typing_lock = asyncio.Lock()
-        await addMessageToLogs(f"Worker {WORKER_NAME} started", "INFO")
+        await addMessageToLogs(f"Worker {WORKER_NAME} started on port {PORT}", "INFO")
         app['heartbeat_task'] = asyncio.create_task(heartbeat())
     except Exception:
         exc_type, exc_value, exc_tb = sys.exc_info()
@@ -76,7 +76,7 @@ async def cleanup(app):
 
 if __name__ == "__main__" and "gunicorn" not in sys.modules:
     try:
-        web.run_app(app, host="0.0.0.0", port=5000)
+        web.run_app(app, host="0.0.0.0", port=PORT)
     except Exception:
         exc_type, exc_value, exc_tb = sys.exc_info()
         asyncio.run(addMessageToLogs(''.join(traceback.format_exception(exc_type, exc_value, exc_tb)), "ERROR"))

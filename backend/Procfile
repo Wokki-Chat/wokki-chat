@@ -1,4 +1,5 @@
-Ignis: python workers.py Ignis
-Aqua: python workers.py Aqua
-Terra: python workers.py Terra
-Ventus: python workers.py Ventus
+Ignis: python workers.py Ignis 5001
+Aqua: python workers.py Aqua 5002
+Terra: python workers.py Terra 5003
+Ventus: python workers.py Ventus 5004
+Proxy: python proxy.py
