@@ -274,3 +274,5 @@ async def handle_delayed_disconnect(user_id, sid):
     except asyncio.CancelledError:
         await addMessageToLogs(f"Disconnect for user {user_id} cancelled due to reconnect", "INFO")
         return
+    except RuntimeError as e:
+        await addMessageToLogs(f"Disconnect for user {user_id} failed: {e}", "ERROR")
