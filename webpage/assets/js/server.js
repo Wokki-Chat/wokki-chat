@@ -58,7 +58,7 @@ function initServer() {
 	let offset = 0;
 	const limit = 25;
 
-	function loadMessages(offsetValue = 0) {
+	async function loadMessages(offsetValue = 0) {
 		if (channel_type === "voice") {
 			socket.emit("connect_to_voice_channel", {
 				access_token,
@@ -80,6 +80,20 @@ function initServer() {
 		});
 	}
 
+	async function preloadParentData(messages) {
+		const pids = messages.map(m => m.parent_message_id).filter(Boolean);
+		for (const pid of pids) {
+			if (!parentCache.has(pid)) {
+				try {
+					const data = await loadParentMessage(pid);
+					parentCache.set(pid, data);
+				} catch {
+					parentCache.set(pid, { parent_message_text: null, parent_message_user: null });
+				}
+			}
+		}
+	}
+
 	loadMessages();
 	socket.emit("get_server_users", {
 		access_token,
@@ -96,13 +110,12 @@ function initServer() {
 		await hydrateAssets(msgEl);
 	}
 
-	async function getParentData(pid) {
+	const parentCache = new Map();
+
+	function getParentData(pid) {
 		if (!pid) return { parent_message_text: null, parent_message_user: null };
-		try {
-			return await loadParentMessage(pid);
-		} catch {
-			return { parent_message_text: null, parent_message_user: null };
-		}
+		if (parentCache.has(pid)) return parentCache.get(pid);
+		return { parent_message_text: null, parent_message_user: null };
 	}
 
 	let processingQueue = Promise.resolve();
@@ -126,77 +139,61 @@ function initServer() {
 		}
 	});
 
-	socket.on("all_messages", (messages) => {
+	socket.on("all_messages", async (messages) => {
 		enqueueMessageUpdate(async () => {
 			await processMessages(messages, { prepend: offset > 0 });
 			if (offset > 0) isLoadingOlderMessages = false;
 		});
+
+		await preloadParentData(messages);
 	});
 
-	socket.on("all_messages_nocache", (messages) => {
+	socket.on("all_messages_nocache", async (messages) => {
 		enqueueMessageUpdate(async () => {
 			await processMessages(messages, { prepend: offset > 0 });
 			if (offset > 0) isLoadingOlderMessages = false;
 		});
+
+		await preloadParentData(messages);
 	});
 
 	async function processMessages(messages, options = {}) {
 		const wasAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
 
+		if (!usersList || usersList.length === 0) {
+			for (const msg of messages) pendingMessages.push({ msg });
+			return;
+		}
+
 		if (options.prepend) {
 			messages.sort((a, b) => b.timestamp - a.timestamp);
-			const oldScrollHeight = messageContainer.scrollHeight;
-
-			for (const msg of messages) {
-				if (!usersList || usersList.length === 0) {
-					pendingMessages.push({ msg });
-					continue;
-				}
-
-				const parentData = await getParentData(msg.parent_message_id);
-				const existingEl = messageContainer.querySelector(`.message[data-message-id="${msg.id}"]`);
-				const newEl = await createMessageElement(msg, parentData);
-				if (!newEl) continue;
-
-				if (existingEl && options.nocache) {
-					existingEl.replaceWith(newEl);
-				} else if (!existingEl) {
-					messageContainer.insertBefore(newEl, messageContainer.firstChild);
-				}
-
-				normalizeCompactMessages(messageContainer);
-				hydrateAssets(newEl);
+			const elements = await Promise.all(messages.map(async (msg) => {
+				const parentData = getParentData(msg.parent_message_id);
+				return await createMessageElement(msg, parentData);
+			}));
+			for (const el of elements) {
+				if (!el) continue;
+				messageContainer.insertBefore(el, messageContainer.firstChild);
+				hydrateAssets(el);
 			}
-
-			const newScrollHeight = messageContainer.scrollHeight;
-			messageContainer.scrollTop += newScrollHeight - oldScrollHeight;
+			normalizeCompactMessages(messageContainer);
 		} else {
 			messages.sort((a, b) => a.timestamp - b.timestamp);
 
-			for (const msg of messages) {
-				if (!usersList || usersList.length === 0) {
-					pendingMessages.push({ msg });
-					continue;
-				}
+			const elements = await Promise.all(messages.map(async (msg) => {
+				const parentData = getParentData(msg.parent_message_id);
+				return await createMessageElement(msg, parentData);
+			}));
 
-				const parentData = await getParentData(msg.parent_message_id);
-				const existingEl = messageContainer.querySelector(`.message[data-message-id="${msg.id}"]`);
-				const newEl = await createMessageElement(msg, parentData);
-				if (!newEl) continue;
-
-				if (existingEl && options.nocache) {
-					existingEl.replaceWith(newEl);
-				} else if (!existingEl) {
-					messageContainer.appendChild(newEl);
-				}
-
-				normalizeCompactMessages(messageContainer);
-				hydrateAssets(newEl);
+			for (const el of elements) {
+				if (!el) continue;
+				messageContainer.appendChild(el);
+				hydrateAssets(el);
 			}
 
-			if (wasAtBottom) {
-				messageContainer.scrollTop = messageContainer.scrollHeight;
-			}
+			normalizeCompactMessages(messageContainer);
+
+			if (wasAtBottom) await scrollToBottomWhenStable(messageContainer);
 		}
 
 		await highlightAll();
