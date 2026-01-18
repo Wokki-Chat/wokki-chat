@@ -73,16 +73,6 @@ async def heartbeat():
         try:
             with open(HEARTBEAT_FILE, "w") as f:
                 f.write(str(int(time.time())))
-            
-            if BETTERSTACK_TOKEN:
-                user_count = sum(1 for _ in sio.manager.get_participants('/', None))
-                logger.info('worker_metrics', extra={
-                    'worker': WORKER_NAME,
-                    'port': PORT,
-                    'user_count': user_count,
-                    'accepting_connections': accepting_connections,
-                    'metric_type': 'heartbeat'
-                })
         except Exception as e:
             await addMessageToLogs(f"Failed to write heartbeat: {e}", "ERROR")
             if BETTERSTACK_TOKEN:

@@ -48,6 +48,7 @@ room = {}
 # --------------------
 MAX_MESSAGES = 10
 TIME_WINDOW_SECONDS = 3
+DISCONNECT_TIMEOUT = 30
 
 # --------------------
 # Regex / validation patterns
@@ -67,11 +68,11 @@ async def remove_sid(sid: str):
     await redis_client.hdel("sid_to_bot_id", sid)
     
 async def get_bot_sid_from_id(bot_id: str) -> str | None:
-    keys = await redis_client.keys("sid_to_bot_id:*")
-    for key in keys:
-        sid = await redis_client.hget(key, bot_id)
-        if sid:
-            return key.split("sid_to_bot_id:")[1]
+    all_sids = await redis_client.hkeys("sid_to_bot_id")
+    for sid in all_sids:
+        value = await redis_client.hget("sid_to_bot_id", sid)
+        if value == bot_id:
+            return sid
     return None
 
 # --------------------

@@ -654,8 +654,8 @@ function showAvailableCommands(command, textarea, available_commands) {
             const payload = {
                 access_token,
                 command: commandText,
-                server_id,
-                channel_id,
+                server_id: document.getElementById("server-id")?.getAttribute("value") || "",
+                channel_id: document.getElementById("channel-id")?.getAttribute("value") || "",
                 bot_id,
                 options: {}
             };
@@ -837,8 +837,8 @@ function showAvailableCommands(command, textarea, available_commands) {
               const payload = {
                 access_token,
                 command: commandText,
-                server_id,
-                channel_id,
+                server_id: document.getElementById("server-id")?.getAttribute("value") || "",
+                channel_id: document.getElementById("channel-id")?.getAttribute("value") || "",
                 bot_id,
                 options: data
               };
