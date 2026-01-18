@@ -1,4 +1,4 @@
-from server.config import typing_lock, user_current_room, add_user_to_sid, get_sids_for_user, remove_user_sid, get_user_from_sid, get_bot_sid_from_id, add_sid_to_bot, get_bot_id_from_sid, remove_sid, get_typing_users, remove_typing_user, redis_client, server_name
+from server.config import typing_lock, user_current_room, add_user_to_sid, get_sids_for_user, remove_user_sid, get_user_from_sid, get_bot_sid_from_id, add_sid_to_bot, get_bot_id_from_sid, remove_sid, get_typing_users, remove_typing_user, redis_client, server_name, acquire_user_lock, release_user_lock
 from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status, broadcast_user_widget_update
 from server.helpers.server_helpers import is_user_in_server, get_member_ids_from_server
 from server.helpers.bot_helpers import is_bot_in_server, verify_bot_token
@@ -43,77 +43,66 @@ async def handle_connect(sid, environ):
     query = environ.get('QUERY_STRING', '')
     params = dict(qc.split('=') for qc in query.split('&') if '=' in qc)
     access_token = params.get('access_token')
-    server_id = params.get('server_id')
     bot_token = params.get('bot_token')
+    server_id = params.get('server_id')
 
     if not access_token and not bot_token:
         await addMessageToLogs(f"Missing access_token or bot_token for sid {sid}", "INFO")
         await sio_instance.sio.disconnect(sid)
         return
 
-    if access_token:
-        async with config.pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
+    async with config.pool.acquire() as conn:
+        async with conn.cursor(aiomysql.DictCursor) as cur:
+            if access_token:
                 user_id = await verify_access_token(cur, access_token)
                 if not user_id:
                     await addMessageToLogs(f"Invalid access_token for sid {sid}", "INFO")
                     await sio_instance.sio.disconnect(sid)
                     return
 
-                await cur.execute(
-                    """
+                await cur.execute("""
                     SELECT widget_name, widget_access_token, widget_refresh_token, show_on_profile
                     FROM profile_widgets
                     WHERE user_id = %s
-                    """,
-                    (user_id,)
-                )
+                """, (user_id,))
                 widgets = await cur.fetchall()
-                spotify_tokens = None
-                for w in widgets:
-                    if w["widget_name"] == "Spotify" and w["show_on_profile"] == 1:
-                        spotify_tokens = (w["widget_access_token"], w["widget_refresh_token"])
-                        break
 
-                if spotify_tokens:
-                    access_token, refresh_token = spotify_tokens
-                    asyncio.create_task(poll_spotify(user_id, access_token, refresh_token))
-                else:
-                    asyncio.create_task(poll_spotify(user_id))
+                spotify_tokens = next(
+                    ((w["widget_access_token"], w["widget_refresh_token"]) for w in widgets if w["widget_name"] == "Spotify" and w["show_on_profile"]),
+                    None
+                )
 
                 pending_key = f"user_disconnect:{user_id}"
-                pending_task_id = await redis_client.get(pending_key)
-                if pending_task_id:
+                if await redis_client.get(pending_key):
                     await redis_client.delete(pending_key)
                     await addMessageToLogs(f"User {user_id} reconnected, canceled pending disconnect", "INFO")
 
                 await cur.execute(
-                    "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = FALSE", (user_id,)
+                    "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = FALSE",
+                    (user_id,)
                 )
                 await conn.commit()
                 await broadcast_user_update(user_id)
 
-                await addMessageToLogs(f"User {user_id} connected to server {server_name}", "INFO")
+                if spotify_tokens:
+                    asyncio.create_task(poll_spotify(user_id, *spotify_tokens))
+                else:
+                    asyncio.create_task(poll_spotify(user_id))
+
+                await addMessageToLogs(f"User {user_id} connected", "INFO")
                 await sio_instance.sio.emit('connected to server', {'server_name': server_name}, to=sid)
                 await sio_instance.sio.emit('user_connected', {'user_id': user_id, 'server_id': server_id}, to=sid)
-                
+
                 sids = await get_sids_for_user(user_id)
                 if sid not in sids:
                     await add_user_to_sid(user_id, sid)
 
-                if not server_id:
-                    return
-
-                if not await is_user_in_server(cur, user_id, server_id):
+                if server_id and not await is_user_in_server(cur, user_id, server_id):
                     await addMessageToLogs(f"User {user_id} not in server {server_id}", "INFO")
                     await sio_instance.sio.emit('user_not_in_server', {'user_id': user_id, 'server_id': server_id}, to=sid)
-                    return
-                
                 return
 
-    if bot_token:
-        async with config.pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
+            if bot_token:
                 bot_id = await verify_bot_token(cur, bot_token)
                 if not bot_id:
                     await addMessageToLogs(f"Invalid bot_token for sid {sid}", "INFO")
@@ -124,87 +113,78 @@ async def handle_connect(sid, environ):
                 await conn.commit()
                 await broadcast_user_update(bot_id, is_bot=True)
 
-                await addMessageToLogs(f"Bot {bot_id} connected to server {server_name}", "INFO")      
+                await addMessageToLogs(f"Bot {bot_id} connected", "INFO")
                 await sio_instance.sio.emit('bot_connected', {'bot_id': bot_id, 'server_id': server_id}, to=sid)
                 await sio_instance.sio.emit('connected to server', {'server_name': server_name}, to=sid)
-                
-                await redis_client.set(f"bot_sid:{bot_id}", sid)
-                await addMessageToLogs(f"Stored bot_id {bot_id} for sid {sid} in redis ({await redis_client.get(f'bot_sid:{bot_id}')})", "INFO")
-            
-                if not server_id:
-                    return
 
-                if not await is_bot_in_server(cur, bot_id, server_id):
+                await redis_client.set(f"bot_sid:{bot_id}", sid)
+
+                if server_id and not await is_bot_in_server(cur, bot_id, server_id):
                     await addMessageToLogs(f"Bot {bot_id} not in server {server_id}", "INFO")
                     await sio_instance.sio.emit('bot_not_in_server', {'bot_id': bot_id, 'server_id': server_id}, to=sid)
                     return
-                
-                member_entries = await get_member_ids_from_server(cur, server_id)
 
-                users = []
-                for entry in member_entries:
-                    if entry["type"] == "user":
-                        uid = entry["id"]
-
-                        if not await is_user_in_server(cur, uid, server_id):
-                            continue
-
-                        await cur.execute(
-                            "SELECT id, username, status, profile_picture FROM users WHERE id = %s", (uid,)
-                        )
-                        user = await cur.fetchone()
-                        
-                        if user:
-                            user["id"] = str(user["id"])
-                            user["premium"] = await get_user_premium_status(cur, uid)
-                            user["bot"] = False
-                            users.append(user)
-                    if entry["type"] == "bot":
-                        uid = entry["id"]
-                        
-                        if not await is_bot_in_server(cur, uid, server_id):
-                            continue
-
-                        await cur.execute(
-                            "SELECT id, name, status, profile_picture FROM bots WHERE id = %s", (uid,)
-                        )
-                        bot = await cur.fetchone()
-                        
-                        if bot:
-                            bot["id"] = str(bot["id"])
-                            bot["premium"] = False
-                            bot["bot"] = True
-                            bot["username"] = bot["name"]
-                            del bot["name"]
-                            users.append(bot)
-
-                await sio_instance.sio.emit("server_users", users, to=sid)
-                await addMessageToLogs(f"Emitted user list to sid: {sid}, server id: {server_id}, bot id: {bot_id}", "INFO")
+                await send_server_member_list(cur, bot_id, server_id, sid)
                 return
+
+async def send_server_member_list(cur, bot_id, server_id, sid):
+    members = await get_member_ids_from_server(cur, server_id)
+    users = []
+
+    for m in members:
+        if m["type"] == "user":
+            if not await is_user_in_server(cur, m["id"], server_id):
+                continue
+            await cur.execute("SELECT id, username, status, profile_picture FROM users WHERE id = %s", (m["id"],))
+            u = await cur.fetchone()
+            if u:
+                u["id"] = str(u["id"])
+                u["premium"] = await get_user_premium_status(cur, m["id"])
+                u["bot"] = False
+                users.append(u)
+        else:
+            if not await is_bot_in_server(cur, m["id"], server_id):
+                continue
+            await cur.execute("SELECT id, name, status, profile_picture FROM bots WHERE id = %s", (m["id"],))
+            b = await cur.fetchone()
+            if b:
+                b["id"] = str(b["id"])
+                b["premium"] = False
+                b["bot"] = True
+                b["username"] = b.pop("name")
+                users.append(b)
+
+    await sio_instance.sio.emit("server_users", users, to=sid)
+    await addMessageToLogs(f"Sent server user list to sid {sid} for server {server_id}", "INFO")
 
 async def handle_disconnect(sid):
     user_id = await get_user_from_sid(sid)
     bot_id = await get_bot_id_from_sid(sid)
-    
-    if not user_id and not bot_id:
-        await addMessageToLogs(f"User not found for sid {sid}", "INFO")
-        return
 
     if user_id:
-        await addMessageToLogs(f"Disconnecting user {user_id}", "INFO")
+        await addMessageToLogs(f"User {user_id} disconnected", "INFO")
         await remove_user_sid(user_id, sid)
 
         room = user_current_room.get(user_id)
         if room:
             await sio_instance.sio.leave_room(sid, room)
             await sio_instance.sio.emit('user_disconnected', {'user_id': user_id}, room=room)
-            await addMessageToLogs(f"User {user_id} disconnected from room {room}", "INFO")
             user_current_room.pop(user_id, None)
 
-        task_key = f"user_disconnect:{user_id}"
-        await redis_client.set(task_key, sid, ex=30)
-        asyncio.create_task(handle_delayed_disconnect(user_id, sid))
-        await addMessageToLogs(f"Stored pending disconnect for user {user_id} in Redis", "INFO")
+        async with config.pool.acquire() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    "UPDATE users SET status = 'idle' WHERE id = %s AND status_manually_set = FALSE",
+                    (user_id,)
+                )
+                await conn.commit()
+                await addMessageToLogs(f"User {user_id} set to idle after disconnect", "INFO")
+                await broadcast_user_update(user_id)
+
+        disconnect_key = f"user_disconnect:{user_id}"
+        await redis_client.set(disconnect_key, "1", ex=30)
+
+        asyncio.create_task(handle_delayed_disconnect(user_id))
         return
 
     if bot_id:
@@ -219,60 +199,24 @@ async def handle_disconnect(sid):
         return
 
 
-async def handle_delayed_disconnect(user_id, sid):
-    task_key = f"user_disconnect:{user_id}"
-    
-    stored_sid = await redis_client.get(task_key)
-    if not stored_sid or stored_sid != sid:
-        await addMessageToLogs(f"Disconnect for user {user_id} skipped because user reconnected", "INFO")
+async def handle_delayed_disconnect(user_id):
+    disconnect_key = f"user_disconnect:{user_id}"
+
+    await asyncio.sleep(30)
+
+    still_disconnected = await redis_client.get(disconnect_key)
+    if not still_disconnected:
+        await addMessageToLogs(f"User {user_id} reconnected before timeout, skipping offline", "INFO")
         return
 
-    try:
-        async with config.pool.acquire() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute(
-                    "UPDATE users SET status = 'idle' WHERE id = %s AND status_manually_set = FALSE",
-                    (user_id,)
-                )
-                await conn.commit()
-                await addMessageToLogs(f"User {user_id} set to idle (if not overridden manually)", "INFO")
-                await broadcast_user_update(user_id)
+    async with config.pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "UPDATE users SET status = 'offline' WHERE id = %s AND status_manually_set = FALSE",
+                (user_id,)
+            )
+            await conn.commit()
+            await addMessageToLogs(f"User {user_id} set to offline after disconnect timeout", "INFO")
+            await broadcast_user_update(user_id)
 
-        await asyncio.sleep(25)
-        
-        stored_sid = await redis_client.get(task_key)
-        if not stored_sid or stored_sid != sid:
-            await addMessageToLogs(f"Disconnect for user {user_id} skipped before going offline (user reconnected)", "INFO")
-            return
-
-        async with config.pool.acquire() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute(
-                    "UPDATE users SET status = 'offline' WHERE id = %s AND status_manually_set = FALSE",
-                    (user_id,)
-                )
-                await conn.commit()
-                await redis_client.set(f"spotify_polling:{user_id}", "0")
-                await addMessageToLogs(f"Stopped Spotify polling for user {user_id} due to disconnect", "INFO")
-                await addMessageToLogs(f"User {user_id} set to offline (if not overridden manually)", "INFO")
-                await broadcast_user_update(user_id)
-
-        async with typing_lock:
-            typing_users = await get_typing_users()
-            if user_id in typing_users:
-                await remove_typing_user(user_id)
-                await addMessageToLogs(f"Removed user {user_id} from typing_users", "INFO")
-                await sio_instance.sio.emit('users_typing', {'user_ids': list(typing_users), 'channel_id': None})
-
-            sids_left = await get_sids_for_user(user_id)
-            for sid_key in sids_left:
-                await remove_user_sid(user_id, sid_key)
-
-        await redis_client.delete(task_key)
-        await addMessageToLogs(f"Removed pending disconnect for user {user_id} from Redis", "INFO")
-
-    except asyncio.CancelledError:
-        await addMessageToLogs(f"Disconnect for user {user_id} cancelled due to reconnect", "INFO")
-        return
-    except RuntimeError as e:
-        await addMessageToLogs(f"Disconnect for user {user_id} failed: {e}", "ERROR")
+    await redis_client.delete(disconnect_key)

@@ -46,7 +46,7 @@ function initServer() {
 	let selectedFiles = [];
 
 	const messageContainer = document.querySelector("#message-container");
-		window.addEventListener('DOMContentLoaded', async () => {
+	window.addEventListener('DOMContentLoaded', async () => {
 		await emojis.load();
 	});
 
@@ -80,15 +80,6 @@ function initServer() {
 		});
 	}
 
-	if (messageContainer) {
-		messageContainer.addEventListener("scroll", () => {
-			if (messageContainer.scrollTop === 0) {
-				offset += limit;
-				loadMessages(offset);
-			}
-		});
-	}
-
 	loadMessages();
 	socket.emit("get_server_users", {
 		access_token,
@@ -102,6 +93,7 @@ function initServer() {
 		const msgEl = await createMessageElement(msg, parentData);
 		if (!msgEl) return;
 		container.appendChild(msgEl);
+		await hydrateAssets(msgEl);
 	}
 
 	async function getParentData(pid) {
@@ -113,88 +105,113 @@ function initServer() {
 		}
 	}
 
-	socket.on("all_messages", async (messages) => {
-		const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
+	let processingQueue = Promise.resolve();
 
-		const fragment = document.createDocumentFragment();
+	function enqueueMessageUpdate(fn) {
+		processingQueue = processingQueue.then(fn).catch(console.error);
+	}
 
-		for (const msg of messages) {
-			if (!usersList || usersList.length === 0) {
-				pendingMessages.push({ msg });
-				continue;
-			}
-			const parentData = await getParentData(msg.parent_message_id);
-			await processMessage(msg, parentData, fragment);
+	let isLoadingOlderMessages = false;
+
+	messageContainer.addEventListener("scroll", () => {
+		if (messageContainer.scrollTop === 0 && !isLoadingOlderMessages) {
+			offset += limit;
+			isLoadingOlderMessages = true;
+			socket.emit("get_messages", {
+				access_token,
+				server_id,
+				channel_id,
+				offset
+			});
 		}
+	});
 
-		const oldScrollHeight = messageContainer.scrollHeight;
-		const oldScrollTop = messageContainer.scrollTop;
+	socket.on("all_messages", (messages) => {
+		enqueueMessageUpdate(async () => {
+			await processMessages(messages, { prepend: offset > 0 });
+			if (offset > 0) isLoadingOlderMessages = false;
+		});
+	});
 
-		messageContainer.insertBefore(fragment, messageContainer.firstChild);
+	socket.on("all_messages_nocache", (messages) => {
+		enqueueMessageUpdate(async () => {
+			await processMessages(messages, { prepend: offset > 0 });
+			if (offset > 0) isLoadingOlderMessages = false;
+		});
+	});
 
-		if (!isAtBottom) {
+	async function processMessages(messages, options = {}) {
+		const wasAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
+
+		if (options.prepend) {
+			messages.sort((a, b) => b.timestamp - a.timestamp);
+			const oldScrollHeight = messageContainer.scrollHeight;
+
+			for (const msg of messages) {
+				if (!usersList || usersList.length === 0) {
+					pendingMessages.push({ msg });
+					continue;
+				}
+
+				const parentData = await getParentData(msg.parent_message_id);
+				const existingEl = messageContainer.querySelector(`.message[data-message-id="${msg.id}"]`);
+				const newEl = await createMessageElement(msg, parentData);
+				if (!newEl) continue;
+
+				if (existingEl && options.nocache) {
+					existingEl.replaceWith(newEl);
+				} else if (!existingEl) {
+					messageContainer.insertBefore(newEl, messageContainer.firstChild);
+				}
+
+				normalizeCompactMessages(messageContainer);
+				hydrateAssets(newEl);
+			}
+
 			const newScrollHeight = messageContainer.scrollHeight;
-			messageContainer.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
+			messageContainer.scrollTop += newScrollHeight - oldScrollHeight;
+		} else {
+			messages.sort((a, b) => a.timestamp - b.timestamp);
+
+			for (const msg of messages) {
+				if (!usersList || usersList.length === 0) {
+					pendingMessages.push({ msg });
+					continue;
+				}
+
+				const parentData = await getParentData(msg.parent_message_id);
+				const existingEl = messageContainer.querySelector(`.message[data-message-id="${msg.id}"]`);
+				const newEl = await createMessageElement(msg, parentData);
+				if (!newEl) continue;
+
+				if (existingEl && options.nocache) {
+					existingEl.replaceWith(newEl);
+				} else if (!existingEl) {
+					messageContainer.appendChild(newEl);
+				}
+
+				normalizeCompactMessages(messageContainer);
+				hydrateAssets(newEl);
+			}
+
+			if (wasAtBottom) {
+				messageContainer.scrollTop = messageContainer.scrollHeight;
+			}
 		}
 
 		await highlightAll();
 		await addCodeblockInfo();
 		await emojis.replaceAll();
 
-		if (isAtBottom) {
+		if (wasAtBottom && !options.prepend) {
 			await scrollToBottomWhenStable(messageContainer);
 		}
-	});
-
-	socket.on("all_messages_nocache", async (messages) => {
-		const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
-		const fragment = document.createDocumentFragment();
-
-		for (const msg of messages) {
-			if (!usersList || usersList.length === 0) {
-				pendingMessages.push({ msg });
-				continue;
-			}
-
-			const parentData = await getParentData(msg.parent_message_id);
-			const existingEl = messageContainer.querySelector(`.message[data-message-id="${msg.id}"]`);
-			const newWrapperEl = await createMessageElement(msg, parentData);
-
-			if (!newWrapperEl) continue;
-
-			const newMsgEl = newWrapperEl.querySelector('.message');
-			if (!newMsgEl) continue;
-
-			if (existingEl) {
-				existingEl.replaceWith(newMsgEl);
-			} else {
-				fragment.appendChild(newMsgEl);
-			}
-		}
-
-		const oldScrollHeight = messageContainer.scrollHeight;
-		const oldScrollTop = messageContainer.scrollTop;
-
-		messageContainer.insertBefore(fragment, messageContainer.firstChild);
-
-		if (!isAtBottom) {
-			const newScrollHeight = messageContainer.scrollHeight;
-			messageContainer.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
-		}
-
-		await highlightAll();
-		await addCodeblockInfo();
-		await emojis.replaceAll();
-
-		if (isAtBottom) {
-			await scrollToBottomWhenStable(messageContainer);
-		}
-	});
+	}
 
 	socket.on("server_commands_response", async (data) => {
-	if (data.success) {
-		available_commands = data.bots;
-	}
+		if (data.success) {
+			available_commands = data.bots;
+		}
 	});
 
 	socket.on("new_message", async (msg) => {
@@ -222,6 +239,7 @@ function initServer() {
 		const msgEl = await createMessageElement(msg, parentInfo);
 
 		messageContainer.appendChild(msgEl);
+		normalizeCompactMessages(messageContainer);
 
 		lastRenderedUser = sanitize(msg.username);
 		lastRenderedTimestamp = new Date(msg.created_at);
@@ -287,6 +305,49 @@ function initServer() {
 		
 		emojis.replaceEl(msgEl.querySelector(".message-text"));
 	});
+
+	function normalizeCompactMessages(container) {
+		const messages = [...container.querySelectorAll(".message")];
+
+		for (let i = 0; i < messages.length; i++) {
+			const current = messages[i];
+			const prev = messages[i - 1];
+
+			current.classList.remove("compact");
+
+			const pic = current.querySelector(".profile-picture");
+			const header = current.querySelector(".username-date");
+
+			if (!prev) {
+				pic.style.opacity = "1";
+				pic.style.height = "30px";
+				header.style.display = "flex";
+				continue;
+			}
+
+			const sameUser = current.dataset.sentBy === prev.dataset.sentBy;
+
+			const currentTime = new Date(
+				current.querySelector(".date")?.dataset.timestamp
+			);
+			const prevTime = new Date(
+				prev.querySelector(".date")?.dataset.timestamp
+			);
+
+			const closeInTime = Math.abs(currentTime - prevTime) < 2 * 60 * 1000;
+
+			if (sameUser && closeInTime) {
+				current.classList.add("compact");
+				pic.style.opacity = "0";
+				pic.style.height = "0";
+				header.style.display = "none";
+			} else {
+				pic.style.opacity = "1";
+				pic.style.height = "30px";
+				header.style.display = "flex";
+			}
+		}
+	}
 
 	async function onUsersListLoaded() {
 		pendingMessages.sort((a, b) => new Date(a.msg.created_at) - new Date(b.msg.created_at));
@@ -605,6 +666,39 @@ function initServer() {
 
 	}
 
+	async function hydrateAssets(msgEl) {
+		const lazyImages = Array.from(msgEl.querySelectorAll('img.lazyload'));
+		const lazyVideos = Array.from(msgEl.querySelectorAll('video.lazyload'));
+
+		await Promise.all(
+			lazyImages.map(img => new Promise(resolve => {
+				const tempImg = new Image();
+				tempImg.src = img.dataset.src;
+				tempImg.onload = () => {
+					img.src = img.dataset.src;
+					img.classList.remove('lazyload');
+					img.style.opacity = '0';
+					requestAnimationFrame(() => {
+						img.style.transition = 'opacity 0.3s';
+						img.style.opacity = '1';
+					});
+					resolve();
+				};
+				tempImg.onerror = resolve;
+			}))
+		);
+
+		await Promise.all(
+			lazyVideos.map(video => new Promise(resolve => {
+				video.src = video.dataset.src;
+				video.load();
+				video.classList.remove('lazyload');
+				video.onloadeddata = resolve;
+				video.onerror = resolve;
+			}))
+		);
+	}
+
 	let lastRenderedUser = null;
 	let lastRenderedTimestamp = null;
 
@@ -633,9 +727,9 @@ function initServer() {
 			assetsHTML = assets.map((asset, index) => {
 			const type = getAssetType(asset.savedName);
 			if (type === 'image') {
-				return `<img src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" alt="${asset.originalName}" class="message-asset-image" onclick="imageViewer('https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}', '${asset.originalName}')" />`;
+				return `<img data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" alt="${asset.originalName}" class="message-asset-image lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}', '${asset.originalName}')" />`;
 			} else if (type === 'video') {
-				return `<video src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" controls class="message-asset-video"></video>`;
+				return `<video data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" controls class="message-asset-video lazyload"></video>`;
 			} else if (type === 'audio') {
 				return `
 				<div class="custom-player" data-originalName="${asset.originalName}" data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}">
@@ -669,12 +763,24 @@ function initServer() {
 
 		const username_command = command_user_id ? sanitize(usersList.find(user => user.id === String(command_user_id))?.username ?? '') : null;
 
-		const embeds = typeof embed === 'string' ? JSON.parse(embed) : embed;
+		let embedsRaw = null;
+		try {
+			embedsRaw = typeof embed === 'string' ? JSON.parse(embed) : embed;
+		} catch {
+			embedsRaw = null;
+		}
 
+		const embeds = Array.isArray(embedsRaw)
+			? embedsRaw
+			: embedsRaw
+				? [embedsRaw]
+				: null;
 
 		const msgEl = document.createElement("div");
+		msgEl.classList.add('message');
+		msgEl.setAttribute('data-message-id', id);
+		msgEl.setAttribute('data-sent-by', sent_by);
 		msgEl.innerHTML = `
-			<div class="message ${hideHeader && !parent_message_id && !command ? 'compact' : ''}" data-message-id="${id}" data-sent-by="${sent_by}">
 			${
 				parent_message_id
 				? `<div class="message-reply" data-message-id="${parent_message_id}">
@@ -724,7 +830,6 @@ function initServer() {
 					: ''
 				}
 			</div>
-			</div>
 		`;
 
 		msgEl.querySelector('.username').addEventListener('click', (e) => {
@@ -751,7 +856,7 @@ function initServer() {
 		hydrateInvites(msgEl);
 		hydrateSpotifyTracks(msgEl);
 
-		const msgWrapper = msgEl.querySelector('.message');
+		const msgWrapper = msgEl;
 		const mentionTags = msgEl.querySelectorAll(`.user-link[data-user-id="${user_id}"], .user-link[data-user-id="everyone"]`);
 
 		if (mentionTags.length > 0) {
@@ -1011,7 +1116,7 @@ function initServer() {
 
 		const nextMsgEl = msgEl.nextElementSibling;
 
-		msgEl.parentElement.remove();
+		msgEl.remove();
 
 		if (nextMsgEl && nextMsgEl.classList.contains('message')) {
 			const usernameDateEl = nextMsgEl.querySelector('.username-date');
@@ -1368,7 +1473,7 @@ function initServer() {
 				popup.style.top = top + "px";
 			}
 
-			if (user.widgets.Spotify && user.widgets.Spotify.item) {
+			if (user.widgets?.Spotify?.item) {
 				updateSpotifyPopup(popup, user.widgets.Spotify);
 			}
 

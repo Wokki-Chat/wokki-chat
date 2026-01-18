@@ -4,10 +4,27 @@ from aiohttp import web, ClientSession, ClientWebSocketResponse, WSMsgType
 WORKER_PORTS = [5001, 5002, 5003, 5004]
 idx = 0
 
-async def handler(request):
+async def is_worker_alive(port):
+    try:
+        async with ClientSession() as session:
+            async with session.get(f"http://127.0.0.1:{port}/health", timeout=1):
+                return True
+    except:
+        return False
+
+async def get_next_worker():
     global idx
-    port = WORKER_PORTS[idx]
-    idx = (idx + 1) % len(WORKER_PORTS)
+    for _ in range(len(WORKER_PORTS)):
+        port = WORKER_PORTS[idx]
+        idx = (idx + 1) % len(WORKER_PORTS)
+        if await is_worker_alive(port):
+            return port
+    return None
+
+async def handler(request):
+    port = await get_next_worker()
+    if port is None:
+        return web.Response(text="No workers available", status=503)
 
     if request.headers.get("Upgrade", "").lower() == "websocket":
         ws_server = web.WebSocketResponse()

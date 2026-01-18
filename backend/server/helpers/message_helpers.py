@@ -261,7 +261,7 @@ async def get_messages(sid, metadata, data):
 
                         UNION ALL
 
-                        SELECT bm.id, bm.message, NULL AS sent_by, b.name AS username, bm.created_at, bm.updated_at, null AS display_name,
+                        SELECT bm.id, bm.message, bm.bot_id AS sent_by, b.name AS username, bm.created_at, bm.updated_at, null AS display_name,
                             bm.edited, bm.server_id, bm.channel_id, NULL AS parent_message_id, NULL AS assets,
                             b.profile_picture, bm.command, bm.command_user_id, bm.embed,
                             TRUE AS bot_message

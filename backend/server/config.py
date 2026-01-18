@@ -27,6 +27,8 @@ API_KEY = os.getenv("API_KEY")
 API_SECRET = os.getenv("API_SECRET")
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+BETTERSTACK_TOKEN = os.getenv("BETTERSTACK_TOKEN", "")
+BETTERSTACK_HOST = os.getenv("BETTERSTACK_HOST", "")
 
 # --------------------
 # LiveKit / voice
@@ -150,3 +152,12 @@ async def cache_users(server_id: str, users: list):
     await redis_client.delete(key)
     for user in users:
         await redis_client.rpush(key, json.dumps(user))
+
+# --------------------
+# LOCKS
+# --------------------
+async def acquire_user_lock(user_id: str, sid: str, expire: int = 60):
+    return await redis_client.set(f"user_disconnect_lock:{user_id}", sid, nx=True, ex=expire)
+
+async def release_user_lock(user_id: str):
+    await redis_client.delete(f"user_disconnect_lock:{user_id}")

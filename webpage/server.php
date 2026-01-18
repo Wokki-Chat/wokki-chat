@@ -221,7 +221,6 @@ function getChannelGroups($server_id, $mysqli) {
     return $groups;
 }
 
-
 if (!$server_id || !isset($user_servers[$server_id])) {
     $serverInfo = getServerInfo($server_id, $mysqli);
     $join_without_invite = $serverInfo['join_without_invite'] == 1 ? true : false;
@@ -230,7 +229,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
 
     if (!$channel_id) {
         foreach ($channels as $ch) {
-            if ($ch['is_default'] == 1) {
+            if (isset($ch['is_default']) && $ch['is_default'] == 1) {
                 $channel_id = $ch['channel_id'];
                 break;
             }
@@ -278,7 +277,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
 
     if (!$channel_id) {
         foreach ($channels as $ch) {
-            if (!empty($ch['default'])) {
+            if (isset($ch['is_default']) && $ch['is_default'] == 1) {
                 $channel_id = $ch['channel_id'];
                 break;
             }
