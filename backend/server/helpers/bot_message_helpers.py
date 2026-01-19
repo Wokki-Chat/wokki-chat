@@ -104,10 +104,10 @@ async def send_bot_message(sid, data):
             await cur.execute(
                 '''
                 INSERT INTO bot_messages 
-                (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed, parent_message_id, assets)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ''',
-                (message_id, message, bot_id, timestamp, None, False, server_id, channel_id, command, user_id, embed_str, parent_message_id, assets_json)
+                (message_id, message, bot_id, timestamp, None, False, server_id, channel_id, command, user_id, embed_str)
             )
 
             await conn.commit()
