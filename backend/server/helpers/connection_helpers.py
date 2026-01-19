@@ -199,7 +199,7 @@ async def handle_disconnect(sid):
                 await conn.commit()
                 await broadcast_user_update(bot_id, is_bot=True)
 
-        await remove_sid(bot_id)
+        await remove_sid(sid)
         await addMessageToLogs(f"Bot {bot_id} disconnected", "INFO")
         return
 
@@ -217,8 +217,6 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
                 )
                 await conn.commit()
                 await addMessageToLogs(f"User {user_id} reconnected before timeout, skipping offline, user set to online", "INFO")
-
-                await redis_client.delete(disconnect_key)
                 return
             
             await cur.execute(
@@ -229,4 +227,4 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
             await addMessageToLogs(f"User {user_id} set to offline after disconnect timeout", "INFO")
             await broadcast_user_update(user_id)
 
-            await redis_client.delete(disconnect_key)
+    await redis_client.delete(disconnect_key)
