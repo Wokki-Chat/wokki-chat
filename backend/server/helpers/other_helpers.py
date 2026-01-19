@@ -1,4 +1,3 @@
-import math
 from server.helpers.logs import addMessageToLogs
 from datetime import datetime
 from gibberish_classifier.classify import classify

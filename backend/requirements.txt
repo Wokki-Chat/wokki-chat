@@ -1,0 +1,7 @@
+aiohttp
+requests
+aiomysql
+redis
+livekit
+python-dateutil
+logtail
