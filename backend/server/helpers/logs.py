@@ -1,7 +1,6 @@
 import os
 import inspect
 import logging
-import inspect
 import aiofiles
 import traceback
 from datetime import datetime
@@ -71,9 +70,8 @@ def debug_errors(fn):
         except Exception as e:
             tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
             
-            await addMessageToLogs(tb_str, "ERROR")
-            
             if BETTERSTACK_TOKEN:
+                # DO NOT use addMessageToLogs because it destroys your frame!
                 caller_frame = inspect.stack()[1]
                 caller_file = os.path.basename(caller_frame.filename)
                 caller_line = caller_frame.lineno
@@ -87,4 +85,3 @@ def debug_errors(fn):
             else:
                 betterstack_logger.exception()
     return wrapper
-
