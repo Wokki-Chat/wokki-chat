@@ -2,7 +2,6 @@ import os
 import inspect
 import logging
 import aiofiles
-import traceback
 from datetime import datetime
 from server.config import server_name
 from server.config import BETTERSTACK_TOKEN, BETTERSTACK_HOST
