@@ -2,7 +2,6 @@ import os
 import inspect
 import logging
 import aiofiles
-import traceback
 from datetime import datetime
 from server.config import server_name
 from server.config import BETTERSTACK_TOKEN, BETTERSTACK_HOST
@@ -58,30 +57,3 @@ async def addMessageToLogs(message, type):
             betterstack_logger.debug(message, extra=log_data)
         else:
             betterstack_logger.info(message, extra=log_data)
-
-def debug_errors(fn):
-    """
-    Put an ASYNC function in this wrapper and
-    errors will show in the console
-    """
-    async def wrapper(*args, **kwargs):
-        try:
-            return await fn(*args, **kwargs)
-        except Exception as e:
-            tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-            
-            if BETTERSTACK_TOKEN:
-                # DO NOT use addMessageToLogs because it destroys your frame!
-                caller_frame = inspect.stack()[1]
-                caller_file = os.path.basename(caller_frame.filename)
-                caller_line = caller_frame.lineno
-                log_data = {
-                    'worker': server_name,
-                    'file': caller_file,
-                    'line': caller_line,
-                    'log_type': "ERROR"
-                }
-                betterstack_logger.error(tb_str, extra=log_data)
-            else:
-                betterstack_logger.exception()
-    return wrapper
