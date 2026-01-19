@@ -66,7 +66,7 @@ def format_time(seconds):
     return f"{minutes}m {sec}s"
 
 def print_remaining_time(seconds, color=YELLOW):
-    print(f"\n{color}Estimated total remaining time: {format_time(seconds)}{RESET}", flush=True)
+    print(f"{color}Estimated total remaining time: {format_time(seconds)}{RESET}", flush=True)
 
 def restart_and_monitor(service, port, total_remaining_time):
     print(f"{YELLOW}Stopping {service}...{RESET}")
