@@ -58,20 +58,3 @@ async def addMessageToLogs(message, type):
             betterstack_logger.debug(message, extra=log_data)
         else:
             betterstack_logger.info(message, extra=log_data)
-
-def debug_errors(fn):
-    """
-    Put an ASYNC function in this wrapper and
-    errors will show in the console
-    """
-    async def wrapper(*args, **kwargs):
-        try:
-            return await fn(*args, **kwargs)
-        except Exception as e:
-            tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-            
-            if BETTERSTACK_TOKEN:
-                betterstack_logger.error(tb_str)
-            else:
-                betterstack_logger.exception(e)
-    return wrapper
