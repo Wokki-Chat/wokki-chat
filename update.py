@@ -60,6 +60,14 @@ def print_progress_bar(seconds_left, total_seconds, width=30, prefix=""):
     bar = f"[{'=' * filled}{' ' * empty}] {int(seconds_left)}s"
     print(f"\r{prefix}{bar}", end="", flush=True)
 
+def format_time(seconds):
+    minutes = int(seconds) // 60
+    sec = int(seconds) % 60
+    return f"{minutes}m {sec}s"
+
+def print_remaining_time(seconds, color=YELLOW):
+    print(f"\n{color}Estimated total remaining time: {format_time(seconds)}{RESET}", flush=True)
+
 def restart_and_monitor(service, port, total_remaining_time):
     print(f"{YELLOW}Stopping {service}...{RESET}")
     stop = subprocess.run(["sudo", "systemctl", "stop", service])
@@ -72,14 +80,15 @@ def restart_and_monitor(service, port, total_remaining_time):
             break
         time.sleep(1)
         total_remaining_time[0] -= 1
-        print(f"\r{YELLOW}Estimated total remaining time: {int(total_remaining_time[0])}s{RESET}", end="", flush=True)
+        print(f"{YELLOW}Estimated total remaining time: {total_remaining_time[0]:.0f}s{RESET}")
+
     else:
         print(f"{RED}Port {port} still in use, aborting.{RESET}")
         return False
 
     time.sleep(DELAY)
     total_remaining_time[0] -= DELAY
-    print(f"\r{YELLOW}Estimated total remaining time: {int(total_remaining_time[0])}s{RESET}", end="", flush=True)
+    print(f"{YELLOW}Estimated total remaining time: {total_remaining_time[0]:.0f}s{RESET}")
 
     print(f"\n{YELLOW}Starting {service}...{RESET}")
     start = subprocess.run(["sudo", "systemctl", "start", service])
@@ -97,10 +106,11 @@ def restart_and_monitor(service, port, total_remaining_time):
             for tb in tracebacks:
                 print("\n" + tb + "\n")
             return False
+
         seconds_left = MONITOR_TIME - (i / 10)
         print_progress_bar(seconds_left, MONITOR_TIME, prefix=f"{YELLOW}Monitoring {service}: {RESET}")
         total_remaining_time[0] -= 0.1
-        print(f"\r{YELLOW}Estimated total remaining time: {int(total_remaining_time[0])}s{RESET}", end="", flush=True)
+        print_remaining_time(total_remaining_time[0])
         time.sleep(0.1)
 
     print(f"\n{GREEN}{service} is healthy.{RESET}\n")
@@ -130,7 +140,7 @@ if __name__ == "__main__":
         total_est_time += PORT_CHECK_RETRIES + DELAY + MONITOR_TIME
     total_remaining_time = [total_est_time]
 
-    print(f"{YELLOW}Estimated total time for rolling restart: ~{int(total_remaining_time[0])} seconds{RESET}\n")
+    print(f"{YELLOW}Estimated total time for rolling restart: ~{format_time(total_remaining_time[0])}{RESET}\n")
 
     for s, p in selected_workers:
         if not restart_and_monitor(s, p, total_remaining_time):
