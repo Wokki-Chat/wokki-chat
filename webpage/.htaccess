@@ -36,7 +36,7 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteRule ^([^\.]+)$ $1.php [NC,L]
 
-DirectoryIndex home.php
+DirectoryIndex index.php
 
 # --- NO CACHING FOR EVERYTHING ---
 <IfModule mod_headers.c>

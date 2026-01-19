@@ -23,5 +23,5 @@ async def handle_embed_button(sid, data):
     await embed_button(sid, data)
 
 @sio.on('_throw_error')
-async def handle_embed_button(sid, data):
+async def do_throw_error(sid, data):
     raise RuntimeError("Test!")

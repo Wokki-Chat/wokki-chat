@@ -153,7 +153,7 @@ async def restart_and_monitor(service, port, total_remaining_time, discord_messa
 
 		seconds_left = MONITOR_TIME - (i * 10)
 		bar = render_progress_bar(i, total_ticks)
-		monitor_tick_msg = f"🟡 Monitoring `{service}`... {seconds_left}s left ⏳\n{bar}"
+		monitor_tick_msg = f"🟡 Monitoring `{service}`: {seconds_left}s left ⏳\n```diff\n+ {bar}```"
 		last_messages.append(monitor_tick_msg)
 		last_messages = last_messages[-3:]
 		if discord_message:
