@@ -178,6 +178,9 @@ async def handle_disconnect(sid):
 
         async with config.pool.acquire() as conn:
             async with conn.cursor() as cur:
+                if await redis_client.get(disconnect_key) != token:
+                    return
+                
                 await cur.execute(
                     "UPDATE users SET status = 'idle' WHERE id = %s AND status_manually_set = FALSE",
                     (user_id,)
@@ -205,12 +208,19 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
 
     await asyncio.sleep(DISCONNECT_TIMEOUT)
 
-    if await redis_client.get(disconnect_key) != disconnect_token:
-        await addMessageToLogs(f"User {user_id} reconnected before timeout, skipping offline", "INFO")
-        return
-
     async with config.pool.acquire() as conn:
         async with conn.cursor() as cur:
+            if await redis_client.get(disconnect_key) != disconnect_token:
+                await cur.execute(
+                    "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = FALSE",
+                    (user_id,)
+                )
+                await conn.commit()
+                await addMessageToLogs(f"User {user_id} reconnected before timeout, skipping offline, user set to online", "INFO")
+
+                await redis_client.delete(disconnect_key)
+                return
+            
             await cur.execute(
                 "UPDATE users SET status = 'offline' WHERE id = %s AND status_manually_set = FALSE",
                 (user_id,)
@@ -219,4 +229,4 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
             await addMessageToLogs(f"User {user_id} set to offline after disconnect timeout", "INFO")
             await broadcast_user_update(user_id)
 
-    await redis_client.delete(disconnect_key)
+            await redis_client.delete(disconnect_key)
