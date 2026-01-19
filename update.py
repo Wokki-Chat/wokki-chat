@@ -3,16 +3,23 @@ import sys
 import time
 import socket
 import re
+import argparse
+import shutil
 
-WORKERS = [
-    ("wokki_chat_ignis.service", 5001),
-    ("wokki_chat_aqua.service", 5002),
-    ("wokki_chat_terra.service", 5003),
-    ("wokki_chat_ventus.service", 5004)
-]
+WORKERS = {
+    "Ignis": ("wokki_chat_ignis.service", 5001),
+    "Aqua": ("wokki_chat_aqua.service", 5002),
+    "Terra": ("wokki_chat_terra.service", 5003),
+    "Ventus": ("wokki_chat_ventus.service", 5004)
+}
 
 DELAY = 2
 MONITOR_TIME = 30
+
+RED = "\033[91m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+RESET = "\033[0m"
 
 def is_port_free(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -44,11 +51,19 @@ def get_tracebacks(service):
 
     return tracebacks
 
+def print_progress_bar(seconds_left, total_seconds, width=30):
+    term_width = shutil.get_terminal_size((80, 20)).columns
+    bar_width = min(width, term_width - 15)
+    filled = int(((total_seconds - seconds_left) / total_seconds) * bar_width)
+    empty = bar_width - filled
+    bar = f"[{'=' * filled}{' ' * empty}] {int(seconds_left)}s"
+    print(f"\r{bar}", end="", flush=True)
+
 def restart_and_monitor(service, port):
-    print(f"Stopping {service}...")
+    print(f"{YELLOW}Stopping {service}...{RESET}")
     stop = subprocess.run(["sudo", "systemctl", "stop", service])
     if stop.returncode != 0:
-        print(f"Failed to stop {service}, aborting rolling restart.")
+        print(f"{RED}Failed to stop {service}, aborting rolling restart.{RESET}")
         return False
 
     for _ in range(10):
@@ -56,32 +71,55 @@ def restart_and_monitor(service, port):
             break
         time.sleep(1)
     else:
-        print(f"Port {port} still in use, aborting.")
+        print(f"{RED}Port {port} still in use, aborting.{RESET}")
         return False
 
     time.sleep(DELAY)
 
-    print(f"Starting {service}...")
+    print(f"{YELLOW}Starting {service}...{RESET}")
     start = subprocess.run(["sudo", "systemctl", "start", service])
     if start.returncode != 0:
-        print(f"Failed to start {service}, aborting rolling restart.")
+        print(f"{RED}Failed to start {service}, aborting rolling restart.{RESET}")
         return False
 
-    print(f"{service} started. Monitoring for {MONITOR_TIME} seconds...")
-    for _ in range(MONITOR_TIME):
+    print(f"{YELLOW}{service} started. Monitoring for {MONITOR_TIME} seconds...{RESET}")
+
+    total_updates = MONITOR_TIME * 10
+    for i in range(total_updates):
         tracebacks = get_tracebacks(service)
         if tracebacks:
-            print(f"Errors detected in {service} logs, aborting rolling restart.")
+            print(f"\n{RED}Errors detected in {service} logs, aborting rolling restart.{RESET}")
             for tb in tracebacks:
                 print("\n" + tb + "\n")
             return False
-        time.sleep(1)
+        seconds_left = MONITOR_TIME - (i / 10)
+        print_progress_bar(seconds_left, MONITOR_TIME)
+        time.sleep(0.1)
 
-    print(f"{service} is healthy.\n")
+    print(f"\n{GREEN}{service} is healthy.{RESET}\n")
     return True
 
 if __name__ == "__main__":
-    for s, p in WORKERS:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-w", "--workers", help="Comma-separated list of workers to restart (e.g. Terra,Ventus)")
+    args = parser.parse_args()
+
+    if args.workers:
+        selected_workers = []
+        for name in args.workers.split(","):
+            name = name.strip().capitalize()
+            if name in WORKERS:
+                selected_workers.append(WORKERS[name])
+            else:
+                print(f"{RED}Unknown worker: {name}{RESET}")
+        if not selected_workers:
+            print(f"{RED}No valid workers specified. Exiting.{RESET}")
+            sys.exit(1)
+    else:
+        selected_workers = WORKERS.values()
+
+    for s, p in selected_workers:
         if not restart_and_monitor(s, p):
             sys.exit(1)
-    print("All workers restarted successfully and are healthy!")
+
+    print(f"{GREEN}All workers restarted successfully and are healthy!{RESET}")

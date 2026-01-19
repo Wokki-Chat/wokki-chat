@@ -210,14 +210,14 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
 
     async with config.pool.acquire() as conn:
         async with conn.cursor() as cur:
-            if await redis_client.get(disconnect_key) != disconnect_token and await get_sids_for_user(user_id) != []:
+            if await redis_client.get(disconnect_key) != disconnect_token and set(await get_sids_for_user(user_id)) != set():
                 await cur.execute(
                     "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = FALSE",
                     (user_id,)
                 )
                 await conn.commit()
                 await broadcast_user_update(user_id)
-                await addMessageToLogs(f"User {user_id} reconnected before timeout, skipping offline, user set to online. Users sids: {await get_sids_for_user(user_id)}", "INFO")
+                await addMessageToLogs(f"User {user_id} reconnected before timeout, skipping offline, user set to online. Users sids: {await get_sids_for_user(user_id)}, disconnect token: {disconnect_token}. Expected token: {await redis_client.get(disconnect_key)}", "INFO")
                 return
             
             await cur.execute(
