@@ -22,6 +22,15 @@ async def handle_initialize_commands(sid, data):
 async def handle_embed_button(sid, data):
     await embed_button(sid, data)
 
-@sio.on('_throw_error')
+# Temporary
+from server.helpers.logs import addMessageToLogs
+
+@sio.safe('_throw_error')
 async def do_throw_error(sid, data):
+    await addMessageToLogs("Should throw now?")
     raise RuntimeError("Test!")
+
+@sio.safe('_throw_error2')
+async def do_throw_error():
+    await addMessageToLogs("Should throw now 2?")
+    raise IndexError("Test 2!")
