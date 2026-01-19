@@ -216,6 +216,7 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
                     (user_id,)
                 )
                 await conn.commit()
+                await broadcast_user_update(user_id)
                 await addMessageToLogs(f"User {user_id} reconnected before timeout, skipping offline, user set to online", "INFO")
                 return
             
