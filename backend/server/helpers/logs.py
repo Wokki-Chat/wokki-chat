@@ -71,17 +71,7 @@ def debug_errors(fn):
             tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
             
             if BETTERSTACK_TOKEN:
-                # DO NOT use addMessageToLogs because it destroys your frame!
-                caller_frame = inspect.stack()[1]
-                caller_file = os.path.basename(caller_frame.filename)
-                caller_line = caller_frame.lineno
-                log_data = {
-                    'worker': server_name,
-                    'file': caller_file,
-                    'line': caller_line,
-                    'log_type': "ERROR"
-                }
-                betterstack_logger.error(tb_str, extra=log_data)
+                betterstack_logger.error(tb_str)
             else:
-                betterstack_logger.exception()
+                betterstack_logger.exception(e)
     return wrapper
