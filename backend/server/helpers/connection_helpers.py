@@ -1,3 +1,4 @@
+import uuid
 from server.config import typing_lock, user_current_room, add_user_to_sid, get_sids_for_user, remove_user_sid, get_user_from_sid, get_bot_sid_from_id, add_sid_to_bot, get_bot_id_from_sid, remove_sid, get_typing_users, remove_typing_user, redis_client, server_name, acquire_user_lock, release_user_lock, DISCONNECT_TIMEOUT
 from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status, broadcast_user_widget_update
 from server.helpers.server_helpers import is_user_in_server, get_member_ids_from_server
@@ -165,6 +166,10 @@ async def handle_disconnect(sid):
         await addMessageToLogs(f"User {user_id} disconnected", "INFO")
         await remove_user_sid(user_id, sid)
 
+        token = str(uuid.uuid4())
+        disconnect_key = f"user_disconnect:{user_id}"
+        await redis_client.set(disconnect_key, token, ex=DISCONNECT_TIMEOUT)
+
         room = user_current_room.get(user_id)
         if room:
             await sio_instance.sio.leave_room(sid, room)
@@ -181,10 +186,7 @@ async def handle_disconnect(sid):
                 await addMessageToLogs(f"User {user_id} set to idle after disconnect", "INFO")
                 await broadcast_user_update(user_id)
 
-        disconnect_key = f"user_disconnect:{user_id}"
-        await redis_client.set(disconnect_key, "1", ex=DISCONNECT_TIMEOUT)
-
-        asyncio.create_task(handle_delayed_disconnect(user_id))
+        asyncio.create_task(handle_delayed_disconnect(user_id, token))
         return
 
     if bot_id:
@@ -198,14 +200,12 @@ async def handle_disconnect(sid):
         await addMessageToLogs(f"Bot {bot_id} disconnected", "INFO")
         return
 
-
-async def handle_delayed_disconnect(user_id):
+async def handle_delayed_disconnect(user_id, disconnect_token):
     disconnect_key = f"user_disconnect:{user_id}"
 
     await asyncio.sleep(DISCONNECT_TIMEOUT)
 
-    still_pending = await redis_client.get(disconnect_key)
-    if not still_pending:
+    if await redis_client.get(disconnect_key) != disconnect_token:
         await addMessageToLogs(f"User {user_id} reconnected before timeout, skipping offline", "INFO")
         return
 
