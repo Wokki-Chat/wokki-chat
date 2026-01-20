@@ -73,34 +73,6 @@ async def is_user_in_server(cur, user_id, server_id):
     await addMessageToLogs(f"User {user_id} in server {server_id}: {bool(server)}", "INFO")
     return bool(server)
 
-async def get_server_channel_sids(cur, server_id, channel_id):
-    query = """
-        SELECT user_id, bot_id FROM server_members WHERE server_id = %s
-    """
-    await cur.execute(query, (server_id,))
-    result = await cur.fetchall()
-
-    if not result:
-        return []
-
-    sids = []
-
-    for member in result:
-        user_id = member.get('user_id') if isinstance(member, dict) else member[0]
-        bot_id = member.get('bot_id') if isinstance(member, dict) else member[1]
-
-        if user_id:
-            user_sids = await get_sids_for_user(user_id)
-            if user_sids:
-                sids.extend(user_sids)
-
-        if bot_id:
-            bot_sid = await get_bot_sid_from_id(bot_id)
-            if bot_sid:
-                sids.append(bot_sid)
-
-    return sids
-
 async def send_server_notifications(cur, server_id, channel_id):
     query = """
         SELECT user_id FROM server_members WHERE server_id = %s
@@ -267,7 +239,6 @@ async def get_server_users(sid, metadata, data):
     if cached_users:
         await sio_instance.sio.emit('server_users', cached_users, to=sid)
         
-        
     async def get_users():
         async with config.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -309,7 +280,6 @@ async def command(sid, metadata, data):
                 await addMessageToLogs(f"Command not found for command, command: {command}, bot id: {bot_id}", "INFO")
                 await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Command not found'}, to=sid)
                 return
-            
         
             try:
                 command_options = row['options']
@@ -403,3 +373,47 @@ async def command(sid, metadata, data):
 
             await sio_instance.sio.emit('command_response', {'success': True}, to=sid)
             await addMessageToLogs(f"Emitted command_response for command, command: {command}", "INFO")
+
+@auth_required(server_required=True, allow_bots=False)
+async def change_room(sid, metadata, data):
+    user_id = metadata.get('account_id')
+    new_server_id = data.get('server_id')
+    new_channel_id = data.get('channel_id')
+    
+    if not new_server_id or not new_channel_id:
+        await addMessageToLogs("Missing required fields for change_room", "INFO")
+        await sio_instance.sio.emit('switch_channel_response', None, to=sid)
+        return
+
+    combined_room = f"server:{new_server_id}:channel:{new_channel_id}"
+    server_room = f"server:{new_server_id}"
+    channel_room = f"channel:{new_channel_id}"
+
+    current_rooms = sio_instance.sio.rooms(sid)
+
+    for room in current_rooms:
+        if room.startswith("server:") and room != server_room and ":channel:" not in room:
+            await sio_instance.sio.leave_room(sid, room)
+
+    for room in current_rooms:
+        if room.startswith("channel:") and room != channel_room:
+            await sio_instance.sio.leave_room(sid, room)
+
+    for room in current_rooms:
+        if room.startswith("server:") and ":channel:" in room and room != combined_room:
+            await sio_instance.sio.leave_room(sid, room)
+
+    if server_room not in current_rooms:
+        await sio_instance.sio.enter_room(sid, server_room)
+
+    if channel_room not in current_rooms:
+        await sio_instance.sio.enter_room(sid, channel_room)
+
+    if combined_room not in current_rooms:
+        await sio_instance.sio.enter_room(sid, combined_room)
+        
+    await sio_instance.sio.emit(
+        'switch_channel_response',
+        {"server_id": new_server_id, "channel_id": new_channel_id},
+        to=sid
+    )

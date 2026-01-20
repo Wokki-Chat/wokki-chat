@@ -78,6 +78,11 @@ function initServer() {
 			access_token,
 			server_id
 		});
+		socket.emit("change_room", {
+			access_token,
+			server_id,
+			channel_id
+		})
 	}
 
 	async function preloadParentData(messages) {

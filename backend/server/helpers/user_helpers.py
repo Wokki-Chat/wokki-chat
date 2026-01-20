@@ -137,6 +137,17 @@ async def get_user_premium_status(cur, user_id):
     now = datetime.now(timezone.utc)
     return premium_expires_at > now
 
+async def get_user_rooms(cur, user_id):
+    query = "SELECT server_id FROM server_members WHERE user_id = $1"
+    rows = await cur.fetch(query, user_id)
+    return [f"server_id:{row['server_id']}" for row in rows]
+    # TODO: Add friends aswell
+    
+async def get_bot_rooms(cur, bot_id):
+    query = "SELECT server_id FROM server_members WHERE bot_id = $1"
+    rows = await cur.fetch(query, bot_id)
+    return [f"server_id:{row['server_id']}" for row in rows]
+
 async def broadcast_user_update(user_id, is_bot=False):
     if not is_bot:
         async with config.pool.acquire() as conn:
@@ -146,8 +157,11 @@ async def broadcast_user_update(user_id, is_bot=False):
                     await addMessageToLogs(f"User not found, user id: {user_id}", "INFO")
                     return
                 
-                await sio_instance.sio.emit('user_updated', user_info)
-                await addMessageToLogs(f"Broadcasted for user {user_id}", "INFO")
+                user_rooms = await get_user_rooms(cur, user_id)
+                
+                for u_room in user_rooms:
+                    await sio_instance.sio.emit('user_updated', user_info, room=u_room)
+                
                 return
     if is_bot:
         async with config.pool.acquire() as conn:
@@ -157,8 +171,11 @@ async def broadcast_user_update(user_id, is_bot=False):
                     await addMessageToLogs(f"Bot not found, bot id: {user_id}", "INFO")
                     return
                 
-                await sio_instance.sio.emit('user_updated', bot_info)
-                await addMessageToLogs(f"Broadcasted for bot {user_id}", "INFO")
+                bot_rooms = await get_bot_rooms(cur, user_id)
+                
+                for b_room in bot_rooms:
+                    await sio_instance.sio.emit('user_updated', bot_info, room=b_room)
+                    
                 return
 
 async def broadcast_user_widget_update(user_id, widget_name):
@@ -170,7 +187,11 @@ async def broadcast_user_widget_update(user_id, widget_name):
             
             user_info["user_id"] = user_id
             
-            await sio_instance.sio.emit('user_widget_updated', user_info)
+            user_rooms = await get_user_rooms(cur, user_id)
+            
+            for u_room in user_rooms:
+                await sio_instance.sio.emit('user_widget_updated', user_info, room=u_room)
+                
             return
 
 async def get_user_widgets(cur, user_id, widget_name=None):

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 import json
 from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, get_cached_users, cache_users, delete_cached_message
 from server.helpers.user_helpers import get_user_premium_status, auth_required
-from server.helpers.server_helpers import server_permissions, send_server_notifications, get_server_channel_sids, get_server_users_info
+from server.helpers.server_helpers import server_permissions, send_server_notifications, get_server_users_info
 import aiomysql
 import uuid
 import server.sio_instance as sio_instance
@@ -132,9 +132,7 @@ async def send_message(sid, metadata, data):
                 await addKudos(cur, account_id, 1, message, server_id, channel_id)
 
             await conn.commit()
-            
-            server_channel_sids = await get_server_channel_sids(cur, server_id, channel_id)
-    
+                
     if isinstance(timestamp, str):
         timestamp = datetime.fromisoformat(timestamp)
         
@@ -157,7 +155,7 @@ async def send_message(sid, metadata, data):
     }
     await cache_message(server_id, channel_id, message_response)
 
-    await sio_instance.sio.emit('new_message', message_response, to=server_channel_sids)
+    await sio_instance.sio.emit('new_message', message_response, room=f"server:{server_id}:channel:{channel_id}")
     await addMessageToLogs(f"new_message emitted for server_id: {server_id} and channel_id: {channel_id}", "INFO")
     
     # await send_server_notifications(cur, server_id, channel_id)
@@ -378,8 +376,6 @@ async def delete_message(sid, metadata, data):
             server_id = message['server_id']
             channel_id = message['channel_id']
 
-            server_channel_sids = await get_server_channel_sids(cur, server_id, channel_id)
-
             if is_bot:
                 result = await cur.execute('DELETE FROM bot_messages WHERE id = %s AND bot_id = %s', (message_id, account_id))
             else:
@@ -392,5 +388,5 @@ async def delete_message(sid, metadata, data):
 
             await delete_cached_message(server_id, channel_id, message_id)
             await conn.commit()
-            await sio_instance.sio.emit('message_deleted', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=server_channel_sids)
+            await sio_instance.sio.emit('message_deleted', {'success': True, 'message_id': message_id, 'req_id': req_id}, room=f'server:{server_id}:channel:{channel_id}')
             await addMessageToLogs(f"Emitted message_deleted to {server_id}", "INFO")

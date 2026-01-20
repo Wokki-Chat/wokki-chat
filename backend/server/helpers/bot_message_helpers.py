@@ -5,7 +5,7 @@ import json
 import server.config as config
 from server.config import get_bot_sid_from_id
 from server.sio_instance import sio
-from server.helpers.server_helpers import get_server_channel_sids, is_user_in_server
+from server.helpers.server_helpers import is_user_in_server
 from server.helpers.bot_helpers import validate_embed, verify_bot_token, is_bot_in_server
 from server.helpers.user_helpers import verify_access_token
 from server.helpers.logs import addMessageToLogs
@@ -103,10 +103,7 @@ async def edit_bot_message(sid, data):
                 await addMessageToLogs(f"updated bot message for server id: bot id: {bot_id}, message id: {message_id}", "INFO")
                 
             server_id = message_row['server_id']
-            channel_id = message_row['channel_id']
-            
-            server_channel_sids = await get_server_channel_sids(cur, server_id, channel_id)
-            
+            channel_id = message_row['channel_id']            
                 
     await sio.emit('update_message', {
         'id': message_id,
@@ -114,7 +111,7 @@ async def edit_bot_message(sid, data):
         'message': message,
         'updated_at': timestamp,
         'embed': embed
-    }, to=server_channel_sids)
+    }, room=f'server:{server_id}:channel:{channel_id}', to=sid)
     await addMessageToLogs(f"Emited update_message for server id: {server_id}, channel id: {channel_id}, message id: {message_id}", "INFO")
     await sio.emit('edit_bot_message_response', {'success': True, 'req_id': req_id}, to=sid)
     await addMessageToLogs(f"Emited edit_bot_message_response for bot token: {bot_token}, message id: {message_id}", "INFO")
