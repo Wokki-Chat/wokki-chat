@@ -137,14 +137,14 @@ async def get_user_premium_status(cur, user_id):
     return premium_expires_at > now
 
 async def get_user_rooms(cur, user_id):
-    query = "SELECT server_id FROM user_rooms WHERE user_id = %s"
+    query = "SELECT server_id FROM server_members WHERE user_id = %s"
     await cur.execute(query, (user_id,))
     rows = await cur.fetchall()
     return [f"server_id:{r['server_id']}" for r in rows]
     # TODO: Add friends aswell
     
 async def get_bot_rooms(cur, bot_id):
-    query = "SELECT server_id FROM user_rooms WHERE bot_id = %s"
+    query = "SELECT server_id FROM server_members WHERE bot_id = %s"
     await cur.execute(query, (bot_id,))
     rows = await cur.fetchall()
     return [f"server_id:{r['server_id']}" for r in rows]
@@ -159,10 +159,10 @@ async def broadcast_user_update(user_id, is_bot=False):
                     return
                 
                 user_rooms = await get_user_rooms(cur, user_id)
-                
+
+                await addMessageToLogs(f"broadcast_user_update: user_rooms -> {user_rooms}", "INFO")
                 for u_room in user_rooms:
                     await sio_instance.sio.emit('user_updated', user_info, room=u_room)
-                    await addMessageToLogs(f"Sent user_updated to room: {u_room}", "INFO")
                 
                 return
     if is_bot:
