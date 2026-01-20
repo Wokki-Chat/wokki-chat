@@ -161,8 +161,9 @@ async def broadcast_user_update(user_id, is_bot=False):
                 user_rooms = await get_user_rooms(cur, user_id)
 
                 await addMessageToLogs(f"broadcast_user_update: user_rooms -> {user_rooms}", "INFO")
-                for u_room in user_rooms:
-                    await sio_instance.sio.emit('user_updated', user_info, room=u_room)
+                # for u_room in user_rooms:
+                #     await sio_instance.sio.emit('user_updated', user_info, room=u_room)
+                await sio_instance.sio.emit('user_updated', user_info)
                 
                 return
     if is_bot:
