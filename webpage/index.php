@@ -88,5 +88,14 @@ if ($user_id) {
             </div>
         </div>
     </footer>
+
+    <script>
+        document.addEventListener('mousemove', (e) => {
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+            document.querySelector('.main-content').style.setProperty('--angle', `${angle}deg`);
+        });
+    </script>
 </body>
 </html>
