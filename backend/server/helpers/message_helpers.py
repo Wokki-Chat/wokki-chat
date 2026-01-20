@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import json
-from server.config import user_message_timestamps, bot_message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, get_cached_users, cache_users, delete_cached_message
+from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, get_cached_users, cache_users, delete_cached_message
 from server.helpers.user_helpers import get_user_premium_status, auth_required
 from server.helpers.server_helpers import server_permissions, send_server_notifications, get_server_channel_sids, get_server_users_info
 import aiomysql
@@ -37,10 +37,7 @@ async def send_message(sid, metadata, data):
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             now = datetime.now(timezone.utc)
-            if is_bot:
-                timestamps = bot_message_timestamps[account_id]
-            else:
-                timestamps = user_message_timestamps[account_id]
+            timestamps = message_timestamps[account_id]
             
             if not is_bot:
                 if not await server_permissions(cur, account_id, server_id, 'send_messages'):
@@ -155,7 +152,8 @@ async def send_message(sid, metadata, data):
         'assets': json.loads(assets_json) if assets_json else [],
         'command': command,
         'command_user_id': user_id,
-        'embed': embed
+        'embed': embed,
+        'req_id': req_id
     }
     await cache_message(server_id, channel_id, message_response)
 

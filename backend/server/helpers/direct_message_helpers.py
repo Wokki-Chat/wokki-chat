@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import json
 import uuid
-from server.config import user_message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS
+from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS
 from server.helpers.user_helpers import auth_required, is_user_friends_with, get_user_premium_status
 from server.helpers.dm_helpers import get_sid_from_dm_id
 import aiomysql
@@ -104,7 +104,7 @@ async def send_direct_message(sid, metadata, data):
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             now = datetime.now(timezone.utc)
-            timestamps = user_message_timestamps[user_id]
+            timestamps = message_timestamps[user_id]
             
             if not await is_user_friends_with(cur, user_id, dm_id):
                 await addMessageToLogs(f"User is not friends with dm_id for send_direct_message, user id: {user_id}, dm_id: {dm_id}", "INFO")
