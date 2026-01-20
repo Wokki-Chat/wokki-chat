@@ -43,12 +43,14 @@ def is_port_free(port):
         except OSError:
             return False
 
-def get_tracebacks(service):
-    result = subprocess.run(
-        ["journalctl", "-u", service, "--since", "1 minute ago", "--no-pager", "-o", "cat"],
-        capture_output=True, text=True
+async def get_tracebacks(service):
+    proc = await asyncio.create_subprocess_exec(
+        "journalctl", "-u", service, "--since", "1 minute ago", "--no-pager", "-o", "cat",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
     )
-    logs = result.stdout.splitlines()
+    stdout, stderr = await proc.communicate()
+    logs = stdout.decode().splitlines()
     tracebacks = []
     in_traceback = False
     tb_block = []
@@ -151,7 +153,7 @@ async def restart_and_monitor(service, port, total_remaining_time, discord_messa
 
     total_ticks = MONITOR_TIME // 10
     for i in range(int(total_ticks)):
-        tracebacks = get_tracebacks(service)
+        tracebacks = await get_tracebacks(service)
         if tracebacks:
             text = f"🔴 Errors detected in {service} logs."
             last_messages.append(text)
