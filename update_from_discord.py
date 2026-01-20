@@ -253,8 +253,9 @@ async def update(interaction: discord.Interaction, workers: str = None):
         return
 
     if scheduled_task:
+        scheduled_str = scheduled_time.strftime('%H:%M:%S') if scheduled_time else "unknown"
         await interaction.response.send_message(
-            f"❌ There is already a scheduled update at {scheduled_time.strftime('%H:%M:%S')}. Use `/update force` to override.", ephemeral=True
+            f"❌ There is already a scheduled update at {scheduled_str}. Use `/update force` to override.", ephemeral=True
         )
         return
 
@@ -289,6 +290,7 @@ async def update_force(interaction: discord.Interaction, workers: str = None):
     worker_list = [w.strip() for w in workers.split(",")] if workers else None
     await run_workers(worker_list, discord_message)
 
+@client.tree.command(name="schedule update", description="Schedule worker update at specific time")
 @app_commands.describe(
     time="Time in HH:MM format (default timezone UTC, e.g. 15:30 UTC)",
     timezone="Optional timezone (e.g. Europe/Amsterdam). Default is UTC",
