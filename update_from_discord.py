@@ -339,11 +339,16 @@ async def update_schedule(interaction: discord.Interaction, time: str, timezone:
         await interaction.response.send_message(f"❌ Invalid time or timezone. Use HH:MM and a valid timezone.\nError: {e}", ephemeral=True)
         return
 
-    msg = await interaction.response.send_message("Scheduling update...", ephemeral=False)
-    discord_message = await interaction.original_response()
+    delta = scheduled_dt - now
+    hours, remainder = divmod(int(delta.total_seconds()), 3600)
+    minutes, seconds = divmod(remainder, 60)
+    countdown_str = f"{hours}h {minutes}m {seconds}s"
+
     worker_list = [w.strip() for w in workers.split(",")] if workers else None
+    msg = await interaction.response.send_message(f"✅ Update scheduled in {countdown_str}", ephemeral=False)
+    discord_message = await interaction.original_response()
     scheduled_task = asyncio.create_task(schedule_update(scheduled_dt, worker_list, discord_message))
-    
+
 @client.tree.command(name="cancel-update", description="Cancel any scheduled worker update")
 async def cancel_update(interaction: discord.Interaction):
     global scheduled_task, scheduled_time
