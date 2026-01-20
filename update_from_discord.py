@@ -322,8 +322,9 @@ async def update_schedule(interaction: discord.Interaction, time: str, timezone:
         return
 
     if scheduled_task:
+        scheduled_str = scheduled_time.strftime('%H:%M:%S') if scheduled_time else scheduled_dt.strftime('%H:%M:%S')
         await interaction.response.send_message(
-            f"❌ There is already a scheduled update at {scheduled_time.strftime('%H:%M:%S')}.", ephemeral=True
+            f"❌ There is already a scheduled update at {scheduled_str}.", ephemeral=True
         )
         return
 
