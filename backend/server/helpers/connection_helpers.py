@@ -83,7 +83,6 @@ async def handle_connect(sid, environ):
                     (user_id,)
                 )
                 await conn.commit()
-                await broadcast_user_update(user_id)
 
                 if spotify_tokens:
                     asyncio.create_task(poll_spotify(user_id, *spotify_tokens))
@@ -95,6 +94,7 @@ async def handle_connect(sid, environ):
                 await addMessageToLogs(f"User {user_id} connected", "INFO")
                 await sio_instance.sio.emit('connected to server', {'server_name': server_name}, room=f"user:{user_id}")
                 await sio_instance.sio.emit('user_connected', {'user_id': user_id, 'server_id': server_id}, room=f"user:{user_id}")
+                await broadcast_user_update(user_id)
 
                 sids = await get_sids_for_user(user_id)
                 if sid not in sids:

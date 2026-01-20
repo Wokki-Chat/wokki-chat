@@ -43,7 +43,6 @@ async def verify_access_token(cur, access_token):
     await addMessageToLogs(f"verify_access_token: valid for user {user_id}, expires at {expires_at}", "INFO")
     return user_id
 
-    
 def auth_required(server_required = True, allow_bots = True): # problem: it doesn't send correct name upon error!
     from server.helpers.server_helpers import is_user_in_server
     """
@@ -162,6 +161,7 @@ async def broadcast_user_update(user_id, is_bot=False):
                 
                 for u_room in user_rooms:
                     await sio_instance.sio.emit('user_updated', user_info, room=u_room)
+                    await addMessageToLogs(f"Sent user_updated to room: {u_room}", "INFO")
                 
                 return
     if is_bot:
