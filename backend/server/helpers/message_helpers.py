@@ -162,7 +162,7 @@ async def send_message(sid, metadata, data):
     await sio_instance.sio.emit('new_message', message_response, to=server_channel_sids)
     await addMessageToLogs(f"new_message emitted for server_id: {server_id} and channel_id: {channel_id}", "INFO")
     
-    await send_server_notifications(cur, server_id, channel_id)
+    # await send_server_notifications(cur, server_id, channel_id)
     
     await sio_instance.sio.emit('send_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
     await addMessageToLogs(f"send_message_response emitted for sid: {sid}", "INFO")
