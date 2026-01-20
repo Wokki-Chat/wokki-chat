@@ -254,7 +254,7 @@ async def update(interaction: discord.Interaction, workers: str = None):
 
     if scheduled_task:
         await interaction.response.send_message(
-            f"There is already a scheduled update at {scheduled_time.strftime('%H:%M:%S')}. Use `/update force` to override.", ephemeral=True
+            f"❌ There is already a scheduled update at {scheduled_time.strftime('%H:%M:%S')}. Use `/update force` to override.", ephemeral=True
         )
         return
 
@@ -310,7 +310,7 @@ async def update_schedule(interaction: discord.Interaction, time: str, timezone:
 
     if scheduled_task:
         await interaction.response.send_message(
-            f"There is already a scheduled update at {scheduled_time.strftime('%H:%M:%S')}.", ephemeral=True
+            f"❌ There is already a scheduled update at {scheduled_time.strftime('%H:%M:%S')}.", ephemeral=True
         )
         return
 
@@ -322,7 +322,7 @@ async def update_schedule(interaction: discord.Interaction, time: str, timezone:
         if scheduled_dt < now:
             scheduled_dt += timedelta(days=1)
     except Exception as e:
-        await interaction.response.send_message(f"Invalid time or timezone. Use HH:MM and a valid timezone.\nError: {e}", ephemeral=True)
+        await interaction.response.send_message(f"❌ Invalid time or timezone. Use HH:MM and a valid timezone.\nError: {e}", ephemeral=True)
         return
 
     msg = await interaction.response.send_message("Scheduling update...", ephemeral=False)
