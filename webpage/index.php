@@ -39,7 +39,7 @@ if ($user_id) {
     <div class="main-content">
         <div class="sticky-header">
             <a href="/"><img src="assets/images/logo-text-purple.png" alt="Wokki Chat" class="logo"></a>
-            <a href="login" class="button-primary-outline no-underline">Login</a>
+            <?php echo $headerBtn; ?>
         </div>
         <div class="center-text">
             <div class="slogan">
