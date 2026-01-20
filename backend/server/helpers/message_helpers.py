@@ -115,10 +115,10 @@ async def send_message(sid, metadata, data):
                 await cur.execute(
                     '''
                     INSERT INTO bot_messages 
-                    (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed, parent_message_id, assets)
+                    (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ''',
-                    (message_id, message, account_id, timestamp, None, False, server_id, channel_id, command, user_id, embed_str, parent_message_id, assets_json)
+                    (message_id, message, account_id, timestamp, None, False, server_id, channel_id, command, user_id, embed_str)
                 )
                 await addMessageToLogs(f"Inserted bot message for bot id: {account_id}", "INFO")
             else:
@@ -155,7 +155,7 @@ async def send_message(sid, metadata, data):
         'assets': json.loads(assets_json) if assets_json else [],
         'command': command,
         'command_user_id': user_id,
-        'embed': embed        
+        'embed': embed
     }
     await cache_message(server_id, channel_id, message_response)
 

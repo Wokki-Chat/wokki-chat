@@ -44,7 +44,7 @@ async def verify_access_token(cur, access_token):
     return user_id
 
     
-def auth_required(server_required:bool=True, allow_bots:bool=True): # problem: it doesn't send correct name upon error!
+def auth_required(server_required = True, allow_bots = True): # problem: it doesn't send correct name upon error!
     from server.helpers.server_helpers import is_user_in_server
     """
     Decorator to validate tokens.

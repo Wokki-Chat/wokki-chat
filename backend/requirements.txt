@@ -1,7 +1,10 @@
+# Backend packages
 aiohttp
-requests
 aiomysql
-redis
-livekit
+livekit-api
+logtail-python
 python-dateutil
-logtail
+python-dotenv
+python-socketio
+redis
+requests
