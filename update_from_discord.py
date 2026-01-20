@@ -7,6 +7,7 @@ import asyncio
 import discord
 from discord import app_commands, Embed
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 load_dotenv()
 TOKEN = os.environ.get("DISCORD_BOT_TOKEN")
@@ -253,7 +254,7 @@ async def update(interaction: discord.Interaction, workers: str = None):
 
     if scheduled_task:
         await interaction.response.send_message(
-            f"❌ There is already a scheduled update at {scheduled_time.strftime('%H:%M:%S')}. Use `/update force` to override.", ephemeral=True
+            f"There is already a scheduled update at {scheduled_time.strftime('%H:%M:%S')}. Use `/update force` to override.", ephemeral=True
         )
         return
 
@@ -262,7 +263,7 @@ async def update(interaction: discord.Interaction, workers: str = None):
     worker_list = [w.strip() for w in workers.split(",")] if workers else None
     await run_workers(worker_list, discord_message)
 
-@client.tree.command(name="update_force", description="Force restart selected workers, ignoring any schedule")
+@client.tree.command(name="force update", description="Force restart selected workers, ignoring any schedule")
 @app_commands.describe(workers="Comma-separated list of workers to restart (e.g. Terra,Ventus)")
 async def update_force(interaction: discord.Interaction, workers: str = None):
     global scheduled_task, scheduled_time
@@ -288,9 +289,12 @@ async def update_force(interaction: discord.Interaction, workers: str = None):
     worker_list = [w.strip() for w in workers.split(",")] if workers else None
     await run_workers(worker_list, discord_message)
 
-@client.tree.command(name="update_schedule", description="Schedule workers to restart at a specific time")
-@app_commands.describe(time="Time in HH:MM format", workers="Comma-separated list of workers to restart (e.g. Terra,Ventus)")
-async def update_schedule(interaction: discord.Interaction, time: str, workers: str = None):
+@app_commands.describe(
+    time="Time in HH:MM format (default timezone UTC, e.g. 15:30 UTC)",
+    timezone="Optional timezone (e.g. Europe/Amsterdam). Default is UTC",
+    workers="Comma-separated list of workers to restart (e.g. Terra,Ventus)"
+)
+async def update_schedule(interaction: discord.Interaction, time: str, timezone: str = "UTC", workers: str = None):
     global scheduled_task, scheduled_time
     if interaction.channel.id != CHANNEL_ID:
         await interaction.response.send_message(
@@ -306,23 +310,48 @@ async def update_schedule(interaction: discord.Interaction, time: str, workers: 
 
     if scheduled_task:
         await interaction.response.send_message(
-            f"❌ There is already a scheduled update at {scheduled_time.strftime('%H:%M:%S')}.", ephemeral=True
+            f"There is already a scheduled update at {scheduled_time.strftime('%H:%M:%S')}.", ephemeral=True
         )
         return
 
     try:
         hour, minute = map(int, time.split(":"))
-        now = datetime.now()
+        tz = ZoneInfo(timezone)
+        now = datetime.now(tz)
         scheduled_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
         if scheduled_dt < now:
             scheduled_dt += timedelta(days=1)
-    except:
-        await interaction.response.send_message("❌ Invalid time format. Use HH:MM.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"Invalid time or timezone. Use HH:MM and a valid timezone.\nError: {e}", ephemeral=True)
         return
 
     msg = await interaction.response.send_message("Scheduling update...", ephemeral=False)
     discord_message = await interaction.original_response()
     worker_list = [w.strip() for w in workers.split(",")] if workers else None
     scheduled_task = asyncio.create_task(schedule_update(scheduled_dt, worker_list, discord_message))
+    
+@client.tree.command(name="cancel update", description="Cancel any scheduled worker update")
+async def cancel_update(interaction: discord.Interaction):
+    global scheduled_task, scheduled_time
+    if interaction.channel.id != CHANNEL_ID:
+        await interaction.response.send_message(
+            "This command can only be used in the designated channel.", ephemeral=True
+        )
+        return
+
+    if not any(role.name == "Development Team" for role in interaction.user.roles):
+        await interaction.response.send_message(
+            "You are not authorized to use this command.", ephemeral=True
+        )
+        return
+
+    if scheduled_task:
+        scheduled_task.cancel()
+        scheduled_task = None
+        canceled_time = scheduled_time.strftime('%H:%M:%S') if scheduled_time else "unknown"
+        scheduled_time = None
+        await interaction.response.send_message(f"Scheduled update at {canceled_time} has been canceled.", ephemeral=False)
+    else:
+        await interaction.response.send_message("There is no scheduled update to cancel.", ephemeral=True)
 
 client.run(TOKEN)
