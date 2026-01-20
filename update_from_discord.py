@@ -275,7 +275,7 @@ async def update(interaction: discord.Interaction, workers: str = None):
     worker_list = [w.strip() for w in workers.split(",")] if workers else None
     await run_workers(worker_list, discord_message)
 
-@client.tree.command(name="force update", description="Force restart selected workers, ignoring any schedule")
+@client.tree.command(name="force-update", description="Force restart selected workers, ignoring any schedule")
 @app_commands.describe(workers="Comma-separated list of workers to restart (e.g. Terra,Ventus)")
 async def update_force(interaction: discord.Interaction, workers: str = None):
     global scheduled_task, scheduled_time
@@ -301,7 +301,7 @@ async def update_force(interaction: discord.Interaction, workers: str = None):
     worker_list = [w.strip() for w in workers.split(",")] if workers else None
     await run_workers(worker_list, discord_message)
 
-@client.tree.command(name="schedule update", description="Schedule worker update at specific time")
+@client.tree.command(name="schedule-update", description="Schedule worker update at specific time")
 @app_commands.describe(
     time="Time in HH:MM format (default timezone UTC, e.g. 15:30 UTC)",
     timezone="Optional timezone (e.g. Europe/Amsterdam). Default is UTC",
@@ -343,7 +343,7 @@ async def update_schedule(interaction: discord.Interaction, time: str, timezone:
     worker_list = [w.strip() for w in workers.split(",")] if workers else None
     scheduled_task = asyncio.create_task(schedule_update(scheduled_dt, worker_list, discord_message))
     
-@client.tree.command(name="cancel update", description="Cancel any scheduled worker update")
+@client.tree.command(name="cancel-update", description="Cancel any scheduled worker update")
 async def cancel_update(interaction: discord.Interaction):
     global scheduled_task, scheduled_time
     if interaction.channel.id != CHANNEL_ID:
