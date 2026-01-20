@@ -18,7 +18,7 @@ body {
 
 .center-text {
     position: absolute;
-    top: 40%;
+    top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: max-content;
@@ -31,6 +31,7 @@ body {
 @media screen and (max-width: 700px) {
     .center-text {
         top: 160px;
+        transform: translate(-50%, 0%);
     }
 }
 
