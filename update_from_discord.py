@@ -71,6 +71,15 @@ def render_progress_bar(completed, total, length=20):
     progress = int(length * completed / total)
     return f"[{'#' * progress}{'.' * (length - progress)}] {int((completed/total)*100)}%"
 
+async def run_systemctl(service, action):
+    proc = await asyncio.create_subprocess_exec(
+        "sudo", "systemctl", action, service,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    stdout, stderr = await proc.communicate()
+    return proc.returncode, stdout.decode(), stderr.decode()
+
 async def restart_and_monitor(service, port, total_remaining_time, discord_message=None, last_messages=None):
     if last_messages is None:
         last_messages = []
@@ -85,8 +94,8 @@ async def restart_and_monitor(service, port, total_remaining_time, discord_messa
     else:
         print(stop_msg)
 
-    stop = subprocess.run(["sudo", "systemctl", "stop", service])
-    if stop.returncode != 0:
+    stop_code, stop_out, stop_err = await run_systemctl(service, "stop")
+    if stop_code != 0:
         text = f"{RED}Failed to stop {service}.{RESET}"
         last_messages.append(text)
         last_messages = last_messages[-3:]
@@ -117,8 +126,8 @@ async def restart_and_monitor(service, port, total_remaining_time, discord_messa
     else:
         print(start_msg)
 
-    start = subprocess.run(["sudo", "systemctl", "start", service])
-    if start.returncode != 0:
+    start_code, start_out, start_err = await run_systemctl(service, "start")
+    if start_code != 0:
         text = f"{RED}Failed to start {service}.{RESET}"
         last_messages.append(text)
         last_messages = last_messages[-3:]
