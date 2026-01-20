@@ -89,11 +89,12 @@ async def handle_connect(sid, environ):
                     asyncio.create_task(poll_spotify(user_id, *spotify_tokens))
                 else:
                     asyncio.create_task(poll_spotify(user_id))
+                    
+                await sio_instance.sio.enter_room(sid, f"user:{user_id}")
 
                 await addMessageToLogs(f"User {user_id} connected", "INFO")
-                await sio_instance.sio.emit('connected to server', {'server_name': server_name}, to=sid)
-                await sio_instance.sio.emit('user_connected', {'user_id': user_id, 'server_id': server_id}, to=sid)
-                # await sio_instance.sio.enter_room(sid, f"user:{user_id}")
+                await sio_instance.sio.emit('connected to server', {'server_name': server_name}, room=f"user:{user_id}")
+                await sio_instance.sio.emit('user_connected', {'user_id': user_id, 'server_id': server_id}, room=f"user:{user_id}")
 
                 sids = await get_sids_for_user(user_id)
                 if sid not in sids:
