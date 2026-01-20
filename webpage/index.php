@@ -1,3 +1,31 @@
+<?php
+include 'app/config.php';
+include 'global.php';
+include 'app/maintenance.php';
+
+if (!isset($_COOKIE['access_token'])) {
+    header('Location: login');
+    exit;
+}
+$access_token = $_COOKIE['access_token'];
+
+$stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?");
+$stmt->bind_param("s", $access_token);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+    $user_id = $row['user_id'];
+}
+$stmt->close();
+
+$headerBtn = '<a href="login" class="button-primary-outline no-underline">Login</a>';
+
+if ($user_id) {
+    $headerBtn = '<a href="home" class="button-primary-outline no-underline">Open Wokki Chat</a>';
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en" class="night">
 <head>

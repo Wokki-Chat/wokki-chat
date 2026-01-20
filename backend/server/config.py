@@ -38,8 +38,7 @@ LIVEKIT_BASE_URL = os.getenv("LIVEKIT_BASE_URL", "http://localhost:7880")
 # --------------------
 # Runtime / in-memory state
 # --------------------
-user_message_timestamps = defaultdict(lambda: deque())
-bot_message_timestamps = defaultdict(lambda: deque())
+message_timestamps = defaultdict(lambda: deque())
 user_current_room = {}
 room = {}
 

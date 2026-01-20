@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import json
-from server.config import user_message_timestamps, bot_message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, get_cached_users, cache_users, delete_cached_message
+from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, get_cached_users, cache_users, delete_cached_message
 from server.helpers.user_helpers import get_user_premium_status, auth_required
 from server.helpers.server_helpers import server_permissions, send_server_notifications, get_server_channel_sids, get_server_users_info
 import aiomysql
@@ -37,10 +37,7 @@ async def send_message(sid, metadata, data):
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             now = datetime.now(timezone.utc)
-            if is_bot:
-                timestamps = bot_message_timestamps[account_id]
-            else:
-                timestamps = user_message_timestamps[account_id]
+            timestamps = message_timestamps[account_id]
             
             if not is_bot:
                 if not await server_permissions(cur, account_id, server_id, 'send_messages'):
@@ -115,10 +112,10 @@ async def send_message(sid, metadata, data):
                 await cur.execute(
                     '''
                     INSERT INTO bot_messages 
-                    (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed, assets, parent_message_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ''',
-                    (message_id, message, account_id, timestamp, None, False, server_id, channel_id, command, user_id, embed_str)
+                    (message_id, message, account_id, timestamp, None, False, server_id, channel_id, command, user_id, embed_str, assets_json, parent_message_id)
                 )
                 await addMessageToLogs(f"Inserted bot message for bot id: {account_id}", "INFO")
             else:
@@ -155,7 +152,8 @@ async def send_message(sid, metadata, data):
         'assets': json.loads(assets_json) if assets_json else [],
         'command': command,
         'command_user_id': user_id,
-        'embed': embed
+        'embed': embed,
+        'req_id': req_id
     }
     await cache_message(server_id, channel_id, message_response)
 
