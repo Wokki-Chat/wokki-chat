@@ -2,7 +2,10 @@
 *.env
 *.pyc
 *config.php
+
 livekit.yaml
 .cloudflared
 /webpage/connections/*
+
 .venv
+__pycache__
