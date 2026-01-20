@@ -137,16 +137,17 @@ async def get_user_premium_status(cur, user_id):
     return premium_expires_at > now
 
 async def get_user_rooms(cur, user_id):
-    query = "SELECT room_name FROM user_rooms WHERE user_id = %s"
+    query = "SELECT server_id FROM user_rooms WHERE user_id = %s"
     await cur.execute(query, (user_id,))
     rows = await cur.fetchall()
-    return [r["room_name"] for r in rows]
+    return [f"server_id:{r['server_id']}" for r in rows]
     # TODO: Add friends aswell
     
 async def get_bot_rooms(cur, bot_id):
-    query = "SELECT server_id FROM server_members WHERE bot_id = $1"
-    rows = await cur.fetch(query, bot_id)
-    return [f"server_id:{row['server_id']}" for row in rows]
+    query = "SELECT server_id FROM user_rooms WHERE bot_id = %s"
+    await cur.execute(query, (bot_id,))
+    rows = await cur.fetchall()
+    return [f"server_id:{r['server_id']}" for r in rows]
 
 async def broadcast_user_update(user_id, is_bot=False):
     if not is_bot:
