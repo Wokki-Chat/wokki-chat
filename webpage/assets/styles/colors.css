@@ -777,3 +777,40 @@
 .link:hover {
     color: var(--clr-primary-a20);
 }
+
+.input-text-dark-bg,
+input#clr-color-value {
+    background: var(--clr-input-bg-dark);
+    border: 1px solid var(--clr-text-a50);
+    border-radius: 9px;
+    padding: 10px 15px;
+    font-size: 16px;
+    color: var(--clr-text-a0);
+    -webkit-box-shadow: 0 0 0 1000px var(--clr-input-bg-dark) inset !important;
+    transition: outline 0.3s ease-in-out, color 0.3s ease-in-out, border 0.3s ease-in-out,--webkit-box-shadow 0.3s ease-in-out;
+}
+
+.input-text-dark-bg:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px var(--clr-input-bg-darkest) inset !important;
+    -webkit-text-fill-color: var(--clr-text-a0) !important;
+    border: 1px solid var(--clr-primary-a20) !important;
+    background: var(--clr-input-bg-darkest) !important;
+}
+
+.input-text-dark-bg:-moz-autofill {
+    box-shadow: 0 0 0 1000px var(--clr-input-bg-darkest) inset !important;
+    -moz-text-fill-color: var(--clr-text-a0) !important;
+    border: 1px solid var(--clr-primary-a20) !important;
+    background: var(--clr-input-bg-darkest) !important;
+}
+
+.input-text-dark-bg:focus {
+    outline: var(--clr-primary-a0) solid 1px;
+    box-shadow: 0 0 0 2px var(--clr-primary-a20);
+}
+
+.input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
