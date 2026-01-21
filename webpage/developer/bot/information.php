@@ -79,7 +79,7 @@ if (!$bot) {
         </div>
     </div>
     <div class="sidebar">
-        <a class="sidebar-item" href="/developer/bot/information">
+        <a class="sidebar-item" href="/developer/bot/<?php echo $bot_id; ?>/information">
             <span class="material-symbols-rounded sidebar-item-icon">info</span>
             <span class="sidebar-item-text">General Information</span>
         </a>
@@ -122,7 +122,7 @@ if (!$bot) {
         <wchat-data id="bot-id" value="<?php echo $bot_id; ?>"></wchat-data>
         <wchat-data id="orignal-bot-name" value="<?php echo htmlspecialchars($bot['name']); ?>"></wchat-data>
         <wchat-data id="orignal-bot-bio" value="<?php echo htmlspecialchars($bot['bio']); ?>"></wchat-data>
-        <wchat-data id="page" value="/developer/bot/information"></wchat-data>
+        <wchat-data id="page" value="/developer/bot/<?php echo $bot_id; ?>/information"></wchat-data>
     </div>
     <script src="/assets/js/developer/bot_info.js"></script>
     <script src="/assets/js/load_scripts.js"></script>
