@@ -105,6 +105,7 @@ $botsStmt->close();
         <wchat-allowed-scripts value="developer/bots.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="user-id" value="<?php echo $user_id; ?>"></wchat-data>
+        <wchat-data id="page" value="/developer/bots"></wchat-data>
     </div>
     <script src="../assets/js/developer/bots.js"></script>
     <script src="../assets/js/load_scripts.js"></script>

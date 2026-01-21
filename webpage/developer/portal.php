@@ -80,6 +80,7 @@ $stmt->close();
         <p class="content-description">Wokki Chat provides lots of documentation and features for developers to make the most out of Wokki Chat.</p>
         <wchat-allowed-scripts value="developer/portal.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
+        <wchat-data id="page" value="/developer/portal"></wchat-data>
     </div>
     <script src="../assets/js/developer/portal.js"></script>
     <script src="../assets/js/load_scripts.js"></script>

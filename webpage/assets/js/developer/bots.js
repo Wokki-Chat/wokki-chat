@@ -13,13 +13,15 @@ function init_bots() {
         });
     }
 
-	const sidebar_items = document.querySelectorAll('.sidebar-item');
-	sidebar_items.forEach(el => el.classList.remove('active'));
-	sidebar_items.forEach(el => {
-		if (window.location.pathname.startsWith(el.getAttribute('href'))) {
+    const sidebar_items = document.querySelectorAll('.sidebar-item');
+    const currentPage = document.getElementById('page')?.getAttribute('id');
+
+    sidebar_items.forEach(el => el.classList.remove('active'));
+    sidebar_items.forEach(el => {
+        if (el.getAttribute('href') === `/${currentPage}`) {
             el.classList.add('active');
         }
-	});
+    });
 
 	const access_token = document.getElementById("access-token").getAttribute("value");
 	const user_id = document.getElementById("user-id").getAttribute("value");
