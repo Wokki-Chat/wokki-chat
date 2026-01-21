@@ -14,7 +14,7 @@ function init_portal() {
     }
 
     const sidebar_items = document.querySelectorAll('.sidebar-item');
-    const currentPage = document.getElementById('page')?.getAttribute('id');
+    const currentPage = document.getElementById('page')?.textContent;
 
 	if (currentPage) {
 		sidebar_items.forEach(el => el.classList.remove('active'));
