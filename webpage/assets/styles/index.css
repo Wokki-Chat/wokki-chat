@@ -124,7 +124,7 @@ body {
         #2A2531 354.36deg,
         #1F1F1F 458.68deg
     );
-    transition: background 5s ease-in-out;
+    transition: --angle 0.6s ease-out;
 }
 
 .footer {
