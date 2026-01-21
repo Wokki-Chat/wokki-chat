@@ -78,7 +78,8 @@ body {
 .top-bar-profile-dropdown {
     display: none;
     position: absolute;
-    top: 50px;
+    top: 50%;
+    transform: translateY(-50%);
     right: calc(25px + 15px);
     background-color: var(--clr-popup-a10);
     border: 1px solid var(--clr-popup-a0);
