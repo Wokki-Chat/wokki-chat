@@ -88,25 +88,5 @@ if ($user_id) {
             </div>
         </div>
     </footer>
-
-    <script>
-        let currentAngle = 0;
-
-        document.addEventListener('mousemove', (e) => {
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-
-            const rawAngle = Math.atan2(
-                e.clientY - centerY,
-                e.clientX - centerX
-            ) * (180 / Math.PI);
-
-            const targetAngle = rawAngle * 0.15;
-            currentAngle += (targetAngle - currentAngle) * 0.08;
-
-            document.querySelector('.main-content')
-                .style.setProperty('--angle', `${currentAngle}deg`);
-        });
-    </script>
 </body>
 </html>
