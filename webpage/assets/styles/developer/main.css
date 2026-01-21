@@ -386,6 +386,10 @@ body {
     user-select: none;
     cursor: pointer;
     transition: all 0.2s ease;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
 }
 
 .sidebar-back-button:hover {
