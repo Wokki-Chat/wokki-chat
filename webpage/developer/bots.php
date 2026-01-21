@@ -51,7 +51,7 @@ $botsStmt->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wokki Chat Developer Portal</title>
+    <title>Wokki Chat Developer Portal - Bots</title>
     <link rel="stylesheet" href="../assets/styles/developer/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="icon" type="image/x-icon" href="../favicon.ico">
@@ -64,7 +64,7 @@ $botsStmt->close();
         </div>
         <div class="top-bar-profile" id="top-bar-profile">
             <img draggable="false" class="top-bar-profile-picture" src="<?php echo $profile_picture; ?>">
-            <p class="top-bar-username"><?php echo $username; ?></p>
+            <p class="top-bar-username"><?php echo htmlspecialchars($username); ?></p>
         </div>
     </div>
     <div class="sidebar">

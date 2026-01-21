@@ -1,8 +1,8 @@
-function init_bots() {
+function initBots() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
 	if (!scripts.includes('developer/bots.js')) return;
-	
+
     const sidebar_items = document.querySelectorAll('.sidebar-item');
     const currentPage = document.getElementById('page').getAttribute("value");
 
@@ -152,4 +152,4 @@ function init_bots() {
 	addBot.addEventListener("click", openCreateBotModal);
 }
 
-init_bots();
+initBots();

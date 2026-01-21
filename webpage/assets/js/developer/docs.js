@@ -1,4 +1,4 @@
-function init_docs() {
+function initDocs() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
 	if (!scripts.includes('developer/docs.js')) return;
@@ -16,4 +16,4 @@ function init_docs() {
 	}
 }
 
-init_docs();
+initDocs();

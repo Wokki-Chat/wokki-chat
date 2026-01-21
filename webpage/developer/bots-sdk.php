@@ -56,7 +56,7 @@ $stmt->close();
         </div>
         <div class="top-bar-profile" id="top-bar-profile">
             <img draggable="false" class="top-bar-profile-picture" src="<?php echo $profile_picture; ?>">
-            <p class="top-bar-username"><?php echo $username; ?></p>
+            <p class="top-bar-username"><?php echo htmlspecialchars($username); ?></p>
         </div>
     </div>
     <div class="sidebar">

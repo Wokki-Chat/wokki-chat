@@ -387,7 +387,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>wokki chat</title>
+    <title>Wokki Chat</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
       rel="stylesheet"
