@@ -14,14 +14,11 @@ function init_bots() {
     }
 
     const sidebar_items = document.querySelectorAll('.sidebar-item');
-    const currentPage = document.getElementById('page')?.textContent;
-
-	console.log(currentPage);
+    const currentPage = document.getElementById('page')?.value;
 
 	if (currentPage) {
 		sidebar_items.forEach(el => el.classList.remove('active'));
 		sidebar_items.forEach(el => {
-			console.log(el.getAttribute('href'));
 			if (el.getAttribute('href') === `${currentPage}`) {
 				el.classList.add('active');
 			}
