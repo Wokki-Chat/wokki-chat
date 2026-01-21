@@ -14,9 +14,7 @@ function init_bots() {
     }
 
     const sidebar_items = document.querySelectorAll('.sidebar-item');
-    const currentPage = document.getElementById('page')?.value;
-
-	console.log(document.getElementById('page'));
+    const currentPage = document.getElementById('page').getAttribute("value");
 
 	if (currentPage) {
 		sidebar_items.forEach(el => el.classList.remove('active'));
