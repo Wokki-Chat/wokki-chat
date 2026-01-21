@@ -67,21 +67,21 @@ $botsStmt->close();
             <p class="top-bar-username"><?php echo htmlspecialchars($username); ?></p>
         </div>
     </div>
-    <div class="sidebar">
-        <a class="sidebar-item" href="/developer/portal">
-            <span class="material-symbols-rounded sidebar-item-icon">home</span>
-            <span class="sidebar-item-text">Portal</span>
-        </a>
-        <a class="sidebar-item active" href="/developer/bots">
-            <span class="material-symbols-rounded sidebar-item-icon">smart_toy</span>
-            <span class="sidebar-item-text">Bots</span>
-        </a>
-        <a class="sidebar-item" href="/developer/docs">
-            <span class="material-symbols-rounded sidebar-item-icon">book_2</span>
-            <span class="sidebar-item-text">Documentation</span>
-        </a>
-    </div>
     <div class="content" id="app">
+        <div class="sidebar">
+            <a class="sidebar-item" href="/developer/portal">
+                <span class="material-symbols-rounded sidebar-item-icon">home</span>
+                <span class="sidebar-item-text">Portal</span>
+            </a>
+            <a class="sidebar-item active" href="/developer/bots">
+                <span class="material-symbols-rounded sidebar-item-icon">smart_toy</span>
+                <span class="sidebar-item-text">Bots</span>
+            </a>
+            <a class="sidebar-item" href="/developer/docs">
+                <span class="material-symbols-rounded sidebar-item-icon">book_2</span>
+                <span class="sidebar-item-text">Documentation</span>
+            </a>
+        </div>
         <h1 class="content-title">Bots</h1>
         <p class="content-description">Manage and create bots to enhance your Wokki Chat experience.</p>
         <h3>Your Bots:</h3>
@@ -89,10 +89,10 @@ $botsStmt->close();
             <?php
             foreach ($bots as $bot) {
                 echo '
-                <div class="developer-bot" onclick="window.location.href = \'/developer/bot/' . $bot['id'] . '\' ">
+                <a class="developer-bot" href="/developer/bot/' . $bot['id'] . '/information">
                     <img class="developer-bot-profile-picture" src="' . $bot['profile_picture'] . '" alt="' . $bot['name'] . '">
                     <p class="developer-bot-name">' . $bot['name'] . '</p>
-                </div>';
+                </a>';
             }       
             ?>
             <div class="developer-bot" id="add-bot">

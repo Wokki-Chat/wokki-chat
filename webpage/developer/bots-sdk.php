@@ -59,21 +59,21 @@ $stmt->close();
             <p class="top-bar-username"><?php echo htmlspecialchars($username); ?></p>
         </div>
     </div>
-    <div class="sidebar">
-        <a class="sidebar-item" href="/developer/portal">
-            <span class="material-symbols-rounded sidebar-item-icon">home</span>
-            <span class="sidebar-item-text">Portal</span>
-        </a>
-        <a class="sidebar-item" href="/developer/bots">
-            <span class="material-symbols-rounded sidebar-item-icon">smart_toy</span>
-            <span class="sidebar-item-text">Bots</span>
-        </a>
-        <a class="sidebar-item active" href="/developer/docs">
-            <span class="material-symbols-rounded sidebar-item-icon">book_2</span>
-            <span class="sidebar-item-text">Documentation</span>
-        </a>
-    </div>
     <div class="content" id="app">
+        <div class="sidebar">
+            <a class="sidebar-item" href="/developer/portal">
+                <span class="material-symbols-rounded sidebar-item-icon">home</span>
+                <span class="sidebar-item-text">Portal</span>
+            </a>
+            <a class="sidebar-item" href="/developer/bots">
+                <span class="material-symbols-rounded sidebar-item-icon">smart_toy</span>
+                <span class="sidebar-item-text">Bots</span>
+            </a>
+            <a class="sidebar-item active" href="/developer/docs">
+                <span class="material-symbols-rounded sidebar-item-icon">book_2</span>
+                <span class="sidebar-item-text">Documentation</span>
+            </a>
+        </div>
         <h1 class="content-title">Wokki Chat Bots SDK</h1>
         <p class="content-description">Wokki Chat currently only provides the Wokki Chat Python Bots SDK.</p>
         <div class="sdk-container">

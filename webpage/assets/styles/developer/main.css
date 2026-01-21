@@ -163,6 +163,8 @@ body {
     padding: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-decoration: none;
+    color: var(--clr-text-a0);
 }
 
 .developer-bot-profile-picture {

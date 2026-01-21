@@ -3,18 +3,6 @@ function initBots() {
 	const scripts = el.getAttribute('value').split(';');
 	if (!scripts.includes('developer/bots.js')) return;
 
-    const sidebar_items = document.querySelectorAll('.sidebar-item');
-    const currentPage = document.getElementById('page').getAttribute("value");
-
-	if (currentPage) {
-		sidebar_items.forEach(el => el.classList.remove('active'));
-		sidebar_items.forEach(el => {
-			if (el.getAttribute('href') === `${currentPage}`) {
-				el.classList.add('active');
-			}
-		});
-	}
-
 	const access_token = document.getElementById("access-token").getAttribute("value");
 	const user_id = document.getElementById("user-id").getAttribute("value");
 	function openCreateBotModal() {

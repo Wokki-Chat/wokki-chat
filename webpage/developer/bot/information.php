@@ -78,17 +78,17 @@ if (!$bot) {
             <p class="top-bar-username"><?php echo htmlspecialchars($username); ?></p>
         </div>
     </div>
-    <div class="sidebar">
-        <a class="sidebar-back-button" href="/developer/bots">
-            <span class="material-symbols-rounded sidebar-item-icon">arrow_back</span>
-            <span class="sidebar-item-text">Back to Bots</span>
-        </a>
-        <a class="sidebar-item" href="/developer/bot/<?php echo $bot_id; ?>/information">
-            <span class="material-symbols-rounded sidebar-item-icon">info</span>
-            <span class="sidebar-item-text">Bot Information</span>
-        </a>
-    </div>
     <div class="content" id="app">
+        <div class="sidebar">
+            <a class="sidebar-back-button" href="/developer/bots">
+                <span class="material-symbols-rounded sidebar-item-icon">arrow_back</span>
+                <span class="sidebar-item-text">Back to Bots</span>
+            </a>
+            <a class="sidebar-item" href="/developer/bot/<?php echo $bot_id; ?>/information">
+                <span class="material-symbols-rounded sidebar-item-icon">info</span>
+                <span class="sidebar-item-text">Bot Information</span>
+            </a>
+        </div>
         <h1 class="content-title"><?php echo htmlspecialchars($bot['name']); ?></h1>
         <p class="content-description">Here you'll find the general information regarding your bot.</p>
         <div class="developer-bot-profile">
