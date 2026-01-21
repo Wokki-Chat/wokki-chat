@@ -2461,8 +2461,7 @@ code {
     color: var(--clr-text-a30);
 }
 
-.profile-container,
-.developer-bot-profile {
+.profile-container {
     margin-top: 50px;
     background-color: var(--clr-popup-a10);
     padding: 10px;

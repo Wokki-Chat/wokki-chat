@@ -323,3 +323,56 @@ body {
     font-weight: var(--font-weight-semibold);
     user-select: none;
 }
+
+.developer-bot-profile .profile-picture-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 10px;
+    overflow: hidden;
+    object-fit: cover;
+    user-select: none;
+    transition: filter 0.3s ease;
+}
+
+.developer-bot-profile-picture-preview-container {
+    position: relative;
+    width: max-content;
+}
+
+.developer-bot-profile-picture-preview-container img.profile-picture-preview {
+    transition: filter 0.3s ease;
+}
+
+.developer-bot-profile-picture-preview-container:hover img.profile-picture-preview  {
+    cursor: pointer;
+    filter: brightness(0.6);
+}
+
+.developer-bot-profile-picture-preview-container .hover-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--clr-text-a0);
+    font-weight: var(--font-weight-semibold);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    user-select: none;
+    font-variation-settings:
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    ;
+    font-size: 30px !important;
+
+}
+
+.developer-bot-profile-picture-preview-container .hover-text {
+    font-size: 50px !important;
+}
+.developer-bot-profile-picture-preview-container:hover .hover-text {
+    cursor: pointer;
+    opacity: 1;
+}
