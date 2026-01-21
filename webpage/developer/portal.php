@@ -33,14 +33,6 @@ if ($result->num_rows > 0) {
     $profile_picture = $row['profile_picture'];
 }
 $stmt->close();
-
-$botsStmt = $mysqli->prepare("SELECT id, name, profile_picture FROM bots WHERE created_by = ?");
-$botsStmt->bind_param("i", $user_id);
-$botsStmt->execute();
-$botsResult = $botsStmt->get_result();
-$bots = $botsResult->fetch_all(MYSQLI_ASSOC);
-$botsStmt->close();
-
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme; ?>">
@@ -84,29 +76,12 @@ $botsStmt->close();
         </a>
     </div>
     <div class="content" id="app">
-        <h1 class="content-title">Bots</h1>
-        <p class="content-description">Manage and create bots to enhance your Wokki Chat experience.</p>
-        <h3>Your Bots:</h3>
-        <div class="developer-bots">
-            <?php
-            foreach ($bots as $bot) {
-                echo '
-                <div class="developer-bot" onclick="window.location.href = \'/developer/bot/' . $bot['id'] . '\' ">
-                    <img class="developer-bot-profile-picture" src="' . $bot['profile_picture'] . '" alt="' . $bot['name'] . '">
-                    <p class="developer-bot-name">' . $bot['name'] . '</p>
-                </div>';
-            }       
-            ?>
-            <div class="developer-bot" id="add-bot">
-                <div class="add-bot-container"><span class="material-symbols-rounded add-bot">add</span></div>
-                <p class="developer-bot-name">Create New Bot</p>
-            </div>
-        </div>
-        <wchat-allowed-scripts value="developer/bots.js;"></wchat-allowed-scripts>
+        <h1 class="content-title">Welcome, <?php echo htmlspecialchars($username); ?>!</h1>
+        <p class="content-description">Wokki Chat provides lots of documentation and features for developers to make the most out of Wokki Chat.</p>
+        <wchat-allowed-scripts value="developer/portal.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
-        <wchat-data id="user-id" value="<?php echo $user_id; ?>"></wchat-data>
     </div>
-    <script src="../assets/js/developer/bots.js"></script>
+    <script src="../assets/js/developer/portal.js"></script>
     <script src="../assets/js/load_scripts.js"></script>
     <script type="module" data-swup-ignore-script>
         import Swup from "https://unpkg.com/swup@4?module";

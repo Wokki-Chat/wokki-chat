@@ -34,12 +34,32 @@ if ($user_id) {
     <title>Wokki Chat - Connect with friends, share your world & make every conversation count</title>
     <link rel="stylesheet" href="assets/styles/index.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
 <body>
+    <div class="hover-overlay"></div>
     <div class="main-content">
         <div class="sticky-header">
             <a href="/"><img src="assets/images/logo-text-purple.png" alt="Wokki Chat" class="logo"></a>
             <?php echo $headerBtn; ?>
+        </div>
+        <div class="fixed-header">
+            <a href="https://chat.wokki20.nl/support" class="header-option" tabindex="0">Support</a>
+            <div class="header-option multiple" tabindex="0">
+                <p class="header-option-text">Legal</p>
+                <div class=header-option-dropdown>
+                    <a href="https://chat.wokki20.nl/legal/privacy" class="link">Privacy Policy</a>
+                    <a href="https://chat.wokki20.nl/legal/terms" class="link">Terms of Service</a>
+                </div>
+            </div>
+            <div class="header-option multiple" tabindex="0">
+                <p class="header-option-text">Developers</p>
+                <div class=header-option-dropdown>
+                    <a href="https://chat.wokki20.nl/developer" class="link">Developer Portal</a>
+                    <a href="https://chat.wokki20.nl/developer/docs" class="link">Developer Documentation</a>
+                    <a href="https://chat.wokki20.nl/developer/bots-sdk" class="link">Wokki Chat Bots SDK</a>
+                </div>
+            </div>
         </div>
         <div class="center-text">
             <div class="slogan">
@@ -88,5 +108,6 @@ if ($user_id) {
             </div>
         </div>
     </footer>
+    <script src="assets/js/index.js"></script>
 </body>
 </html>
