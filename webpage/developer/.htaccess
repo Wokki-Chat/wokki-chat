@@ -19,7 +19,7 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteRule ^([^\.]+)$ $1.php [NC,L]
 
-RewriteRule ^developer/bot/([a-zA-Z0-9\-]+)$ /developer/bot.php/$1 [QSA,L]
+RewriteRule ^developer/bot/([a-zA-Z0-9\-]+)$ /developer/bot.php?bot_id=$1 [QSA,L]
 
 DirectoryIndex portal.php
 
