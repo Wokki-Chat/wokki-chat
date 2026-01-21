@@ -2,17 +2,7 @@ function init_bots() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
 	if (!scripts.includes('developer/bots.js')) return;
-
-    top_bar_profile = document.querySelector(".top-bar-profile");
-    if (top_bar_profile) {
-        top_bar_profile.addEventListener("click", () => {
-            const dropdown = document.querySelector(".top-bar-profile-dropdown");
-            if (dropdown) {
-                dropdown.classList.toggle("active");
-            }
-        });
-    }
-
+	
     const sidebar_items = document.querySelectorAll('.sidebar-item');
     const currentPage = document.getElementById('page').getAttribute("value");
 

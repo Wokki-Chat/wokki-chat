@@ -54,12 +54,6 @@ $stmt->close();
             <img draggable="false" class="top-bar-profile-picture" src="<?php echo $profile_picture; ?>">
             <p class="top-bar-username"><?php echo $username; ?></p>
         </div>
-        <div class="top-bar-profile-dropdown">
-            <a class="top-bar-profile-dropdown-item" href="/logout">
-                <span class="material-symbols-rounded top-bar-profile-dropdown-item-icon">logout</span>
-                <p class="top-bar-profile-dropdown-item-text">Logout</p>
-            </a>
-        </div>
     </div>
     <div class="sidebar">
         <a class="sidebar-item active" href="/developer/portal">
