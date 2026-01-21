@@ -1,6 +1,6 @@
 <?php
-include '../app/config.php';
-include '../global.php';
+include '../../app/config.php';
+include '../../global.php';
 $access_token = $_COOKIE['access_token'];
 
 if (!$access_token) {
