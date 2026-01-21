@@ -37,7 +37,14 @@ $stmt->close();
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $segments = explode('/', trim($path, '/'));
 
-$bot_id = $_GET['bot_id'] ?? null;
+$bot_id = null;
+foreach ($segments as $key => $segment) {
+    if ($segment === 'bot' && isset($segments[$key + 1]) && !empty($segments[$key + 1])) {
+        $bot_id = $segments[$key + 1];
+        break;
+    }
+}
+
 if (!$bot_id) {
     header('Location: /developer/bots');
     exit;
