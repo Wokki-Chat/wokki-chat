@@ -8,6 +8,10 @@ if (!$access_token) {
     exit;
 }
 
+header("Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 $stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?");
 $stmt->bind_param("s", $access_token);
 $stmt->execute();
@@ -85,7 +89,7 @@ $stmt->close();
 
         window.swup = new Swup({
             containers: ["#app"],
-            cache: true,
+            cache: false,
             plugins: [
                 new SwupPreloadPlugin(),
                 new SwupScriptsPlugin({
