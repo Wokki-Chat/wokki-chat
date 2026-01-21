@@ -390,6 +390,7 @@ body {
     flex-direction: row;
     align-items: center;
     gap: 5px;
+    margin-bottom: 20px;
 }
 
 .sidebar-back-button:hover {
