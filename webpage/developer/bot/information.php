@@ -81,7 +81,7 @@ if (!$bot) {
     <div class="sidebar">
         <a class="sidebar-item" href="/developer/bot/<?php echo $bot_id; ?>/information">
             <span class="material-symbols-rounded sidebar-item-icon">info</span>
-            <span class="sidebar-item-text">General Information</span>
+            <span class="sidebar-item-text">Bot Information</span>
         </a>
     </div>
     <div class="content" id="app">
