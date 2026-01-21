@@ -4,7 +4,7 @@ include '../global.php';
 $access_token = $_COOKIE['access_token'];
 
 if (!$access_token) {
-    header('Location: /login?redirect=/developer/bots');
+    header('Location: /login?redirect=/developer/bots-sdk');
     exit;
 }
 
@@ -23,7 +23,7 @@ if ($result->num_rows > 0) {
 $stmt->close();
 
 if (!$user_id) {
-    header('Location: /login?redirect=/developer/bots');
+    header('Location: /login?redirect=/developer/bots-sdk');
     exit;
 }
 
