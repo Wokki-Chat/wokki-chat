@@ -19,7 +19,7 @@ function init_bots() {
 	if (currentPage) {
 		sidebar_items.forEach(el => el.classList.remove('active'));
 		sidebar_items.forEach(el => {
-			if (el.getAttribute('href') === `/${currentPage}`) {
+			if (el.getAttribute('href') === `${currentPage}`) {
 				el.classList.add('active');
 			}
 		});
