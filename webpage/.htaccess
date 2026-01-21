@@ -15,7 +15,6 @@ RewriteRule ^server/([a-zA-Z0-9\-]+)/channel/([a-zA-Z0-9\-]+)$ server.php [QSA,L
 RewriteRule ^invite/([a-zA-Z0-9\-]+)$ invite.php [QSA,L]
 
 RewriteRule ^settings/?$ /settings.php [QSA,L]
-
 RewriteRule ^settings/([a-zA-Z0-9\-]+)$ /settings.php/$1 [QSA,L]
 
 RewriteRule ^dm/(.+)$ /dm.php/$1 [QSA,L]
@@ -53,7 +52,14 @@ DirectoryIndex index.php
     Header set Expires "0" env=no_cache
 </IfModule>
 
-# Set favicon
+# ALSO EXPLICIT NO CACHE FOR /assets/*
+<IfModule mod_headers.c>
+    SetEnvIf Request_URI "^/assets/" no_cache_js
+    Header set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate" env=no_cache_js
+    Header set Pragma "no-cache" env=no_cache_js
+    Header set Expires "0" env=no_cache_js
+</IfModule>
+
 <Files "favicon.ico">
     Header set Content-Type "image/x-icon"
 </Files>

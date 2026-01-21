@@ -16,12 +16,9 @@ function init_portal() {
     const sidebar_items = document.querySelectorAll('.sidebar-item');
     const currentPage = document.getElementById('page').getAttribute("value");
 
-    console.log(currentPage);
-
 	if (currentPage) {
 		sidebar_items.forEach(el => el.classList.remove('active'));
 		sidebar_items.forEach(el => {
-            console.log(el.getAttribute('href'));
 			if (el.getAttribute('href') === `${currentPage}`) {
 				el.classList.add('active');
 			}
