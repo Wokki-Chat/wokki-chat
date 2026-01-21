@@ -79,7 +79,7 @@ body {
     display: none;
     position: absolute;
     top: 50px;
-    right: 25px;
+    right: calc(25px + 15px);
     background-color: var(--clr-popup-a10);
     border: 1px solid var(--clr-popup-a0);
     padding: 5px;
