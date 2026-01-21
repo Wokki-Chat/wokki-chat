@@ -71,11 +71,11 @@ $botsStmt->close();
         </div>
     </div>
     <div class="sidebar">
-        <a class="sidebar-item active" href="/developer/portal">
+        <a class="sidebar-item" href="/developer/portal">
             <span class="material-symbols-rounded sidebar-item-icon">home</span>
             <span class="sidebar-item-text">Portal</span>
         </a>
-        <a class="sidebar-item" href="/developer/bots">
+        <a class="sidebar-item active" href="/developer/bots">
             <span class="material-symbols-rounded sidebar-item-icon">smart_toy</span>
             <span class="sidebar-item-text">Bots</span>
         </a>

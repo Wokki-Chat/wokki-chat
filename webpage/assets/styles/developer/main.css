@@ -155,10 +155,7 @@ body {
 .sidebar-item:hover,
 .sidebar-item:focus-within {        
     background-color: var(--clr-popup-a10);
-}
-
-.sidebar-item:focus {
-    outline: 2px solid var(--clr-text-a0);
+    outline: none;
 }
 
 .sidebar-item.active {
