@@ -1,4 +1,8 @@
 function init_bots() {
+	const el = document.querySelector('wchat-allowed-scripts');
+	const scripts = el.getAttribute('value').split(';');
+	if (!scripts.includes('bots.js')) return;
+
 	const access_token = document.getElementById("access-token").getAttribute("value");
 	const user_id = document.getElementById("user-id").getAttribute("value");
 	function openCreateBotModal() {
