@@ -1,7 +1,7 @@
 function init_portal() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
-	if (!scripts.includes('portal.js')) return;
+	if (!scripts.includes('developer/portal.js')) return;
 
     top_bar_profile = document.querySelector(".top-bar-profile");
     if (top_bar_profile) {
@@ -12,4 +12,12 @@ function init_portal() {
             }
         });
     }
+
+	const sidebar_items = document.querySelectorAll('.sidebar-item');
+	sidebar_items.forEach(el => el.classList.remove('active'));
+	sidebar_items.forEach(el => {
+		if (window.location.pathname.startsWith(el.getAttribute('href'))) {
+            el.classList.add('active');
+        }
+	});
 }

@@ -1,7 +1,25 @@
 function init_bots() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
-	if (!scripts.includes('bots.js')) return;
+	if (!scripts.includes('developer/bots.js')) return;
+
+    top_bar_profile = document.querySelector(".top-bar-profile");
+    if (top_bar_profile) {
+        top_bar_profile.addEventListener("click", () => {
+            const dropdown = document.querySelector(".top-bar-profile-dropdown");
+            if (dropdown) {
+                dropdown.classList.toggle("active");
+            }
+        });
+    }
+
+	const sidebar_items = document.querySelectorAll('.sidebar-item');
+	sidebar_items.forEach(el => el.classList.remove('active'));
+	sidebar_items.forEach(el => {
+		if (window.location.pathname.startsWith(el.getAttribute('href'))) {
+            el.classList.add('active');
+        }
+	});
 
 	const access_token = document.getElementById("access-token").getAttribute("value");
 	const user_id = document.getElementById("user-id").getAttribute("value");
