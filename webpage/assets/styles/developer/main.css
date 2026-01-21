@@ -378,3 +378,16 @@ body {
     cursor: pointer;
     opacity: 1;
 }
+
+.sidebar-back-button {
+    text-decoration: none;
+    color: var(--clr-text-a0);
+    font-weight: var(--font-weight-semibold);
+    user-select: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sidebar-back-button:hover {
+    color: var(--clr-text-a10);
+}
