@@ -122,6 +122,26 @@ body {
         #2A2531 354.36deg,
         #1F1F1F 458.68deg
     );
+    animation: bg-change 10s ease-in-out infinite alternate;
+}
+
+@keyframes bg-change {
+    from {
+        background: conic-gradient(
+            #2A2531 -5.64deg,
+            #1F1F1F 98.68deg,
+            #2A2531 354.36deg,
+            #1F1F1F 458.68deg
+        );
+    }
+    to {
+        background: conic-gradient(
+            #1F1F1F -5.64deg,
+            #2A2531 98.68deg,
+            #1F1F1F 354.36deg,
+            #2A2531 458.68deg
+        );
+    }
 }
 
 .footer {
