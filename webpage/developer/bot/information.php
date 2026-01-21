@@ -63,14 +63,14 @@ if (!$bot) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wokki Chat Developer Portal - Bot Information</title>
-    <link rel="stylesheet" href="../../assets/styles/developer/main.css">
+    <link rel="stylesheet" href="/assets/styles/developer/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
     <div class="header">
         <div class="logo">
-            <img src="../assets/images/logo-purple.png" alt="Wokki Chat Logo">
+            <img src="/assets/images/logo-purple.png" alt="Wokki Chat Logo">
             <p>For Developers</p>
         </div>
         <div class="top-bar-profile" id="top-bar-profile">
@@ -124,8 +124,8 @@ if (!$bot) {
         <wchat-data id="orignal-bot-bio" value="<?php echo htmlspecialchars($bot['bio']); ?>"></wchat-data>
         <wchat-data id="page" value="/developer/bot/information"></wchat-data>
     </div>
-    <script src="../../assets/js/developer/bot_info.js"></script>
-    <script src="../../assets/js/load_scripts.js"></script>
+    <script src="/assets/js/developer/bot_info.js"></script>
+    <script src="/assets/js/load_scripts.js"></script>
     <script type="module" data-swup-ignore-script>
         import Swup from "https://unpkg.com/swup@4?module";
         import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
