@@ -25,3 +25,5 @@ function init_portal() {
 		});
 	}
 }
+
+init_portal();
