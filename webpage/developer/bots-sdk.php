@@ -94,9 +94,11 @@ $stmt->close();
                 </div>
             </div>
         </div>
+        <wchat-allowed-scripts value="developer/docs.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="page" value="/developer/docs"></wchat-data>
     </div>
+    <script src="../assets/js/developer/docs.js"></script>
     <script src="../assets/js/load_scripts.js"></script>
     <script type="module" data-swup-ignore-script>
         import Swup from "https://unpkg.com/swup@4?module";
