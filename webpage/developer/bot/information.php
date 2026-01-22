@@ -84,7 +84,7 @@ if (!$bot) {
                 <span class="material-symbols-rounded sidebar-item-icon">arrow_back</span>
                 <span class="sidebar-item-text">Back to Bots</span>
             </a>
-            <a class="sidebar-item" href="/developer/bot/<?php echo $bot_id; ?>/information">
+            <a class="sidebar-item active" href="/developer/bot/<?php echo $bot_id; ?>/information">
                 <span class="material-symbols-rounded sidebar-item-icon">info</span>
                 <span class="sidebar-item-text">Bot Information</span>
             </a>
