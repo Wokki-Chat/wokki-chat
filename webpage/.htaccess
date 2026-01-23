@@ -26,7 +26,7 @@ RewriteRule ^profile/(.+)$ /profile.php/$1 [QSA,L]
 
 RewriteRule ^faqs/?$ /support/faqs [R=302,L]
 
-RewriteRule ^support/faqs/?$ support/faqs.php [QSA,L]
+RewriteRule ^support/faqs/?$ faqs.php [QSA,L]
 
 # Rewrite URLs for .html files
 RewriteCond %{REQUEST_FILENAME} !-d
