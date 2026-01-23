@@ -1,7 +1,8 @@
 <?php
 include '../../app/config.php';
 include '../../global.php';
-$access_token = $_COOKIE['access_token'];
+
+$access_token = $_COOKIE['access_token'] ?? null;
 
 if (!$access_token) {
     header('Location: /login?redirect=/developer/docs');
@@ -16,6 +17,7 @@ $stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?
 $stmt->bind_param("s", $access_token);
 $stmt->execute();
 $result = $stmt->get_result();
+$user_id = null;
 if ($result->num_rows > 0) {
     $row = $result->fetch_assoc();
     $user_id = $row['user_id'];
@@ -31,39 +33,40 @@ $stmt = $mysqli->prepare("SELECT username, profile_picture FROM users WHERE id =
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
+$username = 'Unknown User';
+$profile_picture = 'https://chat.wokki20.nl/uploads/profile-pictures/default-profile.png';
 if ($result->num_rows > 0) {
     $row = $result->fetch_assoc();
-    $username = htmlSpecialChars($row['username']);
+    $username = htmlspecialchars($row['username']);
     $profile_picture = $row['profile_picture'];
 }
 $stmt->close();
 
 $sidebar = '
 <a class="sidebar-item" href="/developer/portal">
-	<span class="material-symbols-rounded sidebar-item-icon">home</span>
-	<span class="sidebar-item-text">Portal</span>
+    <span class="material-symbols-rounded sidebar-item-icon">home</span>
+    <span class="sidebar-item-text">Portal</span>
 </a>
 <a class="sidebar-item" href="/developer/bots">
-	<span class="material-symbols-rounded sidebar-item-icon">smart_toy</span>
-	<span class="sidebar-item-text">Bots</span>
+    <span class="material-symbols-rounded sidebar-item-icon">smart_toy</span>
+    <span class="sidebar-item-text">Bots</span>
 </a>
 <a class="sidebar-item active" href="/developer/docs">
-	<span class="material-symbols-rounded sidebar-item-icon">book_2</span>
-	<span class="sidebar-item-text">Documentation</span>
+    <span class="material-symbols-rounded sidebar-item-icon">book_2</span>
+    <span class="sidebar-item-text">Documentation</span>
 </a>
 ';
 
-$themeParts = explode(' ', $theme);
-$themeColor = $themeParts[0];
-
+$themeParts = explode(' ', $theme ?? '');
+$themeColor = $themeParts[0] ?? '';
 ?>
+
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="generator" content="pdoc 14.7.0"/>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <title>wokkichat API documentation</title>
 <link rel="icon" href="https://chat.wokki20.nl/favicon.ico"/>
 
@@ -316,6 +319,7 @@ $themeColor = $themeParts[0];
 </script>
 <link rel="stylesheet" href="https://chat.wokki20.nl/assets/styles/colors.css">
 <link rel="stylesheet" href="https://chat.wokki20.nl/assets/styles/developer/main.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 <div class="header">
     <label id="navtoggle" for="togglestate" class="pdoc-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30"><path stroke-linecap="round" stroke="currentColor" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></label>
     <div class="logo">
@@ -327,10 +331,10 @@ $themeColor = $themeParts[0];
         <img
             draggable="false"
             class="top-bar-profile-picture"
-            src="<?php echo $profile_picture ?? 'https://chat.wokki20.nl/uploads/profile-pictures/default-profile.png'; ?>"
+            src="<?php echo $profile_picture; ?>"
         >
         <p class="top-bar-username">
-            <?php echo $username ?? 'Unknown User'; ?>
+            <?php echo $username; ?>
         </p>
     </div>
 </div>
