@@ -49,7 +49,7 @@ if (isset($segments[0], $segments[1]) && $segments[0] === 'developer' && $segmen
         $decoded = urldecode($sub_path);
         $decoded = ltrim($decoded, '/');
 
-        $full_path = '../docs-raw/' . $decoded;
+        $full_path = '../python-docs-raw/' . $decoded;
 
         if (is_file($full_path)) {
             $serving_file = $full_path;
@@ -72,7 +72,7 @@ if ($serving_file) {
     exit;
 }
 
-$file_contents = file_get_contents('../docs-raw/wokkichat.html');
+$file_contents = file_get_contents('../python-docs-raw/wokkichat.html');
 header('Content-Type: text/html');
 
 $theme_parts = explode(' ', $theme);
