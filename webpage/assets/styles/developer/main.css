@@ -87,7 +87,7 @@ body {
 }
 
 .sidebar-item {
-    display: flex;
+    display: flex !important;
     flex-direction: row;
     align-items: center;
     gap: 10px;
