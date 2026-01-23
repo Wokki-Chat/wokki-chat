@@ -82,7 +82,7 @@ $stmt->close();
                 <div class="card-title-buttons">
                     <p class="card-title">Python Bots SDK</p>
                     <div class="card-buttons">
-                        <a class="card-button" href="https://pypi.org/project/wokki-chat-bot-client/#files" target="_blank">
+                        <a class="card-button" href="https://pypi.org/project/wokki-chat-sdk/" target="_blank">
                             <p>View on PyPI</p>
                             <span class="material-symbols-rounded">open_in_new</span>
                         </a>
