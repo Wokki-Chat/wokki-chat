@@ -63,6 +63,7 @@ $themeColor = $themeParts[0];
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="generator" content="pdoc 14.7.0"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <title>wokkichat API documentation</title>
 <link rel="icon" href="https://chat.wokki20.nl/favicon.ico"/>
 
