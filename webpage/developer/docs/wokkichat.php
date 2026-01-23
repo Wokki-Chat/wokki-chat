@@ -55,9 +55,8 @@ $sidebar = '
 </div>
 ';
 
-$themeColor = $theme;
-
-echo $themeColor;
+list($themeColor) = explode(' ', $theme);
+$themeColor = $themeColor[0];
 
 ?>
 <!doctype html>
