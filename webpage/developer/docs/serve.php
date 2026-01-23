@@ -43,10 +43,10 @@ $segments = explode('/', trim($path, '/'));
 
 $serving_file = null;
 
-if (isset($segments[0]) && $segments[0] === 'docs') {
-    if (!empty($segments[1])) {
-        $path = implode('/', array_slice($segments, 1));
-        $decoded = urldecode($path);
+if (isset($segments[0], $segments[1]) && $segments[0] === 'developer' && $segments[1] === 'docs') {
+    if (!empty($segments[2])) {
+        $sub_path = implode('/', array_slice($segments, 2));
+        $decoded = urldecode($sub_path);
         $decoded = ltrim($decoded, '/');
 
         $full_path = '../docs-raw/' . $decoded;
