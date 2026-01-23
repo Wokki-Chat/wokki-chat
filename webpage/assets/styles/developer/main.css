@@ -426,3 +426,34 @@ body {
     animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     border: 1px solid var(--clr-popup-a20);
 }
+
+.create-bot-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.icon-preview {
+    display: inline-block;
+    width: 150px; 
+    height: 150px; 
+    border-radius: 9px; 
+    overflow: hidden; 
+    cursor: pointer; 
+    background-color: var(--clr-popup-a20); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    margin: auto;
+}
+
+.icon-preview span {
+    color: var(--clr-text-a30);
+    font-size: 70px !important;
+    user-select: none;
+    font-variation-settings:
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+}

@@ -14,7 +14,7 @@ function initBots() {
 					<span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
 				</div>
 				<div class="modal-body" >
-					<form id="create-bot-form" class="create-channel-form">
+					<form id="create-bot-form" class="create-bot-form">
 						<label for="bot-icon">Bot Icon (optional):</label>
 						<label for="bot-icon" id="icon-preview" class="icon-preview" >
 							<span class="material-symbols-rounded upload-icon">add</span>
