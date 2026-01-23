@@ -326,7 +326,7 @@ $themeColor = $theme;
         <img
             draggable="false"
             class="top-bar-profile-picture"
-            src="<?php echo $profile_picture ?? 'https://chat.wokki20.nl/uploads/profile-pictures/default-profile.png'; ?>">
+            src="<?php echo $profile_picture ?? 'https://chat.wokki20.nl/uploads/profile-pictures/default-profile.png'; ?>"
         >
         <p class="top-bar-username">
             <?php echo $username ?? 'Unknown User'; ?>
