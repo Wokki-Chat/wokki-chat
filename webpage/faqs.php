@@ -15,10 +15,10 @@ if ($result->num_rows > 0) {
 }
 $stmt->close();
 
-$headerBtn = '<a href="login" class="button-primary-outline no-underline">Log In</a>';
+$headerBtn = '<a href="/login" class="button-primary-outline no-underline">Log In</a>';
 
 if ($user_id) {
-    $headerBtn = '<a href="home" class="button-primary-outline no-underline">Open Wokki Chat</a>';
+    $headerBtn = '<a href="/home" class="button-primary-outline no-underline">Open Wokki Chat</a>';
 }
 ?>
 <!DOCTYPE html>
