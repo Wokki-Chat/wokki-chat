@@ -316,6 +316,7 @@ $themeColor = $themeParts[0];
     document.documentElement.classList.add('<?php echo $themeColor; ?>');
 </script>
 <link rel="stylesheet" href="https://chat.wokki20.nl/assets/styles/colors.css">
+<link rel="stylesheet" href="https://chat.wokki20.nl/assets/styles/developer/main.css">
 <div class="header">
     <label id="navtoggle" for="togglestate" class="pdoc-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30"><path stroke-linecap="round" stroke="currentColor" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></label>
     <div class="logo">
