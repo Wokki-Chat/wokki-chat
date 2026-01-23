@@ -27,7 +27,7 @@ if ($user_id) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wokki Chat - FAQ</title>
-    <link rel="stylesheet" href="assets/styles/index.css">
+    <link rel="stylesheet" href="/assets/styles/index.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
@@ -35,7 +35,7 @@ if ($user_id) {
     <div class="hover-overlay"></div>
     <div class="main-content no-gradient">
         <div class="sticky-header">
-            <a href="/"><img src="assets/images/logo-text-purple.png" alt="Wokki Chat" class="logo"></a>
+            <a href="/"><img src="/assets/images/logo-text-purple.png" alt="Wokki Chat" class="logo"></a>
             <?php echo $headerBtn; ?>
         </div>
         <div class="fixed-header">
