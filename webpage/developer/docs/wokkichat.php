@@ -57,6 +57,8 @@ $sidebar = '
 
 $themeColor = $theme;
 
+echo $themeColor;
+
 ?>
 <!doctype html>
 <html lang="en">
