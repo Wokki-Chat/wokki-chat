@@ -9,6 +9,7 @@ $stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?
 $stmt->bind_param("s", $access_token);
 $stmt->execute();
 $result = $stmt->get_result();
+$user_id = null;
 if ($result->num_rows > 0) {
     $row = $result->fetch_assoc();
     $user_id = $row['user_id'];
