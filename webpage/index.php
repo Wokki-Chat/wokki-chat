@@ -3,7 +3,7 @@ include 'app/config.php';
 include 'global.php';
 include 'app/maintenance.php';
 
-$access_token = $_COOKIE['access_token'];
+$access_token = $_COOKIE['access_token'] ?? '';
 
 $stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?");
 $stmt->bind_param("s", $access_token);
