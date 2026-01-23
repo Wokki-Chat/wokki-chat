@@ -1,6 +1,6 @@
 <?php
-include '../../app/config.php';
-include '../../global.php';
+include '../../../app/config.php';
+include '../../../global.php';
 
 $access_token = $_COOKIE['access_token'] ?? null;
 
@@ -67,7 +67,7 @@ $themeColor = $themeParts[0] ?? '';
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="generator" content="pdoc 14.7.0"/>
-    <title>wokkichat.addons.color API documentation</title>
+    <title>wokkichat.enums API documentation</title>
 <link rel="icon" href="https://chat.wokki20.nl/favicon.ico"/>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -80,32 +80,38 @@ $themeColor = $themeParts[0] ?? '';
     <nav class="pdoc">
         <label id="navtoggle" for="togglestate" class="pdoc-button"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path stroke-linecap='round' stroke="currentColor" stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/></svg></label>
         <input id="togglestate" type="checkbox" aria-hidden="true" tabindex="-1">
-        <div>            <a class="pdoc-button module-list-button" href="../addons.html">
+        <div>            <a class="pdoc-button module-list-button" href="../wokkichat.html">
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-in-left" viewBox="0 0 16 16">
   <path fill-rule="evenodd" d="M10 3.5a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 1 1 0v2A1.5 1.5 0 0 1 9.5 14h-8A1.5 1.5 0 0 1 0 12.5v-9A1.5 1.5 0 0 1 1.5 2h8A1.5 1.5 0 0 1 11 3.5v2a.5.5 0 0 1-1 0v-2z"/>
   <path fill-rule="evenodd" d="M4.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H14.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z"/>
-</svg>                &nbsp;wokkichat.addons</a>
+</svg>                &nbsp;wokkichat</a>
 
     <?php echo $sidebar; ?>
 
             <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
                    pattern=".+" required>
 
-            <h2>Contents</h2>
-            <ul>
-  <li><a href="#intro">Intro</a></li>
-  <li><a href="#docs">Docs</a></li>
-</ul>
-
 
 
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
-                    <a class="variable" href="#WEB_COLORS">WEB_COLORS</a>
-            </li>
-            <li>
-                    <a class="function" href="#to_hex">to_hex</a>
+                    <a class="class" href="#status">status</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="variable" href="#status.OFFLINE">OFFLINE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#status.IDLE">IDLE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#status.BUSY">BUSY</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#status.ONLINE">ONLINE</a>
+                        </li>
+                </ul>
+
             </li>
     </ul>
 
@@ -144,122 +150,107 @@ $themeColor = $themeParts[0] ?? '';
 
     <main class="pdoc">
             <section class="module-info">
-                        <a class="pdoc-button git-button" href="https://github.com/levkris/Wokki-Chat-Python-SDK/tree/main/wokkichat/addons/color.py">Edit on GitHub</a>
+                        <a class="pdoc-button git-button" href="https://github.com/levkris/Wokki-Chat-Python-SDK/tree/main/wokkichat/enums.py">Edit on GitHub</a>
                     <h1 class="modulename">
-<a href="./../../wokkichat.html">wokkichat</a><wbr>.<a href="./../addons.html">addons</a><wbr>.color    </h1>
+<a href="./../wokkichat.html">wokkichat</a><wbr>.enums    </h1>
 
-                        <div class="docstring"><h2 id="intro">Intro</h2>
+                
+                        <input id="mod-enums-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
-<p>Welcome to the documentation of the Color add-on! 🌈</p>
+                        <label class="view-source-button" for="mod-enums-view-source"><span>View Source</span></label>
 
-<p>Many different color formats exist, each with its own conventions.
-To avoid confusion, this add-on standardizes everything on hex colors,
-just like the Wokki Chat API.</p>
-
-<p>Since hex values can be inconvenient to write by hand, the add-on
-provides a simple method to convert RGB(A) values and color names
-into hex format.</p>
-
-<hr />
-
-<h2 id="docs">Docs</h2>
-</div>
-
-                        <input id="mod-color-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-
-                        <label class="view-source-button" for="mod-color-view-source"><span>View Source</span></label>
-
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="sd">.. include:: ../../subdocs/color.md</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="n">WEB_COLORS</span> <span class="o">=</span> <span class="p">{</span> <span class="c1"># keep or remove?</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>    <span class="s2">&quot;black&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>    <span class="s2">&quot;white&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>    <span class="s2">&quot;red&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>    <span class="s2">&quot;green&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="s2">&quot;blue&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="s2">&quot;yellow&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>    <span class="s2">&quot;orange&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">165</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>    <span class="s2">&quot;purple&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">128</span><span class="p">),</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>    <span class="s2">&quot;pink&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">203</span><span class="p">),</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="p">}</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="k">def</span><span class="w"> </span><span class="nf">to_hex</span><span class="p">(</span><span class="n">color_input</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="nb">str</span><span class="p">],</span> <span class="n">include_alpha</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a><span class="sd">    Convert a color to hex.</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">color_input</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>        <span class="n">color_input</span> <span class="o">=</span> <span class="n">WEB_COLORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">color_input</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>        <span class="k">if</span> <span class="n">color_input</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown color name &#39;</span><span class="si">{</span><span class="n">color_input</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">color_input</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Color must be a string or tuple/list&quot;</span><span class="p">)</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>    <span class="n">rgb</span> <span class="o">=</span> <span class="n">color_input</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>    <span class="n">alpha</span> <span class="o">=</span> <span class="n">color_input</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="k">if</span> <span class="n">include_alpha</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">color_input</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span> <span class="k">else</span> <span class="kc">None</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>    <span class="n">hex_color</span> <span class="o">=</span> <span class="s2">&quot;#</span><span class="si">{:02x}{:02x}{:02x}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">rgb</span><span class="p">)</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>    <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>        <span class="n">hex_color</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{:02x}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>    <span class="k">return</span> <span class="n">hex_color</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">2</span></a>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">3</span></a><span class="k">class</span><span class="w"> </span><span class="nc">status</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">4</span></a>    <span class="n">OFFLINE</span> <span class="o">=</span> <span class="s2">&quot;offline&quot;</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">5</span></a>    <span class="n">IDLE</span> <span class="o">=</span> <span class="s2">&quot;idle&quot;</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">6</span></a>    <span class="n">BUSY</span> <span class="o">=</span> <span class="s2">&quot;busy&quot;</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">7</span></a>    <span class="n">ONLINE</span> <span class="o">=</span> <span class="s2">&quot;online&quot;</span>
 </span></pre></div>
 
 
             </section>
-                <section id="WEB_COLORS">
-                    <div class="attr variable">
-            <span class="name">WEB_COLORS</span>        =
-<input id="WEB_COLORS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="WEB_COLORS-view-value"></label><span class="default_value">{&#39;black&#39;: (0, 0, 0), &#39;white&#39;: (255, 255, 255), &#39;red&#39;: (255, 0, 0), &#39;green&#39;: (0, 128, 0), &#39;blue&#39;: (0, 0, 255), &#39;yellow&#39;: (255, 255, 0), &#39;orange&#39;: (255, 165, 0), &#39;purple&#39;: (128, 0, 128), &#39;pink&#39;: (255, 192, 203)}</span>
-
-        
-    </div>
-    <a class="headerlink" href="#WEB_COLORS"></a>
-    
-    
-
-                </section>
-                <section id="to_hex">
-                            <input id="to_hex-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-<div class="attr function">
+                <section id="status">
+                            <input id="status-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
             
-        <span class="def">def</span>
-        <span class="name">to_hex</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">color_input</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]],</span> <span class="nb">str</span><span class="p">]</span>,</span><span class="param">	<span class="n">include_alpha</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+    <span class="def">class</span>
+    <span class="name">status</span><wbr>(<span class="base">enum.Enum</span>):
 
-                <label class="view-source-button" for="to_hex-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="status-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#to_hex"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="to_hex-20"><a href="#to_hex-20"><span class="linenos">20</span></a><span class="k">def</span><span class="w"> </span><span class="nf">to_hex</span><span class="p">(</span><span class="n">color_input</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="nb">str</span><span class="p">],</span> <span class="n">include_alpha</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="to_hex-21"><a href="#to_hex-21"><span class="linenos">21</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="to_hex-22"><a href="#to_hex-22"><span class="linenos">22</span></a><span class="sd">    Convert a color to hex.</span>
-</span><span id="to_hex-23"><a href="#to_hex-23"><span class="linenos">23</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="to_hex-24"><a href="#to_hex-24"><span class="linenos">24</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">color_input</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="to_hex-25"><a href="#to_hex-25"><span class="linenos">25</span></a>        <span class="n">color_input</span> <span class="o">=</span> <span class="n">WEB_COLORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">color_input</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
-</span><span id="to_hex-26"><a href="#to_hex-26"><span class="linenos">26</span></a>        <span class="k">if</span> <span class="n">color_input</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="to_hex-27"><a href="#to_hex-27"><span class="linenos">27</span></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown color name &#39;</span><span class="si">{</span><span class="n">color_input</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-</span><span id="to_hex-28"><a href="#to_hex-28"><span class="linenos">28</span></a>
-</span><span id="to_hex-29"><a href="#to_hex-29"><span class="linenos">29</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">color_input</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
-</span><span id="to_hex-30"><a href="#to_hex-30"><span class="linenos">30</span></a>        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Color must be a string or tuple/list&quot;</span><span class="p">)</span>
-</span><span id="to_hex-31"><a href="#to_hex-31"><span class="linenos">31</span></a>
-</span><span id="to_hex-32"><a href="#to_hex-32"><span class="linenos">32</span></a>    <span class="n">rgb</span> <span class="o">=</span> <span class="n">color_input</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
-</span><span id="to_hex-33"><a href="#to_hex-33"><span class="linenos">33</span></a>    <span class="n">alpha</span> <span class="o">=</span> <span class="n">color_input</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="k">if</span> <span class="n">include_alpha</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">color_input</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span> <span class="k">else</span> <span class="kc">None</span>
-</span><span id="to_hex-34"><a href="#to_hex-34"><span class="linenos">34</span></a>
-</span><span id="to_hex-35"><a href="#to_hex-35"><span class="linenos">35</span></a>    <span class="n">hex_color</span> <span class="o">=</span> <span class="s2">&quot;#</span><span class="si">{:02x}{:02x}{:02x}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">rgb</span><span class="p">)</span>
-</span><span id="to_hex-36"><a href="#to_hex-36"><span class="linenos">36</span></a>    <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="to_hex-37"><a href="#to_hex-37"><span class="linenos">37</span></a>        <span class="n">hex_color</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{:02x}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
-</span><span id="to_hex-38"><a href="#to_hex-38"><span class="linenos">38</span></a>    <span class="k">return</span> <span class="n">hex_color</span>
+    <a class="headerlink" href="#status"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="status-4"><a href="#status-4"><span class="linenos">4</span></a><span class="k">class</span><span class="w"> </span><span class="nc">status</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+</span><span id="status-5"><a href="#status-5"><span class="linenos">5</span></a>    <span class="n">OFFLINE</span> <span class="o">=</span> <span class="s2">&quot;offline&quot;</span>
+</span><span id="status-6"><a href="#status-6"><span class="linenos">6</span></a>    <span class="n">IDLE</span> <span class="o">=</span> <span class="s2">&quot;idle&quot;</span>
+</span><span id="status-7"><a href="#status-7"><span class="linenos">7</span></a>    <span class="n">BUSY</span> <span class="o">=</span> <span class="s2">&quot;busy&quot;</span>
+</span><span id="status-8"><a href="#status-8"><span class="linenos">8</span></a>    <span class="n">ONLINE</span> <span class="o">=</span> <span class="s2">&quot;online&quot;</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Convert a color to hex.</p>
+            <div class="docstring"><p>An enumeration.</p>
 </div>
 
 
+                            <div id="status.OFFLINE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">OFFLINE</span>        =
+<span class="default_value">&lt;<a href="#status.OFFLINE">status.OFFLINE</a>: &#39;offline&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#status.OFFLINE"></a>
+    
+    
+
+                            </div>
+                            <div id="status.IDLE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDLE</span>        =
+<span class="default_value">&lt;<a href="#status.IDLE">status.IDLE</a>: &#39;idle&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#status.IDLE"></a>
+    
+    
+
+                            </div>
+                            <div id="status.BUSY" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BUSY</span>        =
+<span class="default_value">&lt;<a href="#status.BUSY">status.BUSY</a>: &#39;busy&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#status.BUSY"></a>
+    
+    
+
+                            </div>
+                            <div id="status.ONLINE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">ONLINE</span>        =
+<span class="default_value">&lt;<a href="#status.ONLINE">status.ONLINE</a>: &#39;online&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#status.ONLINE"></a>
+    
+    
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt>enum.Enum</dt>
+                                <dd id="status.name" class="variable">name</dd>
+                <dd id="status.value" class="variable">value</dd>
+
+            </div>
+                                </dl>
+                            </div>
                 </section>
     </main>
 <script>
@@ -314,7 +305,7 @@ into hex format.</p>
                 script.async = true;
                 script.onload = () => resolve(window.pdocSearch);
                 script.onerror = (e) => reject(e);
-                script.src = "../../search.js";
+                script.src = "../search.js";
                 document.getElementsByTagName("head")[0].appendChild(script);
             });
         } catch (e) {
@@ -356,7 +347,7 @@ into hex format.</p>
             }
             for (let result of results.slice(0, 10)) {
                 let doc = result.doc;
-                let url = `../../${doc.modulename.replaceAll(".", "/")}.html`;
+                let url = `../${doc.modulename.replaceAll(".", "/")}.html`;
                 if (doc.qualname) {
                     url += `#${doc.qualname}`;
                 }
