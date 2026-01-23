@@ -80,8 +80,8 @@ $stmt->close();
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="page" value="/developer/portal"></wchat-data>
     </div>
-    <script src="../assets/js/developer/portal.js"></script>
-    <script src="../assets/js/load_scripts.js"></script>
+    <script src="/assets/js/developer/portal.js"></script>
+    <script src="/assets/js/load_scripts.js"></script>
     <script type="module" data-swup-ignore-script>
         import Swup from "https://unpkg.com/swup@4?module";
         import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";

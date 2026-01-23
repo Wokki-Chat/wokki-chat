@@ -90,49 +90,48 @@ function initBots() {
 
 		const createBotForm = document.getElementById("create-bot-form");
 		createBotForm.addEventListener("submit", (event) => {
-		event.preventDefault();
+			event.preventDefault();
 
-		const bot_name = document.getElementById("bot-name").value;
-		const botIconFile = botIconInput.files[0];
+			const bot_name = document.getElementById("bot-name").value;
+			const botIconFile = botIconInput.files[0];
 
-		const formData = new FormData();
-		formData.append("bot_name", bot_name);
-		if (botIconFile) {
-			formData.append("profile_picture", botIconFile);
-		}
+			const formData = new FormData();
+			formData.append("bot_name", bot_name);
+			if (botIconFile) {
+				formData.append("profile_picture", botIconFile);
+			}
 
-		fetch("https://chat.wokki20.nl/app/create_bot.php", {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${access_token}`,
-			},
-			body: formData,
-		})
-		.then((response) => response.json())
-		.then((data) => {
-			const bot_id = data.bot_id;
-
-			window.location.href = `https://chat.wokki20.nl/developer/bot/${bot_id}`;
-		})
-		.catch((error) => {
-			Toastify({
-				text: "Failed to create bot.",
-				duration: 5000,
-				gravity: "bottom",
-				position: "right",
-				close: true,
-				stopOnFocus: true,
-				style: {
-				background: "var(--clr-popup-a20)",
-				borderRadius: "12px",
-				boxShadow: "none",
+			fetch("https://chat.wokki20.nl/app/create_bot.php", {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${access_token}`,
 				},
-			}).showToast();
-		})
-		.finally(() => {
-			modal.remove();
-		});
-			modal.remove();
+				body: formData,
+			})
+			.then((response) => response.json())
+			.then((data) => {
+				const bot_id = data.bot_id;
+
+				window.location.href = `https://chat.wokki20.nl/developer/bot/${bot_id}/information`;
+			})
+			.catch((error) => {
+				Toastify({
+					text: "Failed to create bot.",
+					duration: 5000,
+					gravity: "bottom",
+					position: "right",
+					close: true,
+					stopOnFocus: true,
+					style: {
+					background: "var(--clr-popup-a20)",
+					borderRadius: "12px",
+					boxShadow: "none",
+					},
+				}).showToast();
+			})
+			.finally(() => {
+				modal.remove();
+			});
 		});
 	}
 

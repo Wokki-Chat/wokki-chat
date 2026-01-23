@@ -105,8 +105,8 @@ $botsStmt->close();
         <wchat-data id="user-id" value="<?php echo $user_id; ?>"></wchat-data>
         <wchat-data id="page" value="/developer/bots"></wchat-data>
     </div>
-    <script src="../assets/js/developer/bots.js"></script>
-    <script src="../assets/js/load_scripts.js"></script>
+    <script src="/assets/js/developer/bots.js"></script>
+    <script src="/assets/js/load_scripts.js"></script>
     <script type="module" data-swup-ignore-script>
         import Swup from "https://unpkg.com/swup@4?module";
         import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
