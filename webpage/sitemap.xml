@@ -35,27 +35,27 @@
 <url>
   <loc>https://chat.wokki20.nl/login?redirect=/developer/portal</loc>
   <lastmod>2026-01-23T21:39:39+00:00</lastmod>
-  <priority>0.80</priority>
+  <priority>0.64</priority>
 </url>
 <url>
   <loc>https://chat.wokki20.nl/login?redirect=/developer/docs</loc>
   <lastmod>2026-01-23T21:39:39+00:00</lastmod>
-  <priority>0.80</priority>
+  <priority>0.64</priority>
 </url>
 <url>
   <loc>https://chat.wokki20.nl/login?redirect=/developer/bots-sdk</loc>
   <lastmod>2026-01-23T21:39:39+00:00</lastmod>
-  <priority>0.80</priority>
+  <priority>0.64</priority>
 </url>
 <url>
   <loc>https://chat.wokki20.nl/login?redirect=/invite/wokkichat</loc>
   <lastmod>2026-01-23T21:39:39+00:00</lastmod>
-  <priority>0.80</priority>
+  <priority>0.64</priority>
 </url>
 <url>
   <loc>https://chat.wokki20.nl/register</loc>
   <lastmod>2026-01-19T14:49:14+00:00</lastmod>
-  <priority>0.64</priority>
+  <priority>0.80</priority>
 </url>
 <url>
   <loc>https://chat.wokki20.nl/support/faqs</loc>
