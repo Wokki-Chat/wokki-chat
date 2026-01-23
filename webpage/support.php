@@ -20,21 +20,20 @@ $headerBtn = '<a href="login" class="button-primary-outline no-underline">Log In
 if ($user_id) {
     $headerBtn = '<a href="home" class="button-primary-outline no-underline">Open Wokki Chat</a>';
 }
-
 ?>
 <!DOCTYPE html>
-<html lang="en" class="night">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wokki Chat - Connect with friends, share your world & make every conversation count</title>
+    <title>Wokki Chat - Support</title>
     <link rel="stylesheet" href="assets/styles/index.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
 <body>
     <div class="hover-overlay"></div>
-    <div class="main-content">
+    <div class="main-content no-gradient">
         <div class="sticky-header">
             <a href="/"><img src="assets/images/logo-text-purple.png" alt="Wokki Chat" class="logo"></a>
             <?php echo $headerBtn; ?>
@@ -57,28 +56,34 @@ if ($user_id) {
                 </div>
             </div>
         </div>
-        <div class="center-text">
-            <div class="slogan">
-                <div class="top-line">Connect with friends,</div>
-                
-                <div class="bottom-section">
-                    <div class="ampersand">&</div>
-                    <div class="text-stack">
-                        <div>Share your world</div>
-                        <div>Make every conversation count</div>
-                    </div>
+        <div class="support-content">
+            <h1 class="page-title">Need Help with Wokki Chat?</h1>
+            <p class="page-description">We're here to help you get the most out of Wokki Chat. Browse FAQs, contact support, or check our status.</p>
+
+            <div class="support-options">
+                <div class="support-card">
+                    <h2>📄 FAQs</h2>
+                    <p>Find answers to common questions about Wokki Chat.</p>
+                    <a href="/support/faqs" class="button-primary-outline no-underline">Browse FAQs</a>
                 </div>
-            </div>
-            <div class="description">
-                <span class="description-text">Wokki Chat is the ultimate place to connect with friends, share your thoughts and moments freely,</span>
-                <span class="description-text">exciting conversations, discover new connections, and keep the people you care about just a click away.</span>
-                <span class="description-text">All of that without paying a dime.</span>
+                <div class="support-card">
+                    <h2>📧 Email Support</h2>
+                    <p>Need direct help? Our support team is ready to assist you.</p>
+                    <a href="mailto:support@chat.wokki20.nl" class="button-primary-outline no-underline">Email Us</a>
+                </div>
+                <div class="support-card">
+                    <h2>⚙️ System Status</h2>
+                    <p>Check if Wokki Chat is running smoothly right now.</p>
+                    <a href="https://status.chat.wokki20.nl" target="_blank" class="button-primary-outline no-underline">View Status</a>
+                </div>
             </div>
         </div>
     </div>
+
     <div class="start-using-today">
         <a href="login" class="button-primary-filled no-underline">Start using Wokki Chat today</a>
     </div>
+
     <footer class="footer">
         <div class="footer-container">
             <div class="footer-section">
@@ -104,6 +109,7 @@ if ($user_id) {
             </div>
         </div>
     </footer>
+
     <script src="assets/js/index.js"></script>
 </body>
 </html>
