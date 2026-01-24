@@ -220,8 +220,8 @@ function initServer() {
 
 		console.log("[handleAllMessages] done");
 	}
-	
-	async function createMessageElement({ username, display_name, message, created_at, profile_picture, id: message_id }) {
+
+	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info }) {
 		console.log("[createMessageElement] start", username, message);
 
 		if (!message) {
@@ -229,7 +229,7 @@ function initServer() {
 			return null;
 		}
 
-		const sanitizedUsername = display_name ? sanitize(display_name) : sanitize(username); // sanitize the username
+		const sanitizedUsername = sender_info.display_name ? sanitize(sender_info.display_name) : sanitize(sender_info.username); // sanitize the username
 		const sanitizedMessage = await sanitizeMsg(message, usersList, user_id, channels, server_id); // sanitize the message
 		const createdAtDate = new Date(created_at); // create a date object
 
@@ -240,10 +240,13 @@ function initServer() {
 
 		msgEl.innerHTML = `
 			<div class="message-content">
-				<img class="profile-picture" src="${profile_picture}" />
+				<img class="profile-picture" src="${sender_info.profile_picture}" />
 				<div class="message-info">
 					<div class="username-date">
 						<p class="username">${sanitizedUsername}</p>
+						${sender_info.premium == true ? '<div class="premium-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="premium-tag-tooltip">Premium</p></div>' : ''}
+						${sender_info.staff == true ? '<div class="staff-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_staff.svg"><p class="staff-tag-tooltip">Staff</p></div>' : ''}
+						${bot_message == 1 ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
 						<p class="date">${createdAtDate.toLocaleString()}</p>
 					</div>
 					<p class="message-text">${sanitizedMessage}</p>
