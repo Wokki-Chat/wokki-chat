@@ -388,7 +388,7 @@ function initServer() {
 				} else if (type === 'txt') {
 					return `<pre class="message-asset-text" id="txt-asset-${id}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
 				} else if (type === 'profile_picture') {
-					return `<img src="https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}" alt="${asset.originalName}" class="message-asset-image message-asset-profile-picture" onclick="imageViewer('https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}', '${asset.originalName}')" />`;
+					return `<img data-src="https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}" alt="${asset.originalName}" class="message-asset-image message-asset-profile-picture lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}', '${asset.originalName}')" />`;
 				} else {
 					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" download class="message-asset-file link">${sanitize(asset.savedName)}</a>`;
 				}
@@ -399,6 +399,18 @@ function initServer() {
 		assetsContainer.classList.add("message-assets");
 		assetsContainer.innerHTML = assetsHTML;
 		msgEl.querySelector(".message-info").appendChild(assetsContainer);
+
+		const lazyEls = msgEl.querySelectorAll('[data-src]');
+		lazyEls.forEach(el => {
+			if (el.tagName === 'IMG' || el.tagName === 'VIDEO') {
+				el.src = el.dataset.src;
+			} else if (el.classList.contains('custom-player')) {
+				const audio = new Audio(el.dataset.src);
+				el.audioInstance = audio;
+			}
+			el.removeAttribute('data-src');
+			el.classList.remove('lazyload');
+		});
 
 		if (assets && assets.length > 0) {
 			const txtPromises = assets.map(async (asset, index) => {
@@ -444,7 +456,7 @@ function initServer() {
 			await Promise.all(txtPromises);
 		}
 	}
-
+	
 	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by }) {
 		console.log("[createMessageElement] start", sender_info.username, message);
 
