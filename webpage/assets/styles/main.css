@@ -1117,7 +1117,7 @@ input:checked + .slider:before {
     flex-direction: column;
     gap: 10px;
     position: relative;
-    transition: background-color 0.3s ease;
+    transition: background 0.3s ease;
 }
 
 .message-static {
@@ -1820,7 +1820,7 @@ input:checked + .slider:before {
 }
 
 .highlight-parent-msg {
-  background-color: rgba(255, 255, 0, 0.3);
+  background: rgba(255, 255, 0, 0.3);
 }
 
 .settings-dropdown {
