@@ -128,7 +128,7 @@ function initServer() {
 		await handleAllMessages(messages);
 	});
 
-	const messageCache = []; // stores messages by {id, timestamp, el}
+	const messageCache = [];
 
 	async function handleAllMessages(messages) {
 		console.log("[handleAllMessages] start");
@@ -139,164 +139,133 @@ function initServer() {
 		}
 
 		for (const msg of messages) {
-			console.log("[handleAllMessages] processing message", msg);
-
-			const timestamp = msg.created_at;
-
-			const existingIndex = messageCache.findIndex(m => m.id === msg.id); // find message in cache
-			if (existingIndex !== -1) {
-				const existing = messageCache[existingIndex];
-				existing.el.remove();
-				messageCache.splice(existingIndex, 1);
-				console.warn("[handleAllMessages] existing message removed", msg.id);
-			}
-
-			const el = await createMessageElement(msg);
-			if (!el) {
-				console.warn("[handleAllMessages] createMessageElement returned null", msg);
-				continue;
-			}
-
-			let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp); // find position in cache
-			if (insertIndex === -1) insertIndex = messageCache.length;
-			
-			const prevMsg = messageCache[insertIndex - 1];
-			if (
-				prevMsg &&
-				prevMsg.userId === msg.dataset?.sentBy &&
-				(timestamp - prevMsg.timestamp) <= 10 * 60 * 1000 &&
-				(!msg.parent_message_info || Object.keys(msg.parent_message_info).length === 0)
-			) {
-				el.classList.add("compact");
-			}
-
-			// store scroll state before inserting
-			const scrollTopBefore = messageContainer.scrollTop;
-			const scrollHeightBefore = messageContainer.scrollHeight;
-			const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
-
-			messageCache.splice(insertIndex, 0, { id: msg.id, timestamp, el, userId: msg.dataset?.sentBy }); // add message to cache
-
-			// insert into DOM at the same position
-			if (insertIndex === messageContainer.children.length) {
-				messageContainer.appendChild(el);
-				if (insertIndex > 0) {
-					const prevTimestamp = messageCache[insertIndex - 1].timestamp;
-					console.log(`[handleAllMessages] message appended after ${prevTimestamp} (later)`, msg.id);
-				} else {
-					console.log("[handleAllMessages] message appended as first message", msg.id);
-				}
-			} else {
-				messageContainer.insertBefore(el, messageContainer.children[insertIndex]);
-				const prevTimestamp = messageCache[insertIndex - 1]?.timestamp;
-				const nextTimestamp = messageCache[insertIndex + 1]?.timestamp || "none";
-				if (prevTimestamp && timestamp > prevTimestamp) {
-					console.log(`[handleAllMessages] message inserted after ${prevTimestamp} (later) before ${nextTimestamp}`, msg.id);
-				} else if (nextTimestamp && timestamp < nextTimestamp) {
-					console.log(`[handleAllMessages] message inserted before ${nextTimestamp} (earlier)`, msg.id);
-				} else {
-					console.log(`[handleAllMessages] message inserted at position ${insertIndex}`, msg.id);
-				}
-			}
-
-			el.querySelector('.username').addEventListener('click', (e) => {
-				e.stopPropagation();
-				scrollToUser(sent_by);
-			})
-
-			function scrollToUser(user) {
-				const userInfoProfile = document.querySelector(`.info-profile[data-user-id="${user}"]`);
-				if (userInfoProfile) {
-					if (userInfoProfile.offsetParent !== null) {
-						userInfoProfile.scrollIntoView({ behavior: "smooth", block: "center" });
-						requestAnimationFrame(() => {
-							if (userInfoProfile.getBoundingClientRect().top > 0) {
-								userInfoProfile.click();
-							}
-						});
-					} else {
-						userInfoProfile.click();
-					}
-				}
-			}
-
-			hydrateInvites(el);
-			hydrateSpotifyTracks(el);
-			const mentionTags = el.querySelectorAll(`.user-link[data-user-id="${user_id}"], .user-link[data-user-id="everyone"]`);
-
-			if (mentionTags.length > 0) {
-				el.classList.add("mentioned");
-			}
-
-			const messageReplyEl = el.querySelector(".message-reply");
-			if (messageReplyEl) {
-				messageReplyEl.style.cursor = "pointer";
-				messageReplyEl.addEventListener("click", () => {
-				const targetId = messageReplyEl.getAttribute("data-message-id");
-				if (!targetId) return;
-
-				const targetMsg = messageContainer.querySelector(`.message[data-message-id="${targetId}"]`);
-				if (targetMsg) {
-					targetMsg.scrollIntoView({ behavior: "smooth", block: "center" });
-					targetMsg.classList.add("highlight-parent-msg");
-					setTimeout(() => {
-						targetMsg.classList.remove("highlight-parent-msg");
-					}, 2000);
-				}
-				});
-			}
-
-			const replyBtn = el.querySelector("#reply-btn");
-			replyBtn.addEventListener("click", () => {
-				replyMessage(msg.id);
-			});
-
-			const deleteBtn = el.querySelector("#delete-btn");
-			if (deleteBtn) {
-				deleteBtn.addEventListener("click", () => {
-
-				socket.emit("delete_message", { access_token, message_id: msg.id, server_id, channel_id });
-					deleteMsg(msg.id);
-				});
-			}
-
-			const embedContainer = el.querySelector('.message-embed');
-
-			if (embedContainer) {
-				embedContainer.addEventListener('click', (event) => {
-					const btn = event.target.closest('button[data-btn-id]');
-					if (!btn) return;
-
-					const embedDiv = btn.closest('.embed');
-					if (!embedDiv) return;
-
-					const bot_id = embedDiv.dataset.botId;
-					const btn_id = btn.dataset.btnId;
-
-					socket.emit('embed_button', {
-						bot_id,
-						button_id: btn_id,
-						access_token,
-						server_id,
-						channel_id
-					});
-				});
-			}
-
-			// adjust scrollTop to preserve visual position if not near bottom
-			if (!nearBottom) {
-				const scrollHeightAfter = messageContainer.scrollHeight;
-				messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
-			} else {
-				// scroll to bottom if near bottom
-				requestAnimationFrame(() => {
-					messageContainer.scrollTop = messageContainer.scrollHeight;
-				});
-			}
+			await handleMessage(msg);
 		}
 
 		console.log("[handleAllMessages] done");
 	}
+
+	async function handleMessage(msg) {
+		console.log("[handleMessage] processing message", msg);
+
+		const timestamp = msg.created_at;
+
+		const existingIndex = messageCache.findIndex(m => m.id === msg.id);
+		if (existingIndex !== -1) {
+			const existing = messageCache[existingIndex];
+			existing.el.remove();
+			messageCache.splice(existingIndex, 1);
+			console.warn("[handleMessage] existing message removed", msg.id);
+		}
+
+		const el = await createMessageElement(msg);
+		if (!el) {
+			console.warn("[handleMessage] createMessageElement returned null", msg);
+			return;
+		}
+
+		let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp);
+		if (insertIndex === -1) insertIndex = messageCache.length;
+
+		const scrollTopBefore = messageContainer.scrollTop;
+		const scrollHeightBefore = messageContainer.scrollHeight;
+		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
+
+		messageCache.splice(insertIndex, 0, { id: msg.id, timestamp, el });
+
+		if (insertIndex === messageContainer.children.length) {
+			messageContainer.appendChild(el);
+			const prevTimestamp = messageCache[insertIndex - 1]?.timestamp;
+			console.log(prevTimestamp 
+				? `[handleMessage] message appended after ${prevTimestamp} (later)` 
+				: "[handleMessage] message appended as first message", msg.id);
+		} else {
+			messageContainer.insertBefore(el, messageContainer.children[insertIndex]);
+			const prevTimestamp = messageCache[insertIndex - 1]?.timestamp;
+			const nextTimestamp = messageCache[insertIndex + 1]?.timestamp || "none";
+			if (prevTimestamp && timestamp > prevTimestamp) {
+				console.log(`[handleMessage] message inserted after ${prevTimestamp} (later) before ${nextTimestamp}`, msg.id);
+			} else if (nextTimestamp && timestamp < nextTimestamp) {
+				console.log(`[handleMessage] message inserted before ${nextTimestamp} (earlier)`, msg.id);
+			} else {
+				console.log(`[handleMessage] message inserted at position ${insertIndex}`, msg.id);
+			}
+		}
+
+		el.querySelector('.username').addEventListener('click', (e) => {
+			e.stopPropagation();
+			scrollToUser(msg.sent_by);
+		});
+
+		function scrollToUser(user) {
+			const userInfoProfile = document.querySelector(`.info-profile[data-user-id="${user}"]`);
+			if (userInfoProfile) {
+				if (userInfoProfile.offsetParent !== null) {
+					userInfoProfile.scrollIntoView({ behavior: "smooth", block: "center" });
+					requestAnimationFrame(() => {
+						if (userInfoProfile.getBoundingClientRect().top > 0) userInfoProfile.click();
+					});
+				} else {
+					userInfoProfile.click();
+				}
+			}
+		}
+
+		hydrateInvites(el);
+		hydrateSpotifyTracks(el);
+
+		const mentionTags = el.querySelectorAll(`.user-link[data-user-id="${user_id}"], .user-link[data-user-id="everyone"]`);
+		if (mentionTags.length > 0) el.classList.add("mentioned");
+
+		const messageReplyEl = el.querySelector(".message-reply");
+		if (messageReplyEl) {
+			messageReplyEl.style.cursor = "pointer";
+			messageReplyEl.addEventListener("click", () => {
+				const targetId = messageReplyEl.getAttribute("data-message-id");
+				if (!targetId) return;
+				const targetMsg = messageContainer.querySelector(`.message[data-message-id="${targetId}"]`);
+				if (targetMsg) {
+					targetMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+					targetMsg.classList.add("highlight-parent-msg");
+					setTimeout(() => targetMsg.classList.remove("highlight-parent-msg"), 2000);
+				}
+			});
+		}
+
+		const replyBtn = el.querySelector("#reply-btn");
+		replyBtn.addEventListener("click", () => replyMessage(msg.id));
+
+		const deleteBtn = el.querySelector("#delete-btn");
+		if (deleteBtn) {
+			deleteBtn.addEventListener("click", () => {
+				socket.emit("delete_message", { access_token, message_id: msg.id, server_id, channel_id });
+				deleteMsg(msg.id);
+			});
+		}
+
+		const embedContainer = el.querySelector('.message-embed');
+		if (embedContainer) {
+			embedContainer.addEventListener('click', (event) => {
+				const btn = event.target.closest('button[data-btn-id]');
+				if (!btn) return;
+				const embedDiv = btn.closest('.embed');
+				if (!embedDiv) return;
+				const bot_id = embedDiv.dataset.botId;
+				const btn_id = btn.dataset.btnId;
+				socket.emit('embed_button', { bot_id, button_id: btn_id, access_token, server_id, channel_id });
+			});
+		}
+
+		if (!nearBottom) {
+			const scrollHeightAfter = messageContainer.scrollHeight;
+			messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
+		} else {
+			requestAnimationFrame(() => {
+				messageContainer.scrollTop = messageContainer.scrollHeight;
+			});
+		}
+	}
+
 
 	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by }) {
 		console.log("[createMessageElement] start", sender_info.username, message);
