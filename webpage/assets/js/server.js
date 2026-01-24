@@ -172,6 +172,12 @@ function initServer() {
 				continue;
 			}
 
+			const existingEl = messageContainer.querySelector(`.message[data-message-id="${msg.id}"]`);
+			if (existingEl) {
+				existingEl.remove();
+				console.warn("[handleAllMessages] existing message removed", msg.id);
+			}
+
 			messageContainer.appendChild(el);
 			console.log("[handleAllMessages] message appended", msg.id);
 		}
@@ -184,12 +190,6 @@ function initServer() {
 
 		if (!message) {
 			console.warn("[createMessageElement] message empty", username);
-			return null;
-		}
-		
-		const existingMessage = document.querySelector(`.message[data-message-id="${message_id}"]`); // check if the message already exists
-		if (existingMessage) {
-			console.log("[createMessageElement] message already exists, skipping", message_id);
 			return null;
 		}
 
