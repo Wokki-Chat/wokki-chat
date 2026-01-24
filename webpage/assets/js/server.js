@@ -196,13 +196,15 @@ function initServer() {
 		msgEl.dataset.timestamp = created_at; // set the timestamp
 
 		msgEl.innerHTML = `
-			<img class="profile-picture" src="${profile_picture}" />
-			<div class="message-info">
-				<div class="username-date">
-					<p class="username">${sanitizedUsername}</p>
-					<p class="date">${createdAtDate.toLocaleString()}</p>
+			<div class="message-content">
+				<img class="profile-picture" src="${profile_picture}" />
+				<div class="message-info">
+					<div class="username-date">
+						<p class="username">${sanitizedUsername}</p>
+						<p class="date">${createdAtDate.toLocaleString()}</p>
+					</div>
+					<p class="message-text">${sanitizedMessage}</p>
 				</div>
-				<p class="message-text">${sanitizedMessage}</p>
 			</div>
 		`; // set the message text
 
