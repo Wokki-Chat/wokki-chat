@@ -7,6 +7,7 @@ import aiomysql
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server, verify_bot_token
 from server.helpers.logs import addMessageToLogs
 import aiohttp
+import asyncio
 
 async def verify_access_token(cur, access_token):
     await cur.execute(
@@ -150,36 +151,27 @@ async def get_bot_rooms(cur, bot_id):
     return [f"server_id:{r['server_id']}" for r in rows]
 
 async def broadcast_user_update(user_id, is_bot=False):
-    if not is_bot:
-        async with config.pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
-                user_info = await get_user_info_from_id(cur, user_id)
-                if not user_info:
-                    await addMessageToLogs(f"User not found, user id: {user_id}", "INFO")
-                    return
-                
-                user_rooms = await get_user_rooms(cur, user_id)
-
-                await addMessageToLogs(f"broadcast_user_update: user_rooms -> {user_rooms}", "INFO")
-                # for u_room in user_rooms:
-                #     await sio_instance.sio.emit('user_updated', user_info, room=u_room)
-                await sio_instance.sio.emit('user_updated', user_info)
-                
-                return
-    if is_bot:
-        async with config.pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
-                bot_info = await get_bot_info_from_id(cur, user_id)
-                if not bot_info:
+    async with config.pool.acquire() as conn:
+        async with conn.cursor(aiomysql.DictCursor) as cur:
+            if is_bot:
+                info = await get_bot_info_from_id(cur, user_id)
+                if not info:
                     await addMessageToLogs(f"Bot not found, bot id: {user_id}", "INFO")
                     return
-                
-                bot_rooms = await get_bot_rooms(cur, user_id)
-                
-                for b_room in bot_rooms:
-                    await sio_instance.sio.emit('user_updated', bot_info, room=b_room)
-                    
-                return
+                rooms = await get_bot_rooms(cur, user_id)
+            else:
+                info = await get_user_info_from_id(cur, user_id)
+                if not info:
+                    await addMessageToLogs(f"User not found, user id: {user_id}", "INFO")
+                    return
+                rooms = await get_user_rooms(cur, user_id)
+            
+            await addMessageToLogs(f"broadcast_user_update: rooms -> {rooms}", "INFO")
+            
+            await asyncio.gather(*[
+                sio_instance.sio.emit('user_updated', info, room=room)
+                for room in rooms
+            ])
 
 async def broadcast_user_widget_update(user_id, widget_name):
     async with config.pool.acquire() as conn:
