@@ -499,7 +499,7 @@ function initServer() {
 				: ''
 			}
 			${
-				command_info !== null
+				command_info
 				? `<div class="message-command">
 					<img class="identification" src="/assets/images/identifier.svg">
 					<p class="username-command">@${command_info?.username ?? ''}</p>
