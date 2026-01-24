@@ -224,7 +224,7 @@ function initServer() {
 	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed }) {
 		console.log("[createMessageElement] start", sender_info.username, message);
 
-		if (!message) {
+		if (!message && !embed) {
 			console.warn("[createMessageElement] message empty", sender_info.username);
 			return null;
 		}
