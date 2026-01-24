@@ -81,7 +81,7 @@ async def send_message(sid, metadata, data):
                     await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Bot not found', 'req_id': req_id}, to=sid)
                     return
             else:
-                await cur.execute('SELECT username, display_name, profile_picture, staff FROM users WHERE id = %s', (account_id,))
+                await cur.execute('SELECT username, nickname, profile_picture, staff FROM users WHERE id = %s', (account_id,))
                 row = await cur.fetchone()
                 if not row:
                     await addMessageToLogs(f"User not found for send_message for user id: {account_id}", "INFO")
@@ -89,7 +89,7 @@ async def send_message(sid, metadata, data):
                     return
 
             username = is_bot and row.get('name') or row.get('username')
-            display_name = is_bot and row.get('name') or row.get('display_name')
+            display_name = is_bot and row.get('name') or row.get('nickname')
             is_staff = is_bot and False or row.get('staff')
             profile_picture = row['profile_picture']
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
@@ -167,7 +167,6 @@ async def send_message(sid, metadata, data):
         'server_id': server_id,
         'channel_id': channel_id,
         'sent_by': (not is_bot) and account_id or None,
-        'parent_message_id': parent_message_id,
         'assets': json.loads(assets_json) if assets_json else [],
         'command': command,
         'command_user_id': user_id,
@@ -280,29 +279,21 @@ async def get_messages(sid, metadata, data):
                 total_count = (await cur.fetchone())['total']
 
                 messages_query = f"""
-                    SELECT *
-                    FROM (
-                        SELECT 
-                            m.id, m.message, m.sent_by, u.username, m.created_at, m.updated_at, u.nickname AS display_name,
+                    SELECT * FROM (
+                        SELECT m.id, m.message, m.sent_by, u.username, m.created_at, m.updated_at, u.nickname AS display_name,
                             m.edited, m.server_id, m.channel_id, m.parent_message_id, m.assets,
                             u.profile_picture, NULL AS command, NULL AS command_user_id, NULL as embed, u.is_staff AS staff,
-                            FALSE AS bot_message,
-                            
-                            pm.id AS parent_id, pm.message AS parent_message, pu.username AS parent_username, pm.sent_by AS parent_user_id
+                            FALSE AS bot_message
                         FROM messages m
                         JOIN users u ON m.sent_by = u.id
-                        LEFT JOIN messages pm ON m.parent_message_id = pm.id
-                        LEFT JOIN users pu ON pm.sent_by = pu.id
                         WHERE m.server_id = %s AND m.channel_id = %s {joined_at_filter_msg}
 
                         UNION ALL
 
-                        SELECT 
-                            bm.id, bm.message, bm.bot_id AS sent_by, b.name AS username, bm.created_at, bm.updated_at, NULL AS display_name,
+                        SELECT bm.id, bm.message, bm.bot_id AS sent_by, b.name AS username, bm.created_at, bm.updated_at, null AS display_name,
                             bm.edited, bm.server_id, bm.channel_id, NULL AS parent_message_id, NULL AS assets,
                             b.profile_picture, bm.command, bm.command_user_id, bm.embed, FALSE AS staff,
-                            
-                            NULL AS parent_id, NULL AS parent_message, NULL AS parent_username, NULL AS parent_user_id
+                            TRUE AS bot_message
                         FROM bot_messages bm
                         LEFT JOIN bots b ON bm.bot_id = b.id
                         WHERE bm.server_id = %s AND bm.channel_id = %s {joined_at_filter_bot}
@@ -347,16 +338,26 @@ async def get_messages(sid, metadata, data):
                         'premium': premium
                     }
 
-                    if msg.get('parent_id') and msg.get('parent_message'):
-                        parent_msg = msg.pop('parent_message')
-                        msg['parent_message_info'] = {
-                            'user_id': msg.pop('parent_user_id'),
-                            'message_id': msg.pop('parent_id'),
-                            'message_preview': (parent_msg[:100] + '...') if len(parent_msg) > 100 else parent_msg,
-                            'username': msg.pop('parent_username')
-                        }
-                    else:
-                        msg['parent_message_info'] = None
+                    parent_id = msg.pop('parent_message_id', None)
+                    parent_info = None
+                    if parent_id:
+                        await cur.execute("""
+                            SELECT m.id, m.message, m.sent_by, u.username
+                            FROM messages m
+                            JOIN users u ON m.sent_by = u.id
+                            WHERE m.id = %s
+                            LIMIT 1
+                        """, (parent_id,))
+                        parent_msg = await cur.fetchone()
+                        if parent_msg:
+                            parent_info = {
+                                'user_id': parent_msg['sent_by'],
+                                'message_id': parent_msg['id'],
+                                'message_preview': (parent_msg['message'][:100] + '...') if len(parent_msg['message']) > 100 else parent_msg['message'],
+                                'username': parent_msg['username']
+                            }
+
+                    msg['parent_message_info'] = parent_info
 
         await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
         await addMessageToLogs(f"Emitted all_messages to {user_id}, Sent {len(messages)} messages to {user_id}", "INFO")
