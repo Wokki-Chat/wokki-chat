@@ -189,6 +189,90 @@ function initServer() {
 				}
 			}
 
+			el.querySelector('.username').addEventListener('click', (e) => {
+				e.stopPropagation();
+				scrollToUser(sent_by);
+			})
+
+			function scrollToUser(user) {
+				const userInfoProfile = document.querySelector(`.info-profile[data-user-id="${user}"]`);
+				if (userInfoProfile) {
+					if (userInfoProfile.offsetParent !== null) {
+						userInfoProfile.scrollIntoView({ behavior: "smooth", block: "center" });
+						requestAnimationFrame(() => {
+							if (userInfoProfile.getBoundingClientRect().top > 0) {
+								userInfoProfile.click();
+							}
+						});
+					} else {
+						userInfoProfile.click();
+					}
+				}
+			}
+
+			hydrateInvites(el);
+			hydrateSpotifyTracks(el);
+			const mentionTags = el.querySelectorAll(`.user-link[data-user-id="${user_id}"], .user-link[data-user-id="everyone"]`);
+
+			if (mentionTags.length > 0) {
+				el.classList.add("mentioned");
+			}
+
+			const messageReplyEl = el.querySelector(".message-reply");
+			if (messageReplyEl) {
+				messageReplyEl.style.cursor = "pointer";
+				messageReplyEl.addEventListener("click", () => {
+				const targetId = messageReplyEl.getAttribute("data-message-id");
+				if (!targetId) return;
+
+				const targetMsg = messageContainer.querySelector(`.message[data-message-id="${targetId}"]`);
+				if (targetMsg) {
+					targetMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+					targetMsg.classList.add("highlight-parent-msg");
+					setTimeout(() => {
+						targetMsg.classList.remove("highlight-parent-msg");
+					}, 2000);
+				}
+				});
+			}
+
+			const replyBtn = el.querySelector("#reply-btn");
+			replyBtn.addEventListener("click", () => {
+				replyMessage(msg.id);
+			});
+
+			const deleteBtn = el.querySelector("#delete-btn");
+			if (deleteBtn) {
+				deleteBtn.addEventListener("click", () => {
+
+				socket.emit("delete_message", { access_token, message_id: msg.id, server_id, channel_id });
+					deleteMsg(msg.id);
+				});
+			}
+
+			const embedContainer = el.querySelector('.message-embed');
+
+			if (embedContainer) {
+				embedContainer.addEventListener('click', (event) => {
+					const btn = event.target.closest('button[data-btn-id]');
+					if (!btn) return;
+
+					const embedDiv = btn.closest('.embed');
+					if (!embedDiv) return;
+
+					const bot_id = embedDiv.dataset.botId;
+					const btn_id = btn.dataset.btnId;
+
+					socket.emit('embed_button', {
+						bot_id,
+						button_id: btn_id,
+						access_token,
+						server_id,
+						channel_id
+					});
+				});
+			}
+
 			// adjust scrollTop to preserve visual position if not near bottom
 			if (!nearBottom) {
 				const scrollHeightAfter = messageContainer.scrollHeight;
@@ -274,92 +358,6 @@ function initServer() {
 			</div>
 		`; // set the message text
 
-		msgEl.querySelector('.username').addEventListener('click', (e) => {
-			e.stopPropagation();
-			scrollToUser(sent_by);
-		})
-
-		function scrollToUser(user) {
-			const userInfoProfile = document.querySelector(`.info-profile[data-user-id="${user}"]`);
-			if (userInfoProfile) {
-				if (userInfoProfile.offsetParent !== null) {
-					userInfoProfile.scrollIntoView({ behavior: "smooth", block: "center" });
-					requestAnimationFrame(() => {
-						if (userInfoProfile.getBoundingClientRect().top > 0) {
-							userInfoProfile.click();
-						}
-					});
-				} else {
-					userInfoProfile.click();
-				}
-			}
-		}
-
-		hydrateInvites(msgEl);
-		hydrateSpotifyTracks(msgEl);
-
-		const msgWrapper = msgEl;
-		const mentionTags = msgEl.querySelectorAll(`.user-link[data-user-id="${user_id}"], .user-link[data-user-id="everyone"]`);
-
-		if (mentionTags.length > 0) {
-			msgWrapper.classList.add("mentioned");
-		}
-
-		const messageReplyEl = msgEl.querySelector(".message-reply");
-		if (messageReplyEl) {
-			messageReplyEl.style.cursor = "pointer";
-			messageReplyEl.addEventListener("click", () => {
-			const targetId = messageReplyEl.getAttribute("data-message-id");
-			if (!targetId) return;
-
-			const targetMsg = messageContainer.querySelector(`.message[data-message-id="${targetId}"]`);
-			if (targetMsg) {
-				targetMsg.scrollIntoView({ behavior: "smooth", block: "center" });
-				targetMsg.classList.add("highlight-parent-msg");
-				setTimeout(() => {
-					targetMsg.classList.remove("highlight-parent-msg");
-				}, 2000);
-			}
-			});
-		}
-
-		const replyBtn = msgEl.querySelector("#reply-btn");
-		replyBtn.addEventListener("click", () => {
-			replyMessage(id);
-		});
-
-		const deleteBtn = msgEl.querySelector("#delete-btn");
-		if (deleteBtn) {
-			deleteBtn.addEventListener("click", () => {
-
-			socket.emit("delete_message", { access_token, message_id: id, server_id, channel_id });
-				deleteMsg(id);
-			});
-		}
-
-		const embedContainer = msgEl.querySelector('.message-embed');
-
-		if (embedContainer) {
-			embedContainer.addEventListener('click', (event) => {
-				const btn = event.target.closest('button[data-btn-id]');
-				if (!btn) return;
-
-				const embedDiv = btn.closest('.embed');
-				if (!embedDiv) return;
-
-				const bot_id = embedDiv.dataset.botId;
-				const btn_id = btn.dataset.btnId;
-
-				socket.emit('embed_button', {
-					bot_id,
-					button_id: btn_id,
-					access_token,
-					server_id,
-					channel_id
-				});
-			});
-		}
-		
 		console.log("[createMessageElement] created element", sanitizedUsername);
 
 		return msgEl; // return the message element
