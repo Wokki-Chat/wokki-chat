@@ -253,7 +253,7 @@ function initServer() {
 
 		msgEl.innerHTML = `
 			${
-				parent_message_info
+				parent_message_info !== null
 				? `<div class="message-reply" data-message-id="${parent_message_info.message_id}">
 					<img class="identification" src="/assets/images/identifier.svg">
 					<p class="username-reply">@${sanitize(parent_message_info.username)}</p>
