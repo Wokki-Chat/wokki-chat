@@ -1656,7 +1656,6 @@ function initServer() {
 		usersList = users;
 
 		await Promise.all(users.map(user => renderUser(user)));
-		onUsersListLoaded();
 	});
 
 	socket.on("user_updated", async (user) => {
