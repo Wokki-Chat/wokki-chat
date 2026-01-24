@@ -53,7 +53,7 @@ if ($user_id) {
                 <div class=header-option-dropdown>
                     <a href="https://chat.wokki20.nl/developer" class="link">Developer Portal</a>
                     <a href="https://chat.wokki20.nl/developer/docs" class="link">Developer Documentation</a>
-                    <a href="https://chat.wokki20.nl/developer/bots-sdk" class="link">Wokki Chat Bots SDK</a>
+                    <a href="https://chat.wokki20.nl/developer/docs#sdk" class="link">Wokki Chat Bots SDK</a>
                 </div>
             </div>
         </div>
