@@ -92,9 +92,13 @@ async def send_message(sid, metadata, data):
             is_staff = is_bot and False or row.get('is_staff')
             profile_picture = row['profile_picture']
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-            command_data = await get_command_id(command_id)
-            command_user_id = command_data.get('user_id')
-            command = command_data.get('command')
+            command_data = None
+            if command_id is not None:
+                command_data = await get_command_id(command_id)
+
+            command_user_id = command_data.get('user_id') if command_data else None
+            command = command_data.get('command') if command_data else None
+
             
             if command_user_id:
                 await cur.execute('SELECT username FROM users WHERE id = %s', (command_user_id,))
@@ -201,7 +205,7 @@ async def send_message(sid, metadata, data):
             'username': parent_username
         }
     
-    if command:
+    if command_data and command:
         message_response['command_info'] = {
             'command': command,
             'username': command_username
