@@ -221,7 +221,7 @@ function initServer() {
 		console.log("[handleAllMessages] done");
 	}
 
-	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info }) {
+	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed }) {
 		console.log("[createMessageElement] start", sender_info.username, message);
 
 		if (!message) {
@@ -232,6 +232,19 @@ function initServer() {
 		const sanitizedUsername = sender_info.display_name ? sanitize(sender_info.display_name) : sanitize(sender_info.username); // sanitize the username
 		const sanitizedMessage = await sanitizeMsg(message, usersList, user_id, channels, server_id); // sanitize the message
 		const createdAtDate = new Date(created_at); // create a date object
+
+		let embedsRaw = null; // create a variable to store the embed
+		try {
+			embedsRaw = typeof embed === 'string' ? JSON.parse(embed) : embed; // parse the embed
+		} catch {
+			embedsRaw = null; // if the embed is invalid, set it to null
+		}
+
+		const embeds = Array.isArray(embedsRaw) // check if the embed is an array
+			? embedsRaw
+			: embedsRaw
+				? [embedsRaw]
+				: null;
 
 		const msgEl = document.createElement("div"); // Create a new message element
 		msgEl.classList.add("message"); // add the message class
@@ -250,6 +263,7 @@ function initServer() {
 						<p class="date">${createdAtDate.toLocaleString()}</p>
 					</div>
 					<p class="message-text">${sanitizedMessage}</p>
+					${embeds ? `<div class="message-embed">${await Embeds({ embeds })}</div>` : ''}
 				</div>
 			</div>
 		`; // set the message text
@@ -259,6 +273,49 @@ function initServer() {
 		return msgEl; // return the message element
 	}
 
+	async function Embed({ embed }) {
+		if (!embed) return '';
+
+		const bot_id = embed.bot_id || '';
+
+		return `
+			<div class="embed" data-bot-id="${bot_id}" style="border-left: 4px solid ${embed.color || 'var(--clr-primary-a0)'};">
+			${embed.title ? `<h3 class="embed-title">${sanitize(embed.title)}</h3>` : ''}
+			${embed.description ? `<p class="embed-description">${await sanitizeMsg(embed.description, usersList, user_id, channels, server_id)}</p>` : ''}
+			
+			${embed.fields && embed.fields.length > 0 ? `
+				<div class="embed-fields">
+				${embed.fields.map(field => `
+					<div class="embed-field"><strong>${sanitize(field.name)}</strong>${sanitize(field.value)}</div>
+				`).join('')}
+				</div>
+			` : ''}
+			
+			${embed.components && embed.components.length > 0 ? `
+				<div class="embed-components">
+				${embed.components.map(row => `
+					<div class="embed-button-row">
+					${row.map(btn => {
+						const customStyle = `background-color: ${btn.color || 'var(--clr-primary-a0)'}; color: ${btn.text_color || 'var(--clr-text-a0)'}; user-select: none;`;
+						return btn.type === 'link'
+						? `<a href="${btn.url}" target="_blank" rel="noopener noreferrer" class="button-primary-filled ${btn.disabled ? 'disabled' : ''}"  style="${customStyle}">${sanitize(btn.label)}</a>`
+						: `<button class="button-primary-filled ${btn.disabled ? 'disabled' : ''}" style="${customStyle}" ${btn.disabled ? 'disabled="true"' : ''} data-btn-id="${btn.id}">${sanitize(btn.label)}</button>`;
+					}).join('')}
+					</div>
+				`).join('')}
+				</div>
+			` : ''}
+			
+			${embed.footer ? `<h5 class="embed-footer">${sanitize(embed.footer)}</h5>` : ''}
+			</div>
+		`;
+	}
+
+	async function Embeds({ embeds }) {
+		if (!embeds?.length) return '';
+		const embedHtml = await Promise.all(embeds.map(e => Embed({ embed: e })));
+		return `<div class="embeds-container">${embedHtml.join('')}</div>`;
+	}
 
 	socket.on("server_commands_response", async (data) => {
 		if (data.success) {
@@ -874,20 +931,6 @@ function initServer() {
 		const parent_message_user_2 = parentData?.parent_message_user ? sanitize(parentData.parent_message_user) : null;
 
 		const username_command = command_user_id ? sanitize(usersList.find(user => user.id === String(command_user_id))?.username ?? '') : null;
-
-		let embedsRaw = null;
-		try {
-			embedsRaw = typeof embed === 'string' ? JSON.parse(embed) : embed;
-		} catch {
-			embedsRaw = null;
-		}
-
-		const embeds = Array.isArray(embedsRaw)
-			? embedsRaw
-			: embedsRaw
-				? [embedsRaw]
-				: null;
-
 		const msgEl = document.createElement("div");
 		msgEl.classList.add('message');
 		msgEl.setAttribute('data-message-id', id);
@@ -1163,50 +1206,6 @@ function initServer() {
 			hljs.highlightAll();
 		}, 0);
 		return msgEl;
-	}
-
-	async function Embed({ embed }) {
-		if (!embed) return '';
-
-		const bot_id = embed.bot_id || '';
-
-		return `
-			<div class="embed" data-bot-id="${bot_id}" style="border-left: 4px solid ${embed.color || 'var(--clr-primary-a0)'};">
-			${embed.title ? `<h3 class="embed-title">${sanitize(embed.title)}</h3>` : ''}
-			${embed.description ? `<p class="embed-description">${await sanitizeMsg(embed.description, usersList, user_id, channels, server_id)}</p>` : ''}
-			
-			${embed.fields && embed.fields.length > 0 ? `
-				<div class="embed-fields">
-				${embed.fields.map(field => `
-					<div class="embed-field"><strong>${sanitize(field.name)}</strong>${sanitize(field.value)}</div>
-				`).join('')}
-				</div>
-			` : ''}
-			
-			${embed.components && embed.components.length > 0 ? `
-				<div class="embed-components">
-				${embed.components.map(row => `
-					<div class="embed-button-row">
-					${row.map(btn => {
-						const customStyle = `background-color: ${btn.color || 'var(--clr-primary-a0)'}; color: ${btn.text_color || 'var(--clr-text-a0)'}; user-select: none;`;
-						return btn.type === 'link'
-						? `<a href="${btn.url}" target="_blank" rel="noopener noreferrer" class="button-primary-filled ${btn.disabled ? 'disabled' : ''}"  style="${customStyle}">${sanitize(btn.label)}</a>`
-						: `<button class="button-primary-filled ${btn.disabled ? 'disabled' : ''}" style="${customStyle}" ${btn.disabled ? 'disabled="true"' : ''} data-btn-id="${btn.id}">${sanitize(btn.label)}</button>`;
-					}).join('')}
-					</div>
-				`).join('')}
-				</div>
-			` : ''}
-			
-			${embed.footer ? `<h5 class="embed-footer">${sanitize(embed.footer)}</h5>` : ''}
-			</div>
-		`;
-	}
-
-	async function Embeds({ embeds }) {
-		if (!embeds?.length) return '';
-		const embedHtml = await Promise.all(embeds.map(e => Embed({ embed: e })));
-		return `<div class="embeds-container">${embedHtml.join('')}</div>`;
 	}
 
 	async function getAssetFileInsides(file) {
