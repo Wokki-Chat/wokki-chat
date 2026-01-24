@@ -51,7 +51,7 @@ $stmt->close();
 <body>
     <div class="header">
         <div class="logo">
-            <img src="../assets/images/logo-purple.png" alt="Wokki Chat Logo">
+            <img src="/assets/images/logo-purple.png" alt="Wokki Chat Logo">
             <p>For Developers</p>
         </div>
         <div class="top-bar-profile" id="top-bar-profile">
@@ -78,7 +78,7 @@ $stmt->close();
         <p class="content-description">Ready to get started with Wokki Chat? You can find the docs here.</p>
         <div class="sdk-container">
             <div class="sdk-card">
-                <img src="../assets/icons/svg/python.svg" alt="Python Icon">
+                <img src="/assets/icons/svg/python.svg" alt="Python Icon">
                 <div class="card-title-buttons">
                     <p class="card-title">Python Bot SDK - Docs</p>
                     <div class="card-buttons">
