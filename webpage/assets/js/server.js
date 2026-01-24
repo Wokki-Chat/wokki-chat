@@ -159,13 +159,23 @@ function initServer() {
 
 			let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp); // find position in cache
 			if (insertIndex === -1) insertIndex = messageCache.length;
+			
+			const prevMsg = messageCache[insertIndex - 1];
+			if (
+				prevMsg &&
+				prevMsg.userId === msg.dataset?.sentBy &&
+				(timestamp - prevMsg.timestamp) <= 10 * 60 * 1000 &&
+				(!msg.parent_message_info || Object.keys(msg.parent_message_info).length === 0)
+			) {
+				el.classList.add("compact");
+			}
 
 			// store scroll state before inserting
 			const scrollTopBefore = messageContainer.scrollTop;
 			const scrollHeightBefore = messageContainer.scrollHeight;
 			const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
 
-			messageCache.splice(insertIndex, 0, { id: msg.id, timestamp, el }); // add message to cache
+			messageCache.splice(insertIndex, 0, { id: msg.id, timestamp, el, userId: msg.dataset?.sentBy }); // add message to cache
 
 			// insert into DOM at the same position
 			if (insertIndex === messageContainer.children.length) {
@@ -317,6 +327,7 @@ function initServer() {
 		msgEl.classList.add("message"); // add the message class
 		msgEl.dataset.timestamp = created_at; // set the timestamp
 		msgEl.dataset.messageId = message_id; // set the message id
+		msgEl.dataset.sentBy = sent_by;
 
 		msgEl.innerHTML = `
 			${
