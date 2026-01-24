@@ -92,7 +92,7 @@ async def send_message(sid, metadata, data):
             is_staff = is_bot and False or row.get('is_staff')
             profile_picture = row['profile_picture']
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-            command_data = get_command_id(command_id)
+            command_data = await get_command_id(command_id)
             command_user_id = command_data.get('user_id')
             command = command_data.get('command')
             
@@ -170,7 +170,7 @@ async def send_message(sid, metadata, data):
                 
     if isinstance(timestamp, str):
         timestamp = datetime.fromisoformat(timestamp)
-        
+ 
     message_response = {
         'id': message_id,
         'bot_message': 1 if is_bot else 0,
