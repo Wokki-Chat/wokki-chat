@@ -164,13 +164,16 @@ function initServer() {
 			console.warn("[handleMessage] createMessageElement returned null", msg);
 			return;
 		}
-		
+
 		let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp);
 		if (insertIndex === -1) insertIndex = messageCache.length;
 
 		const prevMessage = insertIndex > 0 ? messageCache[insertIndex - 1] : null;
 		if (prevMessage && sent_by === prevMessage.sent_by && timestamp - prevMessage.timestamp < 10 * 60 * 1000) {
+			console.log(`[handleMessage] message from same user and close in time, adding compact class`, msg.id);
 			el.classList.add('compact');
+		} else {
+			console.log(`[handleMessage] message from different user or far in time, not adding compact class`, msg.id);
 		}
 
 		const scrollTopBefore = messageContainer.scrollTop;
