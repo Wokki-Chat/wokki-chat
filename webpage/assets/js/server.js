@@ -131,23 +131,17 @@ function initServer() {
 	const messageCache = [];
 
 	async function handleAllMessages(messages) {
-		console.log("[handleAllMessages] start");
 
 		if (!Array.isArray(messages)) {
-			console.warn("[handleAllMessages] messages is not an array", messages);
 			return;
 		}
 
 		for (const msg of messages) {
 			await handleMessage(msg);
 		}
-
-		console.log("[handleAllMessages] done");
 	}
 
 	async function handleMessage(msg) {
-		console.log("[handleMessage] processing message", msg);
-
 		const timestamp = msg.created_at;
 		const sent_by = msg.sent_by;
 
@@ -156,12 +150,10 @@ function initServer() {
 			const existing = messageCache[existingIndex];
 			existing.el.remove();
 			messageCache.splice(existingIndex, 1);
-			console.warn("[handleMessage] existing message removed", msg.id);
 		}
 
 		const el = await createMessageElement(msg);
 		if (!el) {
-			console.warn("[handleMessage] createMessageElement returned null", msg);
 			return;
 		}
 
@@ -185,21 +177,8 @@ function initServer() {
 
 		if (insertIndex === messageContainer.children.length) {
 			messageContainer.appendChild(el);
-			const prevTimestamp = messageCache[insertIndex - 1]?.timestamp;
-			console.log(prevTimestamp 
-				? `[handleMessage] message appended after ${prevTimestamp} (later)` 
-				: "[handleMessage] message appended as first message", msg.id);
 		} else {
 			messageContainer.insertBefore(el, messageContainer.children[insertIndex]);
-			const prevTimestamp = messageCache[insertIndex - 1]?.timestamp;
-			const nextTimestamp = messageCache[insertIndex + 1]?.timestamp || "none";
-			if (prevTimestamp && timestamp > prevTimestamp) {
-				console.log(`[handleMessage] message inserted after ${prevTimestamp} (later) before ${nextTimestamp}`, msg.id);
-			} else if (nextTimestamp && timestamp < nextTimestamp) {
-				console.log(`[handleMessage] message inserted before ${nextTimestamp} (earlier)`, msg.id);
-			} else {
-				console.log(`[handleMessage] message inserted at position ${insertIndex}`, msg.id);
-			}
 		}
 
 		el.querySelector('.username').addEventListener('click', (e) => {
@@ -458,34 +437,30 @@ function initServer() {
 	}
 
 	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info }) {
-		console.log("[createMessageElement] start", sender_info.username, message);
 
 		if (!message && !embed) {
-			console.warn("[createMessageElement] message empty", sender_info.username);
 			return null;
 		}
 
-		const sanitizedUsername = sender_info.display_name ? sanitize(sender_info.display_name) : sanitize(sender_info.username); // sanitize the username
-		const sanitizedMessage = await sanitizeMsg(message, usersList, user_id, channels, server_id); // sanitize the message
-		const createdAtDate = new Date(created_at); // create a date object
-
-		let embedsRaw = null; // create a variable to store the embed
+		const sanitizedUsername = sender_info.display_name ? sanitize(sender_info.display_name) : sanitize(sender_info.username);
+		const sanitizedMessage = await sanitizeMsg(message, usersList, user_id, channels, server_id);
+		const createdAtDate = new Date(created_at);
+		let embedsRaw = null;
 		try {
-			embedsRaw = typeof embed === 'string' ? JSON.parse(embed) : embed; // parse the embed
+			embedsRaw = typeof embed === 'string' ? JSON.parse(embed) : embed;
 		} catch {
-			embedsRaw = null; // if the embed is invalid, set it to null
+			embedsRaw = null;
 		}
-
-		const embeds = Array.isArray(embedsRaw) // check if the embed is an array
+		const embeds = Array.isArray(embedsRaw)
 			? embedsRaw
 			: embedsRaw
 				? [embedsRaw]
 				: null;
 
-		const msgEl = document.createElement("div"); // Create a new message element
-		msgEl.classList.add("message"); // add the message class
-		msgEl.dataset.timestamp = created_at; // set the timestamp
-		msgEl.dataset.messageId = message_id; // set the message id
+		const msgEl = document.createElement("div");
+		msgEl.classList.add("message");
+		msgEl.dataset.timestamp = created_at;
+		msgEl.dataset.messageId = message_id;
 		msgEl.dataset.sentBy = sent_by;
 
 		msgEl.innerHTML = `
@@ -499,12 +474,12 @@ function initServer() {
 				: ''
 			}
 			${
-				command_info
+				command_info && command_info !== null
 				? `<div class="message-command">
 					<img class="identification" src="/assets/images/identifier.svg">
-					<p class="username-command">@${command_info?.username ?? ''}</p>
+					<p class="username-command">@${sanitize(command_info?.username) ?? ''}</p>
 					<p>used</p>
-					<p class="used-command">${command_info?.command ?? ''}</p>
+					<p class="used-command">${sanitize(command_info?.command) ?? ''}</p>
 					</div>`
 				: ''
 			}
@@ -536,11 +511,9 @@ function initServer() {
 					: ''
 				}
 			</div>
-		`; // set the message text
+		`;
 
-		console.log("[createMessageElement] created element", sanitizedUsername);
-
-		return msgEl; // return the message element
+		return msgEl;
 	}
 
 	async function Embed({ embed }) {
@@ -951,91 +924,6 @@ function initServer() {
 
 	}
 	
-	let lastRenderedUser = null;
-	let lastRenderedTimestamp = null;
-
-	async function old_createMessageElement({ username, message, created_at, sent_by, id, channel_id: channel_id_2, parent_message_id, assets, profile_picture, bot_message, command, command_user_id, embed, display_name }, parentData) {
-		const sanitizedUsername = display_name ? sanitize(display_name) : sanitize(username);
-		const sanitizedMessage = await sanitizeMsg(message, usersList, user_id, channels, server_id);
-		const createdAtDate = new Date(created_at);
-
-		if (channel_id_2 !== channel_id) return null;
-
-		const isPremium = usersList.find(user => user.id === String(sent_by))?.premium ?? false;
-		const isStaff = usersList.find(user => user.id === String(sent_by))?.staff ?? false;
-		const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
-
-		let hideHeader = false;
-		if (
-			lastRenderedUser === sanitizedUsername &&
-			lastRenderedTimestamp &&
-			(createdAtDate - lastRenderedTimestamp) < 10 * 60 * 1000
-		) {
-			hideHeader = true;
-		}
-
-		const parent_message_text_2 = parentData?.parent_message_text ? sanitize(parentData.parent_message_text).slice(0, 100) + (parentData.parent_message_text.length > 100 ? '...' : '') : null;
-		const parent_message_user_2 = parentData?.parent_message_user ? sanitize(parentData.parent_message_user) : null;
-
-		const username_command = command_user_id ? sanitize(usersList.find(user => user.id === String(command_user_id))?.username ?? '') : null;
-		const msgEl = document.createElement("div");
-		msgEl.classList.add('message');
-		msgEl.setAttribute('data-message-id', id);
-		msgEl.setAttribute('data-sent-by', sent_by);
-		msgEl.innerHTML = `
-			${
-				parent_message_id
-				? `<div class="message-reply" data-message-id="${parent_message_id}">
-					<img class="identification" src="/assets/images/identifier.svg">
-					<p class="username-reply">@${parent_message_user_2 ?? ''}</p>
-					<p class="message-text-reply">${parent_message_text_2 ?? ''}</p>
-					</div>`
-				: ''
-			}
-			<div class="message-content">
-				<img class="profile-picture" src="${profile_picture}" style="opacity: ${hideHeader && !parent_message_id && !command ? '0' : '1'}; height: ${hideHeader && !parent_message_id && !command ? '0' : '30px'};" />
-				<div class="name-text">
-					<div class="username-date" style="display: ${hideHeader && !parent_message_id && !command ? 'none' : 'flex'};">
-					<p class="username" id="username">${sanitizedUsername}</p>
-					${isPremium ? '<div class="premium-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="premium-tag-tooltip">Premium</p></div>' : ''}
-					${isStaff ? '<div class="staff-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_staff.svg"><p class="staff-tag-tooltip">Staff</p></div>' : ''}
-					${bot_message == 1 ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
-					<p class="date" data-timestamp="${created_at}">${formatDate(created_at)}</p>
-					</div>
-				<div class="message-text">${sanitizedMessage}</div>
-				${assetsHTML ? `<div class="message-assets">${assetsHTML}</div>` : ''}
-				${embeds ? `<div class="message-embed">${await Embeds({ embeds })}</div>` : ''}
-
-				</div>
-			</div>
-			<div class="message-options">
-				<div class="message-option" id="reply-btn">
-				<span class="material-symbols-rounded">reply</span>
-				</div>
-				${
-					String(sent_by) === user_id
-					? `
-					<div class="message-option danger" id="delete-btn">
-						<span class="material-symbols-rounded">delete</span>
-					</div>
-					`
-					: ''
-				}
-			</div>
-		`;
-
-
-
-		lastRenderedUser = sanitizedUsername;
-		lastRenderedTimestamp = createdAtDate;
-
-		
-		setTimeout(() => {
-			hljs.highlightAll();
-		}, 0);
-		return msgEl;
-	}
-
 	async function getAssetFileInsides(file) {
 		return fetch(`https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(file)}`)
 			.then(response => response.blob())

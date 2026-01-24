@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import json
-from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, get_cached_users, cache_users, delete_cached_message
+from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, get_cached_users, cache_users, delete_cached_message, get_command_id
 from server.helpers.user_helpers import get_user_premium_status, auth_required
 from server.helpers.server_helpers import server_permissions, send_server_notifications, get_server_users_info
 import aiomysql
@@ -21,8 +21,7 @@ async def send_message(sid, metadata, data):
 
     embed = data.get('embed')
     req_id = data.get('req_id')
-    command = data.get('command')
-    user_id = data.get('user_id')
+    command_id = data.get('command_id')
 
     is_bot = metadata.get('is_bot', False)
     account_id = metadata.get('account_id')
@@ -93,6 +92,19 @@ async def send_message(sid, metadata, data):
             is_staff = is_bot and False or row.get('is_staff')
             profile_picture = row['profile_picture']
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            command_data = get_command_id(command_id)
+            command_user_id = command_data.get('user_id')
+            command = command_data.get('command')
+            
+            if command_user_id:
+                await cur.execute('SELECT username FROM users WHERE id = %s', (command_user_id,))
+                row = await cur.fetchone()
+                if row:
+                    command_username = row.get('username')
+                else:
+                    command_username = 'Unknown User'
+            else:
+                command_username = 'Unknown User'
 
             if is_bot:
                 embed_str = json.dumps(embed) if embed is not None else None
@@ -138,7 +150,7 @@ async def send_message(sid, metadata, data):
                     (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed, assets, parent_message_id)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ''',
-                    (message_id, message, account_id, timestamp, None, False, server_id, channel_id, command, user_id, embed_str, assets_json, parent_message_id)
+                    (message_id, message, account_id, timestamp, None, False, server_id, channel_id, command, command_user_id, embed_str, assets_json, parent_message_id)
                 )
                 await addMessageToLogs(f"Inserted bot message for bot id: {account_id}", "INFO")
             else:
@@ -168,8 +180,6 @@ async def send_message(sid, metadata, data):
         'channel_id': channel_id,
         'sent_by': account_id if not is_bot else None,
         'assets': json.loads(assets_json) if assets_json else [],
-        'command': command,
-        'command_user_id': user_id,
         'embed': embed,
         'req_id': req_id,
         'sender_info': {
@@ -179,7 +189,8 @@ async def send_message(sid, metadata, data):
             'staff': is_staff,
             'premium': is_premium
         },
-        'parent_message_info': None
+        'parent_message_info': None,
+        'command_info': None
     }
 
     if parent_message_id:
@@ -188,6 +199,12 @@ async def send_message(sid, metadata, data):
             'message_id': parent_message_id,
             'message_preview': (parent_msg[:100] + '...') if len(parent_msg) > 100 else parent_msg,
             'username': parent_username
+        }
+    
+    if command:
+        message_response['command_info'] = {
+            'command': command,
+            'username': command_username
         }
     await cache_message(server_id, channel_id, message_response)
 
@@ -361,6 +378,25 @@ async def get_messages(sid, metadata, data):
                             }
 
                     msg['parent_message_info'] = parent_info
+                    
+                    command_user_id = msg.pop('command_user_id', None)
+                    command_info = None
+                    if msg.get('command'):
+                        await cur.execute(
+                            """
+                            SELECT u.username
+                            FROM users u
+                            WHERE u.id = %s
+                            LIMIT 1
+                            """, (command_user_id,)
+                        )
+                        command_user = await cur.fetchone()
+                        command_info = {
+                            'command': msg.pop('command'),
+                            'username': command_user['username']
+                        }
+
+                    msg['command_info'] = command_info
 
         await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
         await addMessageToLogs(f"Emitted all_messages to {user_id}, Sent {len(messages)} messages to {user_id}", "INFO")

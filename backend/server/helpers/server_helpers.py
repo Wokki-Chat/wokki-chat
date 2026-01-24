@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import json
 import uuid
-from server.config import get_sids_for_user, get_bot_sid_from_id, get_cached_users, cache_users
+from server.config import get_sids_for_user, get_bot_sid_from_id, get_cached_users, cache_users, save_command_id
 import server.sio_instance as sio_instance
 from server.helpers.user_helpers import auth_required, get_user_info_from_id
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server
@@ -356,12 +356,16 @@ async def command(sid, metadata, data):
                                 return
                         
             bot_sid = await get_bot_sid_from_id(bot_id)
-
+            
+            command_id = str(uuid.uuid4())
+            await save_command_id(user_id, command_id, command)
+            await addMessageToLogs(f"Saved command_id for command, command: {command}, command_id: {command_id}", "INFO")
             if bot_sid:
                 await sio_instance.sio.emit('bot_command_received', {
                     'command': command,
                     'options': options_input,
                     'sent_by_user_id': user_id,
+                    'command_id': command_id,
                     'server_id': server_id,
                     'channel_id': channel_id
                 }, to=bot_sid)

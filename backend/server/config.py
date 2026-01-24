@@ -161,3 +161,17 @@ async def acquire_user_lock(user_id: str, sid: str, expire: int = 60):
 
 async def release_user_lock(user_id: str):
     await redis_client.delete(f"user_disconnect_lock:{user_id}")
+
+# --------------------
+# BOTS
+# --------------------
+async def save_command_id(user_id: str, command_id: str, command: str):
+    data = {"user_id": user_id, "command": command}
+    await redis_client.hset("command_id_to_user_id", command_id, json.dumps(data))
+    
+async def get_command_id(command_id: str) -> dict | None:
+    data = await redis_client.hget("command_id_to_user_id", command_id)
+    if data is None:
+        return None
+    await redis_client.hdel("command_id_to_user_id", command_id)
+    return json.loads(data)
