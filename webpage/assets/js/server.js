@@ -221,7 +221,7 @@ function initServer() {
 		console.log("[handleAllMessages] done");
 	}
 
-	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed }) {
+	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info }) {
 		console.log("[createMessageElement] start", sender_info.username, message);
 
 		if (!message && !embed) {
@@ -252,6 +252,15 @@ function initServer() {
 		msgEl.dataset.messageId = message_id; // set the message id
 
 		msgEl.innerHTML = `
+			${
+				parent_message_info
+				? `<div class="message-reply" data-message-id="${parent_message_info.message_id}">
+					<img class="identification" src="/assets/images/identifier.svg">
+					<p class="username-reply">@${sanitize(parent_message_info.username)}</p>
+					<p class="message-text-reply">${sanitize(parent_message_info.message_preview)}</p>
+					</div>`
+				: ''
+			}
 			<div class="message-content">
 				<img class="profile-picture" src="${sender_info.profile_picture}" />
 				<div class="message-info">
