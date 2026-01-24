@@ -122,7 +122,7 @@ function initServer() {
 		if (parentCache.has(pid)) return parentCache.get(pid);
 		return { parent_message_text: null, parent_message_user: null };
 	}
-	
+
 	messageContainer.addEventListener("scroll", () => {
 		if (messageContainer.scrollTop === 0) {
 			offset += limit;
@@ -184,7 +184,7 @@ function initServer() {
 				messageContainer.appendChild(el);
 				if (insertIndex > 0) {
 					const prevTimestamp = messageCache[insertIndex - 1].timestamp;
-					console.log(`[handleAllMessages] message appended after ${prevTimestamp} (later)` , msg.id);
+					console.log(`[handleAllMessages] message appended after ${prevTimestamp} (later)`, msg.id);
 				} else {
 					console.log("[handleAllMessages] message appended as first message", msg.id);
 				}
@@ -200,6 +200,11 @@ function initServer() {
 					console.log(`[handleAllMessages] message inserted at position ${insertIndex}`, msg.id);
 				}
 			}
+
+			// scroll to bottom of container
+			requestAnimationFrame(() => {
+				messageContainer.scrollTop = messageContainer.scrollHeight;
+			});
 		}
 
 		console.log("[handleAllMessages] done");
