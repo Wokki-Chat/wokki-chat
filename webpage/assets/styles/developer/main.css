@@ -478,3 +478,16 @@ body {
     width: 100%;
     margin-bottom: 10px;
 }
+
+hr {
+    color: var(--clr-popup-a20);
+}
+
+.content-subtitle {
+    color: var(--clr-text-a10);
+    font-weight: var(--font-weight-semibold);
+    margin: 0px;
+    user-select: none;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}

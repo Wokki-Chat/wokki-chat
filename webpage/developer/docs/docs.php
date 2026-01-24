@@ -77,7 +77,7 @@ $stmt->close();
         <h1 class="content-title">Wokki Chat Docs</h1>
         <p class="content-description">Ready to get started with Wokki Chat? You can find the docs here.</p>
         <hr>
-        <h2>Docs</h2>
+        <h2 class="content-subtitle">Docs</h2>
         <div class="sdk-container" id="docs">
             <div class="sdk-card">
                 <img src="/assets/icons/svg/python.svg" alt="Python Icon">
@@ -93,7 +93,7 @@ $stmt->close();
             </div>
         </div>
         <hr>
-        <h2>SDKs</h2>
+        <h2 class="content-subtitle">SDKs</h2>
         <div class="sdk-container" id="sdk">
             <div class="sdk-card">
                 <img src="/assets/icons/svg/python.svg" alt="Python Icon">
