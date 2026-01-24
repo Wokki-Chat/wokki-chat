@@ -4,7 +4,7 @@ include '../global.php';
 $access_token = $_COOKIE['access_token'];
 
 if (!$access_token) {
-    header('Location: /login?redirect=/developer/bots-sdk');
+    header('Location: /login?redirect=/developer/docs');
     exit;
 }
 
@@ -23,7 +23,7 @@ if ($result->num_rows > 0) {
 $stmt->close();
 
 if (!$user_id) {
-    header('Location: /login?redirect=/developer/bots-sdk');
+    header('Location: /login?redirect=/developer/docs');
     exit;
 }
 
@@ -43,7 +43,7 @@ $stmt->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wokki Chat Developer Portal - Bot SDKs</title>
+    <title>Wokki Chat Developer Portal - Docs</title>
     <link rel="stylesheet" href="../assets/styles/developer/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="icon" type="image/x-icon" href="../favicon.ico">
@@ -74,20 +74,16 @@ $stmt->close();
                 <span class="sidebar-item-text">Documentation</span>
             </a>
         </div>
-        <h1 class="content-title">Wokki Chat Bots SDK</h1>
-        <p class="content-description">Wokki Chat currently only provides the Wokki Chat Python Bots SDK.</p>
+        <h1 class="content-title">Wokki Chat Docs</h1>
+        <p class="content-description">Ready to get started with Wokki Chat? You can find the docs here.</p>
         <div class="sdk-container">
             <div class="sdk-card">
                 <img src="../assets/icons/svg/python.svg" alt="Python Icon">
                 <div class="card-title-buttons">
-                    <p class="card-title">Python Bots SDK</p>
+                    <p class="card-title">Python Bot SDK - Docs</p>
                     <div class="card-buttons">
-                        <a class="card-button" href="https://pypi.org/project/wokki-chat-sdk/" target="_blank">
-                            <p>View on PyPI</p>
-                            <span class="material-symbols-rounded">open_in_new</span>
-                        </a>
-                        <a class="card-button" href="https://github.com/levkris/Wokki-Chat-Bot-Library" target="_blank">
-                            <p>View on GitHub</p>
+                        <a class="card-button" href="https://chat.wokki20.nl/developer/docs/python" target="_blank">
+                            <p>Open Docs</p>
                             <span class="material-symbols-rounded">open_in_new</span>
                         </a>
                     </div>

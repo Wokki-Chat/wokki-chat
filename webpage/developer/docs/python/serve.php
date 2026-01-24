@@ -1,6 +1,6 @@
 <?php
-include '../../app/config.php';
-include '../../global.php';
+include '../../../app/config.php';
+include '../../../global.php';
 $access_token = $_COOKIE['access_token'];
 
 if (!$access_token) {
@@ -44,12 +44,12 @@ $segments = explode('/', trim($path, '/'));
 $serving_file = null;
 
 if (isset($segments[0], $segments[1]) && $segments[0] === 'developer' && $segments[1] === 'docs') {
-    if (!empty($segments[2])) {
-        $sub_path = implode('/', array_slice($segments, 2));
+    if (!empty($segments[2]) && $segments[2] === 'python') {
+        $sub_path = implode('/', array_slice($segments, 3));
         $decoded = urldecode($sub_path);
         $decoded = ltrim($decoded, '/');
 
-        $full_path = '../python-docs-raw/' . $decoded;
+        $full_path = '../../python-docs-raw/' . $decoded;
 
         if (is_file($full_path)) {
             $serving_file = $full_path;
@@ -72,7 +72,7 @@ if ($serving_file) {
     exit;
 }
 
-$file_contents = file_get_contents('../python-docs-raw/wokkichat.html');
+$file_contents = file_get_contents('../../python-docs-raw/wokkichat.html');
 header('Content-Type: text/html');
 
 $theme_parts = explode(' ', $theme);
