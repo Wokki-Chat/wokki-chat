@@ -95,7 +95,7 @@ $stmt->close();
         <p class="content-description">Wokki Chat currently only provides the Wokki Chat Python Bots SDK.</p>
         <div class="sdk-container" id="sdk">
             <div class="sdk-card">
-                <img src="../assets/icons/svg/python.svg" alt="Python Icon">
+                <img src="/assets/icons/svg/python.svg" alt="Python Icon">
                 <div class="card-title-buttons">
                     <p class="card-title">Python Bots SDK</p>
                     <div class="card-buttons">
