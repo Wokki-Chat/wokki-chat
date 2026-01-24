@@ -480,7 +480,8 @@ body {
 }
 
 hr {
-    color: var(--clr-popup-a20);
+    border: none;
+    border-top: 1px solid var(--clr-popup-a20);
 }
 
 .content-subtitle {
