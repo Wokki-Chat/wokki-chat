@@ -122,19 +122,10 @@ function initServer() {
 		if (parentCache.has(pid)) return parentCache.get(pid);
 		return { parent_message_text: null, parent_message_user: null };
 	}
-
-	let processingQueue = Promise.resolve();
-
-	function enqueueMessageUpdate(fn) {
-		processingQueue = processingQueue.then(fn).catch(console.error);
-	}
-
-	let isLoadingOlderMessages = false;
-
+	
 	messageContainer.addEventListener("scroll", () => {
-		if (messageContainer.scrollTop === 0 && !isLoadingOlderMessages) {
+		if (messageContainer.scrollTop === 0) {
 			offset += limit;
-			isLoadingOlderMessages = true;
 			socket.emit("get_messages", {
 				access_token,
 				server_id,
