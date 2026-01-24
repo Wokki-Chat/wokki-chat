@@ -1506,7 +1506,7 @@ function initServer() {
 	});
 	}
 
-	document.getElementById("new-channel").addEventListener("click", openCreateChannelModal);
+	if (document.getElementById("new-channel")) document.getElementById("new-channel").addEventListener("click", openCreateChannelModal);
 
 	function openCreateChannelModal() {
 	let modalHtml = `
