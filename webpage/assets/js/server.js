@@ -167,21 +167,7 @@ function initServer() {
 
 		let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp);
 		if (insertIndex === -1) insertIndex = messageCache.length;
-
-		const prevMessage = insertIndex > 0 ? messageCache[insertIndex - 1] : null;
-		const prevSentBy = prevMessage.sent_by;
-		const prevTimestamp = prevMessage.timestamp;
-		const timeDifference = timestamp - prevTimestamp;
-		if (prevMessage) {
-			console.log(`[handleMessage] last message was from user ${prevSentBy} at ${new Date(prevTimestamp).toLocaleString()} and time difference was ${timeDifference}ms`, msg.id);
-		}
-		if (sent_by === prevMessage?.sent_by && timeDifference < 10 * 60 * 1000) {
-			console.log(`[handleMessage] message from same user and close in time, adding compact class`, msg.id);
-			el.classList.add('compact');
-		} else {
-			console.log(`[handleMessage] message from different user or far in time, not adding compact class`, msg.id);
-		}
-
+		
 		const scrollTopBefore = messageContainer.scrollTop;
 		const scrollHeightBefore = messageContainer.scrollHeight;
 		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
