@@ -106,23 +106,6 @@ function initServer() {
 		channel_id
 	});
 
-	const pendingMessages = [];
-
-	async function processMessage(msg, parentData, container = messageContainer) {
-		const msgEl = await createMessageElement(msg, parentData);
-		if (!msgEl) return;
-		container.appendChild(msgEl);
-		await hydrateAssets(msgEl);
-	}
-
-	const parentCache = new Map();
-
-	function getParentData(pid) {
-		if (!pid) return { parent_message_text: null, parent_message_user: null };
-		if (parentCache.has(pid)) return parentCache.get(pid);
-		return { parent_message_text: null, parent_message_user: null };
-	}
-
 	messageContainer.addEventListener("scroll", () => {
 		if (messageContainer.scrollTop === 0) {
 			offset += limit;
@@ -274,6 +257,20 @@ function initServer() {
 					<p class="message-text">${sanitizedMessage}</p>
 					${embeds ? `<div class="message-embed">${await Embeds({ embeds })}</div>` : ''}
 				</div>
+			</div>
+			<div class="message-options">
+				<div class="message-option" id="reply-btn">
+				<span class="material-symbols-rounded">reply</span>
+				</div>
+				${
+					String(sent_by) === user_id
+					? `
+					<div class="message-option danger" id="delete-btn">
+						<span class="material-symbols-rounded">delete</span>
+					</div>
+					`
+					: ''
+				}
 			</div>
 		`; // set the message text
 
@@ -464,42 +461,6 @@ function initServer() {
 				pic.style.height = "30px";
 				header.style.display = "flex";
 			}
-		}
-	}
-
-	async function onUsersListLoaded() {
-		pendingMessages.sort((a, b) => new Date(a.msg.created_at) - new Date(b.msg.created_at));
-
-		const processed = new Set();
-
-		while (pendingMessages.length > 0) {
-			let anyProcessed = false;
-
-			for (let i = 0; i < pendingMessages.length; i++) {
-				const { msg } = pendingMessages[i];
-
-				const parentData = msg.parent_message_id
-					? await getParentData(msg.parent_message_id)
-					: { parent_message_text: null, parent_message_user: null };
-
-				const existingEl = messageContainer.querySelector(`.message[data-message-id="${msg.id}"]`);
-				if (existingEl) {
-					const newWrapperEl = await createMessageElement(msg, parentData);
-					if (newWrapperEl) {
-						const newMsgEl = newWrapperEl.querySelector('.message');
-						if (newMsgEl) existingEl.replaceWith(newMsgEl);
-					}
-				} else if (!msg.parent_message_id || processed.has(msg.parent_message_id)) {
-					await processMessage(msg, parentData);
-				}
-
-				processed.add(msg.id);
-				pendingMessages.splice(i, 1);
-				i--;
-				anyProcessed = true;
-			}
-
-			if (!anyProcessed) break;
 		}
 	}
 
