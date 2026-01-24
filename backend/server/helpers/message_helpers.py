@@ -249,7 +249,7 @@ async def get_messages(sid, metadata, data):
                     SELECT * FROM (
                         SELECT m.id, m.message, m.sent_by, u.username, m.created_at, m.updated_at, u.nickname AS display_name,
                             m.edited, m.server_id, m.channel_id, m.parent_message_id, m.assets,
-                            u.profile_picture, NULL AS command, NULL AS command_user_id, NULL as embed,
+                            u.profile_picture, NULL AS command, NULL AS command_user_id, NULL as embed, u.is_staff AS staff,
                             FALSE AS bot_message
                         FROM messages m
                         JOIN users u ON m.sent_by = u.id
@@ -259,7 +259,7 @@ async def get_messages(sid, metadata, data):
 
                         SELECT bm.id, bm.message, bm.bot_id AS sent_by, b.name AS username, bm.created_at, bm.updated_at, null AS display_name,
                             bm.edited, bm.server_id, bm.channel_id, NULL AS parent_message_id, NULL AS assets,
-                            b.profile_picture, bm.command, bm.command_user_id, bm.embed,
+                            b.profile_picture, bm.command, bm.command_user_id, bm.embed, FALSE AS staff,
                             TRUE AS bot_message
                         FROM bot_messages bm
                         LEFT JOIN bots b ON bm.bot_id = b.id
@@ -292,6 +292,19 @@ async def get_messages(sid, metadata, data):
                             msg['assets'] = []
                     else:
                         msg['assets'] = []
+                        
+                    
+                    premium = False
+                    if not msg['bot_message']:
+                        premium = await get_user_premium_status(cur, msg['sent_by'])
+
+                    msg['sender_info'] = {
+                        'username': msg.pop('username', None),
+                        'display_name': msg.pop('display_name', None),
+                        'profile_picture': msg.pop('profile_picture', None),
+                        'staff': msg.pop('staff', None),
+                        'premium': premium
+                    }
                     
         await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
         await addMessageToLogs(f"Emitted all_messages to {user_id}, Sent {len(messages)} messages to {user_id}", "INFO")
