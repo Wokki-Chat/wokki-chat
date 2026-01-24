@@ -166,8 +166,7 @@ async def broadcast_user_update(user_id, is_bot=False):
                     return
                 rooms = await get_user_rooms(cur, user_id)
 
-            namespace = '/'
-            existing_rooms = sio_instance.sio.manager.rooms.get(namespace, {})
+            existing_rooms = sio_instance.sio.manager.rooms.get({})
 
             active_rooms = [
                 room for room in rooms
