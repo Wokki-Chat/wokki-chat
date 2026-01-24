@@ -313,16 +313,17 @@ async def get_messages(sid, metadata, data):
                         'premium': premium
                     }
 
-                    if msg.get('parent_id'):
+                    if msg.get('parent_id') and msg.get('parent_message'):
+                        parent_msg = msg.pop('parent_message')
                         msg['parent_message_info'] = {
                             'user_id': msg.pop('parent_user_id'),
                             'message_id': msg.pop('parent_id'),
-                            'message_preview': (msg.pop('parent_message')[:100] + '...') if len(msg['parent_message']) > 100 else msg.pop('parent_message'),
+                            'message_preview': (parent_msg[:100] + '...') if len(parent_msg) > 100 else parent_msg,
                             'username': msg.pop('parent_username')
                         }
                     else:
                         msg['parent_message_info'] = None
-                    
+
         await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
         await addMessageToLogs(f"Emitted all_messages to {user_id}, Sent {len(messages)} messages to {user_id}", "INFO")
         
