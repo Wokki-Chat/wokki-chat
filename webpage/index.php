@@ -37,7 +37,7 @@ if ($user_id) {
     <div class="hover-overlay"></div>
     <div class="main-content">
         <div class="sticky-header">
-            <a href="/"><img src="assets/images/logo-text-purple.png" alt="Wokki Chat" class="logo"></a>
+            <a href="/" class="logo"></a>
             <?php echo $headerBtn; ?>
         </div>
         <div class="fixed-header">

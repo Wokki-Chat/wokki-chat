@@ -94,8 +94,31 @@ body {
 
 .logo {
     width: 256px;
+    height: 51px;
+    display: inline-block;
+    background-image: url("../../assets/images/logo-text-purple.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
+@media screen and (max-width: 1000px) {
+    .logo {
+        width: 66px;
+        height: 51px;
+        display: inline-block;
+        background-image: url("../../assets/images/logo-purple.png");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+}
+
+@media screen and (max-width: 800px) {
+    .sticky-header .button-primary-outline {
+        display: none;
+    }
+}
 .start-using-today {
     position: absolute;
     bottom: 30px;
@@ -129,6 +152,8 @@ body {
 .main-content.no-gradient {
     background: var(--clr-surface-tonal-a10);
     overflow-y: auto;
+    height: unset;
+    min-height: 100vh;
 }
 
 .footer {
@@ -210,6 +235,14 @@ body {
     justify-content: center;
     align-items: center;
     flex-direction: row;
+}
+
+@media screen and (max-width: 700px) {
+    .fixed-header {
+        left: unset;
+        right: 10px;
+        transform: unset;
+    }
 }
 
 .header-option {
@@ -307,12 +340,31 @@ body {
 }
 
 .support-content,
-.faq-content {
+.faq-content,
+.legal-content {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     height: calc(100% - 80px);
+    width: 50%;
+    margin: 0 auto;
+}
+
+@media screen and (max-width: 1150px) {
+    .support-content,
+    .faq-content,
+    .legal-content {
+        width: 70%;
+    }
+}
+
+@media screen and (max-width: 750px) {
+    .support-content,
+    .faq-content,
+    .legal-content {
+        width: 90%;
+    }
 }
 
 .faq-item {
