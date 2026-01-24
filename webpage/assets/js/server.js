@@ -154,6 +154,8 @@ function initServer() {
 		await handleAllMessages(messages);
 	});
 
+	const messageCache = []; // stores messages by {id, timestamp, el}
+
 	async function handleAllMessages(messages) {
 		console.log("[handleAllMessages] start");
 
@@ -165,21 +167,35 @@ function initServer() {
 		for (const msg of messages) {
 			console.log("[handleAllMessages] processing message", msg);
 
-			const el = await createMessageElement(msg);
+			const timestamp = Number(msg.timestamp);
 
+			const existingIndex = messageCache.findIndex(m => m.id === msg.id); // find message in cache
+			if (existingIndex !== -1) {
+				const existing = messageCache[existingIndex];
+				existing.el.remove();
+				messageCache.splice(existingIndex, 1);
+				console.warn("[handleAllMessages] existing message removed", msg.id);
+			}
+
+			const el = await createMessageElement(msg);
 			if (!el) {
 				console.warn("[handleAllMessages] createMessageElement returned null", msg);
 				continue;
 			}
 
-			const existingEl = messageContainer.querySelector(`.message[data-message-id="${msg.id}"]`);
-			if (existingEl) {
-				existingEl.remove();
-				console.warn("[handleAllMessages] existing message removed", msg.id);
-			}
+			let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp); // find position in cache
+			if (insertIndex === -1) insertIndex = messageCache.length;
 
-			messageContainer.appendChild(el);
-			console.log("[handleAllMessages] message appended", msg.id);
+			messageCache.splice(insertIndex, 0, { id: msg.id, timestamp, el }); // add message to cache
+
+			// insert into DOM at the same position
+			if (insertIndex === messageContainer.children.length) {
+				messageContainer.appendChild(el);
+				console.log("[handleAllMessages] message appended at end", msg.id);
+			} else {
+				messageContainer.insertBefore(el, messageContainer.children[insertIndex]);
+				console.log("[handleAllMessages] message inserted before", messageContainer.children[insertIndex].dataset.messageId);
+			}
 		}
 
 		console.log("[handleAllMessages] done");
