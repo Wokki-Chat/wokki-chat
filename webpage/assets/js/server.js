@@ -1455,7 +1455,7 @@ function initServer() {
 		});
 	}
 
-	document.getElementById("new-category")?.addEventListener("click", openCreateCategoryModal);
+	if (document.getElementById("new-category")) document.getElementById("new-category").addEventListener("click", openCreateCategoryModal);
 
 	function openCreateCategoryModal() {
 	let modalHtml = `
