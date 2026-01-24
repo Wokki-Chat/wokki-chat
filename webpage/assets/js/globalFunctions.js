@@ -966,7 +966,7 @@ function imageViewer(img_src, originalName) {
         </div>
     `;
 
-    document.body.innerHTML += imageViewer;
+    document.body.insertAdjacentHTML("beforeend", imageViewer);
 
     const popup = document.querySelector(".image-viewer-popup");
     const image = popup.querySelector(".image-viewer-popup-image");
@@ -1100,8 +1100,6 @@ function renderMarkdownInTextarea(text) {
       return `<span class="md-strike"><span class="md-syntax">~~</span><del>${content}</del><span class="md-syntax">~~</span></span>`;
     });
 }
-
-
 
 function getCaretCharacterOffsetWithin(element) {
   const selection = window.getSelection();
