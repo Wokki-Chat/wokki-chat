@@ -81,7 +81,7 @@ async def send_message(sid, metadata, data):
                     await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Bot not found', 'req_id': req_id}, to=sid)
                     return
             else:
-                await cur.execute('SELECT username, profile_picture FROM users WHERE id = %s', (account_id,))
+                await cur.execute('SELECT username, display_name, profile_picture, staff FROM users WHERE id = %s', (account_id,))
                 row = await cur.fetchone()
                 if not row:
                     await addMessageToLogs(f"User not found for send_message for user id: {account_id}", "INFO")
@@ -89,6 +89,8 @@ async def send_message(sid, metadata, data):
                     return
 
             username = is_bot and row.get('name') or row.get('username')
+            display_name = is_bot and row.get('name') or row.get('display_name')
+            is_staff = is_bot and False or row.get('staff')
             profile_picture = row['profile_picture']
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
@@ -107,6 +109,27 @@ async def send_message(sid, metadata, data):
                             'originalName': original_name
                         })
                 assets_json = json.dumps(assets_list) if assets_list else None
+                
+            if parent_message_id:
+                await cur.execute('SELECT sent_by, message FROM messages WHERE id = %s', (parent_message_id,))
+                parent_message = await cur.fetchone()
+                if not parent_message:
+                    await addMessageToLogs(f"Parent message not found for send_message for parent message id: {parent_message_id}", "INFO")
+                    await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Parent message not found', 'req_id': req_id}, to=sid)
+                    return
+
+                parent_user_id = parent_message.get('sent_by')
+                parent_msg = parent_message.get('message')
+                                
+                if parent_user_id:
+                    await cur.execute('SELECT username FROM users WHERE id = %s', (parent_user_id,))
+                    parent_user = await cur.fetchone()
+                    if not parent_user:
+                        await addMessageToLogs(f"Parent user not found for send_message for parent user id: {parent_user_id}", "INFO")
+                        await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Parent user not found', 'req_id': req_id}, to=sid)
+                        return
+
+                    parent_username = parent_user.get('username')
 
             if is_bot:
                 await cur.execute(
@@ -139,19 +162,30 @@ async def send_message(sid, metadata, data):
     message_response = {
         'id': message_id,
         'bot_message': is_bot and 1 or 0,
-        'username': username,
         'message': message,
         'created_at': timestamp.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z'),
         'server_id': server_id,
         'channel_id': channel_id,
         'sent_by': (not is_bot) and account_id or None,
         'parent_message_id': parent_message_id,
-        'profile_picture': profile_picture,
         'assets': json.loads(assets_json) if assets_json else [],
         'command': command,
         'command_user_id': user_id,
         'embed': embed,
-        'req_id': req_id
+        'req_id': req_id,
+        'sender_info': {
+            'username': username,
+            'display_name': display_name,
+            'profile_picture': profile_picture,
+            'staff': is_staff,
+            'premium': is_premium
+        },
+        'parent_message_info': {
+            'user_id': parent_user_id,
+            'message_id': parent_message_id,
+            'message_preview': (parent_msg[:100] + '...') if len(parent_msg) > 100 else parent_msg,
+            'username': parent_username
+        }
     }
     await cache_message(server_id, channel_id, message_response)
 
