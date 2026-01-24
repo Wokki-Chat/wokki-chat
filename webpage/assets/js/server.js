@@ -149,6 +149,7 @@ function initServer() {
 		console.log("[handleMessage] processing message", msg);
 
 		const timestamp = msg.created_at;
+		const sent_by = msg.sent_by;
 
 		const existingIndex = messageCache.findIndex(m => m.id === msg.id);
 		if (existingIndex !== -1) {
@@ -163,15 +164,20 @@ function initServer() {
 			console.warn("[handleMessage] createMessageElement returned null", msg);
 			return;
 		}
-
+		
 		let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp);
 		if (insertIndex === -1) insertIndex = messageCache.length;
+
+		const prevMessage = insertIndex > 0 ? messageCache[insertIndex - 1] : null;
+		if (prevMessage && sent_by === prevMessage.sent_by && timestamp - prevMessage.timestamp < 10 * 60 * 1000) {
+			el.classList.add('compact');
+		}
 
 		const scrollTopBefore = messageContainer.scrollTop;
 		const scrollHeightBefore = messageContainer.scrollHeight;
 		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
 
-		messageCache.splice(insertIndex, 0, { id: msg.id, timestamp, el });
+		messageCache.splice(insertIndex, 0, { id: msg.id, timestamp, el, sent_by });
 
 		if (insertIndex === messageContainer.children.length) {
 			messageContainer.appendChild(el);
@@ -265,7 +271,6 @@ function initServer() {
 			});
 		}
 	}
-
 
 	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by }) {
 		console.log("[createMessageElement] start", sender_info.username, message);
