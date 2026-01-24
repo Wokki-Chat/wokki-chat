@@ -119,12 +119,10 @@ function initServer() {
 	});
 
 	socket.on("all_messages", async (messages) => {
-		console.log("[socket] all_messages received", messages);
 		await handleAllMessages(messages);
 	});
 
 	socket.on("all_messages_nocache", async (messages) => {
-		console.log("[socket] all_messages_nocache received", messages);
 		await handleAllMessages(messages);
 	});
 
@@ -165,7 +163,9 @@ function initServer() {
 			const prevTime = new Date(prevMsg.timestamp).getTime();
 			const currTime = new Date(timestamp).getTime();
 			if ((currTime - prevTime) <= 10 * 60 * 1000) {
-				el.classList.add("compact");
+				if (!el.querySelector(".message-command") && !el.querySelector(".message-reply")) {
+					el.classList.add("compact");
+				}
 			}
 		}
 
@@ -969,7 +969,9 @@ function initServer() {
 					const prevTime = new Date(prevMsg.timestamp).getTime();
 					const currTime = new Date(nextMsg.timestamp).getTime();
 					if ((currTime - prevTime) <= 10 * 60 * 1000) {
-						nextMsg.el.classList.add('compact');
+						if (!nextMsg.el.querySelector('.message-command') && !nextMsg.el.querySelector('.message-reply')) {
+							nextMsg.el.classList.add('compact');
+						}
 					} else {
 						nextMsg.el.classList.remove('compact');
 					}
