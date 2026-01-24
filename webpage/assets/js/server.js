@@ -456,8 +456,8 @@ function initServer() {
 			await Promise.all(txtPromises);
 		}
 	}
-	
-	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by }) {
+
+	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info }) {
 		console.log("[createMessageElement] start", sender_info.username, message);
 
 		if (!message && !embed) {
@@ -495,6 +495,16 @@ function initServer() {
 					<img class="identification" src="/assets/images/identifier.svg">
 					<p class="username-reply">@${sanitize(parent_message_info.username)}</p>
 					<p class="message-text-reply">${sanitize(parent_message_info.message_preview)}</p>
+					</div>`
+				: ''
+			}
+			${
+				command_info !== null && command_info.user_id !== null
+				? `<div class="message-command">
+					<img class="identification" src="/assets/images/identifier.svg">
+					<p class="username-command">@${command_info.username ?? ''}</p>
+					<p>used</p>
+					<p class="used-command">${command_info.command ?? ''}</p>
 					</div>`
 				: ''
 			}
@@ -979,16 +989,6 @@ function initServer() {
 					<img class="identification" src="/assets/images/identifier.svg">
 					<p class="username-reply">@${parent_message_user_2 ?? ''}</p>
 					<p class="message-text-reply">${parent_message_text_2 ?? ''}</p>
-					</div>`
-				: ''
-			}
-			${
-				command !== null && command && command_user_id !== null && command_user_id
-				? `<div class="message-command">
-					<img class="identification" src="/assets/images/identifier.svg">
-					<p class="username-command">@${username_command ?? ''}</p>
-					<p>used</p>
-					<p class="used-command">${command ?? ''}</p>
 					</div>`
 				: ''
 			}
