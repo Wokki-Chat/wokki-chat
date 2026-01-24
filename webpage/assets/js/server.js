@@ -222,10 +222,10 @@ function initServer() {
 	}
 
 	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info }) {
-		console.log("[createMessageElement] start", username, message);
+		console.log("[createMessageElement] start", sender_info.username, message);
 
 		if (!message) {
-			console.warn("[createMessageElement] message empty", username);
+			console.warn("[createMessageElement] message empty", sender_info.username);
 			return null;
 		}
 
@@ -245,7 +245,7 @@ function initServer() {
 					<div class="username-date">
 						<p class="username">${sanitizedUsername}</p>
 						${sender_info.premium == true ? '<div class="premium-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="premium-tag-tooltip">Premium</p></div>' : ''}
-						${sender_info.staff == true ? '<div class="staff-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_staff.svg"><p class="staff-tag-tooltip">Staff</p></div>' : ''}
+						${sender_info.staff == 1 ? '<div class="staff-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_staff.svg"><p class="staff-tag-tooltip">Staff</p></div>' : ''}
 						${bot_message == 1 ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
 						<p class="date">${createdAtDate.toLocaleString()}</p>
 					</div>
