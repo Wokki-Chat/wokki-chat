@@ -1486,8 +1486,16 @@ input:checked + .slider:before {
     user-select: none;
 }
 
-.compact {
-    margin-top: -15px;
+.message.compact {
+    margin-top: -15px !important;
+}
+
+.message.compact .profile-picture {
+    opacity: 0 !important;
+}
+
+.message.compact .username-date {
+    display: none !important;
 }
 
 .profile-picture,
