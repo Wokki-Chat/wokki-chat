@@ -1492,6 +1492,7 @@ input:checked + .slider:before {
 
 .message.compact .profile-picture {
     opacity: 0 !important;
+    height: 0px !important;
 }
 
 .message.compact .username-date {
