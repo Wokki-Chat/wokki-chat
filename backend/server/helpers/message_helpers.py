@@ -81,7 +81,7 @@ async def send_message(sid, metadata, data):
                     await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Bot not found', 'req_id': req_id}, to=sid)
                     return
             else:
-                await cur.execute('SELECT username, nickname, profile_picture, staff FROM users WHERE id = %s', (account_id,))
+                await cur.execute('SELECT username, nickname, profile_picture, is_staff FROM users WHERE id = %s', (account_id,))
                 row = await cur.fetchone()
                 if not row:
                     await addMessageToLogs(f"User not found for send_message for user id: {account_id}", "INFO")
@@ -90,7 +90,7 @@ async def send_message(sid, metadata, data):
 
             username = is_bot and row.get('name') or row.get('username')
             display_name = is_bot and row.get('name') or row.get('nickname')
-            is_staff = is_bot and False or row.get('staff')
+            is_staff = is_bot and False or row.get('is_staff')
             profile_picture = row['profile_picture']
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
