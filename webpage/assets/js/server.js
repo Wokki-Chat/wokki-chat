@@ -167,7 +167,16 @@ function initServer() {
 
 		let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp);
 		if (insertIndex === -1) insertIndex = messageCache.length;
-		
+
+		const prevMsg = messageCache[insertIndex - 1];
+		if (prevMsg && prevMsg.sent_by === sent_by) {
+			const prevTime = new Date(prevMsg.timestamp).getTime();
+			const currTime = new Date(timestamp).getTime();
+			if ((currTime - prevTime) <= 10 * 60 * 1000) {
+				el.classList.add("compact");
+			}
+		}
+
 		const scrollTopBefore = messageContainer.scrollTop;
 		const scrollHeightBefore = messageContainer.scrollHeight;
 		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
