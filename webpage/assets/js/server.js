@@ -145,70 +145,72 @@ function initServer() {
 	});
 
 	socket.on("all_messages", async (messages) => {
-		enqueueMessageUpdate(async () => {
-			await processMessages(messages, { prepend: offset > 0 });
-			if (offset > 0) isLoadingOlderMessages = false;
-		});
-
-		await preloadParentData(messages);
+		console.log("[socket] all_messages received", messages);
+		await handleAllMessages(messages);
 	});
 
 	socket.on("all_messages_nocache", async (messages) => {
-		enqueueMessageUpdate(async () => {
-			await processMessages(messages, { prepend: offset > 0 });
-			if (offset > 0) isLoadingOlderMessages = false;
-		});
-
-		await preloadParentData(messages);
+		console.log("[socket] all_messages_nocache received", messages);
+		await handleAllMessages(messages);
 	});
 
-	async function processMessages(messages, options = {}) {
-		const wasAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
+	async function handleAllMessages(messages) {
+		console.log("[handleAllMessages] start");
 
-		if (!usersList || usersList.length === 0) {
-			for (const msg of messages) pendingMessages.push({ msg });
+		if (!Array.isArray(messages)) {
+			console.warn("[handleAllMessages] messages is not an array", messages);
 			return;
 		}
 
-		if (options.prepend) {
-			messages.sort((a, b) => b.timestamp - a.timestamp);
-			const elements = await Promise.all(messages.map(async (msg) => {
-				const parentData = getParentData(msg.parent_message_id);
-				return await createMessageElement(msg, parentData);
-			}));
-			for (const el of elements) {
-				if (!el) continue;
-				messageContainer.insertBefore(el, messageContainer.firstChild);
-				hydrateAssets(el);
-			}
-			normalizeCompactMessages(messageContainer);
-		} else {
-			messages.sort((a, b) => a.timestamp - b.timestamp);
+		for (const msg of messages) {
+			console.log("[handleAllMessages] processing message", msg);
 
-			const elements = await Promise.all(messages.map(async (msg) => {
-				const parentData = getParentData(msg.parent_message_id);
-				return await createMessageElement(msg, parentData);
-			}));
+			const el = await createMessageElement(msg);
 
-			for (const el of elements) {
-				if (!el) continue;
-				messageContainer.appendChild(el);
-				hydrateAssets(el);
+			if (!el) {
+				console.warn("[handleAllMessages] createMessageElement returned null", msg);
+				continue;
 			}
 
-			normalizeCompactMessages(messageContainer);
-
-			if (wasAtBottom) await scrollToBottomWhenStable(messageContainer);
+			messageContainer.appendChild(el);
+			console.log("[handleAllMessages] message appended", msg.id);
 		}
 
-		await highlightAll();
-		await addCodeblockInfo();
-		await emojis.replaceAll();
-
-		if (wasAtBottom && !options.prepend) {
-			await scrollToBottomWhenStable(messageContainer);
-		}
+		console.log("[handleAllMessages] done");
 	}
+
+	async function createMessageElement({ username, display_name, message, created_at, profile_picture }) {
+		console.log("[createMessageElement] start", username, message);
+
+		if (!message) {
+			console.warn("[createMessageElement] message empty", username);
+			return null;
+		}
+
+		const sanitizedUsername = display_name ? sanitize(display_name) : sanitize(username); // sanitize the username
+		const sanitizedMessage = await sanitizeMsg(message, usersList, user_id, channels, server_id); // sanitize the message
+		const createdAtDate = new Date(created_at); // create a date object
+
+		const msgEl = document.createElement("div"); // Create a new message element
+		msgEl.classList.add("message"); // add the message class
+		msgEl.dataset.timestamp = created_at; // set the timestamp
+
+		msgEl.innerHTML = `
+			<img class="profile-picture" src="${profile_picture}" />
+			<div class="message-info">
+				<div class="username-date">
+					<p class="username">${sanitizedUsername}</p>
+					<p class="date">${createdAtDate.toLocaleString()}</p>
+				</div>
+				<p class="message-text">${sanitizedMessage}</p>
+			</div>
+		`; // set the message text
+
+		console.log("[createMessageElement] created element", sanitizedUsername);
+
+		return msgEl; // return the message element
+	}
+
 
 	socket.on("server_commands_response", async (data) => {
 		if (data.success) {
@@ -764,7 +766,7 @@ function initServer() {
 	let lastRenderedUser = null;
 	let lastRenderedTimestamp = null;
 
-	async function createMessageElement({ username, message, created_at, sent_by, id, channel_id: channel_id_2, parent_message_id, assets, profile_picture, bot_message, command, command_user_id, embed, display_name }, parentData) {
+	async function old_createMessageElement({ username, message, created_at, sent_by, id, channel_id: channel_id_2, parent_message_id, assets, profile_picture, bot_message, command, command_user_id, embed, display_name }, parentData) {
 		const sanitizedUsername = display_name ? sanitize(display_name) : sanitize(username);
 		const sanitizedMessage = await sanitizeMsg(message, usersList, user_id, channels, server_id);
 		const createdAtDate = new Date(created_at);
