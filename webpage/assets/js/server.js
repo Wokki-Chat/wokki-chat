@@ -167,7 +167,7 @@ function initServer() {
 		for (const msg of messages) {
 			console.log("[handleAllMessages] processing message", msg);
 
-			const timestamp = msg.timestamp;
+			const timestamp = msg.created_at;
 
 			const existingIndex = messageCache.findIndex(m => m.id === msg.id); // find message in cache
 			if (existingIndex !== -1) {
