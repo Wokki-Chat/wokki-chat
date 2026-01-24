@@ -179,6 +179,9 @@ function initServer() {
 
 			messageCache.splice(insertIndex, 0, { id: msg.id, timestamp, el }); // add message to cache
 
+			// check if user is near the bottom (within 10px)
+			const nearBottom = messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight <= 10;
+
 			// insert into DOM at the same position
 			if (insertIndex === messageContainer.children.length) {
 				messageContainer.appendChild(el);
@@ -201,10 +204,12 @@ function initServer() {
 				}
 			}
 
-			// scroll to bottom of container
-			requestAnimationFrame(() => {
-				messageContainer.scrollTop = messageContainer.scrollHeight;
-			});
+			// scroll to bottom if user was near the bottom
+			if (nearBottom) {
+				requestAnimationFrame(() => {
+					messageContainer.scrollTop = messageContainer.scrollHeight;
+				});
+			}
 		}
 
 		console.log("[handleAllMessages] done");
