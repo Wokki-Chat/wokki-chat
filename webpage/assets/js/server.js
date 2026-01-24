@@ -204,7 +204,7 @@ function initServer() {
 		console.log("[handleAllMessages] done");
 	}
 
-	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info }) {
+	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by }) {
 		console.log("[createMessageElement] start", sender_info.username, message);
 
 		if (!message && !embed) {
