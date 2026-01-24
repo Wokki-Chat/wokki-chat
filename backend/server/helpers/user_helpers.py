@@ -165,18 +165,12 @@ async def broadcast_user_update(user_id, is_bot=False):
                     await addMessageToLogs(f"User not found, user id: {user_id}", "INFO")
                     return
                 rooms = await get_user_rooms(cur, user_id)
-
-            existing_rooms = sio_instance.sio.manager.rooms
-            active_rooms = [
-                room for room in rooms
-                if room in existing_rooms and len(existing_rooms[room]) > 0
-            ]
-
-            await addMessageToLogs(f"broadcast_user_update: active_rooms -> {active_rooms}", "INFO")
-
+            
+            await addMessageToLogs(f"broadcast_user_update: rooms -> {rooms}", "INFO")
+            
             await asyncio.gather(*[
                 sio_instance.sio.emit('user_updated', info, room=room)
-                for room in active_rooms
+                for room in rooms
             ])
 
 async def broadcast_user_widget_update(user_id, widget_name):
