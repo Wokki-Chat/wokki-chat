@@ -179,7 +179,7 @@ function initServer() {
 		console.log("[handleAllMessages] done");
 	}
 
-	async function createMessageElement({ username, display_name, message, created_at, profile_picture }) {
+	async function createMessageElement({ username, display_name, message, created_at, profile_picture, id: message_id }) {
 		console.log("[createMessageElement] start", username, message);
 
 		if (!message) {
