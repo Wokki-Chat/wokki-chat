@@ -186,6 +186,12 @@ function initServer() {
 			console.warn("[createMessageElement] message empty", username);
 			return null;
 		}
+		
+		const existingMessage = document.querySelector(`.message[data-message-id="${message_id}"]`); // check if the message already exists
+		if (existingMessage) {
+			console.log("[createMessageElement] message already exists, skipping", message_id);
+			return null;
+		}
 
 		const sanitizedUsername = display_name ? sanitize(display_name) : sanitize(username); // sanitize the username
 		const sanitizedMessage = await sanitizeMsg(message, usersList, user_id, channels, server_id); // sanitize the message
@@ -194,6 +200,7 @@ function initServer() {
 		const msgEl = document.createElement("div"); // Create a new message element
 		msgEl.classList.add("message"); // add the message class
 		msgEl.dataset.timestamp = created_at; // set the timestamp
+		msgEl.dataset.messageId = message_id; // set the message id
 
 		msgEl.innerHTML = `
 			<div class="message-content">
