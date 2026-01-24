@@ -1065,14 +1065,13 @@ function initServer() {
 		const msgEl = document.querySelector(`.message[data-message-id="${id}"]`);
 		if (!msgEl) return;
 
-		const nextMsgEl = msgEl.nextElementSibling;
-
-		msgEl.remove();
-
 		const indexInCache = messageCache.findIndex(m => m.id === id);
 		if (indexInCache !== -1) {
 			messageCache.splice(indexInCache, 1);
 		}
+
+		const nextMsgEl = msgEl.nextElementSibling;
+		msgEl.remove();
 
 		if (nextMsgEl && nextMsgEl.classList.contains('message')) {
 			const usernameDateEl = nextMsgEl.querySelector('.username-date');
@@ -1083,6 +1082,24 @@ function initServer() {
 			if (profilePic) {
 				profilePic.style.opacity = '1';
 				profilePic.style.height = '30px';
+			}
+			const nextMsgId = nextMsgEl.dataset.messageId;
+			const nextMsgIndex = messageCache.findIndex(m => m.id === nextMsgId);
+			if (nextMsgIndex !== -1) {
+				const nextMsg = messageCache[nextMsgIndex];
+				const prevMsg = messageCache[nextMsgIndex - 1];
+
+				if (prevMsg && prevMsg.sent_by === nextMsg.sent_by) {
+					const prevTime = new Date(prevMsg.timestamp).getTime();
+					const currTime = new Date(nextMsg.timestamp).getTime();
+					if ((currTime - prevTime) <= 10 * 60 * 1000) {
+						nextMsg.el.classList.add('compact');
+					} else {
+						nextMsg.el.classList.remove('compact');
+					}
+				} else {
+					nextMsg.el.classList.remove('compact');
+				}
 			}
 		}
 	}
