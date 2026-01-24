@@ -381,7 +381,7 @@ async def get_messages(sid, metadata, data):
                     
                     command_user_id = msg.pop('command_user_id', None)
                     command_info = None
-                    if msg.get('command'):
+                    if command_user_id:
                         await cur.execute(
                             """
                             SELECT u.username
