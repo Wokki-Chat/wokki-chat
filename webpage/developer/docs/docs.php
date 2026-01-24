@@ -76,6 +76,8 @@ $stmt->close();
         </div>
         <h1 class="content-title">Wokki Chat Docs</h1>
         <p class="content-description">Ready to get started with Wokki Chat? You can find the docs here.</p>
+        <hr>
+        <h2>Docs</h2>
         <div class="sdk-container" id="docs">
             <div class="sdk-card">
                 <img src="/assets/icons/svg/python.svg" alt="Python Icon">
@@ -91,8 +93,7 @@ $stmt->close();
             </div>
         </div>
         <hr>
-        <h1 class="content-title">Wokki Chat Bots SDK</h1>
-        <p class="content-description">Wokki Chat currently only provides the Wokki Chat Python Bots SDK.</p>
+        <h2>SDKs</h2>
         <div class="sdk-container" id="sdk">
             <div class="sdk-card">
                 <img src="/assets/icons/svg/python.svg" alt="Python Icon">
