@@ -1117,7 +1117,8 @@ input:checked + .slider:before {
     flex-direction: column;
     gap: 10px;
     position: relative;
-    transition: background 0.3s ease;
+    background-color: transparent;
+    transition: background 0.5s ease;
 }
 
 .message-static {
