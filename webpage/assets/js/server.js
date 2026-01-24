@@ -223,6 +223,88 @@ function initServer() {
 
 		hydrateInvites(el);
 		hydrateSpotifyTracks(el);
+		if (msg.assets && msg.assets.length > 0) hydrateAssets(el, msg.assets, msg.id);
+
+		const customPlayer = el.querySelector(".custom-player");
+
+		if (customPlayer) {
+			const audioSrc = customPlayer.dataset.src;
+			const originalName = customPlayer.dataset.originalname;
+			const audio = new Audio(customPlayer.dataset.src);
+			const playPauseBtn = customPlayer.querySelector('.play-pause');
+			const seekBar = customPlayer.querySelector('.seek-bar');
+			const currentTimeEl = customPlayer.querySelector('.current-time');
+			const durationEl = customPlayer.querySelector('.duration');
+			const timeBox = customPlayer.querySelector('.time-left-current');
+			const downloadBtn = customPlayer.querySelector('#download');
+
+			let updateInterval;
+
+			function updateSeekBarProgress() {
+				const val = seekBar.value;
+				const max = seekBar.max || 100;
+				const percentage = (val / max) * 100;
+				seekBar.style.background = `
+					linear-gradient(
+					to right,
+					var(--clr-primary-a0) 0%,
+					var(--clr-primary-a0) ${percentage}%,
+					var(--clr-input-border-bg-dark) ${percentage}%,
+					var(--clr-input-border-bg-dark) 100%
+					)
+				`;
+			}
+
+			playPauseBtn.addEventListener('click', () => {
+				if (audio.paused) {
+					audio.play();
+					playPauseBtn.textContent = 'pause';
+
+					updateInterval = setInterval(() => {
+						seekBar.value = audio.currentTime;
+						currentTimeEl.textContent = formatTime(audio.currentTime);
+						updateSeekBarProgress();
+					}, 500);
+				} else {
+					audio.pause();
+					playPauseBtn.textContent = 'play_arrow';
+					clearInterval(updateInterval);
+				}
+			});
+
+			downloadBtn.addEventListener('click', () => {
+				const a = document.createElement('a');
+				a.href = audioSrc;
+				a.download = originalName;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+			});
+
+
+			requestAnimationFrame(() => {
+				const width = timeBox.offsetWidth;
+				timeBox.style.minWidth = `${width}px`;
+			});
+
+			audio.addEventListener('loadedmetadata', () => {
+				seekBar.max = audio.duration;
+				durationEl.textContent = `/ ${formatTime(audio.duration)}`;
+				updateSeekBarProgress();
+			});
+
+			seekBar.addEventListener('input', () => {
+				audio.currentTime = seekBar.value;
+				currentTimeEl.textContent = formatTime(audio.currentTime);
+				updateSeekBarProgress();
+			});
+
+			function formatTime(seconds) {
+				const mins = Math.floor(seconds / 60);
+				const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+				return `${mins}:${secs}`;
+			}
+		}
 
 		const mentionTags = el.querySelectorAll(`.user-link[data-user-id="${user_id}"], .user-link[data-user-id="everyone"]`);
 		if (mentionTags.length > 0) el.classList.add("mentioned");
@@ -273,6 +355,93 @@ function initServer() {
 			requestAnimationFrame(() => {
 				messageContainer.scrollTop = messageContainer.scrollHeight;
 			});
+		}
+	}
+
+	async function hydrateAssets(msgEl, assets, id) {
+		let assetsHTML = '';
+		if (assets && assets.length > 0) {
+			assetsHTML = assets.map((asset, index) => {
+				const type = getAssetType(asset.savedName);
+				if (type === 'image') {
+					return `<img data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" alt="${asset.originalName}" class="message-asset-image lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}', '${asset.originalName}')" />`;
+				} else if (type === 'video') {
+					return `<video data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" controls class="message-asset-video lazyload"></video>`;
+				} else if (type === 'audio') {
+					return `
+					<div class="custom-player" data-originalName="${asset.originalName}" data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}">
+						<span class="material-symbols-rounded play-pause" style="cursor:pointer;">play_arrow</span>
+						<div class="time-left-current">
+							<span class="current-time">0:00</span>
+							<span class="duration">/ 0:00</span>
+						</div>
+						<input type="range" class="seek-bar" value="0" step="1" min="0">
+						<div class="player-options">
+							<div class="player-option" id="download">
+								<span class="material-symbols-rounded">download</span>
+							</div>
+						</div>
+					</div>
+					`;
+				} else if (type === 'pdf') {
+					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${sanitize(asset.originalName)}</a>`;
+				} else if (type === 'txt') {
+					return `<pre class="message-asset-text" id="txt-asset-${id}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
+				} else if (type === 'profile_picture') {
+					return `<img src="https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}" alt="${asset.originalName}" class="message-asset-image message-asset-profile-picture" onclick="imageViewer('https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}', '${asset.originalName}')" />`;
+				} else {
+					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" download class="message-asset-file link">${sanitize(asset.savedName)}</a>`;
+				}
+			}).join('');
+		}
+
+		const assetsContainer = document.createElement("div");
+		assetsContainer.classList.add("message-assets");
+		assetsContainer.innerHTML = assetsHTML;
+		msgEl.querySelector(".message-info").appendChild(assetsContainer);
+
+		if (assets && assets.length > 0) {
+			const txtPromises = assets.map(async (asset, index) => {
+				if (getAssetType(asset.savedName) !== 'txt') return;
+
+				const preEl = msgEl.querySelector(`#txt-asset-${id}-${index} code`);
+				if (!preEl) return;
+
+				try {
+					const contents = await getAssetFileInsides(asset.savedName);
+					preEl.textContent = sanitize(contents);
+
+					const pre = preEl.parentElement;
+					if (!pre.querySelector(".lang-bar")) {
+						let lang = "bash";
+						const langClass = [...preEl.classList].find(c => c.startsWith("lang-"));
+						if (langClass) lang = langClass.slice(5);
+
+						pre.insertAdjacentHTML("afterbegin", `
+							<div class="lang-bar">
+								<p>${lang}</p>
+								<span class="material-symbols-rounded copy-icon" style="cursor:pointer;">
+									content_copy
+								</span>
+							</div>
+						`);
+
+						const copyIcon = pre.querySelector(".copy-icon");
+						copyIcon.addEventListener("click", () => {
+							navigator.clipboard.writeText(preEl.innerText).then(() => {
+								copyIcon.textContent = "check";
+								setTimeout(() => {
+									copyIcon.textContent = "content_copy";
+								}, 3000);
+							});
+						});
+					}
+				} catch {
+					preEl.textContent = '[Failed to load file]';
+				}
+			});
+
+			await Promise.all(txtPromises);
 		}
 	}
 
@@ -759,40 +928,7 @@ function initServer() {
 		});
 
 	}
-
-	async function hydrateAssets(msgEl) {
-		const lazyImages = Array.from(msgEl.querySelectorAll('img.lazyload'));
-		const lazyVideos = Array.from(msgEl.querySelectorAll('video.lazyload'));
-
-		await Promise.all(
-			lazyImages.map(img => new Promise(resolve => {
-				const tempImg = new Image();
-				tempImg.src = img.dataset.src;
-				tempImg.onload = () => {
-					img.src = img.dataset.src;
-					img.classList.remove('lazyload');
-					img.style.opacity = '0';
-					requestAnimationFrame(() => {
-						img.style.transition = 'opacity 0.3s';
-						img.style.opacity = '1';
-					});
-					resolve();
-				};
-				tempImg.onerror = resolve;
-			}))
-		);
-
-		await Promise.all(
-			lazyVideos.map(video => new Promise(resolve => {
-				video.src = video.dataset.src;
-				video.load();
-				video.classList.remove('lazyload');
-				video.onloadeddata = resolve;
-				video.onerror = resolve;
-			}))
-		);
-	}
-
+	
 	let lastRenderedUser = null;
 	let lastRenderedTimestamp = null;
 
@@ -814,42 +950,6 @@ function initServer() {
 			(createdAtDate - lastRenderedTimestamp) < 10 * 60 * 1000
 		) {
 			hideHeader = true;
-		}
-
-		let assetsHTML = '';
-		if (assets && assets.length > 0) {
-			assetsHTML = assets.map((asset, index) => {
-			const type = getAssetType(asset.savedName);
-			if (type === 'image') {
-				return `<img data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" alt="${asset.originalName}" class="message-asset-image lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}', '${asset.originalName}')" />`;
-			} else if (type === 'video') {
-				return `<video data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" controls class="message-asset-video lazyload"></video>`;
-			} else if (type === 'audio') {
-				return `
-				<div class="custom-player" data-originalName="${asset.originalName}" data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}">
-					<span class="material-symbols-rounded play-pause" style="cursor:pointer;">play_arrow</span>
-					<div class="time-left-current">
-					<span class="current-time">0:00</span>
-					<span class="duration">/ 0:00</span>
-					</div>
-					<input type="range" class="seek-bar" value="0" step="1" min="0">
-					<div class="player-options">
-					<div class="player-option" id="download">
-						<span class="material-symbols-rounded">download</span>
-					</div>
-					</div>
-				</div>
-				`;
-			} else if (type === 'pdf') {
-				return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${sanitize(asset.originalName)}</a>`;
-			} else if (type === 'txt') {
-				return `<pre class="message-asset-text" id="txt-asset-${id}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
-			} else if (type === 'profile_picture') {
-				return `<img src="https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}" alt="${asset.originalName}" class="message-asset-image message-asset-profile-picture" onclick="imageViewer('https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}', '${asset.originalName}')" />`;
-			} else {
-				return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" download class="message-asset-file link">${sanitize(asset.savedName)}</a>`;
-			}
-			}).join('');
 		}
 
 		const parent_message_text_2 = parentData?.parent_message_text ? sanitize(parentData.parent_message_text).slice(0, 100) + (parentData.parent_message_text.length > 100 ? '...' : '') : null;
@@ -912,130 +1012,6 @@ function initServer() {
 			</div>
 		`;
 
-		if (assets && assets.length > 0) {
-			const txtPromises = assets.map(async (asset, index) => {
-				if (getAssetType(asset.savedName) !== 'txt') return;
-
-				const preEl = msgEl.querySelector(`#txt-asset-${id}-${index} code`);
-				if (!preEl) return;
-
-				try {
-					const contents = await getAssetFileInsides(asset.savedName);
-					preEl.textContent = sanitize(contents);
-
-					const pre = preEl.parentElement;
-					if (!pre.querySelector(".lang-bar")) {
-						let lang = "bash";
-						const langClass = [...preEl.classList].find(c => c.startsWith("lang-"));
-						if (langClass) lang = langClass.slice(5);
-
-						pre.insertAdjacentHTML("afterbegin", `
-							<div class="lang-bar">
-								<p>${lang}</p>
-								<span class="material-symbols-rounded copy-icon" style="cursor:pointer;">
-									content_copy
-								</span>
-							</div>
-						`);
-
-						const copyIcon = pre.querySelector(".copy-icon");
-						copyIcon.addEventListener("click", () => {
-							navigator.clipboard.writeText(preEl.innerText).then(() => {
-								copyIcon.textContent = "check";
-								setTimeout(() => {
-									copyIcon.textContent = "content_copy";
-								}, 3000);
-							});
-						});
-					}
-				} catch {
-					preEl.textContent = '[Failed to load file]';
-				}
-			});
-
-			await Promise.all(txtPromises);
-		}
-
-		const customPlayer = msgEl.querySelector(".custom-player");
-
-		if (customPlayer) {
-			const audioSrc = customPlayer.dataset.src;
-			const originalName = customPlayer.dataset.originalname;
-			const audio = new Audio(customPlayer.dataset.src);
-			const playPauseBtn = customPlayer.querySelector('.play-pause');
-			const seekBar = customPlayer.querySelector('.seek-bar');
-			const currentTimeEl = customPlayer.querySelector('.current-time');
-			const durationEl = customPlayer.querySelector('.duration');
-			const timeBox = customPlayer.querySelector('.time-left-current');
-			const downloadBtn = customPlayer.querySelector('#download');
-
-			let updateInterval;
-
-			function updateSeekBarProgress() {
-				const val = seekBar.value;
-				const max = seekBar.max || 100;
-				const percentage = (val / max) * 100;
-				seekBar.style.background = `
-					linear-gradient(
-					to right,
-					var(--clr-primary-a0) 0%,
-					var(--clr-primary-a0) ${percentage}%,
-					var(--clr-input-border-bg-dark) ${percentage}%,
-					var(--clr-input-border-bg-dark) 100%
-					)
-				`;
-			}
-
-			playPauseBtn.addEventListener('click', () => {
-				if (audio.paused) {
-					audio.play();
-					playPauseBtn.textContent = 'pause';
-
-					updateInterval = setInterval(() => {
-						seekBar.value = audio.currentTime;
-						currentTimeEl.textContent = formatTime(audio.currentTime);
-						updateSeekBarProgress();
-					}, 500);
-				} else {
-					audio.pause();
-					playPauseBtn.textContent = 'play_arrow';
-					clearInterval(updateInterval);
-				}
-			});
-
-			downloadBtn.addEventListener('click', () => {
-				const a = document.createElement('a');
-				a.href = audioSrc;
-				a.download = originalName;
-				document.body.appendChild(a);
-				a.click();
-				document.body.removeChild(a);
-			});
-
-
-			requestAnimationFrame(() => {
-				const width = timeBox.offsetWidth;
-				timeBox.style.minWidth = `${width}px`;
-			});
-
-			audio.addEventListener('loadedmetadata', () => {
-				seekBar.max = audio.duration;
-				durationEl.textContent = `/ ${formatTime(audio.duration)}`;
-				updateSeekBarProgress();
-			});
-
-			seekBar.addEventListener('input', () => {
-				audio.currentTime = seekBar.value;
-				currentTimeEl.textContent = formatTime(audio.currentTime);
-				updateSeekBarProgress();
-			});
-
-			function formatTime(seconds) {
-				const mins = Math.floor(seconds / 60);
-				const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
-				return `${mins}:${secs}`;
-			}
-		}
 
 
 		lastRenderedUser = sanitizedUsername;
