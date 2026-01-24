@@ -1069,6 +1069,11 @@ function initServer() {
 
 		msgEl.remove();
 
+		const indexInCache = messageCache.findIndex(m => m.id === id);
+		if (indexInCache !== -1) {
+			messageCache.splice(indexInCache, 1);
+		}
+
 		if (nextMsgEl && nextMsgEl.classList.contains('message')) {
 			const usernameDateEl = nextMsgEl.querySelector('.username-date');
 			if (usernameDateEl) {
