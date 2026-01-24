@@ -161,12 +161,12 @@ async def send_message(sid, metadata, data):
         
     message_response = {
         'id': message_id,
-        'bot_message': is_bot and 1 or 0,
+        'bot_message': 1 if is_bot else 0,
         'message': message,
         'created_at': timestamp.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z'),
         'server_id': server_id,
         'channel_id': channel_id,
-        'sent_by': (not is_bot) and account_id or None,
+        'sent_by': account_id if not is_bot else None,
         'assets': json.loads(assets_json) if assets_json else [],
         'command': command,
         'command_user_id': user_id,
@@ -179,13 +179,16 @@ async def send_message(sid, metadata, data):
             'staff': is_staff,
             'premium': is_premium
         },
-        'parent_message_info': {
+        'parent_message_info': None
+    }
+
+    if parent_message_id:
+        message_response['parent_message_info'] = {
             'user_id': parent_user_id,
             'message_id': parent_message_id,
             'message_preview': (parent_msg[:100] + '...') if len(parent_msg) > 100 else parent_msg,
             'username': parent_username
         }
-    }
     await cache_message(server_id, channel_id, message_response)
 
     await sio_instance.sio.emit('new_message', message_response, room=f"server:{server_id}:channel:{channel_id}")
