@@ -191,10 +191,23 @@ function initServer() {
 			// insert into DOM at the same position
 			if (insertIndex === messageContainer.children.length) {
 				messageContainer.appendChild(el);
-				console.log("[handleAllMessages] message appended at end", msg.id);
+				if (insertIndex > 0) {
+					const prevTimestamp = messageCache[insertIndex - 1].timestamp;
+					console.log(`[handleAllMessages] message appended after ${prevTimestamp} (later)` , msg.id);
+				} else {
+					console.log("[handleAllMessages] message appended as first message", msg.id);
+				}
 			} else {
 				messageContainer.insertBefore(el, messageContainer.children[insertIndex]);
-				console.log("[handleAllMessages] message inserted before", messageContainer.children[insertIndex].dataset.messageId);
+				const prevTimestamp = messageCache[insertIndex - 1]?.timestamp;
+				const nextTimestamp = messageCache[insertIndex + 1]?.timestamp || "none";
+				if (prevTimestamp && timestamp > prevTimestamp) {
+					console.log(`[handleAllMessages] message inserted after ${prevTimestamp} (later) before ${nextTimestamp}`, msg.id);
+				} else if (nextTimestamp && timestamp < nextTimestamp) {
+					console.log(`[handleAllMessages] message inserted before ${nextTimestamp} (earlier)`, msg.id);
+				} else {
+					console.log(`[handleAllMessages] message inserted at position ${insertIndex}`, msg.id);
+				}
 			}
 		}
 
