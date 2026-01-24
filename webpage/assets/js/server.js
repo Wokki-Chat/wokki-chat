@@ -499,12 +499,12 @@ function initServer() {
 				: ''
 			}
 			${
-				command_info !== null && command_info?.user_id !== null
+				command_info !== null
 				? `<div class="message-command">
 					<img class="identification" src="/assets/images/identifier.svg">
-					<p class="username-command">@${command_info.username ?? ''}</p>
+					<p class="username-command">@${command_info?.username ?? ''}</p>
 					<p>used</p>
-					<p class="used-command">${command_info.command ?? ''}</p>
+					<p class="used-command">${command_info?.command ?? ''}</p>
 					</div>`
 				: ''
 			}
