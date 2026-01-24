@@ -391,10 +391,11 @@ async def get_messages(sid, metadata, data):
                             """, (command_user_id,)
                         )
                         command_user = await cur.fetchone()
-                        command_info = {
-                            'command': msg.pop('command'),
-                            'username': command_user['username']
-                        }
+                        if command_user:
+                            command_info = {
+                                'command': msg.pop('command'),
+                                'username': command_user['username']
+                            }
 
                     msg['command_info'] = command_info
 
