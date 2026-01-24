@@ -177,10 +177,12 @@ function initServer() {
 			let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp); // find position in cache
 			if (insertIndex === -1) insertIndex = messageCache.length;
 
-			messageCache.splice(insertIndex, 0, { id: msg.id, timestamp, el }); // add message to cache
+			// store scroll state before inserting
+			const scrollTopBefore = messageContainer.scrollTop;
+			const scrollHeightBefore = messageContainer.scrollHeight;
+			const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
 
-			// check if user is near the bottom (within 10px)
-			const nearBottom = messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight <= 10;
+			messageCache.splice(insertIndex, 0, { id: msg.id, timestamp, el }); // add message to cache
 
 			// insert into DOM at the same position
 			if (insertIndex === messageContainer.children.length) {
@@ -204,8 +206,12 @@ function initServer() {
 				}
 			}
 
-			// scroll to bottom if user was near the bottom
-			if (nearBottom) {
+			// adjust scrollTop to preserve visual position if not near bottom
+			if (!nearBottom) {
+				const scrollHeightAfter = messageContainer.scrollHeight;
+				messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
+			} else {
+				// scroll to bottom if near bottom
 				requestAnimationFrame(() => {
 					messageContainer.scrollTop = messageContainer.scrollHeight;
 				});
@@ -214,7 +220,7 @@ function initServer() {
 
 		console.log("[handleAllMessages] done");
 	}
-
+	
 	async function createMessageElement({ username, display_name, message, created_at, profile_picture, id: message_id }) {
 		console.log("[createMessageElement] start", username, message);
 
