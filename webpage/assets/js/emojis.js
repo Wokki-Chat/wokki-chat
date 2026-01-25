@@ -221,10 +221,11 @@ window.emojis = {
 			}
 
 			if (relativeTo) {
-				const rect = relativeTo.getBoundingClientRect();
+				relativeTo.appendChild(dropdown);
 				dropdown.style.position = 'absolute';
-				dropdown.style.top = `${rect.bottom + window.scrollY}px`;
-				dropdown.style.left = `${rect.left + window.scrollX}px`;
+				dropdown.style.top = '-100%';
+				dropdown.style.right = '0';
+				dropdown.style.transform = 'translateY(100%)';
 			} else {
 				dropdown.style.position = 'fixed';
 				dropdown.style.top = '50%';
