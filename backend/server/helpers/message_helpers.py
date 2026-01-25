@@ -663,7 +663,6 @@ async def add_reaction(sid, metadata, data):
                         (message_id, reaction, account_id)
                     )
                 await conn.commit()
-                await respond({'success': True, 'message_id': message_id, 'reaction': reaction, 'removed': True, 'req_id': req_id})
                 await sio_instance.sio.emit(
                     'remove_reaction',
                     {'success': True, 'message_id': message_id, 'reaction': reaction, 'req_id': req_id},
@@ -682,7 +681,6 @@ async def add_reaction(sid, metadata, data):
                         (message_id, reaction, account_id)
                     )
                 await conn.commit()
-                await respond({'success': True, 'message_id': message_id, 'reaction': reaction, 'removed': False, 'req_id': req_id})
                 await sio_instance.sio.emit(
                     'add_reaction',
                     {'success': True, 'message_id': message_id, 'reaction': reaction, 'req_id': req_id},

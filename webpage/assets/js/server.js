@@ -303,25 +303,21 @@ function initServer() {
 			const countEl = reactionEl.querySelector(".count");
 			if (countEl) {
 				countEl.textContent = parseInt(countEl.textContent) + 1;
-			} else {
-				const imgEl = reactionEl.querySelector(".reaction-picture");
-				if (imgEl) {
-					const span = document.createElement("span");
-					span.classList.add("count");
-					span.textContent = 2;
-					imgEl.replaceWith(span);
-				}
 			}
 		} else {
 			Reaction({
 				reaction: { reaction: emoji, user_id, reaction_user_info: { username: username_text, profile_picture: profile_picture_url } },
 				count: 1
 			}).then(newReactionHTML => {
-				messageReactions.insertAdjacentHTML("beforeend", newReactionHTML);
+				const addReactionBtn = messageReactions.querySelector(".reaction.add-reaction");
+				if (addReactionBtn) {
+					addReactionBtn.insertAdjacentHTML("beforebegin", newReactionHTML);
+				} else {
+					messageReactions.insertAdjacentHTML("beforeend", newReactionHTML);
+				}
 			});
 		}
 	}
-
 	socket.on("add_reaction", ({ message_id, reaction }) => {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
 		if (el) updateReactionUI(el, message_id, reaction, false);
@@ -625,7 +621,7 @@ function initServer() {
 		return `
 		<div class="${className}" title="${reaction_user_info.username || ""}" data-reaction-name="${emojiText}">
 			<span class="emoji">${renderedEmoji}</span>
-			${count > 1 ? `<span class="count">${count}</span>` : `<img class="reaction-picture" src="${reaction_user_info.profile_picture}" />`}
+			${count ? `<span class="count">${count}</span>` : ''}
 		</div>`;
 	}
 
