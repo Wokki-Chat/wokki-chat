@@ -75,7 +75,7 @@ $stmt->close();
             </a>
         </div>
         <h1 class="content-title">Wokki Chat Docs</h1>
-        <p class="content-description">Ready to get started with Wokki Chat? You can find the docs here.</p>
+        <p class="content-description">Ready to get started with Wokki Chat? You can find the documentation and SDKs here.</p>
         <hr>
         <h2 class="content-subtitle">Docs</h2>
         <div class="sdk-container" id="docs">
