@@ -340,6 +340,7 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
                 if ($active_tab === "appearance") {
                     $appearanceHtml = file_get_contents('settings_html/settings_appearance.html');
                     $theme = explode(' ', $theme)[0];
+                    $layout = explode(' ', $theme)[1];
                     $appearanceHtml = str_replace("{{light_active}}", ($theme === "light" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{dark_active}}", ($theme === "dark" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{night_active}}", ($theme === "night" ? "active" : ""), $appearanceHtml);
@@ -348,6 +349,8 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
                     $appearanceHtml = str_replace("{{hidden_2}}", ($chat_connected === "Connected" ? "chat_dark_blue" : "hidden_2_disabled"), $appearanceHtml);
                     $appearanceHtml = str_replace("{{hidden_2_active}}", ($theme === "chat_dark_blue" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{hidden_container_1}}", ($chat_connected === "Connected" ? "" : "chat-account-only"), $appearanceHtml);
+                    $appearanceHtml = str_replace("{{floaty_active_checked}}", ($layout === "floaty" ? "checked" : ""), $appearanceHtml);
+                    $appearanceHtml = str_replace("{{compact_active_checked}}", ($layout === "compact" ? "checked" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{connect_chat_account_text}}", ($chat_connected === "Connected" ? "Go even further with personalizing, and use one of the familiar Chat themes. Only available for users who have their Chat account connected." : "Please <a href='/settings/connections' class='link'>connect your Chat account</a> to unlock Chat themes!"), $appearanceHtml);
                     echo $appearanceHtml;   
                 }

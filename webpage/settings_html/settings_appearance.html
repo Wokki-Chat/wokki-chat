@@ -24,8 +24,14 @@
             <p class="appearance-type-title">Layouts</p>
             <p class="appearance-type-description">Change your layout to fit your needs</p>
             <div class="theme-options-container">
-                <div class="theme-option floaty {{floaty_active}}" onclick="setLayout('floaty')"></div>
-                <div class="theme-option compact {{compact_active}}" onclick="setLayout('compact')"></div>
+                <label>
+                    <input type="radio" name="layout" value="floaty" onchange="setLayout('floaty')" {{floaty_active_checked}}>
+                    Floaty
+                </label>
+                <label>
+                    <input type="radio" name="layout" value="compact" onchange="setLayout('compact')" {{compact_active_checked}}>
+                    Compact
+                </label>
             </div>
         </div>
     </div>
@@ -40,6 +46,16 @@
         document.querySelectorAll(".theme-option").forEach(el => el.classList.remove("active"));
         const activeBtn = document.querySelector(`.theme-option.${theme}`);
         if (activeBtn) activeBtn.classList.add("active");
+    }
+    const layouts = ["floaty", "compact"];
+
+    function setLayout(layout) {
+        document.cookie = `layout=${layout}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=None; Secure;`;
+        layouts.forEach(l => document.documentElement.classList.remove(l));
+        document.documentElement.classList.add(layout);
+        document.querySelectorAll('input[name="layout"]').forEach(input => {
+            input.checked = input.value === layout;
+        });
     }
     </script>
 </div>
