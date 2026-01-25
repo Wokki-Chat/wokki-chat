@@ -147,11 +147,11 @@ async def send_message(sid, metadata, data):
                         return
                     parent_username = parent_user.get('username')
                 elif parent_message.get('sent_by_bot'):
-                    parent_bot_id = parent_message.get('sent_by_bot')
-                    await cur.execute('SELECT name FROM bots WHERE id = %s', (parent_bot_id,))
+                    parent_user_id = parent_message.get('sent_by_bot')
+                    await cur.execute('SELECT name FROM bots WHERE id = %s', (parent_user_id,))
                     parent_bot = await cur.fetchone()
                     if not parent_bot:
-                        await addMessageToLogs(f"Parent bot not found for send_message for parent bot id: {parent_bot_id}", "INFO")
+                        await addMessageToLogs(f"Parent bot not found for send_message for parent bot id: {parent_user_id}", "INFO")
                         await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Parent bot not found', 'req_id': req_id}, to=sid)
                         return
                     parent_username = parent_bot.get('name')
