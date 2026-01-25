@@ -141,9 +141,7 @@ function initServer() {
 		}
 
 		const el = await createMessageElement(msg);
-		if (!el) {
-			return;
-		}
+		if (!el) return;
 
 		let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp);
 		if (insertIndex === -1) insertIndex = messageCache.length;
@@ -195,7 +193,7 @@ function initServer() {
 		if (msg.assets && msg.assets.length > 0) await hydrateAssets(el, msg.assets, msg.id);
 
 		await emojis.replaceEl(el);
-		
+
 		const customPlayer = el.querySelector(".custom-player");
 		if (customPlayer) await initCustomPlayer(customPlayer);
 
@@ -223,10 +221,12 @@ function initServer() {
 		const reactionButton = el.querySelector("#reaction-btn");
 		reactionButton.addEventListener("click", () => handleReactionClick(el, msg));
 
-		const addReactionBtn = el.querySelector(".add-reaction");
-		if (addReactionBtn) {
-			addReactionBtn.addEventListener("click", () => handleReactionClick(el, msg));
+		const reactionsWrapper = el.querySelector(".message-reactions");
+		if (reactionsWrapper) {
+			const reactionsEl = msg.reactions ? await Reactions({ reactions: msg.reactions }) : document.createDocumentFragment();
+			reactionsWrapper.appendChild(reactionsEl);
 		}
+
 		const deleteBtn = el.querySelector("#delete-btn");
 		if (deleteBtn) {
 			deleteBtn.addEventListener("click", () => {
@@ -621,7 +621,7 @@ function initServer() {
 					</div>
 					<p class="message-text">${sanitizedMessage}</p>
 					${embeds ? `<div class="message-embed">${await Embeds({ embeds })}</div>` : ''}
-					<div class="message-reactions">${reactions ? await Reactions({ reactions }) : ''}</div>
+					<div class="message-reactions"></div>
 				</div>
 			</div>
 			<div class="message-options">
@@ -701,7 +701,6 @@ function initServer() {
 
 		return container;
 	}
-
 
 	async function Embed({ embed }) {
 		if (!embed) return '';
