@@ -270,7 +270,7 @@ function initServer() {
 					return `<video data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" controls class="message-asset-video lazyload"></video>`;
 				} else if (type === 'audio') {
 					return `
-					<div class="custom-player" data-originalName="${asset.originalName}" data-h="test" data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}">
+					<div class="custom-player" data-originalName="${asset.originalName}" data-audio-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}">
 						<span class="material-symbols-rounded play-pause" style="cursor:pointer;">play_arrow</span>
 						<div class="time-left-current">
 							<span class="current-time">0:00</span>
@@ -305,9 +305,6 @@ function initServer() {
 		lazyEls.forEach(el => {
 			if (el.tagName === 'IMG' || el.tagName === 'VIDEO') {
 				el.src = el.dataset.src;
-			} else if (el.classList.contains('custom-player')) {
-				const audio = new Audio(el.dataset.src);
-				el.audioInstance = audio;
 			}
 			el.removeAttribute('data-src');
 			el.classList.remove('lazyload');
@@ -359,7 +356,7 @@ function initServer() {
 	}
 	const customPlayers = new Map();
 	function initCustomPlayer(el) {
-		const audioSrc = el.dataset.src;
+		const audioSrc = el.dataset.audioSrc;
 		const originalName = el.dataset.originalname;
 
 		let audio;
