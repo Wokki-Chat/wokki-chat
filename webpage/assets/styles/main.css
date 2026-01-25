@@ -4333,7 +4333,7 @@ input#clr-hue-slider {
     pointer-events: none;
 }
 
-.message-reactions {
+.message-reactions-container {
     display: flex;
     flex-wrap: wrap;
     flex-direction: row;

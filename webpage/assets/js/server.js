@@ -579,13 +579,15 @@ function initServer() {
 		for (const [emojiText, arr] of Object.entries(superCounts)) {
 			grouped.push({ reaction: arr[0], count: arr.length });
 		}
-		const html = await Promise.all(grouped.map(r => Reaction({ reaction: r.reaction, count: r.count })));
+		const html = await Promise.all(
+			grouped.map(r => Reaction({ reaction: r.reaction, count: r.count }))
+		);
 		const addReactionEl = document.createElement("div");
-		addReactionEl.classList.add("reaction");
-		addReactionEl.classList.add("add-reaction");
+		addReactionEl.classList.add("reaction", "add-reaction");
 		addReactionEl.innerHTML = `<span class="add-reaction-icon material-symbols-rounded">add_reaction</span>`;
-		html.push(addReactionEl);
+		html.push(addReactionEl.outerHTML);
 		return `<div class="message-reactions-container">${html.join("")}</div>`;
+
 	}
 
 	async function Embed({ embed }) {
