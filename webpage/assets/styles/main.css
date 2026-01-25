@@ -4363,6 +4363,11 @@ input#clr-hue-slider {
     border: 1px solid var(--clr-text-a50);
 }
 
+.reaction.own {
+    background-color: var(--clr-primary-a30-20);
+    border: 1px solid var(--clr-primary-a0);
+}
+
 .reaction .emoji {
     font-size: 16px;
     user-select: none;

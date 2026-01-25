@@ -547,6 +547,7 @@ function initServer() {
 
 		let className = "reaction";
 		if (super_reaction) className += " super-reaction";
+		if (reaction.user_id === user_id) className += " own";
 
 		return `<div class="${className}" title="${reaction_user_info.username || ""}">
 			<span class="emoji">${renderedEmoji}</span>
