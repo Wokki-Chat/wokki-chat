@@ -4395,7 +4395,6 @@ input#clr-hue-slider {
 
 .emoji-picker-dropdown {
 	position: absolute;
-	top: 100%;
 	left: 0;
 	width: 300px;
 	max-height: 350px;
@@ -4404,7 +4403,6 @@ input#clr-hue-slider {
 	border-radius: 8px;
 	box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 	overflow: hidden;
-	display: none;
 	z-index: 1000;
 	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
