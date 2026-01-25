@@ -404,7 +404,11 @@ function initServer() {
 		const assetsContainer = document.createElement("div");
 		assetsContainer.classList.add("message-assets");
 		assetsContainer.innerHTML = assetsHTML;
-		msgEl.querySelector(".message-info").appendChild(assetsContainer);
+
+		const messageInfo = msgEl.querySelector(".message-info");
+		const reactionsDiv = messageInfo.querySelector(".message-reactions");
+
+		messageInfo.insertBefore(assetsContainer, reactionsDiv);
 
 		const lazyEls = msgEl.querySelectorAll('[data-src]');
 		lazyEls.forEach(el => {
