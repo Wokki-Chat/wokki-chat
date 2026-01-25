@@ -542,12 +542,12 @@ function initServer() {
 
 	async function Reaction({ reaction, count }) {
 		if (!reaction) return null;
-		const { reaction: emojiText, super_reaction, reaction_user_info } = reaction;
+		const { reaction: emojiText, super_reaction, reaction_user_info, user_id: reactionUserId } = reaction;
 		const renderedEmoji = await emojis.replaceText(emojiText);
 
 		let className = "reaction";
 		if (super_reaction) className += " super-reaction";
-		if (reaction.user_id === user_id) className += " own";
+		if (reactionUserId === user_id) className += " own";
 
 		return `<div class="${className}" title="${reaction_user_info.username || ""}">
 			<span class="emoji">${renderedEmoji}</span>
