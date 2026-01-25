@@ -46,9 +46,6 @@ function initServer() {
 	let selectedFiles = [];
 
 	const messageContainer = document.querySelector("#message-container");
-	window.addEventListener('DOMContentLoaded', async () => {
-		await emojis.load();
-	});
 
 	const textarea = document.getElementById("message-input");
 	const preview = document.getElementById("message-input-bg");
@@ -83,22 +80,8 @@ function initServer() {
 			server_id,
 			channel_id
 		});
+		await emojis.load();
 	}
-
-	async function preloadParentData(messages) {
-		const pids = messages.map(m => m.parent_message_id).filter(Boolean);
-		for (const pid of pids) {
-			if (!parentCache.has(pid)) {
-				try {
-					const data = await loadParentMessage(pid);
-					parentCache.set(pid, data);
-				} catch {
-					parentCache.set(pid, { parent_message_text: null, parent_message_user: null });
-				}
-			}
-		}
-	}
-
 	loadMessages();
 	socket.emit("get_server_users", {
 		access_token,
@@ -523,7 +506,10 @@ function initServer() {
 			</div>
 			<div class="message-options">
 				<div class="message-option" id="reply-btn">
-				<span class="material-symbols-rounded">reply</span>
+					<span class="material-symbols-rounded">reply</span>
+				</div>
+				<div class="message-option" id="reaction-btn">
+					<span class="material-symbols-rounded">add_reaction</span>
 				</div>
 				${
 					String(sent_by) === user_id
