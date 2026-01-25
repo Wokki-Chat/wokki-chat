@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 import json
 from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, get_cached_users, cache_users, delete_cached_message, get_command_id
 from server.helpers.user_helpers import get_user_premium_status, auth_required
-from server.helpers.server_helpers import server_permissions, is_user_in_server
+from server.helpers.server_helpers import server_permissions, is_user_in_server, is_bot_in_server
 import aiomysql
 import uuid
 import server.sio_instance as sio_instance
@@ -625,14 +625,20 @@ async def add_reaction(sid, metadata, data):
             channel_id = message_info['channel_id']
             server_id = message_info['server_id']
 
-            if not await is_user_in_server(cur, account_id, server_id):
-                await sio_instance.sio.emit(
-                    'add_reaction',
-                    {'success': False, 'error': f'User not in server, server id: {server_id}', 'req_id': req_id},
-                    to=sid
-                )
-                await addMessageToLogs(f"User not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
-                return
+            if is_bot:
+                if not await is_bot_in_server(cur, account_id, server_id):
+                    await sio_instance.sio.emit('add_reaction', {'success': False, 'error': f'Bot not in server, server id: {server_id}', 'req_id': req_id},
+                        to=sid
+                    )
+                    await addMessageToLogs(f"Bot not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
+                    return
+            else:
+                if not await is_user_in_server(cur, account_id, server_id):
+                    await sio_instance.sio.emit('add_reaction', {'success': False, 'error': f'User not in server, server id: {server_id}', 'req_id': req_id},
+                        to=sid
+                    )
+                    await addMessageToLogs(f"User not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
+                    return
 
             if not reaction.startswith(':') or not reaction.endswith(':'):
                 await sio_instance.sio.emit(
