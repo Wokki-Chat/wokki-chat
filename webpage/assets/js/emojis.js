@@ -237,14 +237,18 @@ window.emojis = {
 			searchInput.value = '';
 			searchInput.focus();
 
-			function hideDropdown(e) {
+			function hideDropdown() {
+				dropdown.style.display = 'none';
+				document.removeEventListener('click', outsideClick);
+			}
+
+			function outsideClick(e) {
 				if (!dropdown.contains(e.target) && e.target !== targetField) {
-					dropdown.style.display = 'none';
-					document.removeEventListener('click', hideDropdown);
+					hideDropdown();
 				}
 			}
 
-			document.addEventListener('click', hideDropdown);
+			setTimeout(() => document.addEventListener('click', outsideClick), 0);
 		});
 	}
 };
