@@ -99,37 +99,70 @@ window.emojis = {
 
 				function renderList(emojis) {
 					list.innerHTML = '';
+					const grouped = {};
 					for (const e of emojis) {
-						const btn = document.createElement('button');
-						btn.textContent = e.emoji;
-						btn.title = e.annotation || e.shortcodes?.[0] || '';
-						btn.classList.add('emoji-picker-item');
-						btn.addEventListener('click', () => {
-							if (targetField) {
-								const active = targetField;
-								const emoji = e.emoji;
+						if (!grouped[e.group]) grouped[e.group] = {};
+						if (!grouped[e.group][e.subgroup]) grouped[e.group][e.subgroup] = [];
+						grouped[e.group][e.subgroup].push(e);
+					}
+					for (const groupName in grouped) {
+						const groupDiv = document.createElement('div');
+						groupDiv.classList.add('emoji-picker-group');
 
-								if (active.isContentEditable) {
-									const sel = window.getSelection();
-									if (sel && sel.rangeCount) {
-										const range = sel.getRangeAt(0);
-										range.deleteContents();
-										range.insertNode(document.createTextNode(emoji));
-										range.collapse(false);
-										sel.removeAllRanges();
-										sel.addRange(range);
+						const groupTitle = document.createElement('div');
+						groupTitle.textContent = groupName.replaceAll('_', ' ');
+						groupTitle.classList.add('emoji-picker-group-title');
+						groupDiv.appendChild(groupTitle);
+
+						const subgroups = grouped[groupName];
+						for (const subgroupName in subgroups) {
+							const subgroupDiv = document.createElement('div');
+							subgroupDiv.classList.add('emoji-picker-subgroup');
+
+							const subgroupTitle = document.createElement('div');
+							subgroupTitle.textContent = subgroupName.replaceAll('_', ' ');
+							subgroupTitle.classList.add('emoji-picker-subgroup-title');
+							subgroupDiv.appendChild(subgroupTitle);
+
+							for (const e of subgroups[subgroupName]) {
+								const btn = document.createElement('button');
+								btn.textContent = e.emoji;
+								btn.title = e.annotation || e.shortcodes?.[0] || '';
+								btn.classList.add('emoji-picker-item');
+
+								btn.addEventListener('click', () => {
+									if (targetField) {
+										const active = targetField;
+										const emoji = e.emoji;
+
+										if (active.isContentEditable) {
+											const sel = window.getSelection();
+											if (sel && sel.rangeCount) {
+												const range = sel.getRangeAt(0);
+												range.deleteContents();
+												range.insertNode(document.createTextNode(emoji));
+												range.collapse(false);
+												sel.removeAllRanges();
+												sel.addRange(range);
+											}
+										} else if ('selectionStart' in active) {
+											const start = active.selectionStart;
+											const end = active.selectionEnd;
+											const value = active.value;
+											active.value = value.slice(0, start) + emoji + value.slice(end);
+											active.selectionStart = active.selectionEnd = start + emoji.length;
+										}
 									}
-								} else if ('selectionStart' in active) {
-									const start = active.selectionStart;
-									const end = active.selectionEnd;
-									const value = active.value;
-									active.value = value.slice(0, start) + emoji + value.slice(end);
-									active.selectionStart = active.selectionEnd = start + emoji.length;
-								}
+									resolve(e.emoji);
+								});
+
+								subgroupDiv.appendChild(btn);
 							}
-							resolve(e.emoji);
-						});
-						list.appendChild(btn);
+
+							groupDiv.appendChild(subgroupDiv);
+						}
+
+						list.appendChild(groupDiv);
 					}
 				}
 
