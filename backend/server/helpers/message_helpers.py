@@ -594,15 +594,17 @@ async def add_reaction(sid, metadata, data):
     req_id = data.get('req_id')
     reaction = data.get('reaction')
     account_id = metadata.get('account_id')
-    
     is_bot = metadata.get('is_bot')
-    
+    callback = data.get('_callback')
+
+    async def respond(resp_data):
+        if callback:
+            await callback(resp_data)
+        else:
+            await sio_instance.sio.emit('add_reaction', resp_data, to=sid)
+
     if message_id is None or reaction is None:
-        await sio_instance.sio.emit(
-            'add_reaction',
-            {'success': False, 'error': 'Missing required fields', 'req_id': req_id},
-            to=sid
-        )
+        await respond({'success': False, 'error': 'Missing required fields', 'req_id': req_id})
         await addMessageToLogs(f"Missing required fields for add_reaction", "INFO")
         return
 
@@ -614,11 +616,7 @@ async def add_reaction(sid, metadata, data):
             )
             message_info = await cur.fetchone()
             if not message_info:
-                await sio_instance.sio.emit(
-                    'add_reaction',
-                    {'success': False, 'error': 'Message not found', 'req_id': req_id},
-                    to=sid
-                )
+                await respond({'success': False, 'error': 'Message not found', 'req_id': req_id})
                 await addMessageToLogs(f"Message not found for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
                 return
 
@@ -627,25 +625,17 @@ async def add_reaction(sid, metadata, data):
 
             if is_bot:
                 if not await is_bot_in_server(cur, account_id, server_id):
-                    await sio_instance.sio.emit('add_reaction', {'success': False, 'error': f'Bot not in server, server id: {server_id}', 'req_id': req_id},
-                        to=sid
-                    )
+                    await respond({'success': False, 'error': f'Bot not in server, server id: {server_id}', 'req_id': req_id})
                     await addMessageToLogs(f"Bot not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
                     return
             else:
                 if not await is_user_in_server(cur, account_id, server_id):
-                    await sio_instance.sio.emit('add_reaction', {'success': False, 'error': f'User not in server, server id: {server_id}', 'req_id': req_id},
-                        to=sid
-                    )
+                    await respond({'success': False, 'error': f'User not in server, server id: {server_id}', 'req_id': req_id})
                     await addMessageToLogs(f"User not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
                     return
 
             if not reaction.startswith(':') or not reaction.endswith(':'):
-                await sio_instance.sio.emit(
-                    'add_reaction',
-                    {'success': False, 'error': 'Invalid reaction', 'req_id': req_id},
-                    to=sid
-                )
+                await respond({'success': False, 'error': 'Invalid reaction', 'req_id': req_id})
                 await addMessageToLogs(f"Invalid reaction for add_reaction, message id: {message_id}, user id: {account_id}, reaction: {reaction}", "INFO")
                 return
 
@@ -673,6 +663,7 @@ async def add_reaction(sid, metadata, data):
                         (message_id, reaction, account_id)
                     )
                 await conn.commit()
+                await respond({'success': True, 'message_id': message_id, 'reaction': reaction, 'removed': True, 'req_id': req_id})
                 await sio_instance.sio.emit(
                     'remove_reaction',
                     {'success': True, 'message_id': message_id, 'reaction': reaction, 'req_id': req_id},
@@ -691,6 +682,7 @@ async def add_reaction(sid, metadata, data):
                         (message_id, reaction, account_id)
                     )
                 await conn.commit()
+                await respond({'success': True, 'message_id': message_id, 'reaction': reaction, 'removed': False, 'req_id': req_id})
                 await sio_instance.sio.emit(
                     'add_reaction',
                     {'success': True, 'message_id': message_id, 'reaction': reaction, 'req_id': req_id},
