@@ -665,7 +665,7 @@ async def add_reaction(sid, metadata, data):
                 await conn.commit()
                 await sio_instance.sio.emit(
                     'remove_reaction',
-                    {'success': True, 'message_id': message_id, 'reaction': reaction, 'req_id': req_id},
+                    {'success': True, 'message_id': message_id, 'reaction': reaction, 'user_id': account_id, 'req_id': req_id},
                     room=f'server:{server_id}:channel:{channel_id}'
                 )
                 await addMessageToLogs(f"Removed reaction {reaction} from message {message_id} by user {account_id}", "INFO")
@@ -683,7 +683,7 @@ async def add_reaction(sid, metadata, data):
                 await conn.commit()
                 await sio_instance.sio.emit(
                     'add_reaction',
-                    {'success': True, 'message_id': message_id, 'reaction': reaction, 'req_id': req_id},
+                    {'success': True, 'message_id': message_id, 'reaction': reaction, 'user_id': account_id, 'req_id': req_id},
                     room=f'server:{server_id}:channel:{channel_id}'
                 )
                 await addMessageToLogs(f"Added reaction {reaction} to message {message_id} by user {account_id}", "INFO")

@@ -272,24 +272,21 @@ function initServer() {
 
 		socket.emit("add_reaction", { access_token, message_id: msg.id, reaction: emoji, server_id, channel_id });
 	}
-
-	async function updateReactionUI(el, msg, emoji, removed = false) {
-		const messageReactions = el.querySelector(".message-reactions-container") || (() => {
-			const container = document.createElement("div");
-			container.classList.add("message-reactions-container");
+	async function updateReactionUI(el, msg, emoji, reactingUserId, removed = false) {
+		let messageReactions = el.querySelector(".message-reactions-container");
+		if (!messageReactions && !removed) {
+			messageReactions = document.createElement("div");
+			messageReactions.classList.add("message-reactions-container");
 			const reactionsWrapper = el.querySelector(".message-reactions");
-			reactionsWrapper.appendChild(container);
-			return container;
-		})();
+			reactionsWrapper.appendChild(messageReactions);
+		}
+		if (!messageReactions) return;
 
 		const reactionEl = messageReactions.querySelector(`.reaction[data-reaction-name="${emoji}"]`);
 
-		function isOwn(reactionGroup) {
-			return reactionGroup.some(r => String(r.user_id) === String(user_id));
-		}
-
 		if (reactionEl) {
 			const countEl = reactionEl.querySelector(".count");
+
 			if (removed) {
 				if (countEl) {
 					const newCount = parseInt(countEl.textContent) - 1;
@@ -297,22 +294,29 @@ function initServer() {
 						reactionEl.remove();
 					} else {
 						countEl.textContent = newCount;
-						reactionEl.classList.remove("own");
+						if (String(reactingUserId) === String(user_id)) {
+							reactionEl.classList.remove("own");
+						}
 					}
 				} else {
 					reactionEl.remove();
 				}
-				return;
+			} else {
+				if (countEl) {
+					countEl.textContent = parseInt(countEl.textContent) + 1;
+				} else {
+					reactionEl.insertAdjacentHTML("beforeend", `<span class="count">1</span>`);
+				}
+				if (String(reactingUserId) === String(user_id)) {
+					reactionEl.classList.add("own");
+				}
 			}
-			if (countEl) {
-				countEl.textContent = parseInt(countEl.textContent) + 1;
-			}
-			reactionEl.classList.add("own");
 		} else if (!removed) {
 			const newReactionHTML = await Reaction({
-				reactionGroup: [{ reaction: emoji, user_id, reaction_user_info: { username: username_text, profile_picture: profile_picture_url } }],
+				reactionGroup: [{ reaction: emoji, user_id: reactingUserId, reaction_user_info: { username: username_text, profile_picture: profile_picture_url } }],
 				count: 1
 			});
+
 			const addReactionBtn = messageReactions.querySelector(".reaction.add-reaction");
 			if (addReactionBtn) {
 				addReactionBtn.insertAdjacentHTML("beforebegin", newReactionHTML);
@@ -320,19 +324,31 @@ function initServer() {
 				messageReactions.insertAdjacentHTML("beforeend", newReactionHTML);
 			}
 		}
+		if (messageReactions) {
+			const realReactions = messageReactions.querySelectorAll(".reaction:not(.add-reaction)");
+			if (realReactions.length === 0) {
+				messageReactions.remove();
+				return;
+			}
+			let addBtn = messageReactions.querySelector(".reaction.add-reaction");
+			if (!addBtn) {
+				addBtn = document.createElement("div");
+				addBtn.classList.add("reaction", "add-reaction");
+				addBtn.innerHTML = `<span class="add-reaction-icon material-symbols-rounded">add_reaction</span>`;
+				messageReactions.appendChild(addBtn);
+			}
+		}
 	}
-
-	socket.on("add_reaction", ({ message_id, reaction }) => {
+	socket.on("add_reaction", ({ message_id, reaction, user_id: reactingUserId }) => {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
-		if (el) updateReactionUI(el, message_id, reaction, false);
+		if (el) updateReactionUI(el, message_id, reaction, reactingUserId, false);
 	});
 
-	socket.on("remove_reaction", ({ message_id, reaction }) => {
+	socket.on("remove_reaction", ({ message_id, reaction, user_id: reactingUserId }) => {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
-		if (el) updateReactionUI(el, message_id, reaction, true);
+		if (el) updateReactionUI(el, message_id, reaction, reactingUserId, true);
 	});
-
-
+	
 	async function hydrateAssets(msgEl, assets, id) {
 		let assetsHTML = '';
 		if (assets && assets.length > 0) {
