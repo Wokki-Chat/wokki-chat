@@ -330,32 +330,6 @@ async def get_messages(sid, metadata, data):
                 await cur.execute(messages_query, messages_params)
                 messages = list(await cur.fetchall())
                 messages.reverse()
-                
-                message_ids = [msg['id'] for msg in messages]
-                reactions_by_msg = {}
-                if message_ids:
-                    await cur.execute(f"""
-                        SELECT mr.message_id, mr.reaction, mr.user_id, mr.bot_id, mr.super_reaction,
-                            u.username AS user_name, u.profile_picture AS user_picture, u.display_name AS user_display,
-                            b.name AS bot_name, b.profile_picture AS bot_picture
-                        FROM message_reactions mr
-                        LEFT JOIN users u ON mr.user_id = u.id
-                        LEFT JOIN bots b ON mr.bot_id = b.id
-                        WHERE mr.message_id IN ({','.join(['%s']*len(message_ids))})
-                    """, message_ids)
-                    all_reactions = await cur.fetchall()
-                    for r in all_reactions:
-                        reactions_by_msg.setdefault(r['message_id'], []).append({
-                            'reaction': r['reaction'],
-                            'user_id': r['user_id'],
-                            'bot_id': r['bot_id'],
-                            'super_reaction': r['super_reaction'] == 1,
-                            'reaction_user_info': {
-                                'username': r['user_name'] if r['user_name'] else r['bot_name'],
-                                'display_name': r['user_display'] if r['user_display'] else None,
-                                'profile_picture': r['user_picture'] if r['user_picture'] else r['bot_picture']
-                            }
-                        })
 
                 for msg in messages:
                     if isinstance(msg.get('created_at'), datetime):
@@ -438,7 +412,44 @@ async def get_messages(sid, metadata, data):
                             }
                     msg['command_info'] = command_info
                     
-                    msg['reactions'] = reactions_by_msg.get(msg['id'], [])
+                    reactions = []
+                    await cur.execute("""
+                        SELECT mr.reaction, mr.user_id, mr.bot_id, mr.super_reaction
+                        FROM message_reactions mr
+                        WHERE mr.message_id = %s
+                    """, (msg['id'],))
+                    reaction_rows = await cur.fetchall()
+
+                    for reaction_row in reaction_rows:
+                        reaction_user_info = None
+                        if reaction_row['user_id']:
+                            await cur.execute("SELECT username, display_name, profile_picture FROM users WHERE id = %s LIMIT 1", (reaction_row['user_id'],))
+                            user_row = await cur.fetchone()
+                            if user_row:
+                                reaction_user_info = {
+                                    'username': user_row['username'],
+                                    'display_name': user_row['display_name'],
+                                    'profile_picture': user_row['profile_picture']
+                                }
+                        elif reaction_row['bot_id']:
+                            await cur.execute("SELECT name AS username, profile_picture FROM bots WHERE id = %s LIMIT 1", (reaction_row['bot_id'],))
+                            bot_row = await cur.fetchone()
+                            if bot_row:
+                                reaction_user_info = {
+                                    'username': bot_row['username'],
+                                    'display_name': None,
+                                    'profile_picture': bot_row['profile_picture']
+                                }
+
+                        reactions.append({
+                            'reaction': reaction_row['reaction'],
+                            'user_id': reaction_row['user_id'],
+                            'bot_id': reaction_row['bot_id'],
+                            'super_reaction': reaction_row['super_reaction'] == 1,
+                            'reaction_user_info': reaction_user_info
+                        })
+
+                    msg['reactions'] = reactions
 
                 await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
                 await addMessageToLogs(f"Emitted all_messages to {user_id}, Sent {len(messages)} messages to {user_id}", "INFO")
