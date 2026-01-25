@@ -223,7 +223,7 @@ function initServer() {
 
 		const reactionsWrapper = el.querySelector(".message-reactions");
 		if (reactionsWrapper) {
-			const reactionsEl = msg.reactions ? await Reactions({ reactions: msg.reactions }) : document.createDocumentFragment();
+			const reactionsEl = msg.reactions ? await Reactions({ reactions: msg.reactions }, msg) : document.createDocumentFragment();
 			reactionsWrapper.appendChild(reactionsEl);
 		}
 
@@ -646,7 +646,7 @@ function initServer() {
 		return msgEl;
 	}
 
-	async function Reaction({ reactionGroup, count }) {
+	async function Reaction({ reactionGroup, count }, msg) {
 		if (!reactionGroup || reactionGroup.length === 0) return null;
 
 		const { reaction: emojiText, super_reaction } = reactionGroup[0];
@@ -660,12 +660,12 @@ function initServer() {
 		div.dataset.reactionName = emojiText;
 		div.innerHTML = `<span class="emoji">${renderedEmoji}</span>${count ? `<span class="count">${count}</span>` : ''}`;
 
-		div.addEventListener("click", () => handleReactionClick(div, null, emojiText));
+		div.addEventListener("click", () => handleReactionClick(div, msg, emojiText));
 
 		return div;
 	}
 
-	async function Reactions({ reactions }) {
+	async function Reactions({ reactions }, msg) {
 		if (!reactions || reactions.length === 0) return document.createDocumentFragment();
 
 		const normalCounts = {};
@@ -686,7 +686,7 @@ function initServer() {
 
 		const fragment = document.createDocumentFragment();
 		for (const group of grouped) {
-			const reactionEl = await Reaction({ reactionGroup: group, count: group.length });
+			const reactionEl = await Reaction({ reactionGroup: group, count: group.length }, msg);
 			if (reactionEl) fragment.appendChild(reactionEl);
 		}
 
