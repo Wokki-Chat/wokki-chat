@@ -318,9 +318,9 @@ function initServer() {
 					reaction: emoji,
 					user_id: reactingUserId,
 					reaction_user_info: { username: username_text, profile_picture: profile_picture_url }
-				}, msg_id],
+				}],
 				count: 1
-			});
+			}, msg_id);
 
 			const addReactionBtn = messageReactions.querySelector(".reaction.add-reaction");
 			if (addReactionBtn) {
@@ -662,7 +662,6 @@ function initServer() {
 		div.innerHTML = `<span class="emoji">${renderedEmoji}</span>${count ? `<span class="count">${count}</span>` : ''}`;
 
 		div.addEventListener("click", () => {
-			console.log(msg_id, emojiText);
 			handleReactionClick(div, msg_id, emojiText);
 		});
 
