@@ -327,6 +327,9 @@ function initServer() {
 			} else {
 				messageReactions.insertAdjacentHTML("beforeend", newReactionHTML);
 			}
+
+			const newReactionEl = messageReactions.querySelector(`.reaction[data-reaction-name="${emoji}"]`);
+			newReactionEl.addEventListener("click", () => handleReactionClick(el, msg, newReactionEl.getAttribute("data-reaction-name")));
 		}
 		if (messageReactions) {
 			const realReactions = messageReactions.querySelectorAll(".reaction:not(.add-reaction)");
