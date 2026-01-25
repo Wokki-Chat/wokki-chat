@@ -354,6 +354,7 @@ function initServer() {
 			await Promise.all(txtPromises);
 		}
 	}
+
 	const customPlayers = new Map();
 	function initCustomPlayer(el) {
 		const audioSrc = el.dataset.audioSrc;
@@ -364,6 +365,7 @@ function initServer() {
 			audio = customPlayers.get(audioSrc);
 		} else {
 			audio = new Audio(audioSrc);
+			audio.preload = "metadata";
 			customPlayers.set(audioSrc, audio);
 		}
 
@@ -396,6 +398,17 @@ function initServer() {
 				)
 			`;
 		}
+		if (audio.readyState >= 1) {
+			seekBar.max = audio.duration;
+			durationEl.textContent = `/ ${formatTime(audio.duration)}`;
+			updateSeekBarProgress();
+		}
+
+		audio.addEventListener('loadedmetadata', () => {
+			seekBar.max = audio.duration;
+			durationEl.textContent = `/ ${formatTime(audio.duration)}`;
+			updateSeekBarProgress();
+		});
 
 		playPauseBtn.addEventListener('click', () => {
 			if (audio.paused) {
@@ -406,12 +419,18 @@ function initServer() {
 					seekBar.value = audio.currentTime;
 					currentTimeEl.textContent = formatTime(audio.currentTime);
 					updateSeekBarProgress();
-				}, 500);
+				}, 250);
 			} else {
 				audio.pause();
 				playPauseBtn.textContent = 'play_arrow';
 				clearInterval(updateInterval);
 			}
+		});
+
+		seekBar.addEventListener('input', () => {
+			audio.currentTime = seekBar.value;
+			currentTimeEl.textContent = formatTime(audio.currentTime);
+			updateSeekBarProgress();
 		});
 
 		downloadBtn.addEventListener('click', () => {
@@ -421,18 +440,6 @@ function initServer() {
 			document.body.appendChild(a);
 			a.click();
 			document.body.removeChild(a);
-		});
-
-		audio.addEventListener('loadedmetadata', () => {
-			seekBar.max = audio.duration;
-			durationEl.textContent = `/ ${formatTime(audio.duration)}`;
-			updateSeekBarProgress();
-		});
-
-		seekBar.addEventListener('input', () => {
-			audio.currentTime = seekBar.value;
-			currentTimeEl.textContent = formatTime(audio.currentTime);
-			updateSeekBarProgress();
 		});
 
 		requestAnimationFrame(() => {
