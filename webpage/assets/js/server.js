@@ -227,12 +227,6 @@ function initServer() {
 		if (addReactionBtn) {
 			addReactionBtn.addEventListener("click", () => handleReactionClick(el, msg));
 		}
-
-		const reactionsEls = el.querySelectorAll(".reaction");
-		for (const reactionEl of reactionsEls) {
-			reactionEl.addEventListener("click", () => handleReactionClick(el, msg, reactionEl.getAttribute("data-reaction-name")));
-		}
-
 		const deleteBtn = el.querySelector("#delete-btn");
 		if (deleteBtn) {
 			deleteBtn.addEventListener("click", () => {
@@ -275,7 +269,7 @@ function initServer() {
 	async function updateReactionUI(el, msg, emoji, reactingUserId, removed = false) {
 		const scrollTopBefore = messageContainer.scrollTop;
 		const scrollHeightBefore = messageContainer.scrollHeight;
-		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10
+		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
 
 		let messageReactions = el.querySelector(".message-reactions-container");
 		if (!messageReactions && !removed) {
@@ -309,44 +303,45 @@ function initServer() {
 				if (countEl) {
 					countEl.textContent = parseInt(countEl.textContent) + 1;
 				} else {
-					reactionEl.insertAdjacentHTML("beforeend", `<span class="count">1</span>`);
+					const countSpan = document.createElement("span");
+					countSpan.classList.add("count");
+					countSpan.textContent = "1";
+					reactionEl.appendChild(countSpan);
 				}
 				if (String(reactingUserId) === String(user_id)) {
 					reactionEl.classList.add("own");
 				}
 			}
 		} else if (!removed) {
-			const newReactionHTML = await Reaction({
-				reactionGroup: [{ reaction: emoji, user_id: reactingUserId, reaction_user_info: { username: username_text, profile_picture: profile_picture_url } }],
+			const newReactionEl = await Reaction({
+				reactionGroup: [{
+					reaction: emoji,
+					user_id: reactingUserId,
+					reaction_user_info: { username: username_text, profile_picture: profile_picture_url }
+				}],
 				count: 1
 			});
 
 			const addReactionBtn = messageReactions.querySelector(".reaction.add-reaction");
 			if (addReactionBtn) {
-				addReactionBtn.insertAdjacentHTML("beforebegin", newReactionHTML);
+				addReactionBtn.before(newReactionEl);
 			} else {
-				messageReactions.insertAdjacentHTML("beforeend", newReactionHTML);
-			}
-
-			const newReactionEl = messageReactions.querySelector(`.reaction[data-reaction-name="${emoji}"]`);
-			if (newReactionEl) {
-				newReactionEl.addEventListener("click", () => handleReactionClick(el, msg, newReactionEl.getAttribute("data-reaction-name")));
+				messageReactions.appendChild(newReactionEl);
 			}
 		}
 
-		if (messageReactions) {
-			const realReactions = messageReactions.querySelectorAll(".reaction:not(.add-reaction)");
-			if (realReactions.length === 0) {
-				messageReactions.remove();
-				return;
-			}
-			let addBtn = messageReactions.querySelector(".reaction.add-reaction");
-			if (!addBtn) {
-				addBtn = document.createElement("div");
-				addBtn.classList.add("reaction", "add-reaction");
-				addBtn.innerHTML = `<span class="add-reaction-icon material-symbols-rounded">add_reaction</span>`;
-				messageReactions.appendChild(addBtn);
-			}
+		const realReactions = messageReactions.querySelectorAll(".reaction:not(.add-reaction)");
+		if (realReactions.length === 0) {
+			messageReactions.remove();
+			return;
+		}
+
+		let addBtn = messageReactions.querySelector(".reaction.add-reaction");
+		if (!addBtn) {
+			addBtn = document.createElement("div");
+			addBtn.classList.add("reaction", "add-reaction");
+			addBtn.innerHTML = `<span class="add-reaction-icon material-symbols-rounded">add_reaction</span>`;
+			messageReactions.appendChild(addBtn);
 		}
 
 		if (!nearBottom) {
@@ -657,21 +652,21 @@ function initServer() {
 		const { reaction: emojiText, super_reaction } = reactionGroup[0];
 		const renderedEmoji = await emojis.replaceText(emojiText);
 		const isOwn = reactionGroup.some(r => String(r.user_id) === String(user_id));
-
-		let className = "reaction";
-		if (isOwn) className += " own";
-
 		const username = reactionGroup[0].reaction_user_info?.username || "";
 
-		return `
-			<div class="${className}" title="${username}" data-reaction-name="${emojiText}">
-				<span class="emoji">${renderedEmoji}</span>
-				${count ? `<span class="count">${count}</span>` : ''}
-			</div>`;
+		const div = document.createElement("div");
+		div.className = "reaction" + (isOwn ? " own" : "");
+		div.title = username;
+		div.dataset.reactionName = emojiText;
+		div.innerHTML = `<span class="emoji">${renderedEmoji}</span>${count ? `<span class="count">${count}</span>` : ''}`;
+
+		div.addEventListener("click", () => handleReactionClick(div, null, emojiText));
+
+		return div;
 	}
 
 	async function Reactions({ reactions }) {
-		if (!reactions || reactions.length === 0) return "";
+		if (!reactions || reactions.length === 0) return document.createDocumentFragment();
 
 		const normalCounts = {};
 		const superCounts = {};
@@ -689,16 +684,22 @@ function initServer() {
 
 		const grouped = [...Object.values(normalCounts), ...Object.values(superCounts)];
 
-		const html = await Promise.all(
-			grouped.map(group => Reaction({ reactionGroup: group, count: group.length }))
-		);
+		const fragment = document.createDocumentFragment();
+		for (const group of grouped) {
+			const reactionEl = await Reaction({ reactionGroup: group, count: group.length });
+			if (reactionEl) fragment.appendChild(reactionEl);
+		}
 
 		const addReactionEl = document.createElement("div");
 		addReactionEl.classList.add("reaction", "add-reaction");
 		addReactionEl.innerHTML = `<span class="add-reaction-icon material-symbols-rounded">add_reaction</span>`;
-		html.push(addReactionEl.outerHTML);
+		fragment.appendChild(addReactionEl);
 
-		return `<div class="message-reactions-container">${html.join("")}</div>`;
+		const container = document.createElement("div");
+		container.classList.add("message-reactions-container");
+		container.appendChild(fragment);
+
+		return container;
 	}
 
 
