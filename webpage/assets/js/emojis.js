@@ -188,7 +188,6 @@ window.emojis = {
 
 			document.addEventListener('click', function hide(e) {
 				if (!dropdown.contains(e.target) && e.target !== targetField) {
-					dropdown.style.display = 'none';
 					document.removeEventListener('click', hide);
 				}
 			});
