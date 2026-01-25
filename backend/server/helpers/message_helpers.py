@@ -432,7 +432,7 @@ async def get_messages(sid, metadata, data):
                                 reaction_user_info = None
                                 if reaction_row['user_id']:
                                     await cur.execute(
-                                        "SELECT username, display_name, profile_picture FROM users WHERE id = %s LIMIT 1",
+                                        "SELECT username, nickname AS display_name, profile_picture FROM users WHERE id = %s LIMIT 1",
                                         (reaction_row['user_id'],)
                                     )
                                     user_row = await cur.fetchone()
