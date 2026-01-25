@@ -329,8 +329,11 @@ function initServer() {
 			}
 
 			const newReactionEl = messageReactions.querySelector(`.reaction[data-reaction-name="${emoji}"]`);
-			newReactionEl.addEventListener("click", () => handleReactionClick(el, msg, newReactionEl.getAttribute("data-reaction-name")));
+			if (newReactionEl) {
+				newReactionEl.addEventListener("click", () => handleReactionClick(el, msg, newReactionEl.getAttribute("data-reaction-name")));
+			}
 		}
+
 		if (messageReactions) {
 			const realReactions = messageReactions.querySelectorAll(".reaction:not(.add-reaction)");
 			if (realReactions.length === 0) {
@@ -355,6 +358,7 @@ function initServer() {
 			});
 		}
 	}
+
 	socket.on("add_reaction", ({ message_id, reaction, user_id: reactingUserId }) => {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
 		if (el) updateReactionUI(el, message_id, reaction, reactingUserId, false);
