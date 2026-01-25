@@ -339,8 +339,8 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
                 <?php 
                 if ($active_tab === "appearance") {
                     $appearanceHtml = file_get_contents('settings_html/settings_appearance.html');
-                    $theme = explode(' ', $theme)[0];
                     $layout = explode(' ', $theme)[1];
+                    $theme = explode(' ', $theme)[0];
                     $appearanceHtml = str_replace("{{light_active}}", ($theme === "light" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{dark_active}}", ($theme === "dark" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{night_active}}", ($theme === "night" ? "active" : ""), $appearanceHtml);
