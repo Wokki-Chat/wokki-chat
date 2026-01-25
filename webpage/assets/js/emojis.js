@@ -6,6 +6,8 @@ window.emojis = {
 		const res = await fetch(path);
 		const data = await res.json();
 
+		this.all = data;
+
 		for (const entry of data) {
 			if (!entry.emoji || !Array.isArray(entry.shortcodes)) continue;
 
