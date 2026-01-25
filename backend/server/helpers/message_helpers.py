@@ -278,34 +278,34 @@ async def get_messages(sid, metadata, data):
                         else:
                             joined_at = joined_at_value
 
-
                 if joined_at and not can_read_history:
-                    joined_at_filter_msg = " AND m.created_at >= %s"
-                    joined_at_filter_bot = " AND bm.created_at >= %s"
-                    joined_at_filter_count_msg = " AND created_at >= %s"
-                    joined_at_filter_count_bot = " AND created_at >= %s"
-                    params = [server_id, channel_id, joined_at, server_id, channel_id, joined_at]
+                    joined_at_filter_count = " AND created_at >= %s"
+                    count_params = [server_id, channel_id, joined_at]
                 else:
-                    joined_at_filter_msg = ""
-                    joined_at_filter_bot = ""
-                    joined_at_filter_count_msg = ""
-                    joined_at_filter_count_bot = ""
-                    params = [server_id, channel_id, server_id, channel_id]
+                    joined_at_filter_count = ""
+                    count_params = [server_id, channel_id]
 
                 count_query = f"""
                     SELECT COUNT(*) AS total
                     FROM messages
                     WHERE server_id = %s
                     AND channel_id = %s
-                    {joined_at_filter_count_msg}
+                    {joined_at_filter_count}
                 """
-                await cur.execute(count_query, params)
+                await cur.execute(count_query, count_params)
                 total_count = (await cur.fetchone())['total']
+
+                if joined_at and not can_read_history:
+                    joined_at_filter_msg = " AND m.created_at >= %s"
+                    messages_params = [server_id, channel_id, joined_at, limit, offset]
+                else:
+                    joined_at_filter_msg = ""
+                    messages_params = [server_id, channel_id, limit, offset]
 
                 messages_query = f"""
                     SELECT * FROM (
                         SELECT 
-                            m.id, m.message, m.sent_by, m.sent_by_bot, m.created_at, m.updated_at, m.edited, m.server_id,  m.channel_id,
+                            m.id, m.message, m.sent_by, m.sent_by_bot, m.created_at, m.updated_at, m.edited, m.server_id, m.channel_id,
                             m.parent_message_id, m.assets, m.command, m.command_user_id, m.embed,
                             u.username, u.nickname AS display_name, u.profile_picture, u.is_staff AS staff,
                             (m.sent_by_bot IS NOT NULL) AS bot_message
@@ -318,8 +318,7 @@ async def get_messages(sid, metadata, data):
                     ORDER BY created_at DESC
                     LIMIT %s OFFSET %s
                 """
-                params.extend([limit, offset])
-                await cur.execute(messages_query, params)
+                await cur.execute(messages_query, messages_params)
                 messages = list(await cur.fetchall())
                 messages.reverse()
 
