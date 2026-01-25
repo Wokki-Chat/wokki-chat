@@ -273,6 +273,10 @@ function initServer() {
 		socket.emit("add_reaction", { access_token, message_id: msg.id, reaction: emoji, server_id, channel_id });
 	}
 	async function updateReactionUI(el, msg, emoji, reactingUserId, removed = false) {
+		const scrollTopBefore = messageContainer.scrollTop;
+		const scrollHeightBefore = messageContainer.scrollHeight;
+		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10
+
 		let messageReactions = el.querySelector(".message-reactions-container");
 		if (!messageReactions && !removed) {
 			messageReactions = document.createElement("div");
@@ -337,6 +341,15 @@ function initServer() {
 				addBtn.innerHTML = `<span class="add-reaction-icon material-symbols-rounded">add_reaction</span>`;
 				messageReactions.appendChild(addBtn);
 			}
+		}
+
+		if (!nearBottom) {
+			const scrollHeightAfter = messageContainer.scrollHeight;
+			messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
+		} else {
+			requestAnimationFrame(() => {
+				messageContainer.scrollTop = messageContainer.scrollHeight;
+			});
 		}
 	}
 	socket.on("add_reaction", ({ message_id, reaction, user_id: reactingUserId }) => {
