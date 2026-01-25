@@ -540,48 +540,47 @@ function initServer() {
 		return msgEl;
 	}
 
-	async function Reaction({ reaction }) {
+	async function Reaction({ reaction, count }) {
 		if (!reaction) return null;
 		const { reaction: emojiText, super_reaction, reaction_user_info } = reaction;
-		const emoji = await emojis.replaceText(emojiText);
+		const renderedEmoji = await emojis.replaceText(emojiText);
 
 		let className = "reaction";
 		if (super_reaction) className += " super-reaction";
 
-		return `<div class="${className}" title="${reaction_user_info.username}">
-			<span class="emoji">${emoji}</span>
+		return `<div class="${className}" title="${reaction_user_info.username || ""}">
+			<span class="emoji">${renderedEmoji}</span>
+			${count > 1 ? `<span class="count">${count}</span>` : `<img class="super-reaction-picture" src="${reaction_user_info.profile_picture}" />`}
 		</div>`;
 	}
 
 	async function Reactions({ reactions }) {
 		if (!reactions || reactions.length === 0) return "";
-		const grouped = [];
 		const normalCounts = {};
+		const superCounts = {};
+
 		for (const r of reactions) {
 			if (r.super_reaction) {
-				grouped.push(r);
+				const key = r.reaction;
+				if (!superCounts[key]) superCounts[key] = [];
+				superCounts[key].push(r);
 			} else {
-				if (!normalCounts[r.reaction]) normalCounts[r.reaction] = 0;
-				normalCounts[r.reaction]++;
+				const key = r.reaction;
+				if (!normalCounts[key]) normalCounts[key] = [];
+				normalCounts[key].push(r);
 			}
 		}
-		for (const [emojiText, count] of Object.entries(normalCounts)) {
-			grouped.push({ reaction: emojiText, count, super_reaction: false });
+
+		const grouped = [];
+		for (const [emojiText, arr] of Object.entries(normalCounts)) {
+			grouped.push({ reaction: arr[0], count: arr.length });
 		}
-		const html = await Promise.all(grouped.map(async r => {
-			if (r.super_reaction) {
-				return Reaction({ reaction: r });
-			} else {
-				const emoji = await emojis.replaceText(r.reaction);
-				return `<div class="reaction">
-					<span class="emoji">${emoji}</span>
-					<span class="count">${r.count}</span>
-				</div>`;
-			}
-		}));
+		for (const [emojiText, arr] of Object.entries(superCounts)) {
+			grouped.push({ reaction: arr[0], count: arr.length });
+		}
+		const html = await Promise.all(grouped.map(r => Reaction({ reaction: r.reaction, count: r.count })));
 		return `<div class="message-reactions-container">${html.join("")}</div>`;
 	}
-
 
 	async function Embed({ embed }) {
 		if (!embed) return '';
