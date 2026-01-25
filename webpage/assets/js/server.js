@@ -270,6 +270,10 @@ function initServer() {
 			if (!emoji) return;
 		}
 
+		socket.emit("add_reaction", { access_token, message_id: msg.id, reaction: emoji, server_id, channel_id });
+	}
+
+	function updateReactionUI(el, msg, emoji, removed = false) {
 		const messageReactions = el.querySelector(".message-reactions-container") || (() => {
 			const container = document.createElement("div");
 			container.classList.add("message-reactions-container");
@@ -278,48 +282,55 @@ function initServer() {
 			return container;
 		})();
 
-		socket.emit("add_reaction", { access_token, message_id: msg.id, reaction: emoji, server_id, channel_id }, async (response) => {
-			if (!response.success) return;
+		const reactionEl = messageReactions.querySelector(`.reaction[data-reaction-name="${emoji}"]`);
 
-			const reactionEl = messageReactions.querySelector(`.reaction[data-reaction-name="${emoji}"]`);
-
-			if (reactionEl && response.removed) {
-				const countEl = reactionEl.querySelector(".count");
-				if (countEl) {
-					const newCount = parseInt(countEl.textContent) - 1;
-					if (newCount <= 0) {
-						reactionEl.remove();
-					} else {
-						countEl.textContent = newCount;
-					}
-				} else {
+		if (reactionEl && removed) {
+			const countEl = reactionEl.querySelector(".count");
+			if (countEl) {
+				const newCount = parseInt(countEl.textContent) - 1;
+				if (newCount <= 0) {
 					reactionEl.remove();
-				}
-				return;
-			}
-
-			if (reactionEl) {
-				const countEl = reactionEl.querySelector(".count");
-				if (countEl) {
-					countEl.textContent = parseInt(countEl.textContent) + 1;
 				} else {
-					const imgEl = reactionEl.querySelector(".reaction-picture");
-					if (imgEl) {
-						const span = document.createElement("span");
-						span.classList.add("count");
-						span.textContent = 2;
-						imgEl.replaceWith(span);
-					}
+					countEl.textContent = newCount;
 				}
 			} else {
-				const newReactionHTML = await Reaction({
-					reaction: { reaction: emoji, user_id, reaction_user_info: { username: username_text, profile_picture: profile_picture_url } },
-					count: 1
-				});
-				messageReactions.insertAdjacentHTML("beforeend", newReactionHTML);
+				reactionEl.remove();
 			}
-		});
+			return;
+		}
+
+		if (reactionEl) {
+			const countEl = reactionEl.querySelector(".count");
+			if (countEl) {
+				countEl.textContent = parseInt(countEl.textContent) + 1;
+			} else {
+				const imgEl = reactionEl.querySelector(".reaction-picture");
+				if (imgEl) {
+					const span = document.createElement("span");
+					span.classList.add("count");
+					span.textContent = 2;
+					imgEl.replaceWith(span);
+				}
+			}
+		} else {
+			Reaction({
+				reaction: { reaction: emoji, user_id, reaction_user_info: { username: username_text, profile_picture: profile_picture_url } },
+				count: 1
+			}).then(newReactionHTML => {
+				messageReactions.insertAdjacentHTML("beforeend", newReactionHTML);
+			});
+		}
 	}
+
+	socket.on("add_reaction", ({ message_id, reaction }) => {
+		const el = document.querySelector(`.message[data-id="${message_id}"]`);
+		if (el) updateReactionUI(el, message_id, reaction, false);
+	});
+
+	socket.on("remove_reaction", ({ message_id, reaction }) => {
+		const el = document.querySelector(`.message[data-id="${message_id}"]`);
+		if (el) updateReactionUI(el, message_id, reaction, true);
+	});
 
 	async function hydrateAssets(msgEl, assets, id) {
 		let assetsHTML = '';
