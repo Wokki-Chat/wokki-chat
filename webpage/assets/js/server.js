@@ -436,7 +436,7 @@ function initServer() {
 		}
 	}
 
-	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info }) {
+	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot }) {
 
 		if (!message && !embed) {
 			return null;
