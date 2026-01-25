@@ -714,6 +714,8 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
         <wchat-data id="premium" value="<?php echo htmlspecialchars(json_encode($premium_active)); ?>"></wchat-data>
         <wchat-data id="is-in-server" value="<?php echo htmlspecialchars(json_encode($is_in_server)); ?>"></wchat-data>
+        <wchat-data id="username-text" value="<?php echo htmlspecialchars($username); ?>"></wchat-data>
+        <wchat-data id="profile-picture-url" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
         <script src="/assets/js/emojis.js"></script>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>

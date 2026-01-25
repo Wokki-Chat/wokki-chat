@@ -21,6 +21,9 @@ function initServer() {
 
 	const is_in_server = JSON.parse(document.getElementById("is-in-server").getAttribute("value"));
 
+	const username_text = document.getElementById("username-text").getAttribute("value");
+	const profile_picture_url = document.getElementById("profile-picture-url").getAttribute("value");
+
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
 			el.parentElement.classList.toggle('expanded');
@@ -218,17 +221,16 @@ function initServer() {
 		replyBtn.addEventListener("click", () => replyMessage(msg.id));
 
 		const reactionButton = el.querySelector("#reaction-btn");
-		reactionButton.addEventListener("click", async () => {
-			const emoji = await emojis.picker(null, el);
-			console.log(emoji);
-		});
+		reactionButton.addEventListener("click", () => handleReactionClick(el, msg));
 
 		const addReactionBtn = el.querySelector(".add-reaction");
 		if (addReactionBtn) {
-			addReactionBtn.addEventListener("click", async () => {
-				const emoji = await emojis.picker(null, el);
-				console.log(emoji);
-			});
+			addReactionBtn.addEventListener("click", () => handleReactionClick(el, msg));
+		}
+
+		const reactionsEls = el.querySelectorAll(".reaction");
+		for (const reactionEl of reactionsEls) {
+			reactionEl.addEventListener("click", () => handleReactionClick(el, msg, reactionEl.getAttribute("data-reaction-name")));
 		}
 
 		const deleteBtn = el.querySelector("#delete-btn");
@@ -262,6 +264,64 @@ function initServer() {
 		}
 	}
 
+	async function handleReactionClick(el, msg, emoji = null) {
+		if (!emoji) {
+			emoji = await emojis.picker(null, el, true);
+			if (!emoji) return;
+		}
+
+		const access_token = window.access_token;
+		const messageReactions = el.querySelector(".message-reactions-container") || (() => {
+			const container = document.createElement("div");
+			container.classList.add("message-reactions-container");
+			const reactionsWrapper = el.querySelector(".message-content");
+			reactionsWrapper.appendChild(container);
+			return container;
+		})();
+
+		socket.emit("add_reaction", { access_token, message_id: msg.id, reaction: emoji }, async (response) => {
+			if (!response.success) return;
+
+			const reactionEl = messageReactions.querySelector(`.reaction[data-reaction-name="${emoji}"]`);
+
+			if (reactionEl && response.removed) {
+				const countEl = reactionEl.querySelector(".count");
+				if (countEl) {
+					const newCount = parseInt(countEl.textContent) - 1;
+					if (newCount <= 0) {
+						reactionEl.remove();
+					} else {
+						countEl.textContent = newCount;
+					}
+				} else {
+					reactionEl.remove();
+				}
+				return;
+			}
+
+			if (reactionEl) {
+				const countEl = reactionEl.querySelector(".count");
+				if (countEl) {
+					countEl.textContent = parseInt(countEl.textContent) + 1;
+				} else {
+					const imgEl = reactionEl.querySelector(".reaction-picture");
+					if (imgEl) {
+						const span = document.createElement("span");
+						span.classList.add("count");
+						span.textContent = 2;
+						imgEl.replaceWith(span);
+					}
+				}
+			} else {
+				const newReactionHTML = await Reaction({
+					reaction: { reaction: emoji, user_id, reaction_user_info: { username: username_text, profile_picture: profile_picture_url } },
+					count: 1
+				});
+				messageReactions.insertAdjacentHTML("beforeend", newReactionHTML);
+			}
+		});
+	}
+	
 	async function hydrateAssets(msgEl, assets, id) {
 		let assetsHTML = '';
 		if (assets && assets.length > 0) {
@@ -553,7 +613,7 @@ function initServer() {
 		if (String(reaction.user_id) === String(user_id)) className += " own";
 
 		return `
-		<div class="${className}" title="${reaction_user_info.username || ""}">
+		<div class="${className}" title="${reaction_user_info.username || ""}" data-reaction-name="${emojiText}">
 			<span class="emoji">${renderedEmoji}</span>
 			${count > 1 ? `<span class="count">${count}</span>` : `<img class="reaction-picture" src="${reaction_user_info.profile_picture}" />`}
 		</div>`;

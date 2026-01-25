@@ -66,8 +66,8 @@ async def server_permissions(cur, user_id, server_id, permission_identifier):
 
 async def is_user_in_server(cur, user_id, server_id):
     await cur.execute(
-        "SELECT 1 FROM server_members WHERE server_id = %s AND user_id = %s LIMIT 1",
-        (server_id, user_id)
+        "SELECT 1 FROM server_members WHERE server_id = %s AND (user_id = %s OR bot_id = %s) LIMIT 1",
+        (server_id, user_id, user_id)
     )
     server = await cur.fetchone()
     await addMessageToLogs(f"User {user_id} in server {server_id}: {bool(server)}", "INFO")

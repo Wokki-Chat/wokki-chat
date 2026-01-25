@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 import json
 from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, get_cached_users, cache_users, delete_cached_message, get_command_id
 from server.helpers.user_helpers import get_user_premium_status, auth_required
-from server.helpers.server_helpers import server_permissions, send_server_notifications, get_server_users_info
+from server.helpers.server_helpers import server_permissions, is_user_in_server
 import aiomysql
 import uuid
 import server.sio_instance as sio_instance
@@ -587,3 +587,107 @@ async def delete_message(sid, metadata, data):
                 room=f'server:{server_id}:channel:{channel_id}'
             )
             await addMessageToLogs(f"Emitted message_deleted to {server_id}", "INFO")
+
+@auth_required(server_required=True, allow_bots=True)
+async def add_reaction(sid, metadata, data):
+    message_id = data.get('message_id')
+    req_id = data.get('req_id')
+    reaction = data.get('reaction')
+    account_id = metadata.get('account_id')
+    
+    is_bot = metadata.get('is_bot')
+    
+    if message_id is None or reaction is None:
+        await sio_instance.sio.emit(
+            'add_reaction',
+            {'success': False, 'error': 'Missing required fields', 'req_id': req_id},
+            to=sid
+        )
+        await addMessageToLogs(f"Missing required fields for add_reaction", "INFO")
+        return
+
+    async with config.pool.acquire() as conn:
+        async with conn.cursor(aiomysql.DictCursor) as cur:
+            await cur.execute(
+                "SELECT channel_id, server_id FROM messages WHERE id = %s",
+                (message_id,)
+            )
+            message_info = await cur.fetchone()
+            if not message_info:
+                await sio_instance.sio.emit(
+                    'add_reaction',
+                    {'success': False, 'error': 'Message not found', 'req_id': req_id},
+                    to=sid
+                )
+                await addMessageToLogs(f"Message not found for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
+                return
+
+            channel_id = message_info['channel_id']
+            server_id = message_info['server_id']
+
+            if not await is_user_in_server(cur, account_id, server_id):
+                await sio_instance.sio.emit(
+                    'add_reaction',
+                    {'success': False, 'error': 'User not in server', 'req_id': req_id},
+                    to=sid
+                )
+                await addMessageToLogs(f"User not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
+                return
+
+            if not reaction.startswith(':') or not reaction.endswith(':'):
+                await sio_instance.sio.emit(
+                    'add_reaction',
+                    {'success': False, 'error': 'Invalid reaction', 'req_id': req_id},
+                    to=sid
+                )
+                await addMessageToLogs(f"Invalid reaction for add_reaction, message id: {message_id}, user id: {account_id}, reaction: {reaction}", "INFO")
+                return
+
+            if is_bot:
+                await cur.execute(
+                    "SELECT * FROM message_reactions WHERE message_id=%s AND reaction=%s AND bot_id=%s",
+                    (message_id, reaction, account_id)
+                )
+            else:
+                await cur.execute(
+                    "SELECT * FROM message_reactions WHERE message_id=%s AND reaction=%s AND user_id=%s",
+                    (message_id, reaction, account_id)
+                )
+            existing = await cur.fetchone()
+
+            if existing:
+                if is_bot:
+                    await cur.execute(
+                        "DELETE FROM message_reactions WHERE message_id=%s AND reaction=%s AND bot_id=%s",
+                        (message_id, reaction, account_id)
+                    )
+                else:
+                    await cur.execute(
+                        "DELETE FROM message_reactions WHERE message_id=%s AND reaction=%s AND user_id=%s",
+                        (message_id, reaction, account_id)
+                    )
+                await conn.commit()
+                await sio_instance.sio.emit(
+                    'remove_reaction',
+                    {'success': True, 'message_id': message_id, 'reaction': reaction, 'req_id': req_id},
+                    room=f'server:{server_id}:channel:{channel_id}'
+                )
+                await addMessageToLogs(f"Removed reaction {reaction} from message {message_id} by user {account_id}", "INFO")
+            else:
+                if is_bot:
+                    await cur.execute(
+                        "INSERT INTO message_reactions (message_id, reaction, bot_id) VALUES (%s, %s, %s)",
+                        (message_id, reaction, account_id)
+                    )
+                else:
+                    await cur.execute(
+                        "INSERT INTO message_reactions (message_id, reaction, user_id) VALUES (%s, %s, %s)",
+                        (message_id, reaction, account_id)
+                    )
+                await conn.commit()
+                await sio_instance.sio.emit(
+                    'add_reaction',
+                    {'success': True, 'message_id': message_id, 'reaction': reaction, 'req_id': req_id},
+                    room=f'server:{server_id}:channel:{channel_id}'
+                )
+                await addMessageToLogs(f"Added reaction {reaction} to message {message_id} by user {account_id}", "INFO")

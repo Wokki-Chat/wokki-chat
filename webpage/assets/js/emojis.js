@@ -72,7 +72,7 @@ window.emojis = {
 		await this.replaceAllTextNodes(element);
 	},
 
-	async picker(targetField = null, relativeTo = null) {
+	async picker(targetField = null, relativeTo = null, shortcode = false) {
 		if (!Array.isArray(this.all) || this.all.length === 0) {
 			await this.load();
 		}
@@ -143,7 +143,7 @@ window.emojis = {
 				}
 
 				sidebar.querySelector('[data-group="all"]').classList.add('active');
-
+				
 				function renderList(emojis) {
 					list.innerHTML = '';
 
@@ -173,16 +173,17 @@ window.emojis = {
 							btn.classList.add('emoji-picker-item');
 
 							btn.addEventListener('click', () => {
+								let output = shortcode && e.shortcodes?.length ? e.shortcodes[0] : e.emoji;
+
 								if (targetField) {
 									const active = targetField;
-									const emoji = e.emoji;
 
 									if (active.isContentEditable) {
 										const sel = window.getSelection();
 										if (sel && sel.rangeCount) {
 											const range = sel.getRangeAt(0);
 											range.deleteContents();
-											range.insertNode(document.createTextNode(emoji));
+											range.insertNode(document.createTextNode(output));
 											range.collapse(false);
 											sel.removeAllRanges();
 											sel.addRange(range);
@@ -191,12 +192,12 @@ window.emojis = {
 										const start = active.selectionStart;
 										const end = active.selectionEnd;
 										const value = active.value;
-										active.value = value.slice(0, start) + emoji + value.slice(end);
-										active.selectionStart = active.selectionEnd = start + emoji.length;
+										active.value = value.slice(0, start) + output + value.slice(end);
+										active.selectionStart = active.selectionEnd = start + output.length;
 									}
 								}
 
-								resolve(e.emoji);
+								resolve(output);
 								dropdown.remove();
 							});
 
