@@ -550,7 +550,7 @@ function initServer() {
 
 		return `<div class="${className}" title="${reaction_user_info.username || ""}">
 			<span class="emoji">${renderedEmoji}</span>
-			${count > 1 ? `<span class="count">${count}</span>` : `${super_reaction ? `<img class="super-reaction-picture" src="${reaction_user_info.profile_picture}" />` : ''}`}
+			${count > 1 ? `<span class="count">${count}</span>` : `<img class="super-reaction-picture" src="${reaction_user_info.profile_picture}" />`}
 		</div>`;
 	}
 
