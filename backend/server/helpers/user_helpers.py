@@ -169,7 +169,7 @@ async def broadcast_user_update(user_id, is_bot=False):
             await addMessageToLogs(f"broadcast_user_update: rooms -> {rooms}", "INFO")
             
             await asyncio.gather(*[
-                sio_instance.sio.emit('user_updated', info, room=room, include_self=True)
+                sio_instance.sio.emit('user_updated', info, room=room)
                 for room in rooms
             ])
 
