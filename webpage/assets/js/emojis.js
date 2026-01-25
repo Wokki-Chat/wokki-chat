@@ -127,7 +127,6 @@ window.emojis = {
 									active.selectionStart = active.selectionEnd = start + emoji.length;
 								}
 							}
-							dropdown.style.display = 'none';
 							resolve(e.emoji);
 						});
 						list.appendChild(btn);
