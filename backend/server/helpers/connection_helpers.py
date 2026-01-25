@@ -79,7 +79,7 @@ async def handle_connect(sid, environ):
                 )
 
                 await cur.execute(
-                    "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = FALSE",
+                    "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = 0",
                     (user_id,)
                 )
                 await conn.commit()
@@ -184,14 +184,17 @@ async def handle_disconnect(sid):
                     return
                 
                 await cur.execute(
-                    "UPDATE users SET status = 'idle' WHERE id = %s AND status_manually_set = FALSE",
+                    "UPDATE users SET status = 'idle' WHERE id = %s AND status_manually_set = 0",
                     (user_id,)
                 )
                 await conn.commit()
                 await addMessageToLogs(f"User {user_id} set to idle after disconnect", "INFO")
                 await broadcast_user_update(user_id)
 
-        asyncio.create_task(handle_delayed_disconnect(user_id, token))
+        current_token = await redis_client.get(disconnect_key)
+        if current_token != token:
+            asyncio.create_task(handle_delayed_disconnect(user_id, token))
+            return
         return
 
     if bot_id:
@@ -214,7 +217,7 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
         async with conn.cursor() as cur:
             if await redis_client.get(disconnect_key) != disconnect_token and set(await get_sids_for_user(user_id)) != set():
                 await cur.execute(
-                    "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = FALSE",
+                    "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = 0",
                     (user_id,)
                 )
                 await conn.commit()
@@ -223,7 +226,7 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
                 return
             
             await cur.execute(
-                "UPDATE users SET status = 'offline' WHERE id = %s AND status_manually_set = FALSE",
+                "UPDATE users SET status = 'offline' WHERE id = %s AND status_manually_set = 0",
                 (user_id,)
             )
             await conn.commit()
