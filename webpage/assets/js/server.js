@@ -219,7 +219,7 @@ function initServer() {
 		replyBtn.addEventListener("click", () => replyMessage(msg.id));
 
 		const reactionButton = el.querySelector("#reaction-btn");
-		reactionButton.addEventListener("click", () => handleReactionClick(el, msg));
+		reactionButton.addEventListener("click", () => handleReactionClick(el, msg.id, null));
 
 		const reactionsWrapper = el.querySelector(".message-reactions");
 		if (reactionsWrapper) {
@@ -313,6 +313,7 @@ function initServer() {
 				}
 			}
 		} else if (!removed) {
+			console.log(msg_id);
 			const newReactionEl = await Reaction({
 				reactionGroup: [{
 					reaction: emoji,
@@ -662,7 +663,6 @@ function initServer() {
 
 		div.addEventListener("click", () => {
 			handleReactionClick(div, msg_id, emojiText);
-			console.log("Reaction clicked:", emojiText);
 		});
 
 		return div;
