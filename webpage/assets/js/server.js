@@ -695,6 +695,8 @@ function initServer() {
 		addReactionEl.innerHTML = `<span class="add-reaction-icon material-symbols-rounded">add_reaction</span>`;
 		fragment.appendChild(addReactionEl);
 
+		addReactionEl.addEventListener("click", () => handleReactionClick(addReactionEl, msg_id, null));
+
 		const container = document.createElement("div");
 		container.classList.add("message-reactions-container");
 		container.appendChild(fragment);
