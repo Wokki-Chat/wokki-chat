@@ -628,7 +628,7 @@ async def add_reaction(sid, metadata, data):
             if not await is_user_in_server(cur, account_id, server_id):
                 await sio_instance.sio.emit(
                     'add_reaction',
-                    {'success': False, 'error': 'User not in server', 'req_id': req_id},
+                    {'success': False, 'error': f'User not in server, server id: {server_id}', 'req_id': req_id},
                     to=sid
                 )
                 await addMessageToLogs(f"User not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
