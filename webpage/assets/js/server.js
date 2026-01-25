@@ -223,7 +223,7 @@ function initServer() {
 
 		const reactionsWrapper = el.querySelector(".message-reactions");
 		if (reactionsWrapper) {
-			const reactionsEl = msg.reactions ? await Reactions({ reactions: msg.reactions }, msg) : document.createDocumentFragment();
+			const reactionsEl = msg.reactions ? await Reactions({ reactions: msg.reactions }, msg.id) : document.createDocumentFragment();
 			reactionsWrapper.appendChild(reactionsEl);
 		}
 
@@ -258,15 +258,15 @@ function initServer() {
 		}
 	}
 
-	async function handleReactionClick(el, msg, emoji = null) {
+	async function handleReactionClick(el, msg_id, emoji = null) {
 		if (!emoji) {
 			emoji = await emojis.picker(null, el, true);
 			if (!emoji) return;
 		}
 
-		socket.emit("add_reaction", { access_token, message_id: msg.id, reaction: emoji, server_id, channel_id });
+		socket.emit("add_reaction", { access_token, message_id: msg_id, reaction: emoji, server_id, channel_id });
 	}
-	async function updateReactionUI(el, msg, emoji, reactingUserId, removed = false) {
+	async function updateReactionUI(el, msg_id, emoji, reactingUserId, removed = false) {
 		const scrollTopBefore = messageContainer.scrollTop;
 		const scrollHeightBefore = messageContainer.scrollHeight;
 		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
@@ -318,7 +318,7 @@ function initServer() {
 					reaction: emoji,
 					user_id: reactingUserId,
 					reaction_user_info: { username: username_text, profile_picture: profile_picture_url }
-				}],
+				}, msg_id],
 				count: 1
 			});
 
@@ -646,7 +646,7 @@ function initServer() {
 		return msgEl;
 	}
 
-	async function Reaction({ reactionGroup, count }, msg) {
+	async function Reaction({ reactionGroup, count }, msg_id) {
 		if (!reactionGroup || reactionGroup.length === 0) return null;
 
 		const { reaction: emojiText, super_reaction } = reactionGroup[0];
@@ -660,12 +660,12 @@ function initServer() {
 		div.dataset.reactionName = emojiText;
 		div.innerHTML = `<span class="emoji">${renderedEmoji}</span>${count ? `<span class="count">${count}</span>` : ''}`;
 
-		div.addEventListener("click", () => handleReactionClick(div, msg, emojiText));
+		div.addEventListener("click", () => handleReactionClick(div, msg_id, emojiText));
 
 		return div;
 	}
 
-	async function Reactions({ reactions }, msg) {
+	async function Reactions({ reactions }, msg_id) {
 		if (!reactions || reactions.length === 0) return document.createDocumentFragment();
 
 		const normalCounts = {};
@@ -686,7 +686,7 @@ function initServer() {
 
 		const fragment = document.createDocumentFragment();
 		for (const group of grouped) {
-			const reactionEl = await Reaction({ reactionGroup: group, count: group.length }, msg);
+			const reactionEl = await Reaction({ reactionGroup: group, count: group.length }, msg_id);
 			if (reactionEl) fragment.appendChild(reactionEl);
 		}
 
