@@ -4387,3 +4387,8 @@ input#clr-hue-slider {
     object-fit: cover;
     user-select: none;
 }
+
+.add-reaction-icon {
+    color: var(--clr-text-a30);
+    user-select: none;
+}
