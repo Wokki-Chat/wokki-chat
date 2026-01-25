@@ -459,7 +459,7 @@ function initServer() {
 	}
 
 
-	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot }) {
+	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, reactions }) {
 
 		if (!message && !embed) {
 			return null;
@@ -518,6 +518,7 @@ function initServer() {
 					</div>
 					<p class="message-text">${sanitizedMessage}</p>
 					${embeds ? `<div class="message-embed">${await Embeds({ embeds })}</div>` : ''}
+					${reactions ? `<div class="message-reactions">${await Reactions({ reactions })}</div>` : ''}
 				</div>
 			</div>
 			<div class="message-options">
@@ -538,6 +539,49 @@ function initServer() {
 
 		return msgEl;
 	}
+
+	async function Reaction({ reaction }) {
+		if (!reaction) return null;
+		const { reaction: emojiText, super_reaction, reaction_user_info } = reaction;
+		const emoji = await emoji.replaceText(emojiText);
+
+		let className = "reaction";
+		if (super_reaction) className += " super-reaction";
+
+		return `<div class="${className}" title="${reaction_user_info.username}">
+			<span class="emoji">${emoji}</span>
+		</div>`;
+	}
+
+	async function Reactions({ reactions }) {
+		if (!reactions || reactions.length === 0) return "";
+		const grouped = [];
+		const normalCounts = {};
+		for (const r of reactions) {
+			if (r.super_reaction) {
+				grouped.push(r);
+			} else {
+				if (!normalCounts[r.reaction]) normalCounts[r.reaction] = 0;
+				normalCounts[r.reaction]++;
+			}
+		}
+		for (const [emojiText, count] of Object.entries(normalCounts)) {
+			grouped.push({ reaction: emojiText, count, super_reaction: false });
+		}
+		const html = await Promise.all(grouped.map(async r => {
+			if (r.super_reaction) {
+				return Reaction({ reaction: r });
+			} else {
+				const emoji = await emoji.replaceText(r.reaction);
+				return `<div class="reaction">
+					<span class="emoji">${emoji}</span>
+					<span class="count">${r.count}</span>
+				</div>`;
+			}
+		}));
+		return `<div class="message-reactions-container">${html.join("")}</div>`;
+	}
+
 
 	async function Embed({ embed }) {
 		if (!embed) return '';
