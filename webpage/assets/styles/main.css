@@ -4353,13 +4353,14 @@ input#clr-hue-slider {
     padding: 5px 10px;
     border-radius: 10px;
     background-color: var(--clr-popup-a10);
+    border: 1px solid transparent;
     color: var(--clr-text-a0);
     width: max-content;
 }
 
 .reaction:hover {
     background-color: var(--clr-popup-a20);
-    border: 1px solid var(--clr-input-border-bg-darkest);
+    border: 1px solid var(--clr-text-a50);
 }
 
 .reaction .emoji {
