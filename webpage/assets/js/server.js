@@ -273,7 +273,7 @@ function initServer() {
 		socket.emit("add_reaction", { access_token, message_id: msg.id, reaction: emoji, server_id, channel_id });
 	}
 
-	function updateReactionUI(el, msg, emoji, removed = false) {
+	async function updateReactionUI(el, msg, emoji, removed = false) {
 		const messageReactions = el.querySelector(".message-reactions-container") || (() => {
 			const container = document.createElement("div");
 			container.classList.add("message-reactions-container");
@@ -284,40 +284,44 @@ function initServer() {
 
 		const reactionEl = messageReactions.querySelector(`.reaction[data-reaction-name="${emoji}"]`);
 
-		if (reactionEl && removed) {
-			const countEl = reactionEl.querySelector(".count");
-			if (countEl) {
-				const newCount = parseInt(countEl.textContent) - 1;
-				if (newCount <= 0) {
-					reactionEl.remove();
-				} else {
-					countEl.textContent = newCount;
-				}
-			} else {
-				reactionEl.remove();
-			}
-			return;
+		function isOwn(reactionGroup) {
+			return reactionGroup.some(r => String(r.user_id) === String(user_id));
 		}
 
 		if (reactionEl) {
 			const countEl = reactionEl.querySelector(".count");
+			if (removed) {
+				if (countEl) {
+					const newCount = parseInt(countEl.textContent) - 1;
+					if (newCount <= 0) {
+						reactionEl.remove();
+					} else {
+						countEl.textContent = newCount;
+						reactionEl.classList.remove("own");
+					}
+				} else {
+					reactionEl.remove();
+				}
+				return;
+			}
 			if (countEl) {
 				countEl.textContent = parseInt(countEl.textContent) + 1;
 			}
-		} else {
-			Reaction({
-				reaction: { reaction: emoji, user_id, reaction_user_info: { username: username_text, profile_picture: profile_picture_url } },
+			reactionEl.classList.add("own");
+		} else if (!removed) {
+			const newReactionHTML = await Reaction({
+				reactionGroup: [{ reaction: emoji, user_id, reaction_user_info: { username: username_text, profile_picture: profile_picture_url } }],
 				count: 1
-			}).then(newReactionHTML => {
-				const addReactionBtn = messageReactions.querySelector(".reaction.add-reaction");
-				if (addReactionBtn) {
-					addReactionBtn.insertAdjacentHTML("beforebegin", newReactionHTML);
-				} else {
-					messageReactions.insertAdjacentHTML("beforeend", newReactionHTML);
-				}
 			});
+			const addReactionBtn = messageReactions.querySelector(".reaction.add-reaction");
+			if (addReactionBtn) {
+				addReactionBtn.insertAdjacentHTML("beforebegin", newReactionHTML);
+			} else {
+				messageReactions.insertAdjacentHTML("beforeend", newReactionHTML);
+			}
 		}
 	}
+
 	socket.on("add_reaction", ({ message_id, reaction }) => {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
 		if (el) updateReactionUI(el, message_id, reaction, false);
@@ -327,6 +331,7 @@ function initServer() {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
 		if (el) updateReactionUI(el, message_id, reaction, true);
 	});
+
 
 	async function hydrateAssets(msgEl, assets, id) {
 		let assetsHTML = '';
