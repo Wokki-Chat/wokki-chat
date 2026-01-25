@@ -328,6 +328,7 @@ function initServer() {
 			} else {
 				messageReactions.appendChild(newReactionEl);
 			}
+			newReactionEl.addEventListener("click", () => handleReactionClick(div, msg_id, emoji));
 		}
 
 		const realReactions = messageReactions.querySelectorAll(".reaction:not(.add-reaction)");
@@ -660,8 +661,6 @@ function initServer() {
 		div.dataset.reactionName = emojiText;
 		div.innerHTML = `<span class="emoji">${renderedEmoji}</span>${count ? `<span class="count">${count}</span>` : ''}`;
 
-		div.addEventListener("click", () => handleReactionClick(div, msg_id, emojiText));
-
 		return div;
 	}
 
@@ -688,6 +687,7 @@ function initServer() {
 		for (const group of grouped) {
 			const reactionEl = await Reaction({ reactionGroup: group, count: group.length }, msg_id);
 			if (reactionEl) fragment.appendChild(reactionEl);
+			reactionEl.addEventListener("click", () => handleReactionClick(div, msg_id, emojiText));
 		}
 
 		const addReactionEl = document.createElement("div");
