@@ -141,7 +141,7 @@ function initServer() {
 
 	async function handleMessage(msg) {
 		const timestamp = msg.created_at;
-		const sent_by = msg.sent_by;
+		const sent_by = msg.sent_by !== null ? msg.sent_by : msg.sent_by_bot;
 
 		const existingIndex = messageCache.findIndex(m => m.id === msg.id);
 		if (existingIndex !== -1) {
@@ -461,7 +461,7 @@ function initServer() {
 		msgEl.classList.add("message");
 		msgEl.dataset.timestamp = created_at;
 		msgEl.dataset.messageId = message_id;
-		msgEl.dataset.sentBy = sent_by;
+		msgEl.dataset.sentBy = sent_by !== null ? sent_by : sent_by_bot;
 
 		msgEl.innerHTML = `
 			${
