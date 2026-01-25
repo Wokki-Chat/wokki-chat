@@ -80,8 +80,13 @@ function initServer() {
 			server_id,
 			channel_id
 		});
-		await emojis.load();
 	}
+
+	(async () => {
+		await emojis.load();
+	})();
+
+
 	loadMessages();
 	socket.emit("get_server_users", {
 		access_token,
