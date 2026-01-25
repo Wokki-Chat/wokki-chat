@@ -270,7 +270,7 @@ function initServer() {
 					return `<video data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" controls class="message-asset-video lazyload"></video>`;
 				} else if (type === 'audio') {
 					return `
-					<div class="custom-player" data-originalName="${asset.originalName}" data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}">
+					<div class="custom-player" data-originalName="${asset.originalName}" data-h="test" data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}">
 						<span class="material-symbols-rounded play-pause" style="cursor:pointer;">play_arrow</span>
 						<div class="time-left-current">
 							<span class="current-time">0:00</span>
