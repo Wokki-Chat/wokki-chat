@@ -203,6 +203,8 @@ function initServer() {
 		await hydrateInvites(el);
 		await hydrateSpotifyTracks(el);
 		if (msg.assets && msg.assets.length > 0) await hydrateAssets(el, msg.assets, msg.id);
+
+		await emojis.replaceEl(el);
 		
 		const customPlayer = el.querySelector(".custom-player");
 		if (customPlayer) await initCustomPlayer(customPlayer);
@@ -354,7 +356,7 @@ function initServer() {
 			await Promise.all(txtPromises);
 		}
 	}
-	
+
 	const customPlayers = new Map();
 
 	function audioLoaded(audio) {
