@@ -141,14 +141,14 @@ async def get_user_rooms(cur, user_id):
     query = "SELECT server_id FROM server_members WHERE user_id = %s"
     await cur.execute(query, (user_id,))
     rows = await cur.fetchall()
-    return [f"server_id:{r['server_id']}" for r in rows]
+    return [f"server:{r['server_id']}" for r in rows]
     # TODO: Add friends aswell
     
 async def get_bot_rooms(cur, bot_id):
     query = "SELECT server_id FROM server_members WHERE bot_id = %s"
     await cur.execute(query, (bot_id,))
     rows = await cur.fetchall()
-    return [f"server_id:{r['server_id']}" for r in rows]
+    return [f"server:{r['server_id']}" for r in rows]
 
 async def broadcast_user_update(user_id, is_bot=False):
     async with config.pool.acquire() as conn:
@@ -169,7 +169,7 @@ async def broadcast_user_update(user_id, is_bot=False):
             await addMessageToLogs(f"broadcast_user_update: rooms -> {rooms}", "INFO")
             
             await asyncio.gather(*[
-                sio_instance.sio.emit('user_updated', info, room=room)
+                sio_instance.sio.emit('user_updated', info, room=room, include_self=True)
                 for room in rooms
             ])
 
