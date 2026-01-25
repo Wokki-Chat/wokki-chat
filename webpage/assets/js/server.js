@@ -86,7 +86,6 @@ function initServer() {
 		await emojis.load();
 	})();
 
-
 	loadMessages();
 	socket.emit("get_server_users", {
 		access_token,
@@ -219,9 +218,11 @@ function initServer() {
 		replyBtn.addEventListener("click", () => replyMessage(msg.id));
 
 		const reactionButton = el.querySelector("#reaction-btn");
-		reactionButton.addEventListener("click", async () => {
-			const emoji = await emojis.picker();
-			console.log(emoji);
+		emojis.load().then(() => {
+			reactionButton.addEventListener("click", async () => {
+				const emoji = await emojis.picker();
+				console.log('Picked emoji:', emoji);
+			});
 		});
 
 		const deleteBtn = el.querySelector("#delete-btn");
