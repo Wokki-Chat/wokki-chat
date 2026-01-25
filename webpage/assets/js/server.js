@@ -543,7 +543,7 @@ function initServer() {
 	async function Reaction({ reaction }) {
 		if (!reaction) return null;
 		const { reaction: emojiText, super_reaction, reaction_user_info } = reaction;
-		const emoji = await emoji.replaceText(emojiText);
+		const emoji = await emojis.replaceText(emojiText);
 
 		let className = "reaction";
 		if (super_reaction) className += " super-reaction";
@@ -572,7 +572,7 @@ function initServer() {
 			if (r.super_reaction) {
 				return Reaction({ reaction: r });
 			} else {
-				const emoji = await emoji.replaceText(r.reaction);
+				const emoji = await emojis.replaceText(r.reaction);
 				return `<div class="reaction">
 					<span class="emoji">${emoji}</span>
 					<span class="count">${r.count}</span>
