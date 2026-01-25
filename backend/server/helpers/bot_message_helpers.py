@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 import aiomysql
 import json
-
 import server.config as config
 from server.config import get_bot_sid_from_id
 from server.sio_instance import sio
@@ -37,8 +36,8 @@ async def edit_bot_message(sid, data):
             
             await cur.execute(
                 '''
-                SELECT server_id, channel_id FROM bot_messages 
-                WHERE id = %s AND bot_id = %s
+                SELECT server_id, channel_id FROM messages 
+                WHERE id = %s AND sent_by_bot = %s
                 ''',
                 (message_id, bot_id)
             )
@@ -92,9 +91,9 @@ async def edit_bot_message(sid, data):
                 values.append(bot_id)
 
                 sql = f'''
-                    UPDATE bot_messages
+                    UPDATE messages
                     SET {', '.join(fields)}
-                    WHERE id = %s AND bot_id = %s
+                    WHERE id = %s AND sent_by_bot = %s
                 '''
 
                 await cur.execute(sql, values)

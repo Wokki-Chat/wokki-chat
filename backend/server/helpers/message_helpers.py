@@ -148,26 +148,26 @@ async def send_message(sid, metadata, data):
                     parent_username = parent_user.get('username')
 
             if is_bot:
-                await cur.execute(
-                    '''
-                    INSERT INTO bot_messages 
-                    (id, message, bot_id, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed, assets, parent_message_id)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ''',
-                    (message_id, message, account_id, timestamp, None, False, server_id, channel_id, command, command_user_id, embed_str, assets_json, parent_message_id)
-                )
+                sent_by = None
+                sent_by_bot = account_id
+            else:
+                sent_by = account_id
+                sent_by_bot = None
+
+            await cur.execute(
+                '''
+                INSERT INTO messages 
+                (id, message, sent_by, sent_by_bot, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed, assets, parent_message_id)
+                VALUES (%s, %s, %s, %s, %s, NULL, FALSE, %s, %s, %s, %s, %s, %s, %s)
+                ''',
+                (message_id, message, sent_by, sent_by_bot, timestamp, server_id, channel_id, command if is_bot else None,
+                command_user_id if is_bot else None, embed_str if is_bot else None, assets_json, parent_message_id)
+            )
+
+            if is_bot:
                 await addMessageToLogs(f"Inserted bot message for bot id: {account_id}", "INFO")
             else:
-                await cur.execute(
-                    '''
-                    INSERT INTO messages 
-                    (id, message, sent_by, created_at, updated_at, edited, server_id, channel_id, parent_message_id, assets)
-                    VALUES (%s, %s, %s, %s, NULL, FALSE, %s, %s, %s, %s)
-                    ''',
-                    (message_id, message, account_id, timestamp, server_id, channel_id, parent_message_id, assets_json)
-                )
                 await addMessageToLogs(f"Inserted message for user id: {account_id}", "INFO")
-                
                 await addKudos(cur, account_id, 1, message, server_id, channel_id)
 
             await conn.commit()
@@ -219,7 +219,7 @@ async def send_message(sid, metadata, data):
     
     await sio_instance.sio.emit('send_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
     await addMessageToLogs(f"send_message_response emitted for sid: {sid}", "INFO")
-    
+
 @auth_required(server_required=True, allow_bots=False)
 async def get_messages(sid, metadata, data):
     server_id = data.get('server_id')
@@ -293,39 +293,31 @@ async def get_messages(sid, metadata, data):
                     params = [server_id, channel_id, server_id, channel_id]
 
                 count_query = f"""
-                    SELECT (
-                        (SELECT COUNT(*) FROM messages WHERE server_id = %s AND channel_id = %s {joined_at_filter_count_msg})
-                        +
-                        (SELECT COUNT(*) FROM bot_messages WHERE server_id = %s AND channel_id = %s {joined_at_filter_count_bot})
-                    ) AS total
+                    SELECT COUNT(*) AS total
+                    FROM messages
+                    WHERE server_id = %s
+                    AND channel_id = %s
+                    {joined_at_filter_count_msg}
                 """
                 await cur.execute(count_query, params)
                 total_count = (await cur.fetchone())['total']
 
                 messages_query = f"""
                     SELECT * FROM (
-                        SELECT m.id, m.message, m.sent_by, u.username, m.created_at, m.updated_at, u.nickname AS display_name,
-                            m.edited, m.server_id, m.channel_id, m.parent_message_id, m.assets,
-                            u.profile_picture, NULL AS command, NULL AS command_user_id, NULL as embed, u.is_staff AS staff,
-                            FALSE AS bot_message
+                        SELECT 
+                            m.id, m.message, m.sent_by, m.sent_by_bot, m.created_at, m.updated_at, m.edited, m.server_id,  m.channel_id,
+                            m.parent_message_id, m.assets, m.command, m.command_user_id, m.embed,
+                            u.username, u.nickname AS display_name, u.profile_picture, u.is_staff AS staff,
+                            (m.sent_by_bot IS NOT NULL) AS bot_message
                         FROM messages m
-                        JOIN users u ON m.sent_by = u.id
-                        WHERE m.server_id = %s AND m.channel_id = %s {joined_at_filter_msg}
-
-                        UNION ALL
-
-                        SELECT bm.id, bm.message, bm.bot_id AS sent_by, b.name AS username, bm.created_at, bm.updated_at, null AS display_name,
-                            bm.edited, bm.server_id, bm.channel_id, NULL AS parent_message_id, NULL AS assets,
-                            b.profile_picture, bm.command, bm.command_user_id, bm.embed, FALSE AS staff,
-                            TRUE AS bot_message
-                        FROM bot_messages bm
-                        LEFT JOIN bots b ON bm.bot_id = b.id
-                        WHERE bm.server_id = %s AND bm.channel_id = %s {joined_at_filter_bot}
+                        LEFT JOIN users u ON m.sent_by = u.id
+                        LEFT JOIN bots b ON m.sent_by_bot = b.id
+                        WHERE m.server_id = %s AND m.channel_id = %s
+                        {joined_at_filter_msg}
                     ) AS combined_messages
                     ORDER BY created_at DESC
                     LIMIT %s OFFSET %s
                 """
-
                 params.extend([limit, offset])
                 await cur.execute(messages_query, params)
                 messages = list(await cur.fetchall())
@@ -354,70 +346,82 @@ async def get_messages(sid, metadata, data):
                     if not msg['bot_message']:
                         premium = await get_user_premium_status(cur, msg['sent_by'])
 
-                    msg['sender_info'] = {
-                        'username': msg.pop('username', None),
-                        'display_name': msg.pop('display_name', None),
-                        'profile_picture': msg.pop('profile_picture', None),
-                        'staff': msg.pop('staff', None),
-                        'premium': premium
-                    }
+                    if msg['bot_message']:
+                        await cur.execute("SELECT name, profile_picture FROM bots WHERE id = %s LIMIT 1", (msg['sent_by_bot'],))
+                        bot_row = await cur.fetchone()
+                        sender_info = {
+                            'username': bot_row['name'] if bot_row else None,
+                            'display_name': None,
+                            'profile_picture': bot_row['profile_picture'] if bot_row else None,
+                            'staff': False,
+                            'premium': False
+                        }
+                    else:
+                        sender_info = {
+                            'username': msg.pop('username', None),
+                            'display_name': msg.pop('display_name', None),
+                            'profile_picture': msg.pop('profile_picture', None),
+                            'staff': msg.pop('staff', None),
+                            'premium': premium
+                        }
+                    msg['sender_info'] = sender_info
 
                     parent_id = msg.pop('parent_message_id', None)
                     parent_info = None
                     if parent_id:
                         await cur.execute("""
-                            SELECT m.id, m.message, m.sent_by, u.username
+                            SELECT m.id, m.message, m.sent_by, m.sent_by_bot, u.username AS user_name, b.name AS bot_name
                             FROM messages m
-                            JOIN users u ON m.sent_by = u.id
+                            LEFT JOIN users u ON m.sent_by = u.id
+                            LEFT JOIN bots b ON m.sent_by_bot = b.id
                             WHERE m.id = %s
                             LIMIT 1
                         """, (parent_id,))
                         parent_msg = await cur.fetchone()
                         if parent_msg:
                             parent_info = {
-                                'user_id': parent_msg['sent_by'],
+                                'user_id': parent_msg['sent_by'] if parent_msg['sent_by'] else parent_msg['sent_by_bot'],
                                 'message_id': parent_msg['id'],
                                 'message_preview': (parent_msg['message'][:100] + '...') if len(parent_msg['message']) > 100 else parent_msg['message'],
-                                'username': parent_msg['username']
+                                'username': parent_msg['user_name'] if parent_msg['user_name'] else parent_msg['bot_name']
                             }
-
                     msg['parent_message_info'] = parent_info
-                    
+
                     command_user_id = msg.pop('command_user_id', None)
                     command_info = None
                     if command_user_id:
-                        await cur.execute(
-                            """
+                        await cur.execute("""
                             SELECT u.username
                             FROM users u
                             WHERE u.id = %s
                             LIMIT 1
-                            """, (command_user_id,)
-                        )
+                        """, (command_user_id,))
                         command_user = await cur.fetchone()
                         if command_user:
                             command_info = {
                                 'command': msg.pop('command'),
                                 'username': command_user['username']
                             }
-
                     msg['command_info'] = command_info
 
-        await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
-        await addMessageToLogs(f"Emitted all_messages to {user_id}, Sent {len(messages)} messages to {user_id}", "INFO")
-        
-        await sio_instance.sio.emit('get_messages_response', {'success': True, 'count': len(messages), 'total': total_count, 'offset': offset}, to=sid)
-        await addMessageToLogs(f"get_messages_response emitted to {user_id}", "INFO")
-        
+                await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
+                await addMessageToLogs(f"Emitted all_messages to {user_id}, Sent {len(messages)} messages to {user_id}", "INFO")
+
+                await sio_instance.sio.emit(
+                    'get_messages_response',
+                    {'success': True, 'count': len(messages), 'total': total_count, 'offset': offset},
+                    to=sid
+                )
+                await addMessageToLogs(f"get_messages_response emitted to {user_id}", "INFO")
+
     asyncio.create_task(send_db())
     await sio_instance.sio.emit('get_messages_response', {'success': True, 'offset': offset, 'count': len(cached_messages)}, to=sid)
-    
+
 @auth_required(server_required=True, allow_bots=False)
 async def get_message_by_id(sid, metadata, data):
     message_id = data.get('message_id')
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
-
     user_id = metadata.get('account_id')
 
     if message_id is None or server_id is None or channel_id is None:
@@ -427,76 +431,96 @@ async def get_message_by_id(sid, metadata, data):
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            await cur.execute(
-                "SELECT id, sent_by, message, created_at FROM messages WHERE id = %s AND server_id = %s AND channel_id = %s",
-                (message_id, server_id, channel_id)
-            )
+            await cur.execute("""
+                SELECT m.id, m.message, m.sent_by, m.sent_by_bot, u.username AS user_name, b.name AS bot_name, m.created_at
+                FROM messages m
+                LEFT JOIN users u ON m.sent_by = u.id
+                LEFT JOIN bots b ON m.sent_by_bot = b.id
+                WHERE m.id = %s AND m.server_id = %s AND m.channel_id = %s
+                LIMIT 1
+            """, (message_id, server_id, channel_id))
             message = await cur.fetchone()
 
             if not message:
-                await cur.execute(
-                    "SELECT id, bot_id, message, created_at FROM bot_messages WHERE id = %s AND server_id = %s AND channel_id = %s",
-                    (message_id, server_id, channel_id)
-                )
-                bot_message = await cur.fetchone()
-                if not bot_message:
-                    await sio_instance.sio.emit('message_by_id', None, to=sid)
-                    return
-                
-                message = {
-                    'id': bot_message['id'],
-                    'sent_by': bot_message['bot_id'],
-                    'message': bot_message['message'],
-                    'created_at': bot_message['created_at'],
-                }
+                await sio_instance.sio.emit('message_by_id', None, to=sid)
+                return
 
             if isinstance(message.get('created_at'), datetime):
-                message['created_at'] = message['created_at'].isoformat()
+                message['created_at'] = message['created_at'].astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+
+            if message.get('sent_by_bot'):
+                message['sender'] = message.pop('bot_name')
+                message['sender_id'] = message.pop('sent_by_bot')
+            else:
+                message['sender'] = message.pop('user_name')
+                message['sender_id'] = message.pop('sent_by')
+
+            message.pop('sent_by', None)
+            message.pop('sent_by_bot', None)
 
             await sio_instance.sio.emit('message_by_id', message, to=sid)
             await addMessageToLogs(f"Emitted message_by_id to {user_id}", "INFO")
-            
+
 @auth_required(server_required=True, allow_bots=True)
 async def delete_message(sid, metadata, data):
     message_id = data.get('message_id')
     req_id = data.get('req_id')
-
     is_bot = metadata.get('is_bot')
     account_id = metadata.get('account_id')
-
     if message_id is None:
-        await sio_instance.sio.emit('message_deleted', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
+        await sio_instance.sio.emit(
+            'message_deleted',
+            {'success': False, 'error': 'Missing required fields', 'req_id': req_id},
+            to=sid
+        )
         await addMessageToLogs(f"Missing required fields for delete_message", "INFO")
         return
-
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             if is_bot:
-                await cur.execute("SELECT server_id, channel_id FROM bot_messages WHERE id = %s AND bot_id = %s", (message_id, account_id))
-                message = await cur.fetchone()
+                await cur.execute(
+                    "SELECT server_id, channel_id FROM messages WHERE id = %s AND sent_by_bot = %s",
+                    (message_id, account_id)
+                )
             else:
-                await cur.execute("SELECT server_id, channel_id FROM messages WHERE id = %s AND sent_by = %s", (message_id, account_id))
-                message = await cur.fetchone()
-
+                await cur.execute(
+                    "SELECT server_id, channel_id FROM messages WHERE id = %s AND sent_by = %s",
+                    (message_id, account_id)
+                )
+            message = await cur.fetchone()
             if not message:
-                await sio_instance.sio.emit('message_deleted', {'success': False, 'error': 'Message not found', 'req_id': req_id}, to=sid)
+                await sio_instance.sio.emit(
+                    'message_deleted',
+                    {'success': False, 'error': 'Message not found', 'req_id': req_id},
+                    to=sid
+                )
                 await addMessageToLogs(f"Message not found for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
                 return
-
             server_id = message['server_id']
             channel_id = message['channel_id']
-
             if is_bot:
-                result = await cur.execute('DELETE FROM bot_messages WHERE id = %s AND bot_id = %s', (message_id, account_id))
+                result = await cur.execute(
+                    "DELETE FROM messages WHERE id = %s AND sent_by_bot = %s",
+                    (message_id, account_id)
+                )
             else:
-                result = await cur.execute("DELETE FROM messages WHERE id = %s AND sent_by = %s", (message_id, account_id))
-            
+                result = await cur.execute(
+                    "DELETE FROM messages WHERE id = %s AND sent_by = %s",
+                    (message_id, account_id)
+                )
             if result == 0:
-                await sio_instance.sio.emit('message_deleted', {'success': False, 'error': 'Message couldn\'t be deleted', 'req_id': req_id}, to=sid)
+                await sio_instance.sio.emit(
+                    'message_deleted',
+                    {'success': False, 'error': 'Message couldn\'t be deleted', 'req_id': req_id},
+                    to=sid
+                )
                 await addMessageToLogs(f"Message couldn't be deleted for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
                 return
-
             await delete_cached_message(server_id, channel_id, message_id)
             await conn.commit()
-            await sio_instance.sio.emit('message_deleted', {'success': True, 'message_id': message_id, 'req_id': req_id}, room=f'server:{server_id}:channel:{channel_id}')
+            await sio_instance.sio.emit(
+                'message_deleted',
+                {'success': True, 'message_id': message_id, 'req_id': req_id},
+                room=f'server:{server_id}:channel:{channel_id}'
+            )
             await addMessageToLogs(f"Emitted message_deleted to {server_id}", "INFO")
