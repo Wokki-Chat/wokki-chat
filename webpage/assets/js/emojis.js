@@ -72,10 +72,11 @@ window.emojis = {
 		await this.replaceAllTextNodes(element);
 	},
 
-	async picker(targetField = null) {
+	async picker(targetField = null, relativeTo = null) {
 		if (!Array.isArray(this.all) || this.all.length === 0) {
 			await this.load();
 		}
+
 		return new Promise((resolve) => {
 			const dropdownId = 'emoji-picker-dropdown';
 			let dropdown = document.getElementById(dropdownId);
@@ -194,7 +195,9 @@ window.emojis = {
 										active.selectionStart = active.selectionEnd = start + emoji.length;
 									}
 								}
+
 								resolve(e.emoji);
+								dropdown.style.display = 'none';
 							});
 
 							grid.appendChild(btn);
@@ -217,16 +220,31 @@ window.emojis = {
 				});
 			}
 
+			if (relativeTo) {
+				const rect = relativeTo.getBoundingClientRect();
+				dropdown.style.position = 'absolute';
+				dropdown.style.top = `${rect.bottom + window.scrollY}px`;
+				dropdown.style.left = `${rect.left + window.scrollX}px`;
+			} else {
+				dropdown.style.position = 'fixed';
+				dropdown.style.top = '50%';
+				dropdown.style.left = '50%';
+				dropdown.style.transform = 'translate(-50%, -50%)';
+			}
+
 			dropdown.style.display = 'flex';
 			const searchInput = dropdown.querySelector('input');
 			searchInput.value = '';
 			searchInput.focus();
 
-			document.addEventListener('click', function hide(e) {
+			function hideDropdown(e) {
 				if (!dropdown.contains(e.target) && e.target !== targetField) {
-					document.removeEventListener('click', hide);
+					dropdown.style.display = 'none';
+					document.removeEventListener('click', hideDropdown);
 				}
-			});
+			}
+
+			document.addEventListener('click', hideDropdown);
 		});
 	}
 };
