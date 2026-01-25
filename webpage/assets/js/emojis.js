@@ -197,7 +197,7 @@ window.emojis = {
 								}
 
 								resolve(e.emoji);
-								dropdown.style.display = 'none';
+								dropdown.remove();
 							});
 
 							grid.appendChild(btn);
@@ -223,9 +223,9 @@ window.emojis = {
 			if (relativeTo) {
 				relativeTo.appendChild(dropdown);
 				dropdown.style.position = 'absolute';
-				dropdown.style.top = '-100%';
-				dropdown.style.right = '0';
-				dropdown.style.transform = 'translateY(100%)';
+				dropdown.style.bottom = '100%';
+				dropdown.style.left = '100%';
+				dropdown.style.transform = 'translateX(-100%)';
 			} else {
 				dropdown.style.position = 'fixed';
 				dropdown.style.top = '50%';
@@ -239,7 +239,7 @@ window.emojis = {
 			searchInput.focus();
 
 			function hideDropdown() {
-				dropdown.style.display = 'none';
+				dropdown.remove();
 				document.removeEventListener('click', outsideClick);
 			}
 
