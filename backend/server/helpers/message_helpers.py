@@ -317,12 +317,10 @@ async def get_messages(sid, metadata, data):
                             m.id, m.message, m.sent_by, m.sent_by_bot, m.created_at, m.updated_at, m.edited, m.server_id, m.channel_id,
                             m.parent_message_id, m.assets, m.command, m.command_user_id, m.embed,
                             u.username, u.nickname AS display_name, u.profile_picture, u.is_staff AS staff,
-                            mr.user_id AS reaction_user_id, mr.bot_id AS reaction_bot_id,
                             (m.sent_by_bot IS NOT NULL) AS bot_message
                         FROM messages m
                         LEFT JOIN users u ON m.sent_by = u.id
                         LEFT JOIN bots b ON m.sent_by_bot = b.id
-                        LEFT JOIN message_reactions mr ON m.id = mr.message_id
                         WHERE m.server_id = %s AND m.channel_id = %s
                         {joined_at_filter_msg}
                     ) AS combined_messages
