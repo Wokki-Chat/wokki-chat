@@ -548,7 +548,8 @@ function initServer() {
 		let className = "reaction";
 		if (String(reaction.user_id) === String(user_id)) className += " own";
 
-		return `<div class="${className}" title="${reaction_user_info.username || ""}">
+		return `
+		<div class="${className}" title="${reaction_user_info.username || ""}">
 			<span class="emoji">${renderedEmoji}</span>
 			${count > 1 ? `<span class="count">${count}</span>` : `<img class="reaction-picture" src="${reaction_user_info.profile_picture}" />`}
 		</div>`;
@@ -579,6 +580,11 @@ function initServer() {
 			grouped.push({ reaction: arr[0], count: arr.length });
 		}
 		const html = await Promise.all(grouped.map(r => Reaction({ reaction: r.reaction, count: r.count })));
+		const addReactionEl = document.createElement("div");
+		addReactionEl.classList.add("reaction");
+		addReactionEl.classList.add("add-reaction");
+		addReactionEl.innerHTML = `<span class="add-reaction-icon material-symbols-rounded">add_reaction</span>`;
+		html.push(addReactionEl);
 		return `<div class="message-reactions-container">${html.join("")}</div>`;
 	}
 
