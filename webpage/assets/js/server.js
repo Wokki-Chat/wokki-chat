@@ -313,7 +313,6 @@ function initServer() {
 				}
 			}
 		} else if (!removed) {
-			console.log(msg_id);
 			const newReactionEl = await Reaction({
 				reactionGroup: [{
 					reaction: emoji,
@@ -659,9 +658,11 @@ function initServer() {
 		div.className = "reaction" + (isOwn ? " own" : "");
 		div.title = username;
 		div.dataset.reactionName = emojiText;
+		div.dataset.messageId = msg_id;
 		div.innerHTML = `<span class="emoji">${renderedEmoji}</span>${count ? `<span class="count">${count}</span>` : ''}`;
 
 		div.addEventListener("click", () => {
+			console.log(msg_id, emojiText);
 			handleReactionClick(div, msg_id, emojiText);
 		});
 
