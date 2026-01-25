@@ -278,7 +278,7 @@ function initServer() {
 			return container;
 		})();
 
-		socket.emit("add_reaction", { access_token, message_id: msg.id, reaction: emoji }, async (response) => {
+		socket.emit("add_reaction", { access_token, message_id: msg.id, reaction: emoji, server_id, channel_id }, async (response) => {
 			if (!response.success) return;
 
 			const reactionEl = messageReactions.querySelector(`.reaction[data-reaction-name="${emoji}"]`);
