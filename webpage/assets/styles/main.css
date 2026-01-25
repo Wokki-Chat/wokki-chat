@@ -4391,7 +4391,7 @@ input#clr-hue-slider {
 .add-reaction-icon {
     color: var(--clr-text-a30);
     user-select: none;
-    font-size: 18px;
+    font-size: 19px;
 }
 
 .emoji-picker-dropdown {
