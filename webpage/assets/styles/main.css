@@ -4418,6 +4418,8 @@ input#clr-hue-slider {
 	padding: 6px 0;
 	gap: 6px;
 	border-right: 1px solid var(--clr-text-a50);
+    overflow-y: auto;
+    scrollbar-width: thin;
 }
 
 .emoji-picker-group-btn {
