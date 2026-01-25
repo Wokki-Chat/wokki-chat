@@ -200,12 +200,12 @@ function initServer() {
 			}
 		}
 
-		hydrateInvites(el);
-		hydrateSpotifyTracks(el);
-		if (msg.assets && msg.assets.length > 0) hydrateAssets(el, msg.assets, msg.id);
+		await hydrateInvites(el);
+		await hydrateSpotifyTracks(el);
+		if (msg.assets && msg.assets.length > 0) await hydrateAssets(el, msg.assets, msg.id);
 		
 		const customPlayer = el.querySelector(".custom-player");
-		if (customPlayer) initCustomPlayer(customPlayer);
+		if (customPlayer) await initCustomPlayer(customPlayer);
 
 		const mentionTags = el.querySelectorAll(`.user-link[data-user-id="${user_id}"], .user-link[data-user-id="everyone"]`);
 		if (mentionTags.length > 0) el.classList.add("mentioned");
@@ -354,11 +354,24 @@ function initServer() {
 			await Promise.all(txtPromises);
 		}
 	}
-
+	
 	const customPlayers = new Map();
-	function initCustomPlayer(el) {
+
+	function audioLoaded(audio) {
+		return new Promise((resolve) => {
+			if (audio.readyState >= 1) {
+				resolve();
+			} else {
+				audio.addEventListener('loadedmetadata', () => resolve(), { once: true });
+			}
+		});
+	}
+
+	async function initCustomPlayer(el) {
 		const audioSrc = el.dataset.audioSrc;
 		const originalName = el.dataset.originalname;
+
+		if (!audioSrc) return;
 
 		let audio;
 		if (customPlayers.has(audioSrc)) {
@@ -398,17 +411,12 @@ function initServer() {
 				)
 			`;
 		}
-		if (audio.readyState >= 1) {
-			seekBar.max = audio.duration;
-			durationEl.textContent = `/ ${formatTime(audio.duration)}`;
-			updateSeekBarProgress();
-		}
 
-		audio.addEventListener('loadedmetadata', () => {
-			seekBar.max = audio.duration;
-			durationEl.textContent = `/ ${formatTime(audio.duration)}`;
-			updateSeekBarProgress();
-		});
+		await audioLoaded(audio);
+
+		seekBar.max = audio.duration;
+		durationEl.textContent = `/ ${formatTime(audio.duration)}`;
+		updateSeekBarProgress();
 
 		playPauseBtn.addEventListener('click', () => {
 			if (audio.paused) {
@@ -447,6 +455,7 @@ function initServer() {
 			timeBox.style.minWidth = `${width}px`;
 		});
 	}
+
 
 	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot }) {
 
