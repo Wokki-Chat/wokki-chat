@@ -330,126 +330,138 @@ async def get_messages(sid, metadata, data):
                 await cur.execute(messages_query, messages_params)
                 messages = list(await cur.fetchall())
                 messages.reverse()
-
-                for msg in messages:
-                    if isinstance(msg.get('created_at'), datetime):
-                        msg['created_at'] = msg['created_at'].astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
-                    else:
-                        msg['created_at'] = None
-
-                    if isinstance(msg.get('updated_at'), datetime):
-                        msg['updated_at'] = msg['updated_at'].astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
-                    else:
-                        msg['updated_at'] = None
-
-                    if msg.get('assets'):
-                        try:
-                            msg['assets'] = json.loads(msg['assets'])
-                        except Exception:
-                            msg['assets'] = []
-                    else:
-                        msg['assets'] = []
-
-                    premium = False
-                    if not msg['bot_message']:
-                        premium = await get_user_premium_status(cur, msg['sent_by'])
-
-                    if msg['bot_message']:
-                        await cur.execute("SELECT name, profile_picture FROM bots WHERE id = %s LIMIT 1", (msg['sent_by_bot'],))
-                        bot_row = await cur.fetchone()
-                        sender_info = {
-                            'username': bot_row['name'] if bot_row else None,
-                            'display_name': None,
-                            'profile_picture': bot_row['profile_picture'] if bot_row else None,
-                            'staff': False,
-                            'premium': False
-                        }
-                    else:
-                        sender_info = {
-                            'username': msg.pop('username', None),
-                            'display_name': msg.pop('display_name', None),
-                            'profile_picture': msg.pop('profile_picture', None),
-                            'staff': msg.pop('staff', None),
-                            'premium': premium
-                        }
-                    msg['sender_info'] = sender_info
-
-                    parent_id = msg.pop('parent_message_id', None)
-                    parent_info = None
-                    if parent_id:
-                        await cur.execute("""
-                            SELECT m.id, m.message, m.sent_by, m.sent_by_bot, u.username AS user_name, b.name AS bot_name
-                            FROM messages m
-                            LEFT JOIN users u ON m.sent_by = u.id
-                            LEFT JOIN bots b ON m.sent_by_bot = b.id
-                            WHERE m.id = %s
-                            LIMIT 1
-                        """, (parent_id,))
-                        parent_msg = await cur.fetchone()
-                        if parent_msg:
-                            parent_info = {
-                                'user_id': parent_msg['sent_by'] if parent_msg['sent_by'] else parent_msg['sent_by_bot'],
-                                'message_id': parent_msg['id'],
-                                'message_preview': (parent_msg['message'][:100] + '...') if len(parent_msg['message']) > 100 else parent_msg['message'],
-                                'username': parent_msg['user_name'] if parent_msg['user_name'] else parent_msg['bot_name']
-                            }
-                    msg['parent_message_info'] = parent_info
-
-                    command_user_id = msg.pop('command_user_id', None)
-                    command_info = None
-                    if command_user_id:
-                        await cur.execute("""
-                            SELECT u.username
-                            FROM users u
-                            WHERE u.id = %s
-                            LIMIT 1
-                        """, (command_user_id,))
-                        command_user = await cur.fetchone()
-                        if command_user:
-                            command_info = {
-                                'command': msg.pop('command'),
-                                'username': command_user['username']
-                            }
-                    msg['command_info'] = command_info
-                    
-                    reactions = []
-                    await cur.execute("""
-                        SELECT mr.reaction, mr.user_id, mr.bot_id, mr.super_reaction
+                
+                message_ids = [str(msg['id']) for msg in messages]
+                if message_ids:
+                    placeholders = ','.join(['%s'] * len(message_ids))
+                    await cur.execute(f"""
+                        SELECT mr.message_id, mr.reaction, mr.user_id, mr.bot_id, mr.super_reaction
                         FROM message_reactions mr
-                        WHERE mr.message_id = %s
-                    """, (msg['id'],))
+                        WHERE mr.message_id IN ({placeholders})
+                    """, message_ids)
                     reaction_rows = await cur.fetchall()
 
-                    for reaction_row in reaction_rows:
-                        reaction_user_info = None
-                        if reaction_row['user_id']:
-                            await cur.execute("SELECT username, display_name, profile_picture FROM users WHERE id = %s LIMIT 1", (reaction_row['user_id'],))
-                            user_row = await cur.fetchone()
-                            if user_row:
-                                reaction_user_info = {
-                                    'username': user_row['username'],
-                                    'display_name': user_row['display_name'],
-                                    'profile_picture': user_row['profile_picture']
-                                }
-                        elif reaction_row['bot_id']:
-                            await cur.execute("SELECT name AS username, profile_picture FROM bots WHERE id = %s LIMIT 1", (reaction_row['bot_id'],))
+                    reactions_by_msg = {}
+                    for r in reaction_rows:
+                        reactions_by_msg.setdefault(r['message_id'], []).append(r)
+
+                    for msg in messages:
+                        if isinstance(msg.get('created_at'), datetime):
+                            msg['created_at'] = msg['created_at'].astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+                        else:
+                            msg['created_at'] = None
+
+                        if isinstance(msg.get('updated_at'), datetime):
+                            msg['updated_at'] = msg['updated_at'].astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+                        else:
+                            msg['updated_at'] = None
+
+                        if msg.get('assets'):
+                            try:
+                                msg['assets'] = json.loads(msg['assets'])
+                            except Exception:
+                                msg['assets'] = []
+                        else:
+                            msg['assets'] = []
+
+                        premium = False
+                        if not msg['bot_message']:
+                            premium = await get_user_premium_status(cur, msg['sent_by'])
+
+                        if msg['bot_message']:
+                            await cur.execute("SELECT name, profile_picture FROM bots WHERE id = %s LIMIT 1", (msg['sent_by_bot'],))
                             bot_row = await cur.fetchone()
-                            if bot_row:
-                                reaction_user_info = {
-                                    'username': bot_row['username'],
-                                    'display_name': None,
-                                    'profile_picture': bot_row['profile_picture']
+                            sender_info = {
+                                'username': bot_row['name'] if bot_row else None,
+                                'display_name': None,
+                                'profile_picture': bot_row['profile_picture'] if bot_row else None,
+                                'staff': False,
+                                'premium': False
+                            }
+                        else:
+                            sender_info = {
+                                'username': msg.pop('username', None),
+                                'display_name': msg.pop('display_name', None),
+                                'profile_picture': msg.pop('profile_picture', None),
+                                'staff': msg.pop('staff', None),
+                                'premium': premium
+                            }
+                        msg['sender_info'] = sender_info
+
+                        parent_id = msg.pop('parent_message_id', None)
+                        parent_info = None
+                        if parent_id:
+                            await cur.execute("""
+                                SELECT m.id, m.message, m.sent_by, m.sent_by_bot, u.username AS user_name, b.name AS bot_name
+                                FROM messages m
+                                LEFT JOIN users u ON m.sent_by = u.id
+                                LEFT JOIN bots b ON m.sent_by_bot = b.id
+                                WHERE m.id = %s
+                                LIMIT 1
+                            """, (parent_id,))
+                            parent_msg = await cur.fetchone()
+                            if parent_msg:
+                                parent_info = {
+                                    'user_id': parent_msg['sent_by'] if parent_msg['sent_by'] else parent_msg['sent_by_bot'],
+                                    'message_id': parent_msg['id'],
+                                    'message_preview': (parent_msg['message'][:100] + '...') if len(parent_msg['message']) > 100 else parent_msg['message'],
+                                    'username': parent_msg['user_name'] if parent_msg['user_name'] else parent_msg['bot_name']
                                 }
+                        msg['parent_message_info'] = parent_info
 
-                        reactions.append({
-                            'reaction': reaction_row['reaction'],
-                            'user_id': reaction_row['user_id'],
-                            'bot_id': reaction_row['bot_id'],
-                            'super_reaction': reaction_row['super_reaction'] == 1,
-                            'reaction_user_info': reaction_user_info
-                        })
+                        command_user_id = msg.pop('command_user_id', None)
+                        command_info = None
+                        if command_user_id:
+                            await cur.execute("""
+                                SELECT u.username
+                                FROM users u
+                                WHERE u.id = %s
+                                LIMIT 1
+                            """, (command_user_id,))
+                            command_user = await cur.fetchone()
+                            if command_user:
+                                command_info = {
+                                    'command': msg.pop('command'),
+                                    'username': command_user['username']
+                                }
+                        msg['command_info'] = command_info
+                        
+                        reactions = []
+                        for reaction_row in reactions_by_msg.get(str(msg['id']), []):
+                            reaction_user_info = None
+                            if reaction_row['user_id']:
+                                await cur.execute(
+                                    "SELECT username, display_name, profile_picture FROM users WHERE id = %s LIMIT 1",
+                                    (reaction_row['user_id'],)
+                                )
+                                user_row = await cur.fetchone()
+                                if user_row:
+                                    reaction_user_info = {
+                                        'username': user_row['username'],
+                                        'display_name': user_row['display_name'],
+                                        'profile_picture': user_row['profile_picture']
+                                    }
+                            elif reaction_row['bot_id']:
+                                await cur.execute(
+                                    "SELECT name AS username, profile_picture FROM bots WHERE id = %s LIMIT 1",
+                                    (reaction_row['bot_id'],)
+                                )
+                                bot_row = await cur.fetchone()
+                                if bot_row:
+                                    reaction_user_info = {
+                                        'username': bot_row['username'],
+                                        'display_name': None,
+                                        'profile_picture': bot_row['profile_picture']
+                                    }
 
-                    msg['reactions'] = reactions
+                            reactions.append({
+                                'reaction': reaction_row['reaction'],
+                                'user_id': reaction_row['user_id'],
+                                'bot_id': reaction_row['bot_id'],
+                                'super_reaction': reaction_row['super_reaction'] == 1,
+                                'reaction_user_info': reaction_user_info
+                            })
+                        msg['reactions'] = reactions
 
                 await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
                 await addMessageToLogs(f"Emitted all_messages to {user_id}, Sent {len(messages)} messages to {user_id}", "INFO")
