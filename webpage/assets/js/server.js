@@ -277,7 +277,7 @@ function initServer() {
 		const messageReactions = el.querySelector(".message-reactions-container") || (() => {
 			const container = document.createElement("div");
 			container.classList.add("message-reactions-container");
-			const reactionsWrapper = el.querySelector(".message-content");
+			const reactionsWrapper = el.querySelector(".message-reactions");
 			reactionsWrapper.appendChild(container);
 			return container;
 		})();
@@ -585,7 +585,7 @@ function initServer() {
 					</div>
 					<p class="message-text">${sanitizedMessage}</p>
 					${embeds ? `<div class="message-embed">${await Embeds({ embeds })}</div>` : ''}
-					${reactions ? `<div class="message-reactions">${await Reactions({ reactions })}</div>` : ''}
+					<div class="message-reactions">${reactions ? await Reactions({ reactions }) : ''}</div>
 				</div>
 			</div>
 			<div class="message-options">
@@ -610,55 +610,56 @@ function initServer() {
 		return msgEl;
 	}
 
-	async function Reaction({ reaction, count }) {
-		if (!reaction) return null;
-		const { reaction: emojiText, super_reaction, reaction_user_info } = reaction;
+	async function Reaction({ reactionGroup, count }) {
+		if (!reactionGroup || reactionGroup.length === 0) return null;
+
+		const { reaction: emojiText, super_reaction } = reactionGroup[0];
 		const renderedEmoji = await emojis.replaceText(emojiText);
+		const isOwn = reactionGroup.some(r => String(r.user_id) === String(user_id));
 
 		let className = "reaction";
-		if (String(reaction.user_id) === String(user_id)) className += " own";
+		if (isOwn) className += " own";
+
+		const username = reactionGroup[0].reaction_user_info?.username || "";
 
 		return `
-		<div class="${className}" title="${reaction_user_info.username || ""}" data-reaction-name="${emojiText}">
-			<span class="emoji">${renderedEmoji}</span>
-			${count ? `<span class="count">${count}</span>` : ''}
-		</div>`;
+			<div class="${className}" title="${username}" data-reaction-name="${emojiText}">
+				<span class="emoji">${renderedEmoji}</span>
+				${count ? `<span class="count">${count}</span>` : ''}
+			</div>`;
 	}
 
 	async function Reactions({ reactions }) {
 		if (!reactions || reactions.length === 0) return "";
+
 		const normalCounts = {};
 		const superCounts = {};
 
 		for (const r of reactions) {
+			const key = r.reaction;
 			if (r.super_reaction) {
-				const key = r.reaction;
 				if (!superCounts[key]) superCounts[key] = [];
 				superCounts[key].push(r);
 			} else {
-				const key = r.reaction;
 				if (!normalCounts[key]) normalCounts[key] = [];
 				normalCounts[key].push(r);
 			}
 		}
 
-		const grouped = [];
-		for (const [emojiText, arr] of Object.entries(normalCounts)) {
-			grouped.push({ reaction: arr[0], count: arr.length });
-		}
-		for (const [emojiText, arr] of Object.entries(superCounts)) {
-			grouped.push({ reaction: arr[0], count: arr.length });
-		}
+		const grouped = [...Object.values(normalCounts), ...Object.values(superCounts)];
+
 		const html = await Promise.all(
-			grouped.map(r => Reaction({ reaction: r.reaction, count: r.count }))
+			grouped.map(group => Reaction({ reactionGroup: group, count: group.length }))
 		);
+
 		const addReactionEl = document.createElement("div");
 		addReactionEl.classList.add("reaction", "add-reaction");
 		addReactionEl.innerHTML = `<span class="add-reaction-icon material-symbols-rounded">add_reaction</span>`;
 		html.push(addReactionEl.outerHTML);
-		return `<div class="message-reactions-container">${html.join("")}</div>`;
 
+		return `<div class="message-reactions-container">${html.join("")}</div>`;
 	}
+
 
 	async function Embed({ embed }) {
 		if (!embed) return '';
