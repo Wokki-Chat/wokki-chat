@@ -219,7 +219,7 @@ function initServer() {
 
 		const reactionButton = el.querySelector("#reaction-btn");
 		reactionButton.addEventListener("click", async () => {
-			const emoji = await emojis.picker();
+			const emoji = await emojis.picker(null, el);
 			console.log(emoji);
 		});
 
