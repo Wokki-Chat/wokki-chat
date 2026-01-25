@@ -19,12 +19,27 @@
                 <div class="theme-option {{hidden_2}} {{hidden_2_active}}" onclick="setTheme('{{hidden_2}}')"></div>
             </div>
         </div>
+        <h3>Layout</h3>
+        <div class="appearance-type-container">
+            <p class="appearance-type-title">Layouts</p>
+            <p class="appearance-type-description">Change your layout to fit your needs</p>
+            <div class="theme-options-container">
+                <div class="theme-option floaty {{floaty_active}}" onclick="setLayout('floaty')"></div>
+                <div class="theme-option compact {{compact_active}}" onclick="setLayout('compact')"></div>
+            </div>
+        </div>
     </div>
     <script>
+    const themes = ["light", "dark", "night", "chat_dark_blue", "chat_light_blue"];
+
     function setTheme(theme) {
         if (theme === "hidden_1_disabled" || theme === "hidden_2_disabled") return;
         document.cookie = `theme=${theme}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=None; Secure;`;
-        window.location.reload();
+        themes.forEach(t => document.documentElement.classList.remove(t));
+        document.documentElement.classList.add(theme);
+        document.querySelectorAll(".theme-option").forEach(el => el.classList.remove("active"));
+        const activeBtn = document.querySelector(`.theme-option.${theme}`);
+        if (activeBtn) activeBtn.classList.add("active");
     }
     </script>
 </div>
