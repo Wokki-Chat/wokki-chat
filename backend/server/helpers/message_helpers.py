@@ -317,10 +317,12 @@ async def get_messages(sid, metadata, data):
                             m.id, m.message, m.sent_by, m.sent_by_bot, m.created_at, m.updated_at, m.edited, m.server_id, m.channel_id,
                             m.parent_message_id, m.assets, m.command, m.command_user_id, m.embed,
                             u.username, u.nickname AS display_name, u.profile_picture, u.is_staff AS staff,
+                            mr.user_id AS reaction_user_id, mr.bot_id AS reaction_bot_id,
                             (m.sent_by_bot IS NOT NULL) AS bot_message
                         FROM messages m
                         LEFT JOIN users u ON m.sent_by = u.id
                         LEFT JOIN bots b ON m.sent_by_bot = b.id
+                        LEFT JOIN message_reactions mr ON m.id = mr.message_id
                         WHERE m.server_id = %s AND m.channel_id = %s
                         {joined_at_filter_msg}
                     ) AS combined_messages
@@ -411,6 +413,37 @@ async def get_messages(sid, metadata, data):
                                 'username': command_user['username']
                             }
                     msg['command_info'] = command_info
+                    
+                    reactions = []
+                    if msg.get('reaction_user_id') or msg.get('reaction_bot_id'):
+                        await cur.execute("""
+                            SELECT mr.reaction, mr.user_id AS reaction_user_id, mr.bot_id AS reaction_bot_id, mr.super_reaction
+                            FROM message_reactions mr
+                            WHERE mr.message_id = %s
+                        """, (msg['id'],))
+                        reaction_rows = await cur.fetchall()
+                        for reaction_row in reaction_rows:
+                            await cur.execute("""
+                                SELECT u.username, u.profile_picture, u.display_name, b.name, b.profile_picture
+                                FROM users u
+                                LEFT JOIN bots b ON u.id = b.id
+                                WHERE u.id = %s OR b.id = %s
+                                LIMIT 1
+                            """, (reaction_row['reaction_user_id'], reaction_row['reaction_bot_id']))
+                            reaction_user = await cur.fetchone()
+                            if reaction_user:
+                                reactions.append({
+                                    'reaction': reaction_row['reaction'],
+                                    'user_id': reaction_row['reaction_user_id'],
+                                    'bot_id': reaction_row['reaction_bot_id'],
+                                    'super_reaction': reaction_row['super_reaction'] == 1,
+                                    'reaction_user_info': {
+                                        'username': reaction_row['username'] if reaction_row['username'] else reaction_row['name'],
+                                        'display_name': reaction_user['display_name'] if reaction_user['display_name'] else None,
+                                        'profile_picture': reaction_user['profile_picture'] if reaction_user['profile_picture'] else None
+                                    }
+                                })
+                    msg['reactions'] = reactions
 
                 await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
                 await addMessageToLogs(f"Emitted all_messages to {user_id}, Sent {len(messages)} messages to {user_id}", "INFO")
