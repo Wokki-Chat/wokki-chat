@@ -133,6 +133,56 @@ input:checked + .slider:before {
   border-radius: 50%;
 }
 
+.radio {
+  display: inline-block;
+  position: relative;
+  padding-left: 28px;
+  margin-right: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  user-select: none;
+}
+
+.radio input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.radio .checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: var(--clr-surface-a20);
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.radio input:checked ~ .checkmark {
+  background-color: var(--clr-primary-a0);
+}
+
+.radio .checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.radio input:checked ~ .checkmark:after {
+  display: block;
+}
+
+.radio .checkmark:after {
+  top: 5px;
+  left: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--clr-text-white-a10);
+}
+
 .login-form,
 .register-form {
     display: flex;
@@ -3375,6 +3425,13 @@ h6 {
 .theme-options-container {
     display: flex;
     flex-direction: row;
+    gap: 10px;
+    align-items: center;
+}
+
+.layout-options-container {
+    display: flex;
+    flex-direction: column;
     gap: 10px;
     align-items: center;
 }

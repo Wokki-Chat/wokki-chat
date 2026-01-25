@@ -23,13 +23,15 @@
         <div class="appearance-type-container">
             <p class="appearance-type-title">Layouts</p>
             <p class="appearance-type-description">Change your layout to fit your needs</p>
-            <div class="theme-options-container">
-                <label>
+            <div class="layout-options-container">
+                <label class="radio">
                     <input type="radio" name="layout" value="floaty" onchange="setLayout('floaty')" {{floaty_active_checked}}>
+                    <span class="checkmark"></span>
                     Floaty
                 </label>
-                <label>
+                <label class="radio">
                     <input type="radio" name="layout" value="compact" onchange="setLayout('compact')" {{compact_active_checked}}>
+                    <span class="checkmark"></span>
                     Compact
                 </label>
             </div>
