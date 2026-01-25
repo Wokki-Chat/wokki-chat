@@ -4342,19 +4342,28 @@ input#clr-hue-slider {
     user-select: none;
     transition: all 0.3s ease;
     padding: 5px;
-    border-radius: 5px;
+    border-radius: 10px;
     background-color: var(--clr-popup-a10);
     color: var(--clr-text-a0);
+    width: max-content;
 }
 
 .reaction .emoji {
-    font-size: 14px;
+    font-size: 16px;
     user-select: none;
 }
 
 .reaction .count {
-    font-size: 12px;
+    font-size: 14px;
     color: var(--clr-text-a30);
     user-select: none;
     font-weight: var(--font-weight-semibold);
+}
+
+.reaction .reaction-picture {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    user-select: none;
 }
