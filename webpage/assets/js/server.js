@@ -223,6 +223,14 @@ function initServer() {
 			console.log(emoji);
 		});
 
+		const addReactionBtn = el.querySelector(".add-reaction");
+		if (addReactionBtn) {
+			addReactionBtn.addEventListener("click", async () => {
+				const emoji = await emojis.picker(null, el);
+				console.log(emoji);
+			});
+		}
+
 		const deleteBtn = el.querySelector("#delete-btn");
 		if (deleteBtn) {
 			deleteBtn.addEventListener("click", () => {
