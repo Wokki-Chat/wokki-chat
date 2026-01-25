@@ -4406,6 +4406,7 @@ input#clr-hue-slider {
 	z-index: 1000;
 	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	display: flex;
+    flex-direction: row;
 }
 
 .emoji-picker-sidebar {
