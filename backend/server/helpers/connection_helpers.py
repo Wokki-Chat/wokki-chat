@@ -192,7 +192,7 @@ async def handle_disconnect(sid):
                 await broadcast_user_update(user_id)
 
         current_token = await redis_client.get(disconnect_key)
-        if current_token != token:
+        if current_token == token:
             asyncio.create_task(handle_delayed_disconnect(user_id, token))
             return
         return
