@@ -217,7 +217,7 @@ window.emojis = {
 				});
 			}
 
-			dropdown.style.display = 'block';
+			dropdown.style.display = 'flex';
 			const searchInput = dropdown.querySelector('input');
 			searchInput.value = '';
 			searchInput.focus();
