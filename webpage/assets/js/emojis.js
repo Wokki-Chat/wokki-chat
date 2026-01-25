@@ -71,6 +71,9 @@ window.emojis = {
 	},
 
 	async picker(targetField = null) {
+		if (!Array.isArray(this.all) || this.all.length === 0) {
+			await this.load();
+		}
 		return new Promise((resolve) => {
 			const dropdownId = 'emoji-picker-dropdown';
 			let dropdown = document.getElementById(dropdownId);

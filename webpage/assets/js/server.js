@@ -218,11 +218,9 @@ function initServer() {
 		replyBtn.addEventListener("click", () => replyMessage(msg.id));
 
 		const reactionButton = el.querySelector("#reaction-btn");
-		emojis.load().then(() => {
-			reactionButton.addEventListener("click", async () => {
-				const emoji = await emojis.picker();
-				console.log('Picked emoji:', emoji);
-			});
+		reactionButton.addEventListener("click", async () => {
+			const emoji = await emojis.picker();
+			console.log(emoji);
 		});
 
 		const deleteBtn = el.querySelector("#delete-btn");
