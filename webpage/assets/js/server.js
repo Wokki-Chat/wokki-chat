@@ -1133,7 +1133,7 @@ function initServer() {
 			}
 
 			const parent_message_text = parentMessageInfo.message;
-			const parent_message_user = usersList.find(user => user.id == parentMessageInfo.sent_by)?.username ?? "Someone";
+			const parent_message_user = parentMessageInfo.sender ?? usersList.find(user => user.id == parentMessageInfo.sender_id)?.username ?? "Someone";
 
 			return { parent_message_text, parent_message_user };
 
