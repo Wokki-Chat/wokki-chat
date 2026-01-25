@@ -203,87 +203,9 @@ function initServer() {
 		hydrateInvites(el);
 		hydrateSpotifyTracks(el);
 		if (msg.assets && msg.assets.length > 0) hydrateAssets(el, msg.assets, msg.id);
-
+		
 		const customPlayer = el.querySelector(".custom-player");
-
-		if (customPlayer) {
-			const audioSrc = customPlayer.dataset.src;
-			const originalName = customPlayer.dataset.originalname;
-			const audio = new Audio(customPlayer.dataset.src);
-			const playPauseBtn = customPlayer.querySelector('.play-pause');
-			const seekBar = customPlayer.querySelector('.seek-bar');
-			const currentTimeEl = customPlayer.querySelector('.current-time');
-			const durationEl = customPlayer.querySelector('.duration');
-			const timeBox = customPlayer.querySelector('.time-left-current');
-			const downloadBtn = customPlayer.querySelector('#download');
-
-			let updateInterval;
-
-			function updateSeekBarProgress() {
-				const val = seekBar.value;
-				const max = seekBar.max || 100;
-				const percentage = (val / max) * 100;
-				seekBar.style.background = `
-					linear-gradient(
-					to right,
-					var(--clr-primary-a0) 0%,
-					var(--clr-primary-a0) ${percentage}%,
-					var(--clr-input-border-bg-dark) ${percentage}%,
-					var(--clr-input-border-bg-dark) 100%
-					)
-				`;
-			}
-
-			playPauseBtn.addEventListener('click', () => {
-				if (audio.paused) {
-					audio.play();
-					playPauseBtn.textContent = 'pause';
-
-					updateInterval = setInterval(() => {
-						seekBar.value = audio.currentTime;
-						currentTimeEl.textContent = formatTime(audio.currentTime);
-						updateSeekBarProgress();
-					}, 500);
-				} else {
-					audio.pause();
-					playPauseBtn.textContent = 'play_arrow';
-					clearInterval(updateInterval);
-				}
-			});
-
-			downloadBtn.addEventListener('click', () => {
-				const a = document.createElement('a');
-				a.href = audioSrc;
-				a.download = originalName;
-				document.body.appendChild(a);
-				a.click();
-				document.body.removeChild(a);
-			});
-
-
-			requestAnimationFrame(() => {
-				const width = timeBox.offsetWidth;
-				timeBox.style.minWidth = `${width}px`;
-			});
-
-			audio.addEventListener('loadedmetadata', () => {
-				seekBar.max = audio.duration;
-				durationEl.textContent = `/ ${formatTime(audio.duration)}`;
-				updateSeekBarProgress();
-			});
-
-			seekBar.addEventListener('input', () => {
-				audio.currentTime = seekBar.value;
-				currentTimeEl.textContent = formatTime(audio.currentTime);
-				updateSeekBarProgress();
-			});
-
-			function formatTime(seconds) {
-				const mins = Math.floor(seconds / 60);
-				const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
-				return `${mins}:${secs}`;
-			}
-		}
+		if (customPlayer) initCustomPlayer(customPlayer);
 
 		const mentionTags = el.querySelectorAll(`.user-link[data-user-id="${user_id}"], .user-link[data-user-id="everyone"]`);
 		if (mentionTags.length > 0) el.classList.add("mentioned");
@@ -434,6 +356,92 @@ function initServer() {
 
 			await Promise.all(txtPromises);
 		}
+	}
+	const customPlayers = new Map();
+	function initCustomPlayer(el) {
+		const audioSrc = el.dataset.src;
+		const originalName = el.dataset.originalname;
+
+		let audio;
+		if (customPlayers.has(audioSrc)) {
+			audio = customPlayers.get(audioSrc);
+		} else {
+			audio = new Audio(audioSrc);
+			customPlayers.set(audioSrc, audio);
+		}
+
+		const playPauseBtn = el.querySelector('.play-pause');
+		const seekBar = el.querySelector('.seek-bar');
+		const currentTimeEl = el.querySelector('.current-time');
+		const durationEl = el.querySelector('.duration');
+		const timeBox = el.querySelector('.time-left-current');
+		const downloadBtn = el.querySelector('#download');
+
+		let updateInterval;
+
+		function formatTime(seconds) {
+			const mins = Math.floor(seconds / 60);
+			const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+			return `${mins}:${secs}`;
+		}
+
+		function updateSeekBarProgress() {
+			const val = seekBar.value;
+			const max = seekBar.max || 100;
+			const percentage = (val / max) * 100;
+			seekBar.style.background = `
+				linear-gradient(
+					to right,
+					var(--clr-primary-a0) 0%,
+					var(--clr-primary-a0) ${percentage}%,
+					var(--clr-input-border-bg-dark) ${percentage}%,
+					var(--clr-input-border-bg-dark) 100%
+				)
+			`;
+		}
+
+		playPauseBtn.addEventListener('click', () => {
+			if (audio.paused) {
+				audio.play();
+				playPauseBtn.textContent = 'pause';
+
+				updateInterval = setInterval(() => {
+					seekBar.value = audio.currentTime;
+					currentTimeEl.textContent = formatTime(audio.currentTime);
+					updateSeekBarProgress();
+				}, 500);
+			} else {
+				audio.pause();
+				playPauseBtn.textContent = 'play_arrow';
+				clearInterval(updateInterval);
+			}
+		});
+
+		downloadBtn.addEventListener('click', () => {
+			const a = document.createElement('a');
+			a.href = audioSrc;
+			a.download = originalName;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+		});
+
+		audio.addEventListener('loadedmetadata', () => {
+			seekBar.max = audio.duration;
+			durationEl.textContent = `/ ${formatTime(audio.duration)}`;
+			updateSeekBarProgress();
+		});
+
+		seekBar.addEventListener('input', () => {
+			audio.currentTime = seekBar.value;
+			currentTimeEl.textContent = formatTime(audio.currentTime);
+			updateSeekBarProgress();
+		});
+
+		requestAnimationFrame(() => {
+			const width = timeBox.offsetWidth;
+			timeBox.style.minWidth = `${width}px`;
+		});
 	}
 
 	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot }) {
