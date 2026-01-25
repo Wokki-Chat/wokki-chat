@@ -4396,8 +4396,8 @@ input#clr-hue-slider {
 .emoji-picker-dropdown {
 	position: absolute;
 	left: 0;
-	width: 300px;
-	max-height: 350px;
+	width: 360px;
+	height: 350px;
 	background: var(--clr-popup-a0);
 	border: 1px solid var(--clr-text-a50);
 	border-radius: 8px;
@@ -4405,6 +4405,40 @@ input#clr-hue-slider {
 	overflow: hidden;
 	z-index: 1000;
 	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	display: flex;
+}
+
+.emoji-picker-sidebar {
+	width: 44px;
+	background: var(--clr-popup-a20);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 6px 0;
+	gap: 6px;
+	border-right: 1px solid var(--clr-text-a50);
+}
+
+.emoji-picker-group-btn {
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	padding: 6px;
+	border-radius: 6px;
+	color: var(--clr-text-a30);
+	transition: background 0.2s, color 0.2s;
+}
+
+.emoji-picker-group-btn.active,
+.emoji-picker-group-btn:hover {
+	background: var(--clr-popup-a30);
+	color: var(--clr-text-a0);
+}
+
+.emoji-picker-content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
 }
 
 .emoji-picker-search {
@@ -4423,11 +4457,8 @@ input#clr-hue-slider {
 }
 
 .emoji-picker-list {
-	display: flex;
-	flex-wrap: wrap;
+	flex: 1;
 	padding: 8px;
-	gap: 6px;
-	max-height: 300px;
 	overflow-y: auto;
 	scrollbar-width: thin;
 }
@@ -4440,6 +4471,20 @@ input#clr-hue-slider {
 	border-radius: 4px;
 }
 
+.emoji-picker-group-title {
+	font-size: 12px;
+	color: var(--clr-text-a40);
+	margin: 6px 4px;
+	text-transform: capitalize;
+}
+
+.emoji-picker-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+	gap: 6px;
+	margin-bottom: 6px;
+}
+
 .emoji-picker-item {
 	background: transparent;
 	border: none;
@@ -4450,13 +4495,9 @@ input#clr-hue-slider {
 	transition: background 0.2s, transform 0.1s;
 }
 
-.emoji-picker-item:hover {
+.emoji-picker-item:hover,
+.emoji-picker-item:focus {
 	background: var(--clr-popup-a20);
 	transform: scale(1.2);
-}
-
-.emoji-picker-item:focus {
 	outline: none;
-	background: var(--clr-popup-a20);
-    transform: scale(1.2);
 }
