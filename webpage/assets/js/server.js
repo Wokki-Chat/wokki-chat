@@ -270,7 +270,7 @@ function initServer() {
 			if (!emoji) return;
 		}
 
-		const access_token = window.access_token;
+		const access_token = access_token;
 		const messageReactions = el.querySelector(".message-reactions-container") || (() => {
 			const container = document.createElement("div");
 			container.classList.add("message-reactions-container");
@@ -321,7 +321,7 @@ function initServer() {
 			}
 		});
 	}
-	
+
 	async function hydrateAssets(msgEl, assets, id) {
 		let assetsHTML = '';
 		if (assets && assets.length > 0) {
