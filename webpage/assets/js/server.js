@@ -546,7 +546,6 @@ function initServer() {
 		const renderedEmoji = await emojis.replaceText(emojiText);
 
 		let className = "reaction";
-		if (super_reaction) className += " super-reaction";
 		if (String(reaction.user_id) === String(user_id)) className += " own";
 
 		return `<div class="${className}" title="${reaction_user_info.username || ""}">
