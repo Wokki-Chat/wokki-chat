@@ -323,12 +323,12 @@ function initServer() {
 	}
 
 	socket.on("add_reaction", ({ message_id, reaction }) => {
-		const el = document.querySelector(`.message[data-id="${message_id}"]`);
+		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
 		if (el) updateReactionUI(el, message_id, reaction, false);
 	});
 
 	socket.on("remove_reaction", ({ message_id, reaction }) => {
-		const el = document.querySelector(`.message[data-id="${message_id}"]`);
+		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
 		if (el) updateReactionUI(el, message_id, reaction, true);
 	});
 
