@@ -703,7 +703,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                 </div>
             </div>
         <?php endif; ?>
-        <div id="settings-modal" style="display: none;">
+        <div id="settings">
 
         </div>
         <wchat-allowed-scripts value="server.js;"></wchat-allowed-scripts>
@@ -723,40 +723,31 @@ if (!$server_id || !isset($user_servers[$server_id])) {
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
-    import Swup from "https://unpkg.com/swup@4?module";
-    import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
-    import SwupScriptsPlugin from "https://unpkg.com/@swup/scripts-plugin@2?module";
-    import SwupFragmentPlugin from "https://unpkg.com/@swup/fragment-plugin@1?module";
+        import Swup from "https://unpkg.com/swup@4?module";
+        import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
+        import SwupScriptsPlugin from "https://unpkg.com/@swup/scripts-plugin@2?module";
+        import SwupFragmentPlugin from "https://unpkg.com/@swup/fragment-plugin@1?module";
 
-    window.swup = new Swup({
-        containers: ["#app"],
-        cache: true,
-        plugins: [
-            new SwupPreloadPlugin(),
-            new SwupScriptsPlugin({ body: true, head: false }),
-            new SwupFragmentPlugin({
-                rules: [
-                    {
-                        from: "/settings",
-                        to: "/settings",
-                        containers: ["#settings-modal"]
-                    }
-                ]
-            })
-        ]
-    });
-    swup.on("contentReplaced", () => {
-        const modal = document.getElementById("settings-modal");
-        if (modal.innerHTML.trim()) {
-            modal.style.display = "block";
-        }
-    });
-    document.querySelectorAll('a[href="/settings"]').forEach(link => {
-        link.addEventListener("click", e => {
-            e.preventDefault();
-            swup.loadPage({ url: "/settings" });
+        window.swup = new Swup({
+            containers: ["#app", "#settings"],
+            cache: true,
+            plugins: [
+                new SwupPreloadPlugin(),
+                new SwupScriptsPlugin({
+                    body: true,
+                    head: false,
+                }),
+                new SwupFragmentPlugin({
+                    rules: [
+                        {
+                            from: "/settings",
+                            to: "/settings",
+                            containers: ["#settings"]
+                        }
+                    ]
+                })
+            ]
         });
-    });
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" data-swup-ignore-script></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>

@@ -193,7 +193,7 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
 </head>
 <body>
     <main id="app">
-        <div id="settings-modal">
+        <div id="settings">
             <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
             <script src="https://cdn.wokki20.nl/dynamic/jspt/jspt.js"></script>
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css"/>
@@ -416,7 +416,7 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
                         {
                             from: "/settings",
                             to: "/settings",
-                            containers: ["#settings-modal"]
+                            containers: ["#settings"]
                         }
                     ]
                 })
