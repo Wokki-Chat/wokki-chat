@@ -252,5 +252,17 @@ window.emojis = {
 
 			setTimeout(() => document.addEventListener('click', outsideClick), 0);
 		});
+	},
+	async giveall() {
+		if (!Array.isArray(this.all) || this.all.length === 0) {
+			await this.load();
+		}
+
+		const allEmojis = this.all.map(e => e.emoji).join('');
+		const newWin = window.open('', '_blank');
+		newWin.document.write('<!DOCTYPE html><html><head><title>All Emojis</title></head><body style="font-size:32px; line-height:1.5; word-wrap: break-word;">');
+		newWin.document.write(allEmojis);
+		newWin.document.write('</body></html>');
+		newWin.document.close();
 	}
 };
