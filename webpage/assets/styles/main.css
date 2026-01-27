@@ -4573,7 +4573,7 @@ html.is-animating .settings {
     pointer-events: none;
 }
 
-html.is-leaving .settings {
+html.is-changing .settings {
     opacity: 0;
     pointer-events: none;
 }
