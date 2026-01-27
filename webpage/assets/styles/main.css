@@ -4558,6 +4558,9 @@ input#clr-hue-slider {
 	padding: 6px;
 	border-radius: 6px;
 	transition: background 0.2s, transform 0.1s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .emoji-picker-item:hover,
