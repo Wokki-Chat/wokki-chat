@@ -4573,7 +4573,7 @@ html.is-animating .settings {
     pointer-events: none;
 }
 
-html.is-leaving #app {
+html.is-changing #app {
     opacity: 0;
     transform: scale(0.9);
     pointer-events: none;
