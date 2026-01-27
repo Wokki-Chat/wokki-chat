@@ -1156,6 +1156,7 @@ input:checked + .slider:before {
     margin: 0;
     word-break: break-word;
     overflow-wrap: anywhere;
+    font-size: 20px;
 }
 
 .message {
@@ -4559,4 +4560,10 @@ input#clr-hue-slider {
 	background: var(--clr-popup-a20);
 	transform: scale(1.2);
 	outline: none;
+}
+
+.emoji {
+    width: 20px;
+    height: 20px;
+    object-fit: cover;
 }
