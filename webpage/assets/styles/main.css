@@ -4428,8 +4428,10 @@ input#clr-hue-slider {
 }
 
 .reaction .emoji {
-    font-size: 14px;
-    user-select: none;
+    font-size: 14px !important;
+    user-select: none !important;
+    width: unset !important;
+    height: unset !important;
 }
 
 .reaction .count {
