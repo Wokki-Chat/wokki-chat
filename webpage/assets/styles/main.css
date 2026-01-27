@@ -1157,6 +1157,9 @@ input:checked + .slider:before {
     word-break: break-word;
     overflow-wrap: anywhere;
     font-size: 16px;
+    display: flex;
+    flex-direction: row;
+    white-space: pre-wrap;
 }
 
 .message {
@@ -4563,7 +4566,7 @@ input#clr-hue-slider {
 }
 
 .emoji {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     object-fit: cover;
 }
