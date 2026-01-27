@@ -4432,8 +4432,11 @@ input#clr-hue-slider {
     user-select: none !important;
     width: unset !important;
     height: unset !important;
-    max-width: 16px !important;
-    max-height: 16px !important;
+}
+
+.reaction .emoji .emoji {
+    width: 16px !important;
+    height: 16px !important;
 }
 
 .reaction .count {
