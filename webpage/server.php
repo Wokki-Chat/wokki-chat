@@ -729,7 +729,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         import SwupFragmentPlugin from "https://unpkg.com/@swup/fragment-plugin@1?module";
 
         window.swup = new Swup({
-            containers: ["#app", "#settings"],
+            containers: ["#app"],
             cache: true,
             plugins: [
                 new SwupPreloadPlugin(),
