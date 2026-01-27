@@ -200,8 +200,8 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
 
       await replaceWithCheck(/(?<!\\)~~(.+?)~~/g, (match, content) => `<del>${content}</del>`);
       await replaceWithCheck(/(?<!\\)`([^`\n]+)`/g, (match, code) => `<code>${code}</code>`);
-      await replaceWithCheck(/(?<!\\)\*\*(.+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
-      await replaceWithCheck(/(?<!\\)(\*|_)(.+?)\1/g, (match, wrap, content) => content.includes('**') ? match : `<em>${content}</em>`);
+      await replaceWithCheck(/(?<!\\)\*\*(?!\*\*)([^*]+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
+      await replaceWithCheck(/(?<!\\)(\*|_)([^*_]+?)\1/g, (match, wrap, content) => `<em>${content}</em>`);
 
       await replaceWithCheck(/(^|\n)((?:&gt; ?.*(?:\n|$))+)/g, (match, before, quoteBlock) => {
         const lines = quoteBlock.trim().split('\n').map(line => line.replace(/^&gt; ?/, '')).join('<br>');
@@ -337,8 +337,8 @@ async function sanitizeMrk(text) {
 
   text = await replaceWithCheck(text, /(?<!\\)~~(.+?)~~/g, (match, content) => `<del>${content}</del>`);
   text = await replaceWithCheck(text, /(?<!\\)`([^`\n]+)`/g, (match, code) => `<code>${code}</code>`);
-  text = await replaceWithCheck(text, /(?<!\\)\*\*(.+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
-  text = await replaceWithCheck(text, /(?<!\\)(\*|_)(.+?)\1/g, (match, wrap, content) => content.includes('**') ? match : `<em>${content}</em>`);
+  text = await replaceWithCheck(/(?<!\\)\*\*(?!\*\*)([^*]+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
+  text = await replaceWithCheck(/(?<!\\)(\*|_)([^*_]+?)\1/g, (match, wrap, content) => `<em>${content}</em>`);
 
   text = await replaceWithCheck(text, /(^|\n)((?:&gt; ?.*(?:\n|$))+)/g, (match, before, quoteBlock) => {
     const lines = quoteBlock.trim().split('\n').map(line => line.replace(/^&gt; ?/, '')).join('<br>');
@@ -1088,11 +1088,9 @@ function renderMarkdownInTextarea(text) {
       return `<span class="md-bold"><span class="md-syntax">**</span><b>${content}</b><span class="md-syntax">**</span></span>`;
     })
 
-    .replace(/(\\)?(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)|(\\)?_(.+?)_/g, (match, esc1, g1, esc2, g2) => {
-      if (esc1) return `<span class="md-escape">\\</span>*${g1}*`;
-      if (esc2) return `<span class="md-escape">\\</span>_${g2}_`;
-      const content = g1 || g2;
-      return `<span class="md-italic"><span class="md-syntax">*</span><i>${content}</i><span class="md-syntax">*</span></span>`;
+    .replace(/(\\)?([*_])([^*_]+?)\2/g, (match, esc, wrap, content) => {
+      if (esc) return `<span class="md-escape">\\</span>${wrap}${content}${wrap}`;
+      return `<span class="md-italic"><span class="md-syntax">${wrap}</span><i>${content}</i><span class="md-syntax">${wrap}</span></span>`;
     })
 
     .replace(/(\\)?~~(.+?)~~/g, (match, esc, content) => {
