@@ -27,23 +27,59 @@ window.emojis = {
 		);
 	},
 
+	async emojiToImg(emoji) {
+		const hex = Array.from(emoji)
+			.map(c => c.codePointAt(0).toString(16))
+			.join('-');
+		const url = `/assets/icons/emojis/${hex}.svg`;
+
+		try {
+			const res = await fetch(url, { method: 'HEAD' });
+			if (!res.ok) throw new Error('SVG not found');
+			return `<img src="${url}" class="emoji">`;
+		} catch {
+			return emoji;
+		}
+	},
+
 	async replaceText(text) {
 		if (!this.regex) return text;
 
-		text = text.replace(this.regex, match => this.map[match] || match);
-		text = text.replace(/\\:/g, ':');
+		const parts = [];
+		let lastIndex = 0;
 
-		return text;
+		text.replace(this.regex, (match, ...args) => {
+			const offset = args[args.length - 2];
+			parts.push(text.slice(lastIndex, offset));
+			lastIndex = offset + match.length;
+			parts.push(match);
+		});
+		parts.push(text.slice(lastIndex));
+
+		for (let i = 0; i < parts.length; i++) {
+			if (this.map[parts[i]]) {
+				parts[i] = await this.emojiToImg(this.map[parts[i]]);
+			}
+		}
+
+		return parts.join('').replace(/\\:/g, ':');
 	},
 
 	async replaceAllTextNodes(root = document.body) {
 		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
 		let node;
+		const nodes = [];
 
 		while ((node = walker.nextNode())) {
 			if (this.isInCodeBlock(node)) continue;
+			nodes.push(node);
+		}
 
-			node.textContent = await this.replaceText(node.textContent);
+		for (const node of nodes) {
+			const html = await this.replaceText(node.textContent);
+			const span = document.createElement('span');
+			span.innerHTML = html;
+			node.replaceWith(...span.childNodes);
 		}
 	},
 
@@ -55,9 +91,7 @@ window.emojis = {
 				parent.nodeName === 'PRE' ||
 				parent.nodeName === 'KBD' ||
 				parent.classList?.contains('code-block')
-			) {
-				return true;
-			}
+			) return true;
 			parent = parent.parentNode;
 		}
 		return false;
@@ -143,14 +177,10 @@ window.emojis = {
 				}
 
 				sidebar.querySelector('[data-group="all"]').classList.add('active');
-				
-				function renderList(emojis) {
+
+				async function renderList(emojis) {
 					list.innerHTML = '';
-
-					const filtered = activeGroup === 'all'
-						? emojis
-						: emojis.filter(e => e.group === activeGroup);
-
+					const filtered = activeGroup === 'all' ? emojis : emojis.filter(e => e.group === activeGroup);
 					const grouped = {};
 					for (const e of filtered) {
 						if (!grouped[e.group]) grouped[e.group] = [];
@@ -168,9 +198,9 @@ window.emojis = {
 
 						for (const e of grouped[groupName]) {
 							const btn = document.createElement('button');
-							btn.textContent = e.emoji;
-							btn.title = e.annotation || e.shortcodes?.[0] || '';
 							btn.classList.add('emoji-picker-item');
+							btn.title = e.annotation || e.shortcodes?.[0] || '';
+							btn.innerHTML = await window.emojis.emojiToImg(e.emoji);
 
 							btn.addEventListener('click', () => {
 								let output = shortcode && e.shortcodes?.length ? e.shortcodes[0] : e.emoji;
@@ -210,14 +240,14 @@ window.emojis = {
 
 				renderList(window.emojis.all);
 
-				search.addEventListener('input', () => {
+				search.addEventListener('input', async () => {
 					const q = search.value.toLowerCase();
 					const filtered = window.emojis.all.filter(e =>
 						(e.annotation && e.annotation.toLowerCase().includes(q)) ||
 						(e.shortcodes && e.shortcodes.some(s => s.toLowerCase().includes(q))) ||
 						(e.tags && e.tags.some(t => t.toLowerCase().includes(q)))
 					);
-					renderList(filtered);
+					await renderList(filtered);
 				});
 			}
 
@@ -245,24 +275,10 @@ window.emojis = {
 			}
 
 			function outsideClick(e) {
-				if (!dropdown.contains(e.target) && e.target !== targetField) {
-					hideDropdown();
-				}
+				if (!dropdown.contains(e.target) && e.target !== targetField) hideDropdown();
 			}
 
 			setTimeout(() => document.addEventListener('click', outsideClick), 0);
 		});
-	},
-	async giveall() {
-		if (!Array.isArray(this.all) || this.all.length === 0) {
-			await this.load();
-		}
-
-		const allEmojis = this.all.map(e => e.emoji).join('');
-		const newWin = window.open('', '_blank');
-		newWin.document.write('<!DOCTYPE html><html><head><title>All Emojis</title></head><body style="font-size:32px; line-height:1.5; word-wrap: break-word;">');
-		newWin.document.write(allEmojis);
-		newWin.document.write('</body></html>');
-		newWin.document.close();
 	}
 };
