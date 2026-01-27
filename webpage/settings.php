@@ -396,5 +396,33 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
             <script src="/assets/js/settings.js"></script>
         </div>
     </main>
+    <script type="module" data-swup-ignore-script>
+        import Swup from "https://unpkg.com/swup@4?module";
+        import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
+        import SwupScriptsPlugin from "https://unpkg.com/@swup/scripts-plugin@2?module";
+        import SwupFragmentPlugin from "https://unpkg.com/@swup/fragment-plugin@1?module";
+
+        window.swup = new Swup({
+            containers: ["#app"],
+            cache: true,
+            plugins: [
+                new SwupPreloadPlugin(),
+                new SwupScriptsPlugin({
+                    body: true,
+                    head: false,
+                }),
+                new SwupFragmentPlugin({
+                    rules: [
+                        {
+                            from: "/settings",
+                            to: "/settings",
+                            containers: ["#settings"]
+                        }
+                    ]
+                })
+            ]
+        });
+    </script>
+
 </body>
 </html>
