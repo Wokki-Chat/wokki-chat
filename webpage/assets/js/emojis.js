@@ -1,6 +1,7 @@
 window.emojis = {
 	map: {},
 	regex: null,
+	missingFound: false,
 
 	async load(path = '/assets/json/emojis.json') {
 		const res = await fetch(path);
@@ -28,6 +29,8 @@ window.emojis = {
 	},
 
 	async emojiToImg(emoji) {
+		if (this.missingFound) return emoji;
+
 		const hex = Array.from(emoji)
 			.map(c => c.codePointAt(0).toString(16))
 			.join('-');
@@ -38,6 +41,7 @@ window.emojis = {
 			if (!res.ok) throw new Error('SVG not found');
 			return `<img src="${url}" class="emoji">`;
 		} catch {
+			this.missingFound = true;
 			return emoji;
 		}
 	},
@@ -66,6 +70,7 @@ window.emojis = {
 	},
 
 	async replaceAllTextNodes(root = document.body) {
+		this.missingFound = false;
 		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
 		let node;
 		const nodes = [];
