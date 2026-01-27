@@ -293,7 +293,6 @@ input:checked + .slider:before {
     height: calc(100vh - 30px);
     width: 67px;
     border-radius: 16px;
-    transition: transform 0.3s ease;
 }
 
 :root.floaty .server-bar.hidden {
@@ -307,7 +306,6 @@ input:checked + .slider:before {
     width: 67px;
     border-radius: 0px;
     border-right: 1px solid var(--clr-input-border-bg-darkest);
-    transition: transform 0.3s ease;
 }
 
 :root.compact .server-bar.hidden {
@@ -4565,15 +4563,18 @@ input#clr-hue-slider {
 
 .settings {
     opacity: 1;
-    transition: opacity 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: scale(1);
+    transition: opacity 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.5s ease-in-out;
 }
 
 html.is-animating .settings {
     opacity: 0;
+    transform: scale(0.9);
     pointer-events: none;
 }
 
-html.is-changing .settings {
+html.is-leaving .settings {
     opacity: 0;
+    transform: scale(0.9);
     pointer-events: none;
 }
