@@ -703,9 +703,6 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                 </div>
             </div>
         <?php endif; ?>
-        <div id="settings">
-
-        </div>
         <wchat-allowed-scripts value="server.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="server-id" value="<?php echo htmlspecialchars($server_id); ?>"></wchat-data>
@@ -721,6 +718,9 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         <wchat-data id="profile-picture-url" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
         <script src="/assets/js/emojis.js"></script>
     </main>
+    <div id="settings">
+
+    </div>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
         import Swup from "https://unpkg.com/swup@4?module";
