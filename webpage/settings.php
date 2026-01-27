@@ -190,13 +190,43 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
     <script src="/assets/js/call_reconnect.js"></script>
     <meta name="app_page_name" content="Settings">
     <meta name="app_page_icon" content="settings">
+    <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
+    <script src="https://cdn.wokki20.nl/dynamic/jspt/jspt.js"></script>
 </head>
 <body>
-    <div id="settings">
-        <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
-        <script src="https://cdn.wokki20.nl/dynamic/jspt/jspt.js"></script>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css"/>
-        <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css"/>
+    <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js"></script>
+    <div class="server-bar">
+        <div class="server-bar-dms">
+            <a class="server-bar-item" id="server-bar-item-home" href="/home">
+                <img src="/assets/images/monochrome-logo-purple-background.png">
+            </a>
+        </div>
+        <div class="divider"></div>
+        <div class="server-bar-channels">
+            <?php
+            if ($serverResult->num_rows > 0) {
+                while ($serverRow = $serverResult->fetch_assoc()) {
+                    $lowImage = preg_replace('/\.(webp|gif)$/', '-low.$1', $serverRow['image']);
+
+                    echo '<a class="server-bar-item" id="server-bar-item-server" href="/server/'.$serverRow['id'].'" data-server-id="'.$serverRow['id'].'">
+                        <img src="'.$lowImage.'" loading="lazy" decoding="async" width="47" height="47" draggable="false" />
+                        <p class="tooltip">'.$serverRow['name'].'</p>
+                    </a>';
+                }
+            }
+            ?>
+        </div>
+        <div class="server-bar-options">    
+            <div class="server-bar-option">
+                <div class="server-bar-option-icon" onclick="openCreateServerModal()">
+                    <span class="material-symbols-rounded">add_circle</span>
+                </div>
+                <p class="tooltip">create server</p>
+            </div>
+        </div>
+    </div>
+    <main id="app">
         <?php echo $maintenanceHtml; ?>
         <div class="settings-content">
             <div class="settings-tabs">
@@ -392,35 +422,42 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
                 </div>
             </div>
         <?php endif; ?>
-        <script src="/assets/js/settings.js"></script>
-    </div>
+
+        <wchat-allowed-scripts value="settings.js;"></wchat-allowed-scripts>
+        <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
+        <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
+        <wchat-data id="premium" value="<?php echo htmlspecialchars(json_encode($premium_active)); ?>"></wchat-data>
+        <wchat-data id="return-url" value="<?php echo htmlspecialchars($from, ENT_QUOTES); ?>"></wchat-data>
+        <wchat-data id="active-tab" value="<?php echo htmlspecialchars($active_tab); ?>"></wchat-data>
+        <wchat-data id="connections" value="<?php echo htmlspecialchars(json_encode($connections)); ?>"></wchat-data>
+        <wchat-data id="kudo-items" value="<?php echo htmlspecialchars(json_encode($kudosArray)); ?>"></wchat-data>
+        <wchat-data id="kudos" value="<?php echo htmlspecialchars(json_encode($totalKudos)); ?>"></wchat-data>
+        <wchat-data id="profile-picture" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
+        <wchat-data id="banner-picture" value="<?php echo htmlspecialchars($bannerUrl); ?>"></wchat-data>
+    </main>
+    <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
         import Swup from "https://unpkg.com/swup@4?module";
         import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
         import SwupScriptsPlugin from "https://unpkg.com/@swup/scripts-plugin@2?module";
-        import SwupFragmentPlugin from "https://unpkg.com/@swup/fragment-plugin@1?module";
 
         window.swup = new Swup({
-            containers: ["#settings"],
+            containers: ["#app"],
             cache: true,
             plugins: [
                 new SwupPreloadPlugin(),
                 new SwupScriptsPlugin({
                     body: true,
                     head: false,
-                }),
-                new SwupFragmentPlugin({
-                    rules: [
-                        {
-                            from: "/settings",
-                            to: "/settings",
-                            containers: ["#settings"]
-                        }
-                    ]
                 })
             ]
         });
     </script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" data-swup-ignore-script></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
+    <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
+    <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
+    <script src="/assets/js/settings.js"></script>
+    <script src="/assets/js/load_scripts.js"></script>
 </body>
 </html>
