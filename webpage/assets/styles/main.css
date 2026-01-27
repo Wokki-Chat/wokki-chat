@@ -4432,6 +4432,7 @@ input#clr-hue-slider {
     user-select: none !important;
     width: unset !important;
     height: unset !important;
+    display: flex;
 }
 
 .reaction .emoji .emoji {

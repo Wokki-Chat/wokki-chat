@@ -2,6 +2,7 @@ window.emojis = {
 	map: {},
 	regex: null,
 	missingFound: false,
+	iconCache: {},
 
 	async load(path = '/assets/json/emojis.json') {
 		const res = await fetch(path);
@@ -26,24 +27,32 @@ window.emojis = {
 				.join('|')})`,
 			'g'
 		);
+
+		await this.preloadIcons();
+	},
+
+	async preloadIcons() {
+		if (!this.all) return;
+		const promises = this.all.map(async e => {
+			if (!e.emoji) return;
+			const hex = Array.from(e.emoji).map(c => c.codePointAt(0).toString(16)).join('-');
+			const url = `/assets/icons/emojis/${hex}.svg`;
+
+			try {
+				const res = await fetch(url, { method: 'HEAD' });
+				if (!res.ok) throw new Error('SVG not found');
+				const img = `<img src="${url}" class="emoji">`;
+				this.iconCache[e.emoji] = img;
+			} catch {
+				this.iconCache[e.emoji] = e.emoji;
+			}
+		});
+		await Promise.all(promises);
 	},
 
 	async emojiToImg(emoji) {
-		if (this.missingFound) return emoji;
-
-		const hex = Array.from(emoji)
-			.map(c => c.codePointAt(0).toString(16))
-			.join('-');
-		const url = `/assets/icons/emojis/${hex}.svg`;
-
-		try {
-			const res = await fetch(url, { method: 'HEAD' });
-			if (!res.ok) throw new Error('SVG not found');
-			return `<img src="${url}" class="emoji">`;
-		} catch {
-			this.missingFound = true;
-			return emoji;
-		}
+		if (this.iconCache[emoji]) return this.iconCache[emoji];
+		return emoji;
 	},
 
 	async replaceText(text) {
