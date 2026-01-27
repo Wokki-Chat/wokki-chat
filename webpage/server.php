@@ -703,6 +703,9 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                 </div>
             </div>
         <?php endif; ?>
+        <div id="settings">
+
+        </div>
         <wchat-allowed-scripts value="server.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="server-id" value="<?php echo htmlspecialchars($server_id); ?>"></wchat-data>
@@ -718,23 +721,30 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         <wchat-data id="profile-picture-url" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
         <script src="/assets/js/emojis.js"></script>
     </main>
-    <div id="settings">
-
-    </div>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
         import Swup from "https://unpkg.com/swup@4?module";
         import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
         import SwupScriptsPlugin from "https://unpkg.com/@swup/scripts-plugin@2?module";
+        import SwupFragmentPlugin from "https://unpkg.com/@swup/fragment-plugin@1?module";
 
         window.swup = new Swup({
-            containers: ["#app"],
+            containers: ["#app", "#settings"],
             cache: true,
             plugins: [
                 new SwupPreloadPlugin(),
                 new SwupScriptsPlugin({
                     body: true,
                     head: false,
+                }),
+                new SwupFragmentPlugin({
+                    rules: [
+                        {
+                            from: "/settings",
+                            to: "/settings",
+                            containers: ["#settings"]
+                        }
+                    ]
                 })
             ]
         });
