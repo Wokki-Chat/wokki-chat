@@ -719,7 +719,6 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         <script src="/assets/js/emojis.js"></script>
     </main>
     <div id="settings">
-
     </div>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
@@ -729,7 +728,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         import SwupFragmentPlugin from "https://unpkg.com/@swup/fragment-plugin@1?module";
 
         window.swup = new Swup({
-            containers: ["#app"],
+            containers: ["#app", "#settings"],
             cache: true,
             plugins: [
                 new SwupPreloadPlugin(),

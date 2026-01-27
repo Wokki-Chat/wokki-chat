@@ -401,7 +401,7 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
         import SwupFragmentPlugin from "https://unpkg.com/@swup/fragment-plugin@1?module";
 
         window.swup = new Swup({
-            containers: ["#app"],
+            containers: ["#settings"],
             cache: true,
             plugins: [
                 new SwupPreloadPlugin(),
