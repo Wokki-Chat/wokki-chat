@@ -4562,3 +4562,18 @@ input#clr-hue-slider {
 	transform: scale(1.2);
 	outline: none;
 }
+
+.settings {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+html.is-animating .settings {
+    opacity: 0;
+    pointer-events: none;
+}
+
+html.is-leaving .settings {
+    opacity: 0;
+    pointer-events: none;
+}
