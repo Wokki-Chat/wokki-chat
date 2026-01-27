@@ -226,7 +226,7 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
             </div>
         </div>
     </div>
-    <main id="app" class="settings">
+    <main id="app">
         <?php echo $maintenanceHtml; ?>
         <div class="settings-content">
             <div class="settings-tabs">

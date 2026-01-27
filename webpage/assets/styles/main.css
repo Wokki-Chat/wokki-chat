@@ -4560,21 +4560,3 @@ input#clr-hue-slider {
 	transform: scale(1.2);
 	outline: none;
 }
-
-.settings {
-    opacity: 1;
-    transform: scale(1);
-    transition: opacity 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.3s ease-in-out;
-}
-
-html.is-animating .settings {
-    opacity: 0;
-    transform: scale(0.9);
-    pointer-events: none;
-}
-
-html.is-changing #app {
-    opacity: 0;
-    transform: scale(0.9);
-    pointer-events: none;
-}
