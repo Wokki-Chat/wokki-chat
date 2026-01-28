@@ -1,7 +1,9 @@
+import { messages } from './servers/messages.js';
+
 function initServer() {
-	const el = document.querySelector('wchat-allowed-scripts');
-	const scripts = el.getAttribute('value').split(';');
-	if (!scripts.includes('server.js')) return;
+	// const el = document.querySelector('wchat-allowed-scripts');
+	// const scripts = el.getAttribute('value').split(';');
+	// if (!scripts.includes('server.js')) return;
 
     const serverBar = document.querySelector(".server-bar");
     if (serverBar) serverBar.classList.remove("hidden");
@@ -140,8 +142,10 @@ function initServer() {
 			messageCache.splice(existingIndex, 1);
 		}
 
-		const el = await createMessageElement(msg);
-		if (!el) return;
+		const messageInstance = await messages.create(msg);
+		if (!messageInstance) return;
+
+		const el = await messageInstance.render();
 
 		let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp);
 		if (insertIndex === -1) insertIndex = messageCache.length;
