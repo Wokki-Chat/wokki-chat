@@ -932,7 +932,9 @@ function initServer() {
 			textareaText = renderMarkdownInTextarea(textareaText);
 			textareaText = await emojis.replaceText(textareaText);
 			preview.innerHTML = textareaText;
-			updateCaretPosition();
+			requestAnimationFrame(() => {
+				updateCaretPosition();
+			});
 		});
 
 		textarea.addEventListener('keydown', async (e) => {
@@ -1018,7 +1020,9 @@ function initServer() {
 			textareaText = renderMarkdownInTextarea(textareaText);
 			textareaText = await emojis.replaceText(textareaText);
 			preview.innerHTML = textareaText;
-			updateCaretPosition();
+			requestAnimationFrame(() => {
+				updateCaretPosition();
+			});
 		});
 
 		textarea.addEventListener('paste', (e) => {
