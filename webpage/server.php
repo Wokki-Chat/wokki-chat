@@ -716,6 +716,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         <wchat-data id="username-text" value="<?php echo htmlspecialchars($username); ?>"></wchat-data>
         <wchat-data id="profile-picture-url" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
         <script src="/assets/js/emojis.js"></script>
+        <script src="/assets/js/server.js" data-time="<?php echo time(); ?>" type="module"></script>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
@@ -741,6 +742,5 @@ if (!$server_id || !isset($user_servers[$server_id])) {
     <script src="/assets/js/create_server.js" data-swup-ignore-script></script>
     <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
     <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
-    <script src="/assets/js/server.js" type="module"></script>
 </body>
 </html>
