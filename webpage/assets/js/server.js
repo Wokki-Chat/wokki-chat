@@ -1,3 +1,5 @@
+import emojis from "./emojis.js";
+
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');

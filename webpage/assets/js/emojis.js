@@ -1,8 +1,10 @@
-window.emojis = {
+const emojis = {
 	map: {},
 	regex: null,
 	missingFound: false,
 	iconCache: {},
+
+	all: null,
 
 	async load(path = '/assets/json/emojis.json') {
 		const res = await fetch(path);
@@ -84,6 +86,20 @@ window.emojis = {
 		return parts.join('').replace(/\\:/g, ':');
 	},
 
+	isInCodeBlock(node) {
+		let parent = node.parentNode;
+		while (parent) {
+			if (
+				parent.nodeName === 'CODE' ||
+				parent.nodeName === 'PRE' ||
+				parent.nodeName === 'KBD' ||
+				parent.classList?.contains('code-block')
+			) return true;
+			parent = parent.parentNode;
+		}
+		return false;
+	},
+
 	async replaceAllTextNodes(root = document.body) {
 		this.missingFound = false;
 		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
@@ -101,20 +117,6 @@ window.emojis = {
 			span.innerHTML = html;
 			node.replaceWith(...span.childNodes);
 		}
-	},
-
-	isInCodeBlock(node) {
-		let parent = node.parentNode;
-		while (parent) {
-			if (
-				parent.nodeName === 'CODE' ||
-				parent.nodeName === 'PRE' ||
-				parent.nodeName === 'KBD' ||
-				parent.classList?.contains('code-block')
-			) return true;
-			parent = parent.parentNode;
-		}
-		return false;
 	},
 
 	async replaceAll() {
@@ -190,7 +192,7 @@ window.emojis = {
 						activeGroup = g.key;
 						sidebar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
 						btn.classList.add('active');
-						renderList(window.emojis.all);
+						renderList(emojis.all);
 					});
 
 					sidebar.appendChild(btn);
@@ -198,9 +200,9 @@ window.emojis = {
 
 				sidebar.querySelector('[data-group="all"]').classList.add('active');
 
-				async function renderList(emojis) {
+				async function renderList(allEmojis) {
 					list.innerHTML = '';
-					const filtered = activeGroup === 'all' ? emojis : emojis.filter(e => e.group === activeGroup);
+					const filtered = activeGroup === 'all' ? allEmojis : allEmojis.filter(e => e.group === activeGroup);
 					const grouped = {};
 					for (const e of filtered) {
 						if (!grouped[e.group]) grouped[e.group] = [];
@@ -220,7 +222,7 @@ window.emojis = {
 							const btn = document.createElement('button');
 							btn.classList.add('emoji-picker-item');
 							btn.title = e.annotation || e.shortcodes?.[0] || '';
-							btn.innerHTML = await window.emojis.emojiToImg(e.emoji);
+							btn.innerHTML = await emojis.emojiToImg(e.emoji);
 
 							btn.addEventListener('click', () => {
 								let output = shortcode && e.shortcodes?.length ? e.shortcodes[0] : e.emoji;
@@ -258,11 +260,11 @@ window.emojis = {
 					}
 				}
 
-				renderList(window.emojis.all);
+				renderList(emojis.all);
 
 				search.addEventListener('input', async () => {
 					const q = search.value.toLowerCase();
-					const filtered = window.emojis.all.filter(e =>
+					const filtered = emojis.all.filter(e =>
 						(e.annotation && e.annotation.toLowerCase().includes(q)) ||
 						(e.shortcodes && e.shortcodes.some(s => s.toLowerCase().includes(q))) ||
 						(e.tags && e.tags.some(t => t.toLowerCase().includes(q)))
@@ -302,3 +304,5 @@ window.emojis = {
 		});
 	}
 };
+
+export default emojis;
