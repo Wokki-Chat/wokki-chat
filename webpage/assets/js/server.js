@@ -821,6 +821,22 @@ function initServer() {
 		
 		const inputContainer = document.querySelector(".input-container-2");
 
+		const msgInBgCaret = document.querySelector('.msg-in-bg-caret');
+
+		const updateCaretPosition = () => {
+			const sel = window.getSelection();
+			if (!sel.rangeCount) return;
+
+			const range = sel.getRangeAt(0).cloneRange();
+			range.collapse(true);
+			const rect = range.getBoundingClientRect();
+			const wrapperRect = messageInputWrapper.getBoundingClientRect();
+
+			msgInBgCaret.style.left = (rect.left - wrapperRect.left) + 'px';
+			msgInBgCaret.style.top = (rect.top - wrapperRect.top) + 'px';
+			msgInBgCaret.style.height = rect.height + 'px';
+		};
+
 		const updateHeight = () => {
 			let newHeight = Math.min(textarea.scrollHeight, maxHeight);
 			messageInputWrapper.style.height = newHeight + 20 + 'px';
@@ -892,6 +908,7 @@ function initServer() {
 			updateCharsLeft();
 			handleCommandAutocomplete();
 			handleMentions();
+			updateCaretPosition();
 
 			let textareaText = textarea.innerText;
 			textareaText = renderMarkdownInTextarea(textareaText);
@@ -918,6 +935,7 @@ function initServer() {
 			textarea.innerText = "";
 			updateHeight();
 			renderPreviews();
+			updateCaretPosition();
 
 			if (typing) {
 				typing = false;
@@ -997,7 +1015,9 @@ function initServer() {
 
 			textarea.dispatchEvent(new Event('input'));
 		});
-
+		textarea.addEventListener('click', updateCaretPosition);
+		textarea.addEventListener('focus', updateCaretPosition);
+		textarea.addEventListener('mouseup', updateCaretPosition);
 	}
 	
 	async function getAssetFileInsides(file) {
