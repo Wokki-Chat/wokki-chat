@@ -4590,7 +4590,8 @@ input#clr-hue-slider {
 }
 
 .message-input-wrapper .emoji {
-    width: 1em;
-    height: 1em;
+    width: 1.1em;
+    height: 1.1em;
     vertical-align: middle;
+    margin-right: 4px;
 }
