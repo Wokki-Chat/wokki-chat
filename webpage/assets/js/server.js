@@ -132,7 +132,7 @@ function initServer() {
 		}
 	}
 		
-	const messageRenderer = new MessageRenderer({ usersList, user_id, channels, server_id });
+	const messageRenderer = new MessageRenderer({ user_id, channels, server_id });
 
 	async function handleMessage(msg) {
 		const timestamp = msg.created_at;
@@ -144,7 +144,7 @@ function initServer() {
 			existing.el.remove();
 			messageCache.splice(existingIndex, 1);
 		}
-		const el = await messageRenderer.create(msg);
+		const el = await messageRenderer.create(msg, usersList);
 		if (!el) return;
 
 		let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp);

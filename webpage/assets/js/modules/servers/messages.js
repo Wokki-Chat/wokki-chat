@@ -2,18 +2,17 @@
 // Module description: This module helps with managing messages in a server.
 
 export default class MessageRenderer {
-	constructor({ usersList, user_id, channels, server_id }) {
-		this.usersList = usersList;
+	constructor({ user_id, channels, server_id }) {
 		this.user_id = user_id;
 		this.channels = channels;
 		this.server_id = server_id;
 	}
 
-	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, reactions }) {
+	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, reactions }, usersList) {
 		if (!message && !embed) return null;
 
 		const sanitizedUsername = sender_info.display_name ? sanitize(sender_info.display_name) : sanitize(sender_info.username);
-		const sanitizedMessage = await sanitizeMsg(message, this.usersList, this.user_id, this.channels, this.server_id);
+		const sanitizedMessage = await sanitizeMsg(message, usersList, this.user_id, this.channels, this.server_id);
 		const createdAtDate = new Date(created_at);
 
 		let embedsRaw = null;
@@ -66,7 +65,7 @@ export default class MessageRenderer {
 						<p class="date">${createdAtDate.toLocaleString()}</p>
 					</div>
 					<p class="message-text">${sanitizedMessage}</p>
-					${embeds ? `<div class="message-embed">${await this.Embeds({ embeds })}</div>` : ''}
+					${embeds ? `<div class="message-embed">${await this.Embeds({ embeds }, usersList)}</div>` : ''}
 					<div class="message-reactions"></div>
 				</div>
 			</div>
@@ -92,7 +91,7 @@ export default class MessageRenderer {
 		return msgEl;
 	}
 
-	async Embed({ embed }) {
+	async Embed({ embed }, usersList) {
 		if (!embed) return '';
 
 		const bot_id = embed.bot_id || '';
@@ -100,7 +99,7 @@ export default class MessageRenderer {
 		return `
 			<div class="embed" data-bot-id="${bot_id}" style="border-left: 4px solid ${embed.color || 'var(--clr-primary-a0)'};">
 			${embed.title ? `<h3 class="embed-title">${sanitize(embed.title)}</h3>` : ''}
-			${embed.description ? `<p class="embed-description">${await sanitizeMsg(embed.description, this.usersList, this.user_id, this.channels, this.server_id)}</p>` : ''}
+			${embed.description ? `<p class="embed-description">${await sanitizeMsg(embed.description, usersList, this.user_id, this.channels, this.server_id)}</p>` : ''}
 			
 			${embed.fields && embed.fields.length > 0 ? `
 				<div class="embed-fields">
@@ -130,9 +129,9 @@ export default class MessageRenderer {
 		`;
 	}
 
-	async Embeds({ embeds }) {
+	async Embeds({ embeds }, usersList) {
 		if (!embeds?.length) return '';
-		const embedHtml = await Promise.all(embeds.map(e => this.Embed({ embed: e })));
+		const embedHtml = await Promise.all(embeds.map(e => this.Embed({ embed: e }, usersList)));
 		return `<div class="embeds-container">${embedHtml.join('')}</div>`;
 	}
 }
