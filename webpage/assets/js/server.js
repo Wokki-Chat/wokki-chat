@@ -879,7 +879,7 @@ function initServer() {
 			}
 		};
 
-		textarea.addEventListener('input', (e) => {
+		textarea.addEventListener('input', async (e) => {
 			if (e.target !== textarea) return;
 
 			if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
@@ -895,7 +895,7 @@ function initServer() {
 
 			let textareaText = textarea.innerText;
 			textareaText = renderMarkdownInTextarea(textareaText);
-			textareaText = emojis.replaceText(textareaText);
+			textareaText = await emojis.replaceText(textareaText);
 			preview.innerHTML = textareaText;
 		});
 
@@ -963,7 +963,7 @@ function initServer() {
 			}
 		});
 
-		textarea.addEventListener('input', (e) => {
+		textarea.addEventListener('input', async (e) => {
 			if (e.target !== textarea) return;
 
 			if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
@@ -979,7 +979,7 @@ function initServer() {
 
 			let textareaText = textarea.innerText;
 			textareaText = renderMarkdownInTextarea(textareaText);
-			textareaText = emojis.replaceText(textareaText);
+			textareaText = await emojis.replaceText(textareaText);
 			preview.innerHTML = textareaText;
 		});
 
