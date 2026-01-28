@@ -1159,6 +1159,7 @@ input:checked + .slider:before {
     font-size: 16px;
     display: flex;
     flex-direction: row;
+    align-items: center;
     white-space: pre-wrap;
 }
 
@@ -1565,8 +1566,8 @@ input:checked + .slider:before {
     height: 150px;
 }
 
-.channel-link,
-.user-link {
+.user-link,
+.channel-link {
     background-color: var(--clr-primary-a30-20);
     color: var(--clr-text-a0);
     border-radius: 5px;
@@ -1575,8 +1576,10 @@ input:checked + .slider:before {
     transition: background-color 0.3s ease;
     cursor: pointer;
     font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
 }
-
 
 .premium-tag,
 .bot-tag,
@@ -4580,4 +4583,7 @@ input#clr-hue-slider {
     width: 20px;
     height: 20px;
     object-fit: cover;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
