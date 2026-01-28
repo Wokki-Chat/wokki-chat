@@ -1177,7 +1177,7 @@ function deleteMsg(id) {
 }
 
 function send_message(textareaEl, uploadedFileNames = null) {
-	const message = getCleanMessageFromTextarea(textareaEl);
+	const message = globalFunctions.getCleanMessageFromTextarea(textareaEl);
 
 	if (!message) return;
 
