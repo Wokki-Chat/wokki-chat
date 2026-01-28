@@ -14,35 +14,55 @@ window.swup = new Swup({
     ]
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadScripts();
-});
+const alwaysKeep = [
+    "/assets/js/load_scripts.js",
+    "/assets/js/socket.js"
+];
 
-window.swup.hooks.on('page:view', () => {
-    resetScripts();
-});
-
-function resetScripts() {
-    document.querySelectorAll('script:not([ignore-unload])').forEach(s => s.remove());
-    loadScripts();
-}
+const activeScripts = {};
 
 function loadScripts() {
     const container = document.querySelector("wchat-allowed-scripts");
     if (!container) return;
 
-    const allowedScripts = container.getAttribute("value")
+    const scripts = container
+        .getAttribute("value")
         .split(";")
         .map(s => s.trim())
         .filter(s => s !== "");
 
-    allowedScripts.forEach(script => {
-        const src = `/assets/js/${script}`;
-        if (document.querySelector(`script[src="${src}"]`)) return;
+    scripts.forEach(src => {
+        src = `/assets/js/${src}`;
+        if (activeScripts[src]) return;
 
         const scriptTag = document.createElement("script");
         scriptTag.src = src;
         scriptTag.type = "module";
         document.body.appendChild(scriptTag);
+        activeScripts[src] = scriptTag;
+    });
+}
+
+function unloadScripts() {
+    document.querySelectorAll("body script").forEach(s => {
+        if (!alwaysKeep.includes(s.src)) {
+            s.remove();
+            delete activeScripts[s.src];
+        }
+    });
+}
+
+function reloadAllowedScripts() {
+    unloadScripts();
+    loadScripts();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadScripts();
+});
+
+if (window.swup) {
+    window.swup.hooks.on("page:view", () => {
+        reloadAllowedScripts();
     });
 }
