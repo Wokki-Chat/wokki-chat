@@ -843,7 +843,7 @@ function initServer() {
 				const rects = range.getClientRects();
 				const lastRect = rects[0] || bgRect;
 
-				msgInBgCaret.style.left = (lastRect.left - bgRect.left) + 'px';
+				msgInBgCaret.style.left = (lastRect.left - bgRect.left - 10) + 'px';
 				msgInBgCaret.style.top = (lastRect.top - bgRect.top) + 'px';
 
 				tempSpan.remove();
@@ -851,7 +851,7 @@ function initServer() {
 				const rects = range.getClientRects();
 				const lastRect = rects[rects.length - 1] || bgRect;
 
-				msgInBgCaret.style.left = (lastRect.right - bgRect.left) + 'px';
+				msgInBgCaret.style.left = (lastRect.right - bgRect.left - 10) + 'px';
 				msgInBgCaret.style.top = (lastRect.top - bgRect.top) + 'px';
 			}
 		};
