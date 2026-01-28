@@ -824,17 +824,20 @@ function initServer() {
 		const msgInBgCaret = document.querySelector('.msg-in-bg-caret');
 
 		const updateCaretPosition = () => {
-			const sel = window.getSelection();
-			if (!sel.rangeCount) return;
-
-			const range = sel.getRangeAt(0).cloneRange();
-			range.collapse(true);
-			const rect = range.getBoundingClientRect();
+			const bg = document.getElementById('message-input-bg');
 			const wrapperRect = messageInputWrapper.getBoundingClientRect();
-
-			msgInBgCaret.style.left = (rect.left - wrapperRect.left - 15) + 'px';
-			msgInBgCaret.style.top = (rect.top - wrapperRect.top - 10) + 'px';
-			msgInBgCaret.style.height = rect.height + 'px';
+			if (!bg) return;
+			const tempSpan = document.createElement('span');
+			tempSpan.style.visibility = 'hidden';
+			tempSpan.style.position = 'absolute';
+			tempSpan.style.whiteSpace = 'pre';
+			tempSpan.innerHTML = bg.innerHTML;
+			document.body.appendChild(tempSpan);
+			const tempRect = tempSpan.getBoundingClientRect();
+			msgInBgCaret.style.left = (tempRect.width) + 'px';
+			msgInBgCaret.style.top = '0px';
+			msgInBgCaret.style.height = wrapperRect.height + 'px';
+			document.body.removeChild(tempSpan);
 		};
 
 		const updateHeight = () => {
