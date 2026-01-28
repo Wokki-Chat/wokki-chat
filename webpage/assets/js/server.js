@@ -1,5 +1,5 @@
 import { messages } from './servers/messages.js';
-
+import './globalFunctions.js'
 const serverBar = document.querySelector(".server-bar");
 if (serverBar) serverBar.classList.remove("hidden");
 

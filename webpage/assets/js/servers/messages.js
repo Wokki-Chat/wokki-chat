@@ -1,3 +1,5 @@
+import '../globalFunctions.js'
+
 export class Message {
     constructor(data, user_id, usersList, channels, server_id) {
         this.data = data;
