@@ -850,7 +850,7 @@ function initServer() {
 			const lastRect = rects[rects.length - 1] || bg.getBoundingClientRect();
 
 			msgInBgCaret.style.left = (lastRect.right - wrapperRect.left - 15) + 'px';
-			msgInBgCaret.style.top = (lastRect.top - wrapperRect.top) + 'px';
+			msgInBgCaret.style.top = (lastRect.top - wrapperRect.top - 10) + 'px';
 		};
 
 
@@ -1011,6 +1011,7 @@ function initServer() {
 			updateCharsLeft();
 			handleCommandAutocomplete();
 			handleMentions();
+			updateCaretPosition();
 
 			let textareaText = textarea.innerText;
 			textareaText = renderMarkdownInTextarea(textareaText);
