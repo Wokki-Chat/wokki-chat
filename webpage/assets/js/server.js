@@ -142,7 +142,7 @@ function initServer() {
 			messageCache.splice(existingIndex, 1);
 		}
 
-		const messageInstance = await messages.create(msg);
+		const messageInstance = await messages.create(msg, user_id, usersList, channels, server_id);
 		if (!messageInstance) return;
 
 		const el = await messageInstance.render();

@@ -1,11 +1,16 @@
 export class Message {
-    constructor(data) {
+    constructor(data, user_id, usersList, channels, server_id) {
         this.data = data;
+        this.user_id = user_id;
+        this.usersList = usersList;
+        this.channels = channels;
+        this.server_id = server_id;
     }
 
     async render() {
         const { message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, reactions } = this.data;
-        
+        const { user_id, usersList, channels, server_id } = this;
+
 		if (!message && !embed) {
 			return null;
 		}
