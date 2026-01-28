@@ -735,8 +735,8 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                 })
             ]
         });
-        
-        swup.on("willReplaceContent", () => {
+
+        window.swup.on("willReplaceContent", () => {
             document.querySelectorAll('script[type="module"]').forEach(s => s.remove());
         });
     </script>
