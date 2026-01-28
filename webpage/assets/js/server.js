@@ -1,4 +1,5 @@
 import emojis from "./emojis.js";
+import MessageRenderer from "./modules/servers/messages.js";
 
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
@@ -25,6 +26,8 @@ function initServer() {
 
 	const username_text = document.getElementById("username-text").getAttribute("value");
 	const profile_picture_url = document.getElementById("profile-picture-url").getAttribute("value");
+		
+	const messageRenderer = new MessageRenderer({ usersList, user_id, channels, server_id });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
@@ -141,8 +144,7 @@ function initServer() {
 			existing.el.remove();
 			messageCache.splice(existingIndex, 1);
 		}
-
-		const el = await createMessageElement(msg);
+		const el = await messageRenderer.create(msg);
 		if (!el) return;
 
 		let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp);
@@ -566,7 +568,6 @@ function initServer() {
 			timeBox.style.minWidth = `${width}px`;
 		});
 	}
-
 
 	async function createMessageElement({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, reactions }) {
 
