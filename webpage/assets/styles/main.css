@@ -1154,12 +1154,12 @@ input:checked + .slider:before {
 
 .message-text {
     margin: 0;
-    word-break: break-word;
-    overflow-wrap: anywhere;
     font-size: 16px;
     display: flex;
-    flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
+    word-break: break-word;
+    overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
 
