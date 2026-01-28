@@ -1,9 +1,9 @@
 import { messages } from './servers/messages.js';
 
 function initServer() {
-	const el = document.querySelector('wchat-allowed-scripts');
-	const scripts = el.getAttribute('value').split(';');
-	if (!scripts.includes('server.js')) return;
+	// const el = document.querySelector('wchat-allowed-scripts');
+	// const scripts = el.getAttribute('value').split(';');
+	// if (!scripts.includes('server.js')) return;
 
     const serverBar = document.querySelector(".server-bar");
     if (serverBar) serverBar.classList.remove("hidden");
