@@ -1,5 +1,5 @@
 import { messages } from './servers/messages.js';
-import './globalFunctions.js'
+import * as globalFunctions from './globalFunctions.js'
 const serverBar = document.querySelector(".server-bar");
 if (serverBar) serverBar.classList.remove("hidden");
 
@@ -389,13 +389,13 @@ async function hydrateAssets(msgEl, assets, id) {
 				</div>
 				`;
 			} else if (type === 'pdf') {
-				return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${sanitize(asset.originalName)}</a>`;
+				return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${globalFunctions.sanitize(asset.originalName)}</a>`;
 			} else if (type === 'txt') {
 				return `<pre class="message-asset-text" id="txt-asset-${id}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
 			} else if (type === 'profile_picture') {
 				return `<img data-src="https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}" alt="${asset.originalName}" class="message-asset-image message-asset-profile-picture lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}', '${asset.originalName}')" />`;
 			} else {
-				return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" download class="message-asset-file link">${sanitize(asset.savedName)}</a>`;
+				return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" download class="message-asset-file link">${globalFunctions.sanitize(asset.savedName)}</a>`;
 			}
 		}).join('');
 	}
@@ -427,7 +427,7 @@ async function hydrateAssets(msgEl, assets, id) {
 
 			try {
 				const contents = await getAssetFileInsides(asset.savedName);
-				preEl.textContent = sanitize(contents);
+				preEl.textContent = globalFunctions.sanitize(contents);
 
 				const pre = preEl.parentElement;
 				if (!pre.querySelector(".lang-bar")) {
@@ -571,8 +571,8 @@ async function createMessageElement({ message, created_at, id: message_id, bot_m
 		return null;
 	}
 
-	const sanitizedUsername = sender_info.display_name ? sanitize(sender_info.display_name) : sanitize(sender_info.username);
-	const sanitizedMessage = await sanitizeMsg(message, usersList, user_id, channels, server_id);
+	const sanitizedUsername = sender_info.display_name ? globalFunctions.sanitize(sender_info.display_name) : globalFunctions.sanitize(sender_info.username);
+	const sanitizedMessage = await globalFunctions.sanitizeMsg(message, usersList, user_id, channels, server_id);
 	const createdAtDate = new Date(created_at);
 	let embedsRaw = null;
 	try {
@@ -597,8 +597,8 @@ async function createMessageElement({ message, created_at, id: message_id, bot_m
 			parent_message_info !== null
 			? `<div class="message-reply" data-message-id="${parent_message_info.message_id}">
 				<img class="identification" src="/assets/images/identifier.svg">
-				<p class="username-reply">@${sanitize(parent_message_info.username)}</p>
-				<p class="message-text-reply">${sanitize(parent_message_info.message_preview)}</p>
+				<p class="username-reply">@${globalFunctions.sanitize(parent_message_info.username)}</p>
+				<p class="message-text-reply">${globalFunctions.sanitize(parent_message_info.message_preview)}</p>
 				</div>`
 			: ''
 		}
@@ -606,9 +606,9 @@ async function createMessageElement({ message, created_at, id: message_id, bot_m
 			command_info && command_info !== null
 			? `<div class="message-command">
 				<img class="identification" src="/assets/images/identifier.svg">
-				<p class="username-command">@${sanitize(command_info?.username) ?? ''}</p>
+				<p class="username-command">@${globalFunctions.sanitize(command_info?.username) ?? ''}</p>
 				<p>used</p>
-				<p class="used-command">${sanitize(command_info?.command) ?? ''}</p>
+				<p class="used-command">${globalFunctions.sanitize(command_info?.command) ?? ''}</p>
 				</div>`
 			: ''
 		}
@@ -616,13 +616,13 @@ async function createMessageElement({ message, created_at, id: message_id, bot_m
 			<img class="profile-picture" src="${sender_info.profile_picture}" />
 			<div class="message-info">
 				<div class="username-date">
-					<p class="username">${sanitizedUsername}</p>
+					<p class="username">${globalFunctions.sanitizedUsername}</p>
 					${sender_info.premium == true ? '<div class="premium-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="premium-tag-tooltip">Premium</p></div>' : ''}
 					${sender_info.staff == 1 ? '<div class="staff-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_staff.svg"><p class="staff-tag-tooltip">Staff</p></div>' : ''}
 					${bot_message == 1 ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
 					<p class="date">${createdAtDate.toLocaleString()}</p>
 				</div>
-				<p class="message-text">${sanitizedMessage}</p>
+				<p class="message-text">${globalFunctions.sanitizedMessage}</p>
 				${embeds ? `<div class="message-embed">${await Embeds({ embeds })}</div>` : ''}
 				<div class="message-reactions"></div>
 			</div>
@@ -717,13 +717,13 @@ async function Embed({ embed }) {
 
 	return `
 		<div class="embed" data-bot-id="${bot_id}" style="border-left: 4px solid ${embed.color || 'var(--clr-primary-a0)'};">
-		${embed.title ? `<h3 class="embed-title">${sanitize(embed.title)}</h3>` : ''}
-		${embed.description ? `<p class="embed-description">${await sanitizeMsg(embed.description, usersList, user_id, channels, server_id)}</p>` : ''}
+		${embed.title ? `<h3 class="embed-title">${globalFunctions.sanitize(embed.title)}</h3>` : ''}
+		${embed.description ? `<p class="embed-description">${await globalFunctions.sanitizeMsg(embed.description, usersList, user_id, channels, server_id)}</p>` : ''}
 		
 		${embed.fields && embed.fields.length > 0 ? `
 			<div class="embed-fields">
 			${embed.fields.map(field => `
-				<div class="embed-field"><strong>${sanitize(field.name)}</strong>${sanitize(field.value)}</div>
+				<div class="embed-field"><strong>${globalFunctions.sanitize(field.name)}</strong>${globalFunctions.sanitize(field.value)}</div>
 			`).join('')}
 			</div>
 		` : ''}
@@ -735,15 +735,15 @@ async function Embed({ embed }) {
 				${row.map(btn => {
 					const customStyle = `background-color: ${btn.color || 'var(--clr-primary-a0)'}; color: ${btn.text_color || 'var(--clr-text-a0)'}; user-select: none;`;
 					return btn.type === 'link'
-					? `<a href="${btn.url}" target="_blank" rel="noopener noreferrer" class="button-primary-filled ${btn.disabled ? 'disabled' : ''}"  style="${customStyle}">${sanitize(btn.label)}</a>`
-					: `<button class="button-primary-filled ${btn.disabled ? 'disabled' : ''}" style="${customStyle}" ${btn.disabled ? 'disabled="true"' : ''} data-btn-id="${btn.id}">${sanitize(btn.label)}</button>`;
+					? `<a href="${btn.url}" target="_blank" rel="noopener noreferrer" class="button-primary-filled ${btn.disabled ? 'disabled' : ''}"  style="${customStyle}">${globalFunctions.sanitize(btn.label)}</a>`
+					: `<button class="button-primary-filled ${btn.disabled ? 'disabled' : ''}" style="${customStyle}" ${btn.disabled ? 'disabled="true"' : ''} data-btn-id="${btn.id}">${globalFunctions.sanitize(btn.label)}</button>`;
 				}).join('')}
 				</div>
 			`).join('')}
 			</div>
 		` : ''}
 		
-		${embed.footer ? `<h5 class="embed-footer">${sanitize(embed.footer)}</h5>` : ''}
+		${embed.footer ? `<h5 class="embed-footer">${globalFunctions.sanitize(embed.footer)}</h5>` : ''}
 		</div>
 	`;
 }
@@ -1249,7 +1249,7 @@ socket.on("update_message", async ({id, message, embed, updated_at}) => {
 	if (!messageEl) return;
 	
 	if (message) {
-		messageEl.querySelector(".message-text").innerHTML = await sanitizeMsg(message, usersList, user_id, channels, server_id);
+		messageEl.querySelector(".message-text").innerHTML = await globalFunctions.sanitizeMsg(message, usersList, user_id, channels, server_id);
 		hydrateInvites(messageEl);
 		hydrateSpotifyTracks(messageEl);
 	}
@@ -1382,7 +1382,7 @@ async function renderUser(user) {
 			</div>
 		</div>
 		<div class="self-info-status-username">
-			<div class="self-info-profile-username-container"><p class="self-info-username">${user.display_name ? sanitize(user.display_name) : sanitize(user.username)}</p>
+			<div class="self-info-profile-username-container"><p class="self-info-username">${user.display_name ? globalFunctions.sanitize(user.display_name) : globalFunctions.sanitize(user.username)}</p>
 				${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
 				</div>
 			<p class="self-info-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
@@ -1434,20 +1434,20 @@ async function renderUser(user) {
 					</div>
 				</div>
 				<div class="user-info-profile-popup-status-username">
-					<div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${user.display_name ? sanitize(user.display_name) : sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
+					<div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${user.display_name ? globalFunctions.sanitize(user.display_name) : globalFunctions.sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
 					<p class="user-info-profile-popup-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
 				</div>
 			</div>
 			<div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
 				<div class="dm-info-item">
-					<p class="dm-info-item-value dm-info-item-username-original">${sanitize(user.username)}</p>
+					<p class="dm-info-item-value dm-info-item-username-original">${globalFunctions.sanitize(user.username)}</p>
 				</div>
 				<div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
 					${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
 				</div>	
 				<div class="dm-info-item">
 					<p class="dm-info-item-key">Bio</p>
-					<p class="dm-info-item-value">${user.bio ? await sanitizeMrk(user.bio) : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</p>
+					<p class="dm-info-item-value">${user.bio ? await globalFunctions.sanitizeMrk(user.bio) : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</p>
 				</div>
 				<div class="dm-info-item">
 					<p class="dm-info-item-key">Joined on</p>

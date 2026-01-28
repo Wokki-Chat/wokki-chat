@@ -1,4 +1,4 @@
-import '../globalFunctions.js'
+import * as globalFunctions from '../globalFunctions.js'
 
 export class Message {
     constructor(data, user_id, usersList, channels, server_id) {
@@ -17,8 +17,8 @@ export class Message {
 			return null;
 		}
 
-		const sanitizedUsername = sender_info.display_name ? sanitize(sender_info.display_name) : sanitize(sender_info.username);
-		const sanitizedMessage = await sanitizeMsg(message, usersList, user_id, channels, server_id);
+		const sanitizedUsername = sender_info.display_name ? globalFunctions.sanitize(sender_info.display_name) : globalFunctions.sanitize(sender_info.username);
+		const sanitizedMessage = await globalFunctions.sanitizeMsg(message, usersList, user_id, channels, server_id);
 		const createdAtDate = new Date(created_at);
 		let embedsRaw = null;
 		try {
