@@ -978,11 +978,11 @@ if (textarea) {
 		if (textarea.innerText.startsWith('/')) {
 		textarea.style.color = "var(--clr-text-a0)";
 		preview.style.display = "none";
-		showAvailableCommands(textarea.innerText, textarea, available_commands);
+		globalFunctions.showAvailableCommands(textarea.innerText, textarea, available_commands);
 		} else {
 		const popup = document.querySelector(".available-commands");
 		if (popup) popup.remove();
-		updateHeight();
+		globalFunctions.updateHeight();
 		}
 	};
 
@@ -990,14 +990,14 @@ if (textarea) {
 		const text = textarea.innerHTML.trim();
 		if (text.includes('@')) {
 		const lastAtIndex = text.lastIndexOf("@");
-		placeCaretAtEnd(textarea);
+		globalFunctions.placeCaretAtEnd(textarea);
 		const afterAt = text.slice(lastAtIndex + 1);
 		const query = afterAt.split(/\s|\n/)[0];
 		textarea.style.color = "var(--clr-text-a0)";
 		preview.style.display = "none";
-		show_mentions(query, usersList);
+		globalFunctions.show_mentions(query, usersList);
 		} else {
-		hide_mentions();
+		globalFunctions.hide_mentions();
 		textarea.style.color = "transparent";
 		preview.style.display = "block";
 		}
@@ -1008,16 +1008,16 @@ if (textarea) {
 
 		if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
 		textarea.innerHTML = '';
-		hide_mentions();
+		globalFunctions.hide_mentions();
 		}
 
-		updateHeight();
-		updateTypingStatus();
-		updateCharsLeft();
-		handleCommandAutocomplete();
+		globalFunctions.updateHeight();
+		globalFunctions.updateTypingStatus();
+		globalFunctions.updateCharsLeft();
+		globalFunctions.handleCommandAutocomplete();
 		handleMentions();
 
-		preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+		preview.innerHTML = globalFunctions.renderMarkdownInTextarea(textarea.innerText);
 	});
 
 	textarea.addEventListener('keydown', async (e) => {
@@ -1032,13 +1032,13 @@ if (textarea) {
 			.filter(f => f.savedName)
 			.map(f => ({ savedName: f.savedName, originalName: f.originalName }));
 
-		send_message(textarea, uploadedNames.length ? uploadedNames : undefined);
-		hide_mentions();
+		globalFunctions.send_message(textarea, uploadedNames.length ? uploadedNames : undefined);
+		globalFunctions.hide_mentions();
 		
 		preview.innerHTML = "";
 		textarea.innerText = "";
-		updateHeight();
-		renderPreviews();
+		globalFunctions.updateHeight();
+		globalFunctions.renderPreviews();
 
 		if (typing) {
 			typing = false;
@@ -1089,16 +1089,16 @@ if (textarea) {
 
 		if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
 		textarea.innerHTML = '';
-		hide_mentions();
+		globalFunctions.hide_mentions();
 		}
 
-		updateHeight();
-		updateTypingStatus();
-		updateCharsLeft();
-		handleCommandAutocomplete();
+		globalFunctions.updateHeight();
+		globalFunctions.updateTypingStatus();
+		globalFunctions.updateCharsLeft();
+		globalFunctions.handleCommandAutocomplete();
 		handleMentions();
 
-		preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+		preview.innerHTML = globalFunctions.renderMarkdownInTextarea(textarea.innerText);
 	});
 
 	textarea.addEventListener('paste', (e) => {
