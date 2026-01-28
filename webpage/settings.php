@@ -192,8 +192,6 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
     <meta name="app_page_icon" content="settings">
     <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
     <script src="https://cdn.wokki20.nl/dynamic/jspt/jspt.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </head>
 <body>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css"/>
@@ -424,8 +422,8 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
                 </div>
             </div>
         <?php endif; ?>
-        
-        <wchat-allowed-scripts value="notifiers.js;globalFunctions.js;settings.js;"></wchat-allowed-scripts>
+
+        <wchat-allowed-scripts value="settings.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
         <wchat-data id="premium" value="<?php echo htmlspecialchars(json_encode($premium_active)); ?>"></wchat-data>
@@ -437,7 +435,29 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
         <wchat-data id="profile-picture" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
         <wchat-data id="banner-picture" value="<?php echo htmlspecialchars($bannerUrl); ?>"></wchat-data>
     </main>
-    <script src="/assets/js/socket.js" ignore-unload></script>
-    <script src="/assets/js/load_scripts.js" type="module" ignore-unload></script>
+    <script src="/assets/js/socket.js" data-swup-ignore-script></script>
+    <script type="module" data-swup-ignore-script>
+        import Swup from "https://unpkg.com/swup@4?module";
+        import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
+        import SwupScriptsPlugin from "https://unpkg.com/@swup/scripts-plugin@2?module";
+
+        window.swup = new Swup({
+            containers: ["#app"],
+            cache: true,
+            plugins: [
+                new SwupPreloadPlugin(),
+                new SwupScriptsPlugin({
+                    body: true,
+                    head: false,
+                })
+            ]
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" data-swup-ignore-script></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
+    <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
+    <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
+    <script src="/assets/js/settings.js"></script>
+    <script src="/assets/js/load_scripts.js"></script>
 </body>
 </html>

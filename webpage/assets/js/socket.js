@@ -4,18 +4,16 @@ console.log(
 	"font-size: 18px; font-weight: 500;"
 );
 
-if (typeof window.socket === "undefined") {
-	window.socket = io("https://chat.wokki20.nl", {
-		path: "/socket.io",
-		transports: ["websocket"],
-		query: {
-			access_token: document.getElementById("access-token").getAttribute("value")
-		},
-	});
+const socket = io("https://chat.wokki20.nl", {
+    path: "/socket.io",
+    transports: ["websocket"],
+    query: {
+        access_token: document.getElementById("access-token").getAttribute("value")
+    },
+});
 
-	let serverName = "Unknown Server";
+let serverName = "Unknown Server";
 
-	window.socket.on("connected to server", (data) => {
-		serverName = data.server_name;
-	});
-}
+socket.on("connected to server", (data) => {
+    serverName = data.server_name;
+});
