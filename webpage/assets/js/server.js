@@ -187,8 +187,8 @@ async function handleMessage(msg) {
 		}
 	}
 
-	await hydrateInvites(el);
-	await hydrateSpotifyTracks(el);
+	await globalFunctions.hydrateInvites(el);
+	await globalFunctions.hydrateSpotifyTracks(el);
 	if (msg.assets && msg.assets.length > 0) await hydrateAssets(el, msg.assets, msg.id);
 
 	await emojis.replaceEl(el);
@@ -1250,8 +1250,8 @@ socket.on("update_message", async ({id, message, embed, updated_at}) => {
 	
 	if (message) {
 		messageEl.querySelector(".message-text").innerHTML = await globalFunctions.sanitizeMsg(message, usersList, user_id, channels, server_id);
-		hydrateInvites(messageEl);
-		hydrateSpotifyTracks(messageEl);
+		globalFunctions.hydrateInvites(messageEl);
+		globalFunctions.hydrateSpotifyTracks(messageEl);
 	}
 	if (embed) {
 		messageEl.querySelector(".embeds-container").innerHTML = await Embeds({ embeds: embed });
