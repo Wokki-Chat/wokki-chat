@@ -825,34 +825,19 @@ function initServer() {
 
 		const updateCaretPosition = () => {
 			const bg = document.getElementById('message-input-bg');
-			const wrapperRect = messageInputWrapper.getBoundingClientRect();
 			if (!bg) return;
 
-			const nodes = Array.from(bg.childNodes);
-			if (!nodes.length) {
-				msgInBgCaret.style.left = '0px';
-				msgInBgCaret.style.top = '0px';
-				return;
-			}
+			const selection = window.getSelection();
+			if (!selection.rangeCount) return;
 
-			const lastNode = nodes[nodes.length - 1];
-
-			let range = document.createRange();
-			if (lastNode.nodeType === Node.TEXT_NODE) {
-				range.setStart(lastNode, lastNode.textContent.length);
-				range.setEnd(lastNode, lastNode.textContent.length);
-			} else {
-				range.selectNodeContents(lastNode);
-				range.collapse(false);
-			}
-
+			const range = selection.getRangeAt(0).cloneRange();
 			const rects = range.getClientRects();
-			const lastRect = rects[rects.length - 1] || bg.getBoundingClientRect();
+			const wrapperRect = messageInputWrapper.getBoundingClientRect();
+			const lastRect = rects[0] || bg.getBoundingClientRect();
 
 			msgInBgCaret.style.left = (lastRect.right - wrapperRect.left - 15) + 'px';
 			msgInBgCaret.style.top = (lastRect.top - wrapperRect.top - 10) + 'px';
 		};
-
 
 		const updateHeight = () => {
 			let newHeight = Math.min(textarea.scrollHeight, maxHeight);
