@@ -243,7 +243,10 @@
          "tear"
       ],
       "shortcodes":[
-         ":rofl:"
+         ":rofl:",
+         ":crying_from_laughing:",
+         ":lmfao:",
+         ":lmao:"
       ],
       "emoticons":[
          "*>w<*"
@@ -255,7 +258,8 @@
       "order":7,
       "skintone":null,
       "skintoneCombination":null,
-      "skintoneBase":null
+      "skintoneBase":null,
+      "emojiSvg": true
    },
    {
       "emoji":"😂",
