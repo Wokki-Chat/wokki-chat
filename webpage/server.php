@@ -736,7 +736,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
             ]
         });
 
-        window.swup.on("willReplaceContent", () => {
+        swup.addEventListener("willReplaceContent", () => {
             document.querySelectorAll('script[type="module"]').forEach(s => s.remove());
         });
     </script>
