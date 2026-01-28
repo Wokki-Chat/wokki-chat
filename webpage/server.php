@@ -706,7 +706,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
             </div>
         <?php endif; ?>
 
-        <wchat-allowed-scripts value="create_server.js;notifiers.js;globalFunctions.js;server.js;"></wchat-allowed-scripts>
+        <wchat-allowed-scripts value="globalFunctions.js;create_server.js;notifiers.js;server.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="server-id" value="<?php echo htmlspecialchars($server_id); ?>"></wchat-data>
         <wchat-data id="channel-id" value="<?php echo htmlspecialchars($channel_id); ?>"></wchat-data>
