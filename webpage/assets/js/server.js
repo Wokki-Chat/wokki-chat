@@ -832,8 +832,8 @@ function initServer() {
 			const rect = range.getBoundingClientRect();
 			const wrapperRect = messageInputWrapper.getBoundingClientRect();
 
-			msgInBgCaret.style.left = (rect.left - wrapperRect.left) + 'px';
-			msgInBgCaret.style.top = (rect.top - wrapperRect.top) + 'px';
+			msgInBgCaret.style.left = (rect.left - wrapperRect.left - 15) + 'px';
+			msgInBgCaret.style.top = (rect.top - wrapperRect.top - 10) + 'px';
 			msgInBgCaret.style.height = rect.height + 'px';
 		};
 

@@ -1125,9 +1125,12 @@ input:checked + .slider:before {
 .msg-in-bg-caret {
     position: absolute;
     width: 1px;
-    height: 1em;
+    height: 20px;
     background: var(--clr-text-a0);
     animation: blink 1s step-start infinite;
+    pointer-events: none;
+    margin-left: 15px;
+    margin-top: 10px;
 }
 
 @keyframes blink {
