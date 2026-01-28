@@ -927,12 +927,12 @@ function initServer() {
 			updateCharsLeft();
 			handleCommandAutocomplete();
 			handleMentions();
-			updateCaretPosition();
 
 			let textareaText = textarea.innerText;
 			textareaText = renderMarkdownInTextarea(textareaText);
 			textareaText = await emojis.replaceText(textareaText);
 			preview.innerHTML = textareaText;
+			updateCaretPosition();
 		});
 
 		textarea.addEventListener('keydown', async (e) => {
@@ -1013,12 +1013,12 @@ function initServer() {
 			updateCharsLeft();
 			handleCommandAutocomplete();
 			handleMentions();
-			updateCaretPosition();
 
 			let textareaText = textarea.innerText;
 			textareaText = renderMarkdownInTextarea(textareaText);
 			textareaText = await emojis.replaceText(textareaText);
 			preview.innerHTML = textareaText;
+			updateCaretPosition();
 		});
 
 		textarea.addEventListener('paste', (e) => {
