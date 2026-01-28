@@ -1012,9 +1012,9 @@ if (textarea) {
 		}
 
 		updateHeight();
-		globalFunctions.updateTypingStatus();
-		globalFunctions.updateCharsLeft();
-		globalFunctions.handleCommandAutocomplete();
+		updateTypingStatus();
+		updateCharsLeft();
+		handleCommandAutocomplete();
 		handleMentions();
 
 		preview.innerHTML = globalFunctions.renderMarkdownInTextarea(textarea.innerText);
@@ -1032,13 +1032,13 @@ if (textarea) {
 			.filter(f => f.savedName)
 			.map(f => ({ savedName: f.savedName, originalName: f.originalName }));
 
-		globalFunctions.send_message(textarea, uploadedNames.length ? uploadedNames : undefined);
+		send_message(textarea, uploadedNames.length ? uploadedNames : undefined);
 		globalFunctions.hide_mentions();
 		
 		preview.innerHTML = "";
 		textarea.innerText = "";
 		updateHeight();
-		globalFunctions.renderPreviews();
+		renderPreviews();
 
 		if (typing) {
 			typing = false;
@@ -1093,9 +1093,9 @@ if (textarea) {
 		}
 
 		updateHeight();
-		globalFunctions.updateTypingStatus();
-		globalFunctions.updateCharsLeft();
-		globalFunctions.handleCommandAutocomplete();
+		updateTypingStatus();
+		updateCharsLeft();
+		handleCommandAutocomplete();
 		handleMentions();
 
 		preview.innerHTML = globalFunctions.renderMarkdownInTextarea(textarea.innerText);
