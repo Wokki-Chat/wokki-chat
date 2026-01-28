@@ -843,16 +843,16 @@ function initServer() {
 				const rects = range.getClientRects();
 				const lastRect = rects[0] || bgRect;
 
-				msgInBgCaret.style.left = (lastRect.left - bgRect.left - 15) + 'px';
-				msgInBgCaret.style.top = (lastRect.top - bgRect.top - 10) + 'px';
+				msgInBgCaret.style.left = (lastRect.left - bgRect.left) + 'px';
+				msgInBgCaret.style.top = (lastRect.top - bgRect.top) + 'px';
 
 				tempSpan.remove();
 			} else {
 				const rects = range.getClientRects();
 				const lastRect = rects[rects.length - 1] || bgRect;
 
-				msgInBgCaret.style.left = (lastRect.right - bgRect.left - 15) + 'px';
-				msgInBgCaret.style.top = (lastRect.top - bgRect.top - 10) + 'px';
+				msgInBgCaret.style.left = (lastRect.right - bgRect.left) + 'px';
+				msgInBgCaret.style.top = (lastRect.top - bgRect.top) + 'px';
 			}
 		};
 
