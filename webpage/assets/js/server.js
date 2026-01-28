@@ -893,7 +893,10 @@ function initServer() {
 			handleCommandAutocomplete();
 			handleMentions();
 
-			preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+			let textareaText = textarea.innerText;
+			textareaText = renderMarkdownInTextarea(textareaText);
+			textareaText = emojis.replaceText(textareaText);
+			preview.innerHTML = textareaText;
 		});
 
 		textarea.addEventListener('keydown', async (e) => {
@@ -974,7 +977,10 @@ function initServer() {
 			handleCommandAutocomplete();
 			handleMentions();
 
-			preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+			let textareaText = textarea.innerText;
+			textareaText = renderMarkdownInTextarea(textareaText);
+			textareaText = emojis.replaceText(textareaText);
+			preview.innerHTML = textareaText;
 		});
 
 		textarea.addEventListener('paste', (e) => {
