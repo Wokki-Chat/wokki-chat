@@ -1155,9 +1155,6 @@ input:checked + .slider:before {
 .message-text {
     margin: 0;
     font-size: 16px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
     word-break: break-word;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
@@ -4586,4 +4583,8 @@ input#clr-hue-slider {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+}
+
+.message-text .emoji {
+    margin-bottom: -4px;
 }
