@@ -735,6 +735,10 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                 })
             ]
         });
+        
+        swup.on("willReplaceContent", () => {
+            document.querySelectorAll('script[type="module"]').forEach(s => s.remove());
+        });
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" data-swup-ignore-script></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
