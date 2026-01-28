@@ -196,7 +196,7 @@ function initServer() {
 		await hydrateSpotifyTracks(el);
 		if (msg.assets && msg.assets.length > 0) await hydrateAssets(el, msg.assets, msg.id);
 
-		await emojis.replaceEl(el);
+		// await emojis.replaceEl(el);
 
 		const customPlayer = el.querySelector(".custom-player");
 		if (customPlayer) await initCustomPlayer(customPlayer);
