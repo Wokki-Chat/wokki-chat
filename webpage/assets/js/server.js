@@ -836,7 +836,6 @@ function initServer() {
 			const tempRect = tempSpan.getBoundingClientRect();
 			msgInBgCaret.style.left = (tempRect.width) + 'px';
 			msgInBgCaret.style.top = '0px';
-			msgInBgCaret.style.height = wrapperRect.height + 'px';
 			document.body.removeChild(tempSpan);
 		};
 
