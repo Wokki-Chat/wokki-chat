@@ -43,8 +43,8 @@ export class Message {
 				parent_message_info !== null
 				? `<div class="message-reply" data-message-id="${parent_message_info.message_id}">
 					<img class="identification" src="/assets/images/identifier.svg">
-					<p class="username-reply">@${sanitize(parent_message_info.username)}</p>
-					<p class="message-text-reply">${sanitize(parent_message_info.message_preview)}</p>
+					<p class="username-reply">@${globalFunctions.sanitize(parent_message_info.username)}</p>
+					<p class="message-text-reply">${globalFunctions.sanitize(parent_message_info.message_preview)}</p>
 					</div>`
 				: ''
 			}
@@ -52,9 +52,9 @@ export class Message {
 				command_info && command_info !== null
 				? `<div class="message-command">
 					<img class="identification" src="/assets/images/identifier.svg">
-					<p class="username-command">@${sanitize(command_info?.username) ?? ''}</p>
+					<p class="username-command">@${globalFunctions.sanitize(command_info?.username) ?? ''}</p>
 					<p>used</p>
-					<p class="used-command">${sanitize(command_info?.command) ?? ''}</p>
+					<p class="used-command">${globalFunctions.sanitize(command_info?.command) ?? ''}</p>
 					</div>`
 				: ''
 			}

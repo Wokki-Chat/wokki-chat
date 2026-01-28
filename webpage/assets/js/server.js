@@ -367,7 +367,7 @@ async function hydrateAssets(msgEl, assets, id) {
 	let assetsHTML = '';
 	if (assets && assets.length > 0) {
 		assetsHTML = assets.map((asset, index) => {
-			const type = getAssetType(asset.savedName);
+			const type = globalFunctions.getAssetType(asset.savedName);
 			if (type === 'image') {
 				return `<img data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" alt="${asset.originalName}" class="message-asset-image lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}', '${asset.originalName}')" />`;
 			} else if (type === 'video') {
@@ -420,7 +420,7 @@ async function hydrateAssets(msgEl, assets, id) {
 
 	if (assets && assets.length > 0) {
 		const txtPromises = assets.map(async (asset, index) => {
-			if (getAssetType(asset.savedName) !== 'txt') return;
+			if (globalFunctions.getAssetType(asset.savedName) !== 'txt') return;
 
 			const preEl = msgEl.querySelector(`#txt-asset-${id}-${index} code`);
 			if (!preEl) return;
