@@ -703,6 +703,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                 </div>
             </div>
         <?php endif; ?>
+        <wchat-allowed-scripts value="server.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="server-id" value="<?php echo htmlspecialchars($server_id); ?>"></wchat-data>
         <wchat-data id="channel-id" value="<?php echo htmlspecialchars($channel_id); ?>"></wchat-data>
@@ -725,11 +726,12 @@ if (!$server_id || !isset($user_servers[$server_id])) {
 
         window.swup = new Swup({
             containers: ["#app"],
-            cache: false,
+            cache: true,
             plugins: [
                 new SwupPreloadPlugin(),
                 new SwupScriptsPlugin({
-                    optin: true
+                    body: true,
+                    head: false,
                 })
             ]
         });
@@ -739,6 +741,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
     <script src="/assets/js/create_server.js" data-swup-ignore-script></script>
     <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
     <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
-    <script src="/assets/js/server.js" data-swup-script type="module"></script>
+    <script src="/assets/js/server.js" type="module"></script>
+    <script src="/assets/js/load_scripts.js"></script>
 </body>
 </html>
