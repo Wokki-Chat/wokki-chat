@@ -264,8 +264,8 @@ function formatPremiumExpiration($timestamp) {
         <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
         <wchat-data id="users-list" value="<?php echo htmlspecialchars(json_encode($friendsList)); ?>"></wchat-data>
     </main>
-    <script src="/assets/js/socket.js" data-swup-ignore-script></script>
-    <script type="module" data-swup-ignore-script>
+    <script src="/assets/js/socket.js" ignore-unload></script>
+    <script type="module" ignore-unload>
         import Swup from "https://unpkg.com/swup@4?module";
         import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
         import SwupScriptsPlugin from "https://unpkg.com/@swup/scripts-plugin@2?module";
@@ -288,6 +288,6 @@ function formatPremiumExpiration($timestamp) {
     <script src="/assets/js/notifiers.js"></script>
     <script src="/assets/js/globalFunctions.js"></script>
     <script src="/assets/js/home.js"></script>
-    <script src="/assets/js/load_scripts.js"></script>
+    <script src="/assets/js/load_scripts.js" ignore-unload></script>
 </body>
 </html>

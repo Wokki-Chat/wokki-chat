@@ -435,8 +435,8 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
         <wchat-data id="profile-picture" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
         <wchat-data id="banner-picture" value="<?php echo htmlspecialchars($bannerUrl); ?>"></wchat-data>
     </main>
-    <script src="/assets/js/socket.js" data-swup-ignore-script></script>
-    <script type="module" data-swup-ignore-script>
+    <script src="/assets/js/socket.js" ignore-unload></script>
+    <script type="module" ignore-unload>
         import Swup from "https://unpkg.com/swup@4?module";
         import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
         import SwupScriptsPlugin from "https://unpkg.com/@swup/scripts-plugin@2?module";
@@ -453,11 +453,11 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
             ]
         });
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" data-swup-ignore-script></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
-    <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
-    <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="/assets/js/notifiers.js"></script>
+    <script src="/assets/js/globalFunctions.js"></script>
     <script src="/assets/js/settings.js"></script>
-    <script src="/assets/js/load_scripts.js"></script>
+    <script src="/assets/js/load_scripts.js" ignore-unload></script>
 </body>
 </html>
