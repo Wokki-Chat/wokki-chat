@@ -68,7 +68,6 @@ const emojis = {
 
 		const parts = [];
 		let lastIndex = 0;
-
 		text.replace(this.regex, (match, ...args) => {
 			const offset = args[args.length - 2];
 			parts.push(text.slice(lastIndex, offset));
@@ -76,11 +75,17 @@ const emojis = {
 			parts.push(match);
 		});
 		parts.push(text.slice(lastIndex));
-
 		for (let i = 0; i < parts.length; i++) {
-			if (this.map[parts[i]]) {
-				parts[i] = await this.emojiToImg(this.map[parts[i]]);
+			const part = parts[i];
+			if (this.map[part]) {
+				parts[i] = await this.emojiToImg(this.map[part]);
+				continue;
 			}
+			let newPart = '';
+			for (const char of part) {
+				newPart += await this.emojiToImg(char);
+			}
+			parts[i] = newPart;
 		}
 
 		return parts.join('').replace(/\\:/g, ':');
