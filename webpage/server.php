@@ -730,14 +730,10 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                 new SwupPreloadPlugin(),
                 new SwupScriptsPlugin({
                     body: true,
-                    head: true,
+                    head: false,
                     types: ["module"]
                 })
             ]
-        });
-
-        swup.addEventListener("willReplaceContent", () => {
-            document.querySelectorAll('script[type="module"]').forEach(s => s.remove());
         });
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" data-swup-ignore-script></script>
