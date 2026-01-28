@@ -982,7 +982,7 @@ if (textarea) {
 		} else {
 		const popup = document.querySelector(".available-commands");
 		if (popup) popup.remove();
-		globalFunctions.updateHeight();
+		updateHeight();
 		}
 	};
 
@@ -1011,7 +1011,7 @@ if (textarea) {
 		globalFunctions.hide_mentions();
 		}
 
-		globalFunctions.updateHeight();
+		updateHeight();
 		globalFunctions.updateTypingStatus();
 		globalFunctions.updateCharsLeft();
 		globalFunctions.handleCommandAutocomplete();
@@ -1037,7 +1037,7 @@ if (textarea) {
 		
 		preview.innerHTML = "";
 		textarea.innerText = "";
-		globalFunctions.updateHeight();
+		updateHeight();
 		globalFunctions.renderPreviews();
 
 		if (typing) {
@@ -1092,7 +1092,7 @@ if (textarea) {
 		globalFunctions.hide_mentions();
 		}
 
-		globalFunctions.updateHeight();
+		updateHeight();
 		globalFunctions.updateTypingStatus();
 		globalFunctions.updateCharsLeft();
 		globalFunctions.handleCommandAutocomplete();
