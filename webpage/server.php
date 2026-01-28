@@ -716,7 +716,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         <wchat-data id="username-text" value="<?php echo htmlspecialchars($username); ?>"></wchat-data>
         <wchat-data id="profile-picture-url" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
         <script src="/assets/js/emojis.js"></script>
-        <script src="/assets/js/server.js" data-time="<?php echo time(); ?>" type="module"></script>
+        <script src="/assets/js/server.js" data-swup-reload-script type="module"></script>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
@@ -730,9 +730,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
             plugins: [
                 new SwupPreloadPlugin(),
                 new SwupScriptsPlugin({
-                    body: true,
-                    head: false,
-                    types: ["module"]
+                    optin: true
                 })
             ]
         });
