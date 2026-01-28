@@ -741,7 +741,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
     <script src="/assets/js/create_server.js" data-swup-ignore-script></script>
     <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
     <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
-    <script src="/assets/js/server.js"></script>
+    <script src="/assets/js/server.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
 </body>
 </html>
