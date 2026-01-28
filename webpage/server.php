@@ -719,29 +719,12 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         <script src="/assets/js/emojis.js"></script>
     </main>
     <script src="/assets/js/socket.js" ignore-unload></script>
-    <script type="module" ignore-unload>
-        import Swup from "https://unpkg.com/swup@4?module";
-        import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
-        import SwupScriptsPlugin from "https://unpkg.com/@swup/scripts-plugin@2?module";
-
-        window.swup = new Swup({
-            containers: ["#app"],
-            cache: true,
-            plugins: [
-                new SwupPreloadPlugin(),
-                new SwupScriptsPlugin({
-                    body: true,
-                    head: false,
-                })
-            ]
-        });
-    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/assets/js/create_server.js"></script>
     <script src="/assets/js/globalFunctions.js"></script>
     <script src="/assets/js/notifiers.js"></script>
     <script src="/assets/js/server.js" type="module"></script>
-    <script src="/assets/js/load_scripts.js" ignore-unload></script>
+    <script src="/assets/js/load_scripts.js" type="module" ignore-unload></script>
 </body>
 </html>
