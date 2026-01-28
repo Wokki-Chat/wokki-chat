@@ -1,10 +1,10 @@
 const uploadContainer = document.querySelector(".input-container-2 .file-upload-container");
 
-async function highlightAll() {
+export async function highlightAll() {
   await hljs.highlightAll();
 }
 
-async function addCodeblockInfo() {
+export async function addCodeblockInfo() {
   const msgTexts = document.querySelectorAll(".message-text");
 
   for (const msgText of msgTexts) {
@@ -64,7 +64,7 @@ async function addCodeblockInfo() {
   }
 }
 
-async function scrollToBottomWhenStable(container) {
+export async function scrollToBottomWhenStable(container) {
   return new Promise((resolve) => {
     let lastHeight = container.scrollHeight;
     const observer = new MutationObserver(() => {
@@ -87,7 +87,7 @@ async function scrollToBottomWhenStable(container) {
 
 
 
-function formatDate(created_at) {
+export function formatDate(created_at) {
   const now = new Date();
   const date = new Date(created_at);
   const diffMs = now - date;
@@ -114,7 +114,7 @@ function formatDate(created_at) {
   return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatFullDate(created_at) {
+export function formatFullDate(created_at) {
   const date = new Date(created_at);
   return date.toLocaleDateString(undefined, {
     year: 'numeric',
@@ -125,13 +125,13 @@ function formatFullDate(created_at) {
   });
 }
 
-function sanitize(text) {
+export function sanitize(text) {
   const div = document.createElement("div");
   div.innerText = text;
   return div.innerHTML;
 }
 
-async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
+export async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
   function escapeHtml(str) {
     return str.replace(/[&<>"']/g, ch => ({
       '&': '&amp;',
@@ -310,7 +310,7 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
   return result.trim();
 }
 
-async function sanitizeMrk(text) {
+export async function sanitizeMrk(text) {
   function escapeHtml(str) {
     return str.replace(/[&<>"']/g, ch => ({
       '&': '&amp;',
@@ -389,7 +389,7 @@ async function sanitizeMrk(text) {
   return text;
 }
 
-async function hydrateSpotifyTracks(root = document) {
+export async function hydrateSpotifyTracks(root = document) {
 	const tracks = root.querySelectorAll('.spotify-track-container.loading');
 
 	tracks.forEach(async el => {
@@ -412,7 +412,7 @@ async function hydrateSpotifyTracks(root = document) {
 	});
 }
 
-async function hydrateInvites(root = document) {
+export async function hydrateInvites(root = document) {
   const invites = root.querySelectorAll('.invite-item-container.loading');
 
   invites.forEach(async el => {
@@ -457,7 +457,7 @@ async function hydrateInvites(root = document) {
   });
 }
 
-function formatDynamicTime() {
+export function formatDynamicTime() {
   const elements = document.querySelectorAll('time.dynamic-time');
   elements.forEach(el => {
     const date = new Date(el.getAttribute('datetime'));
@@ -519,7 +519,7 @@ setInterval(formatDynamicTime, 1 * 1000);
 document.addEventListener('DOMContentLoaded', formatDynamicTime);
 
 
-function show_mentions(query, usersList) {
+export function show_mentions(query, usersList) {
   const existingPopup = document.querySelector(".mentions-popup");
   if (existingPopup) existingPopup.remove();
 
@@ -553,12 +553,12 @@ function show_mentions(query, usersList) {
   document.querySelector(".input-container-2").insertAdjacentElement("afterbegin", container);
 }
 
-function hide_mentions() {
+export function hide_mentions() {
   const existingPopup = document.querySelector(".mentions-popup");
   if (existingPopup) existingPopup.remove();
 }
 
-function insertMention(username) {
+export function insertMention(username) {
   const textarea = document.getElementById("message-input");
   const text = textarea.innerHTML;
 
@@ -575,7 +575,7 @@ function insertMention(username) {
   placeCaretAtEnd(textarea);
 }
 
-function placeCaretAtEnd(el) {
+export function placeCaretAtEnd(el) {
   el.focus();
   if (typeof window.getSelection != "undefined"
       && typeof document.createRange != "undefined") {
@@ -588,7 +588,7 @@ function placeCaretAtEnd(el) {
   }
 }
 
-function showAvailableCommands(command, textarea, available_commands) {
+export function showAvailableCommands(command, textarea, available_commands) {
     const existingPopup = document.querySelector(".available-commands");
     if (existingPopup) existingPopup.remove();
     if (available_commands.length === 0) return;
@@ -908,7 +908,7 @@ function showAvailableCommands(command, textarea, available_commands) {
     showAvailableCommands.lastMatches = matchedCommands;
 }
 
-function getCleanMessageFromTextarea(textareaEl) {
+export function getCleanMessageFromTextarea(textareaEl) {
   const clone = textareaEl.cloneNode(true);
 
   clone.querySelectorAll("a.user-link").forEach(a => {
@@ -926,7 +926,7 @@ function getCleanMessageFromTextarea(textareaEl) {
 }
 
 
-function getAssetType(fileName) {
+export function getAssetType(fileName) {
   const parts = fileName.toLowerCase().split('.');
 
   if (parts.length >= 3 && parts[parts.length - 1] === 'pfp' && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(parts[parts.length - 2])) {
@@ -942,7 +942,7 @@ function getAssetType(fileName) {
   return 'other';
 }
 
-function imageViewer(img_src, originalName) {
+export function imageViewer(img_src, originalName) {
     if (!img_src) return;
     if (document.querySelector(".image-viewer-popup")) document.querySelector(".image-viewer-popup").remove();
 
@@ -1073,7 +1073,7 @@ function imageViewer(img_src, originalName) {
     }
 }
 
-function renderMarkdownInTextarea(text) {
+export function renderMarkdownInTextarea(text) {
   const escapeHtml = (str) =>
     str.replace(/[&<>"']/g, (ch) => ({
       '&': '&amp;',
@@ -1103,7 +1103,7 @@ function renderMarkdownInTextarea(text) {
     });
 }
 
-function getCaretCharacterOffsetWithin(element) {
+export function getCaretCharacterOffsetWithin(element) {
   const selection = window.getSelection();
   let caretOffset = 0;
   if (selection.rangeCount > 0) {
@@ -1116,7 +1116,7 @@ function getCaretCharacterOffsetWithin(element) {
   return caretOffset;
 }
 
-function setCaretCharacterOffsetWithin(element, offset) {
+export function setCaretCharacterOffsetWithin(element, offset) {
   const selection = window.getSelection();
   const range = document.createRange();
   let currentOffset = 0;
