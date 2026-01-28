@@ -827,17 +827,32 @@ function initServer() {
 			const bg = document.getElementById('message-input-bg');
 			const wrapperRect = messageInputWrapper.getBoundingClientRect();
 			if (!bg) return;
-			const tempSpan = document.createElement('span');
-			tempSpan.style.visibility = 'hidden';
-			tempSpan.style.position = 'absolute';
-			tempSpan.style.whiteSpace = 'pre';
-			tempSpan.innerHTML = bg.innerHTML;
-			document.body.appendChild(tempSpan);
-			const tempRect = tempSpan.getBoundingClientRect();
-			msgInBgCaret.style.left = (tempRect.width) + 'px';
-			msgInBgCaret.style.top = '0px';
-			document.body.removeChild(tempSpan);
+
+			const nodes = Array.from(bg.childNodes);
+			if (!nodes.length) {
+				msgInBgCaret.style.left = '0px';
+				msgInBgCaret.style.top = '0px';
+				return;
+			}
+
+			const lastNode = nodes[nodes.length - 1];
+
+			let range = document.createRange();
+			if (lastNode.nodeType === Node.TEXT_NODE) {
+				range.setStart(lastNode, lastNode.textContent.length);
+				range.setEnd(lastNode, lastNode.textContent.length);
+			} else {
+				range.selectNodeContents(lastNode);
+				range.collapse(false);
+			}
+
+			const rects = range.getClientRects();
+			const lastRect = rects[rects.length - 1] || bg.getBoundingClientRect();
+
+			msgInBgCaret.style.left = (lastRect.right - wrapperRect.left - 15) + 'px';
+			msgInBgCaret.style.top = (lastRect.top - wrapperRect.top) + 'px';
 		};
+
 
 		const updateHeight = () => {
 			let newHeight = Math.min(textarea.scrollHeight, maxHeight);
