@@ -937,6 +937,7 @@ function initServer() {
 
 		textarea.addEventListener('keydown', async (e) => {
 			const text = textarea.innerText.trim();
+			updateCaretPosition();
 
 			if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
@@ -954,7 +955,6 @@ function initServer() {
 			textarea.innerText = "";
 			updateHeight();
 			renderPreviews();
-			updateCaretPosition();
 
 			if (typing) {
 				typing = false;
