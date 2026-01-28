@@ -732,6 +732,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                 new SwupScriptsPlugin({
                     body: true,
                     head: false,
+                    types: ["module"]
                 })
             ]
         });
