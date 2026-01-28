@@ -825,18 +825,33 @@ function initServer() {
 
 		const updateCaretPosition = () => {
 			const bg = document.getElementById('message-input-bg');
+			const wrapperRect = messageInputWrapper.getBoundingClientRect();
 			if (!bg) return;
 
 			const selection = window.getSelection();
-			if (!selection.rangeCount) return;
+			if (!selection || selection.rangeCount === 0) return;
 
 			const range = selection.getRangeAt(0).cloneRange();
-			const rects = range.getClientRects();
-			const wrapperRect = messageInputWrapper.getBoundingClientRect();
-			const lastRect = rects[0] || bg.getBoundingClientRect();
 
-			msgInBgCaret.style.left = (lastRect.right - wrapperRect.left - 15) + 'px';
-			msgInBgCaret.style.top = (lastRect.top - wrapperRect.top - 10) + 'px';
+			if (range.collapsed) {
+				const tempSpan = document.createElement("span");
+				tempSpan.textContent = "\u200b";
+				range.insertNode(tempSpan);
+				range.selectNode(tempSpan);
+				const rects = range.getClientRects();
+				const lastRect = rects[0] || bg.getBoundingClientRect();
+
+				msgInBgCaret.style.left = (lastRect.left - wrapperRect.left) + 'px';
+				msgInBgCaret.style.top = (lastRect.top - wrapperRect.top) + 'px';
+
+				tempSpan.remove();
+			} else {
+				const rects = range.getClientRects();
+				const lastRect = rects[rects.length - 1] || bg.getBoundingClientRect();
+
+				msgInBgCaret.style.left = (lastRect.right - wrapperRect.left) + 'px';
+				msgInBgCaret.style.top = (lastRect.top - wrapperRect.top) + 'px';
+			}
 		};
 
 		const updateHeight = () => {
