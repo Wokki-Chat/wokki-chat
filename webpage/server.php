@@ -725,6 +725,5 @@ if (!$server_id || !isset($user_servers[$server_id])) {
     <script src="/assets/js/globalFunctions.js"></script>
     <script src="/assets/js/notifiers.js"></script>
     <script src="/assets/js/server.js" type="module"></script>
-    <script src="/assets/js/load_scripts.js" type="module" ignore-unload></script>
 </body>
 </html>

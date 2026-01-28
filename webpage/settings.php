@@ -441,6 +441,5 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
     <script src="/assets/js/notifiers.js"></script>
     <script src="/assets/js/globalFunctions.js"></script>
     <script src="/assets/js/settings.js"></script>
-    <script src="/assets/js/load_scripts.js" type="module" ignore-unload></script>
 </body>
 </html>

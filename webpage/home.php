@@ -271,6 +271,5 @@ function formatPremiumExpiration($timestamp) {
     <script src="/assets/js/notifiers.js"></script>
     <script src="/assets/js/globalFunctions.js"></script>
     <script src="/assets/js/home.js"></script>
-    <script src="/assets/js/load_scripts.js" type="module" ignore-unload></script>
 </body>
 </html>
