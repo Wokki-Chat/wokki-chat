@@ -35,6 +35,12 @@ window.emojis = {
 		if (!this.all) return;
 		const promises = this.all.map(async e => {
 			if (!e.emoji) return;
+
+			if (e.emojiSvg !== true) {
+				this.iconCache[e.emoji] = e.emoji;
+				return;
+			}
+
 			const hex = Array.from(e.emoji).map(c => c.codePointAt(0).toString(16)).join('-');
 			const url = `/assets/icons/emojis/${hex}.svg`;
 
