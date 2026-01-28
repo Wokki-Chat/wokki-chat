@@ -2776,5 +2776,9 @@ function initServer() {
 
 	hljs.highlightAll();
 }
-
+if (typeof window.swup !== "undefined") {
+	window.swup.hooks.on('page:view', (visit) => {
+		initServer();
+	});
+}
 initServer();
