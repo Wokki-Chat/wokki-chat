@@ -545,7 +545,6 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                     </div>
                     <div class="textarea-container">
                         <div class="message-input-wrapper">
-                            <div class="msg-in-bg-caret"></div>
                             <div class="message-input-bg" id="message-input-bg"></div>
                             <div class="message-input" id="message-input" data-placeholder="Type a message..." contenteditable="true"></div>
                         </div>

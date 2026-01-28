@@ -1082,7 +1082,7 @@ input:checked + .slider:before {
     border-radius: 16px;
     background: transparent;
     color: transparent;
-    caret-color: transparent;
+    caret-color: var(--clr-text-a0);
     resize: none;
     overflow-y: auto;
     overflow-x: hidden;
@@ -1122,21 +1122,6 @@ input:checked + .slider:before {
     z-index: 0;
 }
 
-.msg-in-bg-caret {
-    position: absolute;
-    width: 1px;
-    height: 20px;
-    background: var(--clr-text-a0);
-    animation: blink 1s step-start infinite;
-    pointer-events: none;
-    margin-left: 15px;
-    margin-top: 10px;
-}
-
-@keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
-}
 
 .message-container {
     overflow-y: auto;
@@ -4601,9 +4586,5 @@ input#clr-hue-slider {
 }
 
 .message-text .emoji {
-    margin-bottom: -4px;
-}
-
-.message-input-bg .emoji {
     margin-bottom: -4px;
 }

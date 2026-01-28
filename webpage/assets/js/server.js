@@ -821,41 +821,6 @@ function initServer() {
 		
 		const inputContainer = document.querySelector(".input-container-2");
 
-		const msgInBgCaret = document.querySelector('.msg-in-bg-caret');
-
-		const updateCaretPosition = () => {
-			const bg = document.getElementById('message-input-bg');
-			if (!bg) return;
-
-			const bgRect = bg.getBoundingClientRect();
-
-			const selection = window.getSelection();
-			if (!selection || selection.rangeCount === 0) return;
-
-			const range = selection.getRangeAt(0).cloneRange();
-
-			if (range.collapsed) {
-				const tempSpan = document.createElement("span");
-				tempSpan.textContent = "\u200b";
-				range.insertNode(tempSpan);
-				range.selectNode(tempSpan);
-
-				const rects = range.getClientRects();
-				const lastRect = rects[0] || bgRect;
-
-				msgInBgCaret.style.left = (lastRect.left - bgRect.left - 10) + 'px';
-				msgInBgCaret.style.top = (lastRect.top - bgRect.top) + 'px';
-
-				tempSpan.remove();
-			} else {
-				const rects = range.getClientRects();
-				const lastRect = rects[rects.length - 1] || bgRect;
-
-				msgInBgCaret.style.left = (lastRect.right - bgRect.left - 10) + 'px';
-				msgInBgCaret.style.top = (lastRect.top - bgRect.top) + 'px';
-			}
-		};
-
 		const updateHeight = () => {
 			let newHeight = Math.min(textarea.scrollHeight, maxHeight);
 			messageInputWrapper.style.height = newHeight + 20 + 'px';
@@ -914,7 +879,7 @@ function initServer() {
 			}
 		};
 
-		textarea.addEventListener('input', async (e) => {
+		textarea.addEventListener('input', (e) => {
 			if (e.target !== textarea) return;
 
 			if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
@@ -928,18 +893,11 @@ function initServer() {
 			handleCommandAutocomplete();
 			handleMentions();
 
-			let textareaText = textarea.innerText;
-			textareaText = renderMarkdownInTextarea(textareaText);
-			textareaText = await emojis.replaceText(textareaText);
-			preview.innerHTML = textareaText;
-			requestAnimationFrame(() => {
-				updateCaretPosition();
-			});
+			preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
 		});
 
 		textarea.addEventListener('keydown', async (e) => {
 			const text = textarea.innerText.trim();
-			updateCaretPosition();
 
 			if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
@@ -1002,7 +960,7 @@ function initServer() {
 			}
 		});
 
-		textarea.addEventListener('input', async (e) => {
+		textarea.addEventListener('input', (e) => {
 			if (e.target !== textarea) return;
 
 			if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
@@ -1016,13 +974,7 @@ function initServer() {
 			handleCommandAutocomplete();
 			handleMentions();
 
-			let textareaText = textarea.innerText;
-			textareaText = renderMarkdownInTextarea(textareaText);
-			textareaText = await emojis.replaceText(textareaText);
-			preview.innerHTML = textareaText;
-			requestAnimationFrame(() => {
-				updateCaretPosition();
-			});
+			preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
 		});
 
 		textarea.addEventListener('paste', (e) => {
@@ -1039,9 +991,7 @@ function initServer() {
 
 			textarea.dispatchEvent(new Event('input'));
 		});
-		textarea.addEventListener('click', updateCaretPosition);
-		textarea.addEventListener('focus', updateCaretPosition);
-		textarea.addEventListener('mouseup', updateCaretPosition);
+
 	}
 	
 	async function getAssetFileInsides(file) {
