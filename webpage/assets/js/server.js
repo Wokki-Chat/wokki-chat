@@ -26,6 +26,8 @@ function initServer() {
 
 	const username_text = document.getElementById("username-text").getAttribute("value");
 	const profile_picture_url = document.getElementById("profile-picture-url").getAttribute("value");
+	
+	const messageRenderer = new MessageRenderer({ user_id, channels, server_id });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
@@ -131,8 +133,6 @@ function initServer() {
 			await handleMessage(msg);
 		}
 	}
-		
-	const messageRenderer = new MessageRenderer({ user_id, channels, server_id });
 
 	async function handleMessage(msg) {
 		const timestamp = msg.created_at;
