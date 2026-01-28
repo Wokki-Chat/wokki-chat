@@ -244,9 +244,9 @@
       ],
       "shortcodes":[
          ":rofl:",
-         ":crying_from_laughing:",
-         ":lmfao:",
-         ":lmao:"
+         ":rolling_crying_from_laughing:",
+         ":rolling_lmfao:",
+         ":rolling_lmao:"
       ],
       "emoticons":[
          "*>w<*"
@@ -285,7 +285,10 @@
          "tear"
       ],
       "shortcodes":[
-         ":joy:"
+         ":joy:",
+         ":crying_from_laughing:",
+         ":lmao:",
+         ":lmfao:"
       ],
       "emoticons":[
          ">w<"
@@ -297,7 +300,8 @@
       "order":8,
       "skintone":null,
       "skintoneCombination":null,
-      "skintoneBase":null
+      "skintoneBase":null,
+      "emojiSvg": true
    },
    {
       "emoji":"🙂",
