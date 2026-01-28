@@ -4,8 +4,8 @@ console.log(
 	"font-size: 18px; font-weight: 500;"
 );
 
-if (typeof socket === "undefined") {
-	const socket = io("https://chat.wokki20.nl", {
+if (typeof window.socket === "undefined") {
+	window.socket = io("https://chat.wokki20.nl", {
 		path: "/socket.io",
 		transports: ["websocket"],
 		query: {
@@ -15,7 +15,7 @@ if (typeof socket === "undefined") {
 
 	let serverName = "Unknown Server";
 
-	socket.on("connected to server", (data) => {
+	window.socket.on("connected to server", (data) => {
 		serverName = data.server_name;
 	});
 }
