@@ -4576,6 +4576,11 @@ input#clr-hue-slider {
 	outline: none;
 }
 
+.emoji-picker-item .emoji {
+    width: 16px;
+    height: 16px;
+}
+
 .emoji {
     width: 20px;
     height: 20px;
