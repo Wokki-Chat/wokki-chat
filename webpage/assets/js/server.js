@@ -1255,7 +1255,7 @@ function initServer() {
 					</div>	
 					<div class="dm-info-item">
 						<p class="dm-info-item-key">Bio</p>
-						<p class="dm-info-item-value">${user.bio ? await sanitizeMrk(user.bio) : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</p>
+						<p class="dm-info-item-value">${user.bio ? await emojis.replaceText(sanitizeMrk(user.bio)) : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</p>
 					</div>
 					<div class="dm-info-item">
 						<p class="dm-info-item-key">Joined on</p>
