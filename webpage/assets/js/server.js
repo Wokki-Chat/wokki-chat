@@ -310,7 +310,7 @@ function initServer() {
 				}
 			}
 		} else if (!removed) {
-			const newReactionEl = await Reaction({
+			const newReactionEl = await reactionRenderer.reaction({
 				reactionGroup: [{
 					reaction: emoji,
 					user_id: reactingUserId,
