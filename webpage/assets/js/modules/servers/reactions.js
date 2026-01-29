@@ -1,6 +1,6 @@
 // modules/servers/reactions.js
 // Module description: This module helps with rendering reactions for a message.
-import emojis from "./emojis.js";
+import emojis from "../../emojis.js";
 
 export default class ReactionsRender {
 	constructor({ user_id, channel_id, server_id, access_token, socket }) {
