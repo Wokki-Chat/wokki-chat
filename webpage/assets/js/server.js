@@ -1,5 +1,6 @@
 import emojis from "./emojis.js";
 import MessageRenderer from "./modules/servers/messages.js";
+import ReactionRenderer from "./modules/servers/reactions.js";
 
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
@@ -28,6 +29,7 @@ function initServer() {
 	const profile_picture_url = document.getElementById("profile-picture-url").getAttribute("value");
 	
 	const messageRenderer = new MessageRenderer({ user_id, channels, server_id });
+	const reactionRenderer = new ReactionRenderer({ user_id, channel_id, server_id, access_token, socket });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
@@ -223,11 +225,11 @@ function initServer() {
 		replyBtn.addEventListener("click", () => replyMessage(msg.id));
 
 		const reactionButton = el.querySelector("#reaction-btn");
-		reactionButton.addEventListener("click", () => handleReactionClick(el, msg.id, null));
+		reactionButton.addEventListener("click", () => reactionRenderer.handleReactionClick(el, msg.id, null));
 
 		const reactionsWrapper = el.querySelector(".message-reactions");
 		if (reactionsWrapper) {
-			const reactionsEl = msg.reactions ? await Reactions({ reactions: msg.reactions }, msg.id) : document.createDocumentFragment();
+			const reactionsEl = msg.reactions ? await reactionRenderer.create({ reactions: msg.reactions }, msg.id) : document.createDocumentFragment();
 			reactionsWrapper.appendChild(reactionsEl);
 		}
 
@@ -260,15 +262,6 @@ function initServer() {
 				messageContainer.scrollTop = messageContainer.scrollHeight;
 			});
 		}
-	}
-
-	async function handleReactionClick(el, msg_id, emoji = null) {
-		if (!emoji) {
-			emoji = await emojis.picker(null, el, true);
-			if (!emoji) return;
-		}
-
-		socket.emit("add_reaction", { access_token, message_id: msg_id, reaction: emoji, server_id, channel_id });
 	}
 	async function updateReactionUI(el, msg_id, emoji, reactingUserId, removed = false) {
 		const scrollTopBefore = messageContainer.scrollTop;
@@ -567,67 +560,6 @@ function initServer() {
 			const width = timeBox.offsetWidth;
 			timeBox.style.minWidth = `${width}px`;
 		});
-	}
-
-	async function Reaction({ reactionGroup, count }, msg_id) {
-		if (!reactionGroup || reactionGroup.length === 0) return null;
-
-		const { reaction: emojiText, super_reaction } = reactionGroup[0];
-		const renderedEmoji = await emojis.replaceText(emojiText);
-		const isOwn = reactionGroup.some(r => String(r.user_id) === String(user_id));
-		const username = reactionGroup[0].reaction_user_info?.username || "";
-
-		const div = document.createElement("div");
-		div.className = "reaction" + (isOwn ? " own" : "");
-		div.title = username;
-		div.dataset.reactionName = emojiText;
-		div.dataset.messageId = msg_id;
-		div.innerHTML = `<span class="emoji">${renderedEmoji}</span>${count ? `<span class="count">${count}</span>` : ''}`;
-
-		div.addEventListener("click", () => {
-			handleReactionClick(div, msg_id, emojiText);
-		});
-
-		return div;
-	}
-
-	async function Reactions({ reactions }, msg_id) {
-		if (!reactions || reactions.length === 0) return document.createDocumentFragment();
-
-		const normalCounts = {};
-		const superCounts = {};
-
-		for (const r of reactions) {
-			const key = r.reaction;
-			if (r.super_reaction) {
-				if (!superCounts[key]) superCounts[key] = [];
-				superCounts[key].push(r);
-			} else {
-				if (!normalCounts[key]) normalCounts[key] = [];
-				normalCounts[key].push(r);
-			}
-		}
-
-		const grouped = [...Object.values(normalCounts), ...Object.values(superCounts)];
-
-		const fragment = document.createDocumentFragment();
-		for (const group of grouped) {
-			const reactionEl = await Reaction({ reactionGroup: group, count: group.length }, msg_id);
-			if (reactionEl) fragment.appendChild(reactionEl);
-		}
-
-		const addReactionEl = document.createElement("div");
-		addReactionEl.classList.add("reaction", "add-reaction");
-		addReactionEl.innerHTML = `<span class="add-reaction-icon material-symbols-rounded">add_reaction</span>`;
-		fragment.appendChild(addReactionEl);
-
-		addReactionEl.addEventListener("click", () => handleReactionClick(addReactionEl, msg_id, null));
-
-		const container = document.createElement("div");
-		container.classList.add("message-reactions-container");
-		container.appendChild(fragment);
-
-		return container;
 	}
 
 	socket.on("server_commands_response", async (data) => {
