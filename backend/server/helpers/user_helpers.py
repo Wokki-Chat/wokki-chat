@@ -242,6 +242,21 @@ async def get_user_widgets(cur, user_id, widget_name=None):
 
     return result
 
+async def get_user_connections(cur, user_id):
+    query = "SELECT * FROM user_connections WHERE user_id = %s"
+    await cur.execute(query, (user_id,))
+    rows = await cur.fetchall()
+    connections = []
+    for row in rows:
+        connection = {
+            "id": row["id"],
+            "connection_type": row["connection_name"],
+            "connection_name": row["connection_user_name"],
+            "connection_user_url": row["connection_user_url"],
+        }
+        connections.append(connection)
+    return connections
+
 async def get_user_info_from_id(cur, user_id):
     query = """
         SELECT u.id, u.username, u.status, u.profile_picture, u.created_at, u.bio, u.profile_color_primary, u.profile_color_accent, u.nickname, u.profile_banner,
@@ -275,7 +290,8 @@ async def get_user_info_from_id(cur, user_id):
         "bio": rows[0]["bio"],
         "profile_color_primary": rows[0]["profile_color_primary"] if haspremium else None,
         "profile_color_accent": rows[0]["profile_color_accent"] if haspremium else None,
-        "widgets": {}
+        "widgets": {},
+        "connections": await get_user_connections(cur, resolved_user_id)
     }
 
     for row in rows:
