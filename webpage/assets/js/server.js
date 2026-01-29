@@ -1232,6 +1232,8 @@ function initServer() {
 				popup.dataset.lightText = lightText.toString();
 				popup.dataset.customStyle = 'true';
 			}
+			let userBio = await sanitizeMrk(user.bio);
+			userBio = emojis.replaceText(userBio);
 			popup.innerHTML = `
 				${user.profile_banner ? `<img draggable="false" class="user-info-profile-popup-banner" src="${user.profile_banner}">` : ''}
 				<div class="user-info-profile-popup-profile-picture-username-status">
@@ -1255,7 +1257,7 @@ function initServer() {
 					</div>	
 					<div class="dm-info-item">
 						<p class="dm-info-item-key">Bio</p>
-						<p class="dm-info-item-value">${user.bio ? await emojis.replaceText(sanitizeMrk(user.bio)) : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</p>
+						<p class="dm-info-item-value">${user.bio ? userBio : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</p>
 					</div>
 					<div class="dm-info-item">
 						<p class="dm-info-item-key">Joined on</p>
