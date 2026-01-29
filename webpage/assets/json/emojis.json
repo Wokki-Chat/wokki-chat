@@ -330,7 +330,8 @@
       "order":9,
       "skintone":null,
       "skintoneCombination":null,
-      "skintoneBase":null
+      "skintoneBase":null,
+      "emojiSvg": true
    },
    {
       "emoji":"🙃",
@@ -357,7 +358,8 @@
       "order":10,
       "skintone":null,
       "skintoneCombination":null,
-      "skintoneBase":null
+      "skintoneBase":null,
+      "emojiSvg": true
    },
    {
       "emoji":"🫠",
@@ -393,7 +395,8 @@
       "order":11,
       "skintone":null,
       "skintoneCombination":null,
-      "skintoneBase":null
+      "skintoneBase":null,
+      "emojiSvg": true
    },
    {
       "emoji":"😉",
@@ -425,7 +428,8 @@
       "order":12,
       "skintone":null,
       "skintoneCombination":null,
-      "skintoneBase":null
+      "skintoneBase":null,
+      "emojiSvg": true
    },
    {
       "emoji":"😊",
@@ -456,7 +460,8 @@
       "order":13,
       "skintone":null,
       "skintoneCombination":null,
-      "skintoneBase":null
+      "skintoneBase":null,
+      "emojiSvg": true
    },
    {
       "emoji":"😇",
@@ -496,7 +501,8 @@
       "order":14,
       "skintone":null,
       "skintoneCombination":null,
-      "skintoneBase":null
+      "skintoneBase":null,
+      "emojiSvg": true
    },
    {
       "emoji":"🥰",
@@ -532,7 +538,8 @@
       "order":15,
       "skintone":null,
       "skintoneCombination":null,
-      "skintoneBase":null
+      "skintoneBase":null,
+      "emojiSvg": true
    },
    {
       "emoji":"😍",
@@ -569,7 +576,8 @@
       "order":16,
       "skintone":null,
       "skintoneCombination":null,
-      "skintoneBase":null
+      "skintoneBase":null,
+      "emojiSvg": true
    },
    {
       "emoji":"🤩",
@@ -600,7 +608,8 @@
       "order":17,
       "skintone":null,
       "skintoneCombination":null,
-      "skintoneBase":null
+      "skintoneBase":null,
+      "emojiSvg": true
    },
    {
       "emoji":"😘",
