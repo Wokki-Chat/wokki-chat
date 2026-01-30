@@ -70,7 +70,7 @@ if ($user_id) {
                 <div class="support-card">
                     <h2>📧 Email Support</h2>
                     <p>Need direct help? Our support team is ready to assist you.</p>
-                    <a href="mailto:support@chat.wokki20.nl" class="button-primary-outline no-underline">Email Us</a>
+                    <a href="mailto:support@cm.wokki20.nl" class="button-primary-outline no-underline">Email Us</a>
                 </div>
                 <div class="support-card">
                     <h2>⚙️ System Status</h2>

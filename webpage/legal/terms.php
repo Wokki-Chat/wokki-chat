@@ -102,7 +102,7 @@ if ($user_id) {
                 <p>Wokki Chat may update these Terms at any time. Continued use of the platform constitutes acceptance of the updated Terms. Users are encouraged to review the Terms periodically.</p>
 
                 <h2>9. Contact</h2>
-                <p>If you have questions about these Terms, you can contact us at <strong><a class="link" href="mailto:support@wokki20.nl">support@wokki20.nl</a></strong>.</p>
+                <p>If you have questions about these Terms, you can contact us at <strong><a class="link" href="mailto:support@cm.wokki20.nl">support@cm.wokki20.nl</a></strong>.</p>
             </div>
         </div>
     </div>
