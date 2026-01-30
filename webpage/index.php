@@ -22,6 +22,13 @@ if ($user_id) {
     $headerBtn = '<a href="home" class="button-primary-outline no-underline">Open Wokki Chat</a>';
 }
 
+$stmt = $mysqli->prepare("SELECT COUNT(*) AS count FROM users WHERE email_verified = 1");
+$stmt->execute();
+$result = $stmt->get_result();
+$stmt->close();
+$row = $result->fetch_assoc();
+$spots_left = 500 - $row['count'];
+
 ?>
 <!DOCTYPE html>
 <html lang="en" class="night">
@@ -74,6 +81,10 @@ if ($user_id) {
                 <span class="description-text">Wokki Chat is the ultimate place to connect with friends, share your thoughts and moments freely,</span>
                 <span class="description-text">exciting conversations, discover new connections, and keep the people you care about just a click away.</span>
                 <span class="description-text">All of that without paying a dime.</span>
+            </div>
+            <div class="spots-left">
+                <span class="spots-left-text">Sign up now before it&rsquo;s too late!</span>
+                <span class="spots-left-text">Only <?php echo $spots_left; ?> spots left in the Alpha!</span>
             </div>
         </div>
     </div>

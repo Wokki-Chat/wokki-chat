@@ -1,3 +1,15 @@
+<?php
+include 'app/config.php';
+
+function maxAccountsForAlpha($mysqli) {
+    $stmt = $mysqli->prepare("SELECT COUNT(*) AS count FROM users WHERE email_verified = 1");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $stmt->close();
+    $row = $result->fetch_assoc();
+    return $row['count'] >= 500;
+}
+?>
 <!DOCTYPE html>
 <html lang="en" class="login dark">
 <head>
@@ -37,7 +49,7 @@
                     </label>
                 </div>
             </div>
-            <button type="submit" class="button-primary-filled" onclick="create_account()">Create Account</button>
+            <button type="submit" <?php if (maxAccountsForAlpha($mysqli)) echo 'disabled'; ?> class="button-primary-filled" onclick="create_account()">Create Account</button>
             <p>Already have an account? <a href="login" class="link">Login</a></p>
             <p class="error-message" id="error-message">An unknown error occurred, please try again</p>
         </div>

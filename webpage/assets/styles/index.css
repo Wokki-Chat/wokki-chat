@@ -71,14 +71,20 @@ body {
     line-height: 1.1;
 }
 
-.description {
+.description,
+.spots-left {
     display: flex;
     flex-direction: column;
 }
 
 .description-text,
-.page-description {
+.page-description,
+.spots-left-text {
     font-size: clamp(1rem, 2vw, 1.5rem);
+}
+
+.spots-left {
+    margin-top: 15px;
 }
 
 .sticky-header {
@@ -242,6 +248,12 @@ body {
         left: unset;
         right: 10px;
         transform: unset;
+    }
+}
+
+@media screen and (max-width: 550px) {
+    .fixed-header {
+        display: none;
     }
 }
 

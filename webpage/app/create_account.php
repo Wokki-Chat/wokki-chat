@@ -51,6 +51,14 @@ function getTokenExpirationTime($tokenType = 'access') {
     }
 }
 
+function maxAccountsForAlpha($mysqli) {
+    $stmt = $mysqli->prepare("SELECT COUNT(*) AS count FROM users WHERE email_verified = 1");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $stmt->close();
+    $row = $result->fetch_assoc();
+    return $row['count'] >= 500;
+}
 
 function registerUser($mysqli, $username, $email, $password, $mail_password) {
     $stmt = $mysqli->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
@@ -66,6 +74,14 @@ function registerUser($mysqli, $username, $email, $password, $mail_password) {
     };
 
     $password_hash = hashPassword($password);
+
+    if (maxAccountsForAlpha($mysqli)) {
+        return [
+            'status' => 'error',
+            'description' => 'The maximum number of accounts has been reached',
+            'return_code' => 2
+        ];
+    }
     
     try {
         $stmt = $mysqli->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
