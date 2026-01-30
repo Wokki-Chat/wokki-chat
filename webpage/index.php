@@ -84,7 +84,7 @@ $spots_left = 500 - $row['count'];
             </div>
             <div class="spots-left">
                 <span class="spots-left-text">Sign up now before it&rsquo;s too late!</span>
-                <span class="spots-left-text">Only <?php echo $spots_left; ?> spots left in the Alpha!</span>
+                <span class="spots-left-text">Only <span class="spots-left-highlight"><?php echo $spots_left; ?></span> spots left in the Alpha!</span>
             </div>
         </div>
     </div>

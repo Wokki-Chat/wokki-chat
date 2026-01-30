@@ -83,6 +83,11 @@ body {
     font-size: clamp(1rem, 2vw, 1.5rem);
 }
 
+.spots-left-highlight {
+    font-weight: 700;
+    color: var(--clr-primary-a0);
+}
+
 .spots-left {
     margin-top: 15px;
 }
