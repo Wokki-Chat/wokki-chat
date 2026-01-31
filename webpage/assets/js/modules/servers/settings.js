@@ -69,8 +69,6 @@ export default class SettingsManager {
                     const maxMessageLengthEl = popupEl.querySelector('.max-message-length');
                     const maxCharactersLeftEl = popupEl.querySelector('.max-characters-left');
 
-                    console.log(textarea, preview, messageInputWrapper, inputContainer, maxMessageLengthEl, maxCharactersLeftEl);
-
                     const maxHeight = 250;
                     const warningThreshold = 200;
                     const maxChars = 200;
@@ -100,6 +98,7 @@ export default class SettingsManager {
 
                     const onInput = () => {
                         if (textarea.textContent.trim() === '') textarea.textContent = '';
+                        console.log(textarea.textContent);
                         updateHeight();
                         updateCharsLeft();
                         updatePreview();
