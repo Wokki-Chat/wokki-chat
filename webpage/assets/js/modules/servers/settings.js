@@ -10,6 +10,7 @@ export default class SettingsManager {
         jspt.makePopup({
             content_type: "html",
             header: "Server Settings",
+            style: "server-settings-popup",
             content: settingsContent,
             close_button: false,
             custom_id: "server-settings-popup",
