@@ -151,6 +151,7 @@ export class MessageBehaviour {
 	applyCompactMode(el, msg, insertIndex, messageCache) {
 		const prevMsg = messageCache[insertIndex - 1];
 		if (!prevMsg) return;
+		console.log(msg, prevMsg);
 
 		const prevSentBy = prevMsg?.el?.dataset?.sentBy || '';
 		if (prevSentBy !== msg.sent_by.toString()) return;
