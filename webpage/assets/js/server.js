@@ -34,6 +34,7 @@ function initServer() {
 	const messageCache = new MessageCache();
 	const reactionRenderer = new ReactionRenderer({ user_id, channel_id, server_id, access_token, socket });
 	const messageBehaviour = new MessageBehaviour({ user_id, channel_id, server_id, access_token, socket, messageContainer });
+	const messageHydrator = new MessageHydrator({ user_id, channels, server_id });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
@@ -157,12 +158,9 @@ function initServer() {
 		const insertIndex = messageCache.insertIntoCache(msg, el);
 		insertMessageEl(el, insertIndex);
 		messageBehaviour.applyCompactMode(el, msg, insertIndex, messageCache.cache);
-
 		messageBehaviour.attach(el, msg);
-
-		await hydrateInvites(el);
-		await hydrateSpotifyTracks(el);
-		if (msg.assets && msg.assets.length > 0) await hydrateAssets(el, msg.assets, msg.id);
+		
+		messageHydrator.hydrate(el, assets, msg.id);
 
 		await emojis.replaceEl(el);
 
@@ -189,6 +187,7 @@ function initServer() {
 			});
 		}
 	}
+
 	async function updateReactionUI(el, msg_id, emoji, reactingUserId, removed = false) {
 		const scrollTopBefore = messageContainer.scrollTop;
 		const scrollHeightBefore = messageContainer.scrollHeight;
@@ -287,106 +286,6 @@ function initServer() {
 		if (el) updateReactionUI(el, message_id, reaction, reactingUserId, true);
 	});
 	
-	async function hydrateAssets(msgEl, assets, id) {
-		let assetsHTML = '';
-		if (assets && assets.length > 0) {
-			assetsHTML = assets.map((asset, index) => {
-				const type = getAssetType(asset.savedName);
-				if (type === 'image') {
-					return `<img data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" alt="${asset.originalName}" class="message-asset-image lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}', '${asset.originalName}')" />`;
-				} else if (type === 'video') {
-					return `<video data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" controls class="message-asset-video lazyload"></video>`;
-				} else if (type === 'audio') {
-					return `
-					<div class="custom-player" data-originalName="${asset.originalName}" data-audio-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}">
-						<span class="material-symbols-rounded play-pause" style="cursor:pointer;">play_arrow</span>
-						<div class="time-left-current">
-							<span class="current-time">0:00</span>
-							<span class="duration">/ 0:00</span>
-						</div>
-						<input type="range" class="seek-bar" value="0" step="1" min="0">
-						<div class="player-options">
-							<div class="player-option" id="download">
-								<span class="material-symbols-rounded">download</span>
-							</div>
-						</div>
-					</div>
-					`;
-				} else if (type === 'pdf') {
-					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${sanitize(asset.originalName)}</a>`;
-				} else if (type === 'txt') {
-					return `<pre class="message-asset-text" id="txt-asset-${id}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
-				} else if (type === 'profile_picture') {
-					return `<img data-src="https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}" alt="${asset.originalName}" class="message-asset-image message-asset-profile-picture lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}', '${asset.originalName}')" />`;
-				} else {
-					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" download class="message-asset-file link">${sanitize(asset.savedName)}</a>`;
-				}
-			}).join('');
-		}
-
-		const assetsContainer = document.createElement("div");
-		assetsContainer.classList.add("message-assets");
-		assetsContainer.innerHTML = assetsHTML;
-
-		const messageInfo = msgEl.querySelector(".message-info");
-		const reactionsDiv = messageInfo.querySelector(".message-reactions");
-
-		messageInfo.insertBefore(assetsContainer, reactionsDiv);
-
-		const lazyEls = msgEl.querySelectorAll('[data-src]');
-		lazyEls.forEach(el => {
-			if (el.tagName === 'IMG' || el.tagName === 'VIDEO') {
-				el.src = el.dataset.src;
-			}
-			el.removeAttribute('data-src');
-			el.classList.remove('lazyload');
-		});
-
-		if (assets && assets.length > 0) {
-			const txtPromises = assets.map(async (asset, index) => {
-				if (getAssetType(asset.savedName) !== 'txt') return;
-
-				const preEl = msgEl.querySelector(`#txt-asset-${id}-${index} code`);
-				if (!preEl) return;
-
-				try {
-					const contents = await getAssetFileInsides(asset.savedName);
-					preEl.textContent = sanitize(contents);
-
-					const pre = preEl.parentElement;
-					if (!pre.querySelector(".lang-bar")) {
-						let lang = "bash";
-						const langClass = [...preEl.classList].find(c => c.startsWith("lang-"));
-						if (langClass) lang = langClass.slice(5);
-
-						pre.insertAdjacentHTML("afterbegin", `
-							<div class="lang-bar">
-								<p>${lang}</p>
-								<span class="material-symbols-rounded copy-icon" style="cursor:pointer;">
-									content_copy
-								</span>
-							</div>
-						`);
-
-						const copyIcon = pre.querySelector(".copy-icon");
-						copyIcon.addEventListener("click", () => {
-							navigator.clipboard.writeText(preEl.innerText).then(() => {
-								copyIcon.textContent = "check";
-								setTimeout(() => {
-									copyIcon.textContent = "content_copy";
-								}, 3000);
-							});
-						});
-					}
-				} catch {
-					preEl.textContent = '[Failed to load file]';
-				}
-			});
-
-			await Promise.all(txtPromises);
-		}
-	}
-
 	const customPlayers = new Map();
 
 	function audioLoaded(audio) {

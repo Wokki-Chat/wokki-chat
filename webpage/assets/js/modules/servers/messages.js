@@ -139,6 +139,171 @@ export class MessageRenderer {
 
 export class MessageHydrator {
 	constructor() {}
+
+	async hydrate(msgEl, assets, msgId) {
+		const invites = msgEl.querySelectorAll('.invite-item-container.loading');
+		invites.forEach(async el => {
+			const url = el.dataset.inviteUrl;
+			const inviteId = el.dataset.inviteId;
+
+			try {
+				const res = await fetch(url);
+				if (!res.ok) throw 0;
+				const html = await res.text();
+
+				const serverName = html.match(/server_name["'] content=["']([^"']+)/i)?.[1] ?? "Unknown Server";
+				const serverImage = html.match(/server_image["'] content=["']([^"']+)/i)?.[1] ?? "";
+				const serverCreatedAt = html.match(/server_created_at["'] content=["']([^"']+)/i)?.[1];
+				const serverId = html.match(/server_id["'] content=["']([^"']+)/i)?.[1];
+				const expired = html.match(/invite_expired["'] content=["']([^"']+)/i)?.[1];
+
+				const date = serverCreatedAt
+					? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+						.format(new Date(serverCreatedAt))
+					: "Unknown Date";
+
+				el.innerHTML = `
+					<div class="invite-item-name-icon-container">
+						<img src="${serverImage}" class="invite-item-icon">
+						<div>
+							<p>${serverName}</p>
+							<p>${date}</p>
+						</div>
+					</div>
+					<button class="button-primary-filled ${expired ? "disabled" : ""} invite-join-button"
+							onclick="${expired ? "" : `window.location.href='https://chat.wokki20.nl/server/${serverId}?invite=${inviteId}'`}">
+						${expired ? "Invite Expired" : "Join Server"}
+					</button>
+				`;
+				el.classList.remove('loading');
+			} catch {
+				el.innerHTML = `<p>This invite is invalid</p>`;
+			}
+		});
+		const tracks = msgEl.querySelectorAll('.spotify-track-container.loading');
+		tracks.forEach(el => {
+			const trackId = el.dataset.spotifyTrackId;
+			if (!trackId) return;
+
+			const iframe = document.createElement('iframe');
+			iframe.src = `https://open.spotify.com/embed/track/${trackId}`;
+			iframe.width = '100%';
+			iframe.height = '152';
+			iframe.frameBorder = '0';
+			iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+			iframe.allowFullscreen = true;
+			iframe.style.borderRadius = '12px';
+			iframe.loading = 'lazy';
+
+			el.innerHTML = '';
+			el.appendChild(iframe);
+			el.classList.remove('loading');
+		});
+
+		if (assets && assets.length > 0) {
+			const assetsContainer = document.createElement("div");
+			assetsContainer.classList.add("message-assets");
+
+			assetsContainer.innerHTML = assets.map((asset, index) => {
+				const type = getAssetType(asset.savedName);
+				if (type === 'image') {
+					return `<img data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" alt="${asset.originalName}" class="message-asset-image lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}', '${asset.originalName}')" />`;
+				} else if (type === 'video') {
+					return `<video data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" controls class="message-asset-video lazyload"></video>`;
+				} else if (type === 'audio') {
+					return `
+						<div class="custom-player" data-originalName="${asset.originalName}" data-audio-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}">
+							<span class="material-symbols-rounded play-pause" style="cursor:pointer;">play_arrow</span>
+							<div class="time-left-current">
+								<span class="current-time">0:00</span>
+								<span class="duration">/ 0:00</span>
+							</div>
+							<input type="range" class="seek-bar" value="0" step="1" min="0">
+							<div class="player-options">
+								<div class="player-option" id="download">
+									<span class="material-symbols-rounded">download</span>
+								</div>
+							</div>
+						</div>
+					`;
+				} else if (type === 'pdf') {
+					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${sanitize(asset.originalName)}</a>`;
+				} else if (type === 'txt') {
+					return `<pre class="message-asset-text" id="txt-asset-${msgId}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
+				} else if (type === 'profile_picture') {
+					return `<img data-src="https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}" alt="${asset.originalName}" class="message-asset-image message-asset-profile-picture lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}', '${asset.originalName}')" />`;
+				} else {
+					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" download class="message-asset-file link">${sanitize(asset.savedName)}</a>`;
+				}
+			}).join('');
+
+			const messageInfo = msgEl.querySelector(".message-info");
+			const reactionsDiv = messageInfo.querySelector(".message-reactions");
+			messageInfo.insertBefore(assetsContainer, reactionsDiv);
+
+			const lazyEls = msgEl.querySelectorAll('[data-src]');
+			lazyEls.forEach(el => {
+				if (el.tagName === 'IMG' || el.tagName === 'VIDEO') {
+					el.src = el.dataset.src;
+				}
+				el.removeAttribute('data-src');
+				el.classList.remove('lazyload');
+			});
+
+			const txtPromises = assets.map(async (asset, index) => {
+				if (getAssetType(asset.savedName) !== 'txt') return;
+
+				const preEl = msgEl.querySelector(`#txt-asset-${msgId}-${index} code`);
+				if (!preEl) return;
+
+				try {
+					const contents = await this.getAssetFileInsides(asset.savedName);
+					preEl.textContent = sanitize(contents);
+
+					const pre = preEl.parentElement;
+					if (!pre.querySelector(".lang-bar")) {
+						let lang = "bash";
+						const langClass = [...preEl.classList].find(c => c.startsWith("lang-"));
+						if (langClass) lang = langClass.slice(5);
+
+						pre.insertAdjacentHTML("afterbegin", `
+							<div class="lang-bar">
+								<p>${lang}</p>
+								<span class="material-symbols-rounded copy-icon" style="cursor:pointer;">
+									content_copy
+								</span>
+							</div>
+						`);
+
+						const copyIcon = pre.querySelector(".copy-icon");
+						copyIcon.addEventListener("click", () => {
+							navigator.clipboard.writeText(preEl.innerText).then(() => {
+								copyIcon.textContent = "check";
+								setTimeout(() => copyIcon.textContent = "content_copy", 3000);
+							});
+						});
+					}
+				} catch {
+					preEl.textContent = '[Failed to load file]';
+				}
+			});
+
+			await Promise.all(txtPromises);
+		}
+
+		return true;
+	}
+
+	async getAssetFileInsides(file) {
+		const res = await fetch(`https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(file)}`);
+		const blob = await res.blob();
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => resolve(reader.result);
+			reader.onerror = () => reject("Failed to read file");
+			reader.readAsText(blob);
+		});
+	}
 }
 
 export class MessageBehaviour {
