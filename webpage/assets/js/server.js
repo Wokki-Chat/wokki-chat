@@ -1,5 +1,5 @@
 import emojis from "./emojis.js";
-import MessageRenderer from "./modules/servers/messages.js";
+import { MessageRenderer, MessageCache, MessageBehavior } from "./modules/servers/messages.js";
 import ReactionRenderer from "./modules/servers/reactions.js";
 
 function initServer() {
@@ -29,7 +29,9 @@ function initServer() {
 	const profile_picture_url = document.getElementById("profile-picture-url").getAttribute("value");
 	
 	const messageRenderer = new MessageRenderer({ user_id, channels, server_id });
+	const messageCache = new MessageCache();
 	const reactionRenderer = new ReactionRenderer({ user_id, channel_id, server_id, access_token, socket });
+	const messageBehavior = new MessageBehavior({ user_id, channel_id, server_id, access_token, socket });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
@@ -123,8 +125,6 @@ function initServer() {
 		await handleAllMessages(messages);
 	});
 
-	const messageCache = [];
-
 	async function handleAllMessages(messages) {
 
 		if (!Array.isArray(messages)) {
@@ -136,63 +136,28 @@ function initServer() {
 		}
 	}
 
-	async function handleMessage(msg) {
-		const timestamp = msg.created_at;
-		const sent_by = msg.sent_by !== null ? msg.sent_by : msg.sent_by_bot;
-
-		const existingIndex = messageCache.findIndex(m => m.id === msg.id);
-		if (existingIndex !== -1) {
-			const existing = messageCache[existingIndex];
-			existing.el.remove();
-			messageCache.splice(existingIndex, 1);
+	function insertMessageEl(el, insertIndex) {
+		if (insertIndex === messageContainer.children.length) {
+			messageContainer.appendChild(el)
+		} else {
+			messageContainer.insertBefore(el, messageContainer.children[insertIndex])
 		}
+	}
+
+	async function handleMessage(msg) {
+		messageCache.removeExisting(msg.id);
+
 		const el = await messageRenderer.create(msg, usersList);
 		if (!el) return;
-
-		let insertIndex = messageCache.findIndex(m => timestamp < m.timestamp);
-		if (insertIndex === -1) insertIndex = messageCache.length;
-
-		const prevMsg = messageCache[insertIndex - 1];
-		if (prevMsg && prevMsg.sent_by === sent_by) {
-			const prevTime = new Date(prevMsg.timestamp).getTime();
-			const currTime = new Date(timestamp).getTime();
-			if ((currTime - prevTime) <= 10 * 60 * 1000) {
-				if (!el.querySelector(".message-command") && !el.querySelector(".message-reply")) {
-					el.classList.add("compact");
-				}
-			}
-		}
 
 		const scrollTopBefore = messageContainer.scrollTop;
 		const scrollHeightBefore = messageContainer.scrollHeight;
 		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
 
-		messageCache.splice(insertIndex, 0, { id: msg.id, timestamp, el, sent_by });
+		const insertIndex = messageCache.insertIntoCache(msg, el);
+		insertMessageEl(el, insertIndex);
 
-		if (insertIndex === messageContainer.children.length) {
-			messageContainer.appendChild(el);
-		} else {
-			messageContainer.insertBefore(el, messageContainer.children[insertIndex]);
-		}
-
-		el.querySelector('.username').addEventListener('click', (e) => {
-			e.stopPropagation();
-			scrollToUser(msg.sent_by);
-		});
-
-		function scrollToUser(user) {
-			const userInfoProfile = document.querySelector(`.info-profile[data-user-id="${user}"]`);
-			if (userInfoProfile) {
-				if (userInfoProfile.offsetParent !== null) {
-					userInfoProfile.scrollIntoView({ behavior: "smooth", block: "center" });
-					requestAnimationFrame(() => {
-						if (userInfoProfile.getBoundingClientRect().top > 0) userInfoProfile.click();
-					});
-				} else {
-					userInfoProfile.click();
-				}
-			}
-		}
+		messageBehavior.attach(el, msg, insertIndex, messageCache);
 
 		await hydrateInvites(el);
 		await hydrateSpotifyTracks(el);
@@ -203,54 +168,14 @@ function initServer() {
 		const customPlayer = el.querySelector(".custom-player");
 		if (customPlayer) await initCustomPlayer(customPlayer);
 
-		const mentionTags = el.querySelectorAll(`.user-link[data-user-id="${user_id}"], .user-link[data-user-id="everyone"]`);
-		if (mentionTags.length > 0) el.classList.add("mentioned");
-
-		const messageReplyEl = el.querySelector(".message-reply");
-		if (messageReplyEl) {
-			messageReplyEl.style.cursor = "pointer";
-			messageReplyEl.addEventListener("click", () => {
-				const targetId = messageReplyEl.getAttribute("data-message-id");
-				if (!targetId) return;
-				const targetMsg = messageContainer.querySelector(`.message[data-message-id="${targetId}"]`);
-				if (targetMsg) {
-					targetMsg.scrollIntoView({ behavior: "smooth", block: "center" });
-					targetMsg.classList.add("highlight-parent-msg");
-					setTimeout(() => targetMsg.classList.remove("highlight-parent-msg"), 2000);
-				}
-			});
-		}
-
 		const replyBtn = el.querySelector("#reply-btn");
 		replyBtn.addEventListener("click", () => replyMessage(msg.id));
-
-		const reactionButton = el.querySelector("#reaction-btn");
-		reactionButton.addEventListener("click", () => reactionRenderer.handleReactionClick(el, msg.id, null));
-
-		const reactionsWrapper = el.querySelector(".message-reactions");
-		if (reactionsWrapper) {
-			const reactionsEl = msg.reactions ? await reactionRenderer.create({ reactions: msg.reactions }, msg.id) : document.createDocumentFragment();
-			reactionsWrapper.appendChild(reactionsEl);
-		}
 
 		const deleteBtn = el.querySelector("#delete-btn");
 		if (deleteBtn) {
 			deleteBtn.addEventListener("click", () => {
 				socket.emit("delete_message", { access_token, message_id: msg.id, server_id, channel_id });
 				deleteMsg(msg.id);
-			});
-		}
-
-		const embedContainer = el.querySelector('.message-embed');
-		if (embedContainer) {
-			embedContainer.addEventListener('click', (event) => {
-				const btn = event.target.closest('button[data-btn-id]');
-				if (!btn) return;
-				const embedDiv = btn.closest('.embed');
-				if (!embedDiv) return;
-				const bot_id = embedDiv.dataset.botId;
-				const btn_id = btn.dataset.btnId;
-				socket.emit('embed_button', { bot_id, button_id: btn_id, access_token, server_id, channel_id });
 			});
 		}
 

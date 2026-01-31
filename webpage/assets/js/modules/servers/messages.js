@@ -1,5 +1,6 @@
 // modules/servers/messages.js
 // Module description: This module helps with managing messages in a server.
+import ReactionsRender from "./reactions";
 
 export default class MessageRenderer {
 	constructor({ user_id, channels, server_id }) {
@@ -133,5 +134,109 @@ export default class MessageRenderer {
 		if (!embeds?.length) return '';
 		const embedHtml = await Promise.all(embeds.map(e => this.Embed({ embed: e }, usersList)));
 		return `<div class="embeds-container">${embedHtml.join('')}</div>`;
+	}
+}
+
+export class MessageHydrator {
+	constructor() {}
+}
+
+export class MessageBehavior {
+	constructor({ user_id, channel_id, server_id, access_token, socket }) {
+		this.user_id = user_id;
+		this.reactionRenderer = new ReactionsRender({ user_id, channel_id, server_id, access_token, socket });
+	}
+
+	async attach(el, msg, insertIndex, messageCache) {
+		const timestamp = msg.created_at;
+		const sent_by = msg.sent_by !== null ? msg.sent_by : msg.sent_by_bot;
+
+		const prevMsg = messageCache[insertIndex - 1];
+		if (prevMsg && prevMsg.sent_by === sent_by) {
+			const prevTime = new Date(prevMsg.timestamp).getTime();
+			const currTime = new Date(timestamp).getTime();
+			if ((currTime - prevTime) <= 10 * 60 * 1000) {
+				if (!el.querySelector(".message-command") && !el.querySelector(".message-reply")) {
+					el.classList.add("compact");
+				}
+			}
+		}
+
+		el.querySelector('.username').addEventListener('click', (e) => {
+			e.stopPropagation();
+			const userInfoProfile = document.querySelector(`.info-profile[data-user-id="${sent_by}"]`);
+			if (userInfoProfile) {
+				if (userInfoProfile.offsetParent !== null) {
+					userInfoProfile.scrollIntoView({ behavior: "smooth", block: "center" });
+					requestAnimationFrame(() => {
+						if (userInfoProfile.getBoundingClientRect().top > 0) userInfoProfile.click();
+					});
+				} else {
+					userInfoProfile.click();
+				}
+			}
+		});
+
+		const mentionTags = el.querySelectorAll(`.user-link[data-user-id="${user_id}"], .user-link[data-user-id="everyone"]`);
+		if (mentionTags.length > 0) el.classList.add("mentioned");
+
+		const messageReplyEl = el.querySelector(".message-reply");
+		if (messageReplyEl) {
+			messageReplyEl.style.cursor = "pointer";
+			messageReplyEl.addEventListener("click", () => {
+				const targetId = messageReplyEl.getAttribute("data-message-id");
+				if (!targetId) return;
+				const targetMsg = messageContainer.querySelector(`.message[data-message-id="${targetId}"]`);
+				if (targetMsg) {
+					targetMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+					targetMsg.classList.add("highlight-parent-msg");
+					setTimeout(() => targetMsg.classList.remove("highlight-parent-msg"), 2000);
+				}
+			});
+		}
+
+		const reactionButton = el.querySelector("#reaction-btn");
+		reactionButton.addEventListener("click", () => this.reactionRenderer.handleReactionClick(el, msg.id, null));
+
+		const reactionsWrapper = el.querySelector(".message-reactions");
+		if (reactionsWrapper) {
+			const reactionsEl = msg.reactions ? await this.reactionRenderer.create({ reactions: msg.reactions }, msg.id) : document.createDocumentFragment();
+			reactionsWrapper.appendChild(reactionsEl);
+		}
+
+		const embedContainer = el.querySelector('.message-embed');
+		if (embedContainer) {
+			embedContainer.addEventListener('click', (event) => {
+				const btn = event.target.closest('button[data-btn-id]');
+				if (!btn) return;
+				const embedDiv = btn.closest('.embed');
+				if (!embedDiv) return;
+				const bot_id = embedDiv.dataset.botId;
+				const btn_id = btn.dataset.btnId;
+				socket.emit('embed_button', { bot_id, button_id: btn_id, access_token: this.access_token, server_id: this.server_id, channel_id: this.channel_id });
+			});
+		}
+	}
+}
+
+export class MessageCache {
+	constructor() {
+		this.cache = [];
+	}
+
+	removeExisting(id) {
+		const exists = this.cache.findIndex(m => m.id === id);
+		if (exists !== -1) {
+			const existing = this.cache[exists];
+			existing.el.remove();
+			this.cache.splice(exists, 1);
+		}
+	}
+
+	insertIntoCache(msg, el) {
+		insertIndex = this.cache.findIndex(m => msg.created_at < m.timestamp);
+		if (insertIndex === -1) insertIndex = this.cache.length;
+		this.cache.splice(insertIndex, 0, { id: msg.id, timestamp: msg.created_at, el });
+		return insertIndex;
 	}
 }
