@@ -154,6 +154,7 @@ export class MessageBehaviour {
 		if (!prevMsg) return;
 
 		const prevSentBy = prevMsg?.el?.dataset?.sent_by || '';
+		console.log({ prevSentBy });
 		if (prevSentBy !== msg.sent_by.toString()) return;
 
 		const prevTime = new Date(prevMsg.timestamp).getTime();
