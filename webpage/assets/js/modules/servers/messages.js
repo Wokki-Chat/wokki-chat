@@ -153,7 +153,7 @@ export class MessageBehaviour {
 		console.log({ insertIndex, prevMsg, msgSentBy: msg.sent_by });
 		if (!prevMsg) return;
 
-		const prevSentBy = prevMsg?.el?.dataset?.sent_by || '';
+		const prevSentBy = prevMsg?.el?.dataset?.sentBy || '';
 		console.log({ prevSentBy });
 		if (prevSentBy !== msg.sent_by.toString()) return;
 
