@@ -187,7 +187,7 @@ export class MessageBehaviour {
 			messageReplyEl.addEventListener("click", () => {
 				const targetId = messageReplyEl.getAttribute("data-message-id");
 				if (!targetId) return;
-				const targetMsg = messageContainer.querySelector(`.message[data-message-id="${targetId}"]`);
+				const targetMsg = this.messageContainer.querySelector(`.message[data-message-id="${targetId}"]`);
 				if (targetMsg) {
 					targetMsg.scrollIntoView({ behavior: "smooth", block: "center" });
 					targetMsg.classList.add("highlight-parent-msg");
