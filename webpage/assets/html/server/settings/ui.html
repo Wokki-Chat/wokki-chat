@@ -1,7 +1,14 @@
 <div class="settings-content">
     <div class="settings-tabs">
         <p class="settings-tab-title">Server Settings</p>
-        {{settings_sidebar}}
+        <a class="settings-tab no-underline" id="general-info-tab">
+            <span class="material-symbols-rounded">info</span>
+            <p>General Info</p>
+        </a>
+        <a class="settings-tab no-underline" id="role-tab">
+            <span class="material-symbols-rounded">user_attributes</span>
+            <p>Roles</p>
+        </a>
     </div>
     <div class="setting-page">
         <a class="close-settings-container no-underline">
@@ -10,5 +17,6 @@
             </div>
             <p>Esc</p>
         </a>
+        {{settings_content}}
     </div>
 </div>
