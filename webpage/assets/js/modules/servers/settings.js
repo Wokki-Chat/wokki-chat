@@ -64,108 +64,65 @@ export default class SettingsManager {
 
                     const textarea = popupEl.getElementById("message-input");
                     const preview = popupEl.getElementById("message-input-bg");
+                    const messageInputWrapper = popupEl.querySelector('.message-input-wrapper');
+                    const inputContainer = popupEl.querySelector(".input-container-2");
+                    const maxMessageLengthEl = popupEl.querySelector('.max-message-length');
+                    const maxCharactersLeftEl = popupEl.querySelector('.max-characters-left');
 
-                    const minHeight = 18;
+                    const maxHeight = 250;
+                    const warningThreshold = 200;
+                    const maxChars = 200;
 
-                    if (textarea) {
-                        const maxHeight = 250;
-                        const warningThreshold = 200;
-                        const maxChars = 200;
+                    const updateHeight = () => {
+                        const scrollHeight = Math.max(textarea.scrollHeight, 18);
+                        const newHeight = Math.min(scrollHeight, maxHeight);
+                        messageInputWrapper.style.height = newHeight + 'px';
+                        inputContainer.style.minHeight = newHeight + 'px';
+                    };
 
-                        const messageInputWrapper = popupEl.querySelector('.message-input-wrapper');
+                    const updateCharsLeft = () => {
+                        const charsLeft = maxChars - textarea.textContent.length;
+                        if (charsLeft <= warningThreshold) {
+                            maxMessageLengthEl.style.display = 'flex';
+                            maxCharactersLeftEl.textContent = charsLeft;
+                            maxCharactersLeftEl.classList.toggle('debt', charsLeft < 0);
+                        } else {
+                            maxMessageLengthEl.style.display = 'none';
+                            maxCharactersLeftEl.classList.remove('debt');
+                        }
+                    };
 
-                        const maxMessageLengthEl = popupEl.querySelector('.max-message-length');
-                        const maxCharactersLeftEl = popupEl.querySelector('.max-characters-left');
+                    const updatePreview = () => {
+                        preview.innerHTML = renderMarkdownInTextarea(textarea.textContent);
+                    };
 
-                        popupEl.querySelector(".input-container-2").addEventListener("click", () => textarea.focus());
-                        
-                        const inputContainer = popupEl.querySelector(".input-container-2");
-
-                        const updateHeight = () => {
-                            let newHeight = Math.min(textarea.scrollHeight, maxHeight);
-                            messageInputWrapper.style.height = newHeight + 'px';
-                            inputContainer.style.minHeight = newHeight + 'px';
-                        };
-
-                        const updateCharsLeft = () => {
-                            const charsLeft = maxChars - textarea.innerText.length;
-                            if (charsLeft <= warningThreshold) {
-                                maxMessageLengthEl.style.display = 'flex';
-                                maxCharactersLeftEl.textContent = charsLeft;
-                                maxCharactersLeftEl.classList.toggle('debt', charsLeft < 0);
-                            } else {
-                                maxMessageLengthEl.style.display = 'none';
-                                maxCharactersLeftEl.classList.remove('debt');
-                            }
-                        };
-
-                        textarea.addEventListener('input', (e) => {
-                            if (e.target !== textarea) return;
-
-                            if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
-                                textarea.innerHTML = '';
-                            }
-
-                            updateHeight();
-                            updateCharsLeft();
-
-                            preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
-                        });
-
-                        textarea.addEventListener('input', (e) => {
-                            if (e.target !== textarea) return;
-
-                            if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
-                                textarea.innerHTML = '';;
-                            }
-
-                            updateHeight();
-                            updateCharsLeft();
-
-                            preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
-                        });
-
-                        textarea.addEventListener('paste', (e) => {
-                            e.preventDefault();
-
-                            const text = e.clipboardData.getData('text/plain');
-
-                            const selection = window.getSelection();
-                            if (!selection.rangeCount) return;
-                            selection.deleteFromDocument();
-                            selection.getRangeAt(0).insertNode(document.createTextNode(text));
-
-                            selection.collapseToEnd();
-
-                            textarea.dispatchEvent(new Event('input'));
-                        });
-
-                        textarea.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-
-                                const selection = window.getSelection();
-                                if (!selection.rangeCount) return;
-
-                                const range = selection.getRangeAt(0);
-                                range.deleteContents();
-
-                                const textNode = document.createTextNode('\n\n');
-                                range.insertNode(textNode);
-
-                                range.setStartAfter(textNode);
-                                range.setEndAfter(textNode);
-                                selection.removeAllRanges();
-                                selection.addRange(range);
-
-                                textarea.dispatchEvent(new Event('input'));
-                            }
-                        });
-
+                    const onInput = () => {
+                        if (textarea.textContent.trim() === '') textarea.textContent = '';
                         updateHeight();
                         updateCharsLeft();
-                        preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
-                    }
+                        updatePreview();
+                    };
+
+                    textarea.addEventListener('input', onInput);
+
+                    textarea.addEventListener('paste', (e) => {
+                        e.preventDefault();
+                        const text = e.clipboardData.getData('text/plain');
+                        document.execCommand('insertText', false, text);
+                        textarea.dispatchEvent(new Event('input'));
+                    });
+
+                    textarea.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            document.execCommand('insertHTML', false, '\n\n');
+                            textarea.dispatchEvent(new Event('input'));
+                        }
+                    });
+
+                    inputContainer.addEventListener("click", () => textarea.focus());
+
+                    onInput();
                 }
 
                 const contentContainer = popupEl.querySelector("#settings-page-content");
