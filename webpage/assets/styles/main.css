@@ -4605,8 +4605,13 @@ input#clr-hue-slider {
     margin-bottom: -4px;
 }
 
+.popup-container#server-settings-popup {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
 .popup-container#server-settings-popup .popup-content {
     padding: unset !important;
+    overflow: hidden;
 }
 
 .popup-container#server-settings-popup .popup-header {
@@ -4621,8 +4626,10 @@ input#clr-hue-slider {
     position: static;
     background-color: var(--clr-surface-a0);
     border-radius: 0px;
+    height: calc(100vh - 60px);
 }
 .popup-container#server-settings-popup .setting-page {
     width: unset;
     position: static;
+    height: calc(100vh - 60px);
 }
