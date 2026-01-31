@@ -150,6 +150,7 @@ export class MessageBehaviour {
 
 	applyCompactMode(el, msg, insertIndex, messageCache) {
 		const prevMsg = messageCache[insertIndex - 1];
+		console.log({ insertIndex, prevMsg, msgSentBy: msg.sent_by });
 		if (!prevMsg) return;
 
 		if (prevMsg.sent_by !== msg.sent_by) return;
@@ -157,10 +158,13 @@ export class MessageBehaviour {
 		const prevTime = new Date(prevMsg.timestamp).getTime();
 		const currTime = new Date(msg.created_at).getTime();
 
+		console.log({ prevTime, currTime, diff: currTime - prevTime });
+
 		if (currTime - prevTime > 10 * 60 * 1000) return;
 		if (el.querySelector(".message-command") || el.querySelector(".message-reply")) return;
 
 		el.classList.add("compact");
+		console.log("compact applied");
 	}
 
 	async attach(el, msg) {
