@@ -4641,3 +4641,7 @@ input#clr-hue-slider {
 .popup-container#server-settings-popup .settings-tab {
     background-color: var(--clr-popup-a0);
 }
+
+.popup-container#server-settings-popup .textarea-container {
+    min-height: 30px;
+}
