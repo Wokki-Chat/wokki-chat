@@ -142,9 +142,10 @@ export class MessageHydrator {
 }
 
 export class MessageBehaviour {
-	constructor({ user_id, channel_id, server_id, access_token, socket }) {
+	constructor({ user_id, channel_id, server_id, access_token, socket, messageContainer }) {
 		this.user_id = user_id;
 		this.reactionRenderer = new ReactionsRender({ user_id, channel_id, server_id, access_token, socket });
+		this.messageContainer = messageContainer;
 	}
 
 	async attach(el, msg, insertIndex, messageCache) {

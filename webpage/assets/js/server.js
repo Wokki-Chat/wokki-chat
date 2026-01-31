@@ -31,7 +31,7 @@ function initServer() {
 	const messageRenderer = new MessageRenderer({ user_id, channels, server_id });
 	const messageCache = new MessageCache();
 	const reactionRenderer = new ReactionRenderer({ user_id, channel_id, server_id, access_token, socket });
-	const messageBehaviour = new MessageBehaviour({ user_id, channel_id, server_id, access_token, socket });
+	const messageBehaviour = new MessageBehaviour({ user_id, channel_id, server_id, access_token, socket, messageContainer });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
