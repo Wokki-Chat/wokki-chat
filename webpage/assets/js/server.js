@@ -156,7 +156,7 @@ function initServer() {
 
 		const insertIndex = messageCache.insertIntoCache(msg, el);
 		insertMessageEl(el, insertIndex);
-		messageBehaviour.applyCompactMode(el, msg, insertIndex, messageCache);
+		messageBehaviour.applyCompactMode(el, msg, insertIndex, messageCache.cache);
 
 		messageBehaviour.attach(el, msg);
 
