@@ -9,17 +9,17 @@ export default class SettingsManager {
 
         let generalInfoContent = await fetch('/assets/html/server/settings/pages/general_info.html').then(r => r.text());
 
-        const serverNameEl = document.querySelector('[wchat-data][id="server-name"]');
-        const serverDescriptionEl = document.querySelector('[wchat-data][id="server-description"]');
+        const serverNameEl = document.getElementById('server-name');
+        const serverDescriptionEl = document.getElementById('server-description');
 
-        const serverName = serverNameEl ? serverNameEl.value : '';
-        const serverDescription = serverDescriptionEl ? serverDescriptionEl.value : '';
+        const serverName = serverNameEl ? serverNameEl.getAttribute('value') : '';
+        const serverDescription = serverDescriptionEl ? serverDescriptionEl.getAttribute('value') : '';
 
-        const permissionsEl = document.querySelector('[wchat-data][id="permissions"]');
+        const permissionsEl = document.getElementById('permissions');
         let canManageServer = false;
         if (permissionsEl) {
             try {
-                const permissions = JSON.parse(permissionsEl.value);
+                const permissions = JSON.parse(permissionsEl.getAttribute('value'));
                 canManageServer = !!permissions.manage_server;
             } catch (e) {
                 console.error("Failed to parse permissions JSON", e);
