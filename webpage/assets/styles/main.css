@@ -473,8 +473,8 @@ input:checked + .slider:before {
 }
 
 .divider {
-    height: 1px;
-    background-color: var(--clr-text-a30);
+    height: 2px;
+    background-color: var(--clr-popup-a20);
     margin: 0px 10px;
     border-radius: 1px;
     width: 47px;
@@ -1890,7 +1890,8 @@ input:checked + .slider:before {
     right: 15px;
     width: 220px;
     height: auto;
-    background-color: var(--clr-popup-a20);
+    background-color: var(--clr-popup-a10);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     border-radius: 16px;
     display: none;
     flex-direction: column;
@@ -1905,7 +1906,7 @@ input:checked + .slider:before {
 .settings-dropdown-content {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 3px;
     padding: 5px;
 }
 
