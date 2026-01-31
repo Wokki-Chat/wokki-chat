@@ -62,68 +62,101 @@ export default class SettingsManager {
                         .replace(/{{description}}/g, serverDescription)
                         .replace(/{{allow_server_management}}/g, allowAttr);
 
-                    const textarea = popupEl.querySelector("#message-input");
-                    const preview = popupEl.querySelector("#message-input-bg");
-                    const messageInputWrapper = popupEl.querySelector('.message-input-wrapper');
-                    const inputContainer = popupEl.querySelector(".input-container-2");
-                    const maxMessageLengthEl = popupEl.querySelector('.max-message-length');
-                    const maxCharactersLeftEl = popupEl.querySelector('.max-characters-left');
+                    const serverSettingsTextarea = popupEl.querySelector("#message-input");
+                    const serverSettingsPreview = popupEl.querySelector("#message-input-bg");
+                    const serverSettingsMessageInputWrapper = popupEl.querySelector('.message-input-wrapper');
+                    const serverSettingsInputContainer = popupEl.querySelector(".input-container-2");
+                    const serverSettingsMaxMessageLengthEl = popupEl.querySelector('.max-message-length');
+                    const serverSettingsMaxCharactersLeftEl = popupEl.querySelector('.max-characters-left');
 
                     const maxHeight = 250;
                     const warningThreshold = 200;
                     const maxChars = 200;
 
                     const updateHeight = () => {
-                        const scrollHeight = Math.max(textarea.scrollHeight, 18);
-                        const newHeight = Math.min(scrollHeight, maxHeight);
-                        messageInputWrapper.style.height = newHeight + 'px';
-                        inputContainer.style.minHeight = newHeight + 'px';
+                        let newHeight = Math.min(serverSettingsTextarea.scrollHeight, maxHeight);
+                        serverSettingsMessageInputWrapper.style.height = newHeight + 'px';
+                        serverSettingsInputContainer.style.minHeight = newHeight + 'px';
                     };
 
                     const updateCharsLeft = () => {
-                        const charsLeft = maxChars - textarea.textContent.length;
+                        const charsLeft = maxChars - serverSettingsTextarea.innerText.length;
                         if (charsLeft <= warningThreshold) {
-                            maxMessageLengthEl.style.display = 'flex';
-                            maxCharactersLeftEl.textContent = charsLeft;
-                            maxCharactersLeftEl.classList.toggle('debt', charsLeft < 0);
+                            serverSettingsMaxMessageLengthEl.style.display = 'flex';
+                            serverSettingsMaxCharactersLeftEl.textContent = charsLeft;
+                            serverSettingsMaxCharactersLeftEl.classList.toggle('debt', charsLeft < 0);
                         } else {
-                            maxMessageLengthEl.style.display = 'none';
-                            maxCharactersLeftEl.classList.remove('debt');
+                            serverSettingsMaxMessageLengthEl.style.display = 'none';
+                            serverSettingsMaxCharactersLeftEl.classList.remove('debt');
                         }
                     };
 
-                    const updatePreview = () => {
-                        preview.innerHTML = sanitize(textarea.textContent);
-                    };
+                    serverSettingsTextarea.addEventListener('input', (e) => {
+                        if (e.target !== serverSettingsTextarea) return;
 
-                    const onInput = () => {
-                        if (textarea.textContent.trim() === '') textarea.textContent = '';
-                        console.log(textarea.textContent);
+                        if (serverSettingsTextarea.textContent.trim() === '' && serverSettingsTextarea.innerHTML !== '') {
+                            serverSettingsTextarea.innerHTML = '';
+                        }
+
                         updateHeight();
                         updateCharsLeft();
-                        updatePreview();
-                    };
 
-                    textarea.addEventListener('input', onInput);
-
-                    textarea.addEventListener('paste', (e) => {
-                        e.preventDefault();
-                        const text = e.clipboardData.getData('text/plain');
-                        document.execCommand('insertText', false, text);
-                        textarea.dispatchEvent(new Event('input'));
+                        serverSettingsPreview.innerHTML = renderMarkdownInserverSettingsTextarea(serverSettingsTextarea.innerText);
                     });
 
-                    textarea.addEventListener('keydown', (e) => {
+                    serverSettingsTextarea.addEventListener('input', (e) => {
+                        if (e.target !== serverSettingsTextarea) return;
+
+                        if (serverSettingsTextarea.textContent.trim() === '' && serverSettingsTextarea.innerHTML !== '') {
+                            serverSettingsTextarea.innerHTML = '';;
+                        }
+
+                        updateHeight();
+                        updateCharsLeft();
+
+                        serverSettingsPreview.innerHTML = renderMarkdownInserverSettingsTextarea(serverSettingsTextarea.innerText);
+                    });
+
+                    serverSettingsTextarea.addEventListener('paste', (e) => {
+                        e.preventDefault();
+
+                        const text = e.clipboardData.getData('text/plain');
+
+                        const selection = window.getSelection();
+                        if (!selection.rangeCount) return;
+                        selection.deleteFromDocument();
+                        selection.getRangeAt(0).insertNode(document.createTextNode(text));
+
+                        selection.collapseToEnd();
+
+                        serverSettingsTextarea.dispatchEvent(new Event('input'));
+                    });
+
+                    serverSettingsTextarea.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter') {
                             e.preventDefault();
-                            document.execCommand('insertHTML', false, '\n\n');
-                            textarea.dispatchEvent(new Event('input'));
+
+                            const selection = window.getSelection();
+                            if (!selection.rangeCount) return;
+
+                            const range = selection.getRangeAt(0);
+                            range.deleteContents();
+
+                            const textNode = document.createTextNode('\n\n');
+                            range.insertNode(textNode);
+
+                            range.setStartAfter(textNode);
+                            range.setEndAfter(textNode);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+
+                            serverSettingsTextarea.dispatchEvent(new Event('input'));
                         }
                     });
 
-                    inputContainer.addEventListener("click", () => textarea.focus());
-
-                    onInput();
+                    updateHeight();
+                    updateCharsLeft();
+                    serverSettingsPreview.innerHTML = renderMarkdownInserverSettingsTextarea(serverSettingsTextarea.innerText);
                 }
 
                 const contentContainer = popupEl.querySelector("#settings-page-content");
