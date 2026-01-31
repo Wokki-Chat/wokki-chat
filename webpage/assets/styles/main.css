@@ -4651,5 +4651,5 @@ input#clr-hue-slider {
 }
 
 .popup-container#server-settings-popup .settings-page-title {
-    align-self: center;
+    justify-self: center;
 }
