@@ -27,6 +27,8 @@ function initServer() {
 
 	const username_text = document.getElementById("username-text").getAttribute("value");
 	const profile_picture_url = document.getElementById("profile-picture-url").getAttribute("value");
+
+	const messageContainer = document.querySelector("#message-container");
 	
 	const messageRenderer = new MessageRenderer({ user_id, channels, server_id });
 	const messageCache = new MessageCache();
@@ -56,8 +58,6 @@ function initServer() {
 	let available_commands = [];
 
 	let selectedFiles = [];
-
-	const messageContainer = document.querySelector("#message-container");
 
 	const textarea = document.getElementById("message-input");
 	const preview = document.getElementById("message-input-bg");
