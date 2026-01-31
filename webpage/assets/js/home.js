@@ -68,5 +68,9 @@ function initHome() {
         return div.innerHTML;
     }
 }
-
+if (typeof window.swup !== "undefined") {
+	window.swup.hooks.on('page:view', (visit) => {
+		initHome();
+	});
+}
 initHome();

@@ -738,5 +738,9 @@ function initSettings() {
       });
   }
 }
-
+if (typeof window.swup !== "undefined") {
+	window.swup.hooks.on('page:view', (visit) => {
+		initSettings();
+	});
+}
 initSettings();
