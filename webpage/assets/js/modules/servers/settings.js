@@ -12,8 +12,8 @@ export default class SettingsManager {
         const serverNameEl = document.querySelector('[wchat-data][id="server-name"]');
         const serverDescriptionEl = document.querySelector('[wchat-data][id="server-description"]');
 
-        const serverName = serverNameEl ? serverNameEl.textContent.trim() : '';
-        const serverDescription = serverDescriptionEl ? serverDescriptionEl.textContent.trim() : '';
+        const serverName = serverNameEl ? serverNameEl.getAttribute('value') : '';
+        const serverDescription = serverDescriptionEl ? serverDescriptionEl.getAttribute('value') : '';
 
         const permissionsEl = document.querySelector('[wchat-data][id="permissions"]');
         let canManageServer = false;
