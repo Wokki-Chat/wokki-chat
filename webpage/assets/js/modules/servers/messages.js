@@ -153,7 +153,8 @@ export class MessageBehaviour {
 		console.log({ insertIndex, prevMsg, msgSentBy: msg.sent_by });
 		if (!prevMsg) return;
 
-		if (prevMsg.sent_by !== msg.sent_by) return;
+		const prevSentBy = prevMsg?.el?.dataset?.sent_by || '';
+		if (prevSentBy !== msg.sent_by.toString()) return;
 
 		const prevTime = new Date(prevMsg.timestamp).getTime();
 		const currTime = new Date(msg.created_at).getTime();
