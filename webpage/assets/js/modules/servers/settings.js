@@ -15,7 +15,16 @@ export default class SettingsManager {
         const serverName = serverNameEl ? serverNameEl.textContent.trim() : '';
         const serverDescription = serverDescriptionEl ? serverDescriptionEl.textContent.trim() : '';
 
-        const canManageServer = window.permissions?.manage_server ?? false;
+        const permissionsEl = document.querySelector('[wchat-data][id="permissions"]');
+        let canManageServer = false;
+        if (permissionsEl) {
+            try {
+                const permissions = JSON.parse(permissionsEl.getAttribute('value'));
+                canManageServer = !!permissions.manage_server;
+            } catch (e) {
+                console.error("Failed to parse permissions JSON", e);
+            }
+        }
         const allowAttr = canManageServer ? '' : 'disabled';
 
         generalInfoContent = generalInfoContent
