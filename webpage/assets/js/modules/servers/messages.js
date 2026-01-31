@@ -244,4 +244,21 @@ export class MessageCache {
 		this.cache.splice(insertIndex, 0, { id: msg.id, timestamp: msg.created_at, el });
 		return insertIndex;
 	}
+
+	getById(id) {
+		return this.cache.find(m => m.id === id);
+	}
+
+	getIndexById(id) {
+		return this.cache.findIndex(m => m.id === id);
+	}
+
+	delete(id) {
+		const index = this.getIndexById(id);
+		if (index === -1) return null;
+		const msg = this.cache[index];
+		if (msg.el) msg.el.remove();
+		this.cache.splice(index, 1);
+		return index;
+	}
 }

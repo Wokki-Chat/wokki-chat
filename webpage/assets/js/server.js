@@ -866,47 +866,35 @@ function initServer() {
 	}
 
 	function deleteMsg(id) {
-		const msgEl = document.querySelector(`.message[data-message-id="${id}"]`);
-		if (!msgEl) return;
+		const indexInCache = messageCache.delete(id);
+		if (indexInCache === null) return;
 
-		const indexInCache = messageCache.findIndex(m => m.id === id);
-		if (indexInCache !== -1) {
-			messageCache.splice(indexInCache, 1);
+		const nextMsg = messageCache.cache[indexInCache];
+		if (!nextMsg) return;
+
+		const nextEl = nextMsg.el;
+		const usernameDateEl = nextEl.querySelector('.username-date');
+		if (usernameDateEl) usernameDateEl.style.display = 'flex';
+
+		const profilePic = nextEl.querySelector('.profile-picture');
+		if (profilePic) {
+			profilePic.style.opacity = '1';
+			profilePic.style.height = '30px';
 		}
 
-		const nextMsgEl = msgEl.nextElementSibling;
-		msgEl.remove();
-
-		if (nextMsgEl && nextMsgEl.classList.contains('message')) {
-			const usernameDateEl = nextMsgEl.querySelector('.username-date');
-			if (usernameDateEl) {
-				usernameDateEl.style.display = 'flex';
-			}
-			const profilePic = nextMsgEl.querySelector('.profile-picture');
-			if (profilePic) {
-				profilePic.style.opacity = '1';
-				profilePic.style.height = '30px';
-			}
-			const nextMsgId = nextMsgEl.dataset.messageId;
-			const nextMsgIndex = messageCache.findIndex(m => m.id === nextMsgId);
-			if (nextMsgIndex !== -1) {
-				const nextMsg = messageCache[nextMsgIndex];
-				const prevMsg = messageCache[nextMsgIndex - 1];
-
-				if (prevMsg && prevMsg.sent_by === nextMsg.sent_by) {
-					const prevTime = new Date(prevMsg.timestamp).getTime();
-					const currTime = new Date(nextMsg.timestamp).getTime();
-					if ((currTime - prevTime) <= 10 * 60 * 1000) {
-						if (!nextMsg.el.querySelector('.message-command') && !nextMsg.el.querySelector('.message-reply')) {
-							nextMsg.el.classList.add('compact');
-						}
-					} else {
-						nextMsg.el.classList.remove('compact');
-					}
-				} else {
-					nextMsg.el.classList.remove('compact');
+		const prevMsg = messageCache.cache[indexInCache - 1];
+		if (prevMsg && prevMsg.el && prevMsg.sent_by === nextMsg.el.dataset.sentBy) {
+			const prevTime = new Date(prevMsg.timestamp).getTime();
+			const currTime = new Date(nextMsg.timestamp).getTime();
+			if ((currTime - prevTime) <= 10 * 60 * 1000) {
+				if (!nextEl.querySelector('.message-command') && !nextEl.querySelector('.message-reply')) {
+					nextEl.classList.add('compact');
 				}
+			} else {
+				nextEl.classList.remove('compact');
 			}
+		} else {
+			nextEl.classList.remove('compact');
 		}
 	}
 
