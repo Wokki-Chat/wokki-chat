@@ -61,8 +61,9 @@ export default class SettingsManager {
                         .replace(/{{server_name}}/g, serverName)
                         .replace(/{{description}}/g, serverDescription)
                         .replace(/{{allow_server_management}}/g, allowAttr);
-                    const textarea = document.getElementById("message-input");
-                    const preview = document.getElementById("message-input-bg");
+
+                    const textarea = popupEl.getElementById("message-input");
+                    const preview = popupEl.getElementById("message-input-bg");
 
                     const minHeight = 18;
 
@@ -71,14 +72,14 @@ export default class SettingsManager {
                         const warningThreshold = 200;
                         const maxChars = 200;
 
-                        const messageInputWrapper = document.querySelector('.message-input-wrapper');
+                        const messageInputWrapper = popupEl.querySelector('.message-input-wrapper');
 
-                        const maxMessageLengthEl = document.querySelector('.max-message-length');
-                        const maxCharactersLeftEl = document.querySelector('.max-characters-left');
+                        const maxMessageLengthEl = popupEl.querySelector('.max-message-length');
+                        const maxCharactersLeftEl = popupEl.querySelector('.max-characters-left');
 
-                        document.querySelector(".input-container-2").addEventListener("click", () => textarea.focus());
+                        popupEl.querySelector(".input-container-2").addEventListener("click", () => textarea.focus());
                         
-                        const inputContainer = document.querySelector(".input-container-2");
+                        const inputContainer = popupEl.querySelector(".input-container-2");
 
                         const updateHeight = () => {
                             let newHeight = Math.min(textarea.scrollHeight, maxHeight);
