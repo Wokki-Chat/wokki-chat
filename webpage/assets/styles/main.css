@@ -4604,3 +4604,25 @@ input#clr-hue-slider {
 .message-text .emoji {
     margin-bottom: -4px;
 }
+
+.popup-container#server-settings-popup .popup-content {
+    padding: unset !important;
+}
+
+.popup-container#server-settings-popup .popup-header {
+    display: none !important;
+}
+
+.popup-container#server-settings-popup .settings-content {
+    width: 100% !important;
+}
+
+.popup-container#server-settings-popup .settings-tabs {
+    position: static;
+    background-color: var(--clr-surface-a0);
+    border-radius: 0px;
+}
+.popup-container#server-settings-popup .setting-page {
+    width: unset;
+    position: static;
+}
