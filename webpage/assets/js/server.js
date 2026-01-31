@@ -1,5 +1,5 @@
 import emojis from "./emojis.js";
-import { MessageRenderer, MessageCache, MessageBehavior } from "./modules/servers/messages.js";
+import { MessageRenderer, MessageBehaviour, MessageHydrator, MessageCache } from "./modules/servers/messages.js";
 import ReactionRenderer from "./modules/servers/reactions.js";
 
 function initServer() {
@@ -31,7 +31,7 @@ function initServer() {
 	const messageRenderer = new MessageRenderer({ user_id, channels, server_id });
 	const messageCache = new MessageCache();
 	const reactionRenderer = new ReactionRenderer({ user_id, channel_id, server_id, access_token, socket });
-	const messageBehavior = new MessageBehavior({ user_id, channel_id, server_id, access_token, socket });
+	const messageBehaviour = new MessageBehaviour({ user_id, channel_id, server_id, access_token, socket });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
@@ -157,7 +157,7 @@ function initServer() {
 		const insertIndex = messageCache.insertIntoCache(msg, el);
 		insertMessageEl(el, insertIndex);
 
-		messageBehavior.attach(el, msg, insertIndex, messageCache);
+		messageBehaviour.attach(el, msg, insertIndex, messageCache);
 
 		await hydrateInvites(el);
 		await hydrateSpotifyTracks(el);

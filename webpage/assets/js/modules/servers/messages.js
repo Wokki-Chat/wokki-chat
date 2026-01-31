@@ -2,7 +2,7 @@
 // Module description: This module helps with managing messages in a server.
 import ReactionsRender from "./reactions.js";
 
-export default class MessageRenderer {
+export class MessageRenderer {
 	constructor({ user_id, channels, server_id }) {
 		this.user_id = user_id;
 		this.channels = channels;
@@ -141,7 +141,7 @@ export class MessageHydrator {
 	constructor() {}
 }
 
-export class MessageBehavior {
+export class MessageBehaviour {
 	constructor({ user_id, channel_id, server_id, access_token, socket }) {
 		this.user_id = user_id;
 		this.reactionRenderer = new ReactionsRender({ user_id, channel_id, server_id, access_token, socket });
