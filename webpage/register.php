@@ -29,12 +29,12 @@ function maxAccountsForAlpha($mysqli) {
         <div class="register-form-content">
             <h2>Create Account</h2>
             <div class="input-container">
-                <label for="username">Username:</label>
-                <input type="text" name="username" placeholder="myUsername" required class="input-text-dark-bg w270" minlength="3" maxlength="20" autocomplete="off" id="username">
+                <label for="nickname">Username:</label>
+                <input type="text" name="nickname" placeholder="myUsername" required class="input-text-dark-bg w270" minlength="3" maxlength="20" autocomplete="off" id="username">
             </div>
             <div class="input-container">
-                <label for="email">Email:</label>
-                <input type="email" name="email" placeholder="johndoe@example.com" required class="input-text-dark-bg w270" minlength="3" autocomplete="off" id="email">
+                <label for="username">Email:</label>
+                <input type="email" name="username" placeholder="johndoe@example.com" required class="input-text-dark-bg w270" minlength="3" autocomplete="off" id="email">
             </div>
             <div class="input-container">
                 <label for="password">Password:</label>
