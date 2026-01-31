@@ -210,23 +210,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $targetPath = $uploadDir . DIRECTORY_SEPARATOR . $safeName;
 
         if (in_array($mimeType, $imageMimes)) {
-            if ($fileArray['size'][$i] > 10 * 1024 * 1024) { // only compress if over 10MB
-                if ($mimeType === 'image/jpeg') {
-                    $image = imagecreatefromjpeg($tmpPath);
-                    imagejpeg($image, $targetPath, 75);
-                    imagedestroy($image);
-                } elseif ($mimeType === 'image/png') {
-                    $image = imagecreatefrompng($tmpPath);
-                    imagepng($image, $targetPath, 6);
-                    imagedestroy($image);
-                } elseif ($mimeType === 'image/webp') {
-                    $image = imagecreatefromwebp($tmpPath);
-                    imagewebp($image, $targetPath, 75);
-                    imagedestroy($image);
-                } elseif ($mimeType === 'image/gif') {
-                    move_uploaded_file($tmpPath, $targetPath);
-                }
-            } else {
+            if ($mimeType === 'image/jpeg') {
+                $image = imagecreatefromjpeg($tmpPath);
+                imagejpeg($image, $targetPath, 75);
+                imagedestroy($image);
+            } elseif ($mimeType === 'image/png') {
+                $image = imagecreatefrompng($tmpPath);
+                imagepng($image, $targetPath, 6);
+                imagedestroy($image);
+            } elseif ($mimeType === 'image/webp') {
+                $image = imagecreatefromwebp($tmpPath);
+                imagewebp($image, $targetPath, 75);
+                imagedestroy($image);
+            } elseif ($mimeType === 'image/gif') {
                 move_uploaded_file($tmpPath, $targetPath);
             }
         } else {
