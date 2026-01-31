@@ -155,9 +155,10 @@ function initServer() {
 		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
 
 		const insertIndex = messageCache.insertIntoCache(msg, el);
+		messageBehaviour.applyCompactMode(el, msg, insertIndex, messageCache);
 		insertMessageEl(el, insertIndex);
 
-		messageBehaviour.attach(el, msg, insertIndex, messageCache);
+		messageBehaviour.attach(el, msg);
 
 		await hydrateInvites(el);
 		await hydrateSpotifyTracks(el);

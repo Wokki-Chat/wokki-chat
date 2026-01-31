@@ -148,20 +148,23 @@ export class MessageBehaviour {
 		this.messageContainer = messageContainer;
 	}
 
-	async attach(el, msg, insertIndex, messageCache) {
-		const timestamp = msg.created_at;
-		const sent_by = msg.sent_by !== null ? msg.sent_by : msg.sent_by_bot;
-
+	applyCompactMode(el, msg, insertIndex, messageCache) {
 		const prevMsg = messageCache[insertIndex - 1];
-		if (prevMsg && prevMsg.sent_by === sent_by) {
-			const prevTime = new Date(prevMsg.timestamp).getTime();
-			const currTime = new Date(timestamp).getTime();
-			if ((currTime - prevTime) <= 10 * 60 * 1000) {
-				if (!el.querySelector(".message-command") && !el.querySelector(".message-reply")) {
-					el.classList.add("compact");
-				}
-			}
-		}
+		if (!prevMsg) return;
+
+		if (prevMsg.sent_by !== msg.sent_by) return;
+
+		const prevTime = new Date(prevMsg.timestamp).getTime();
+		const currTime = new Date(msg.created_at).getTime();
+
+		if (currTime - prevTime > 10 * 60 * 1000) return;
+		if (el.querySelector(".message-command") || el.querySelector(".message-reply")) return;
+
+		el.classList.add("compact");
+	}
+
+	async attach(el, msg) {
+		const sent_by = msg.sent_by !== null ? msg.sent_by : msg.sent_by_bot;
 
 		el.querySelector('.username').addEventListener('click', (e) => {
 			e.stopPropagation();
