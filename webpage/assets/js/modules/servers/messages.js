@@ -1,6 +1,6 @@
 // modules/servers/messages.js
 // Module description: This module helps with managing messages in a server.
-import ReactionsRender from "./reactions";
+import ReactionsRender from "./reactions.js";
 
 export default class MessageRenderer {
 	constructor({ user_id, channels, server_id }) {
