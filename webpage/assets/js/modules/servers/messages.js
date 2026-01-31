@@ -177,7 +177,7 @@ export class MessageBehaviour {
 			}
 		});
 
-		const mentionTags = el.querySelectorAll(`.user-link[data-user-id="${user_id}"], .user-link[data-user-id="everyone"]`);
+		const mentionTags = el.querySelectorAll(`.user-link[data-user-id="${this.user_id}"], .user-link[data-user-id="everyone"]`);
 		if (mentionTags.length > 0) el.classList.add("mentioned");
 
 		const messageReplyEl = el.querySelector(".message-reply");
