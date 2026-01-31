@@ -1731,7 +1731,7 @@ input:checked + .slider:before {
 
 :root.floaty .typing-indicator {
     position: fixed;
-    bottom: calc(15px + 58px + 5px);
+    bottom: calc(15px + 58px);
     left: calc(15px + 67px + 15px + 278px + 15px + 9px);
 }
 
