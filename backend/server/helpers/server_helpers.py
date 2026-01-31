@@ -10,7 +10,6 @@ import re
 import server.config as config
 from server.helpers.logs import addMessageToLogs
 import asyncio
-
 async def server_permissions(cur, user_id, server_id, permission_identifier):
     u_owns_server_query = """
         SELECT created_by
@@ -20,49 +19,42 @@ async def server_permissions(cur, user_id, server_id, permission_identifier):
     await cur.execute(u_owns_server_query, (server_id, user_id))
     if await cur.fetchone():
         return True
-    
+
     query = """
-        SELECT role_id, permissions
-        FROM server_roles
-        WHERE server_id = %s
+        SELECT usr.role_id, rp.*
+        FROM user_server_roles usr
+        JOIN role_permissions rp ON usr.role_id = rp.role_id
+        JOIN server_roles sr ON rp.role_id = sr.role_id
+        WHERE usr.server_id = %s AND usr.user_id = %s
     """
-    await cur.execute(query, (server_id,))
-    rows = await cur.fetchall()
-
-    permitted_role_ids = []
-    for row in rows:
-        permissions = row['permissions']
-
-        if isinstance(permissions, str):
-            permissions = json.loads(permissions)
-
-
-        has_permission = False
-        for perm in permissions:
-            if perm.get('permission_identifier') == permission_identifier and perm.get('permission_value') is True:
-                has_permission = True
-                break
-
-        if has_permission:
-            permitted_role_ids.append(row['role_id'])
-
-    if not permitted_role_ids:
-        return False
-
-    query = "SELECT role_id FROM user_server_roles WHERE server_id = %s AND user_id = %s"
     await cur.execute(query, (server_id, user_id))
-    results = await cur.fetchall()
-
-    if not results:
+    rows = await cur.fetchall()
+    if not rows:
         return False
 
-    user_roles = [
-        row['role_id'] if isinstance(row, dict) else row[0]
-        for row in results
-    ]
+    perm_column_map = {
+        "send_messages": "send_messages",
+        "view_channels": "view_channels",
+        "manage_channels": "manage_channels",
+        "manage_server": "manage_server",
+        "manage_roles": "manage_roles",
+        "kick_members": "kick_members",
+        "ban_members": "ban_members",
+        "mute_members": "mute_members",
+        "manage_groups": "manage_groups",
+        "read_message_history": "read_message_history"
+    }
 
-    await addMessageToLogs(f"User {user_id} has roles {user_roles} for server {server_id}", "INFO")
-    return bool(set(user_roles) & set(permitted_role_ids))
+    col = perm_column_map.get(permission_identifier)
+    if not col:
+        return False
+
+    for row in rows:
+        if row.get(col) or getattr(row, col, False):
+            await addMessageToLogs(f"User {user_id} has permission {permission_identifier} via role {row['role_id']}", "INFO")
+            return True
+
+    return False
 
 async def is_user_in_server(cur, user_id, server_id):
     await cur.execute(
