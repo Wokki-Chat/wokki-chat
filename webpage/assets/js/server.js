@@ -160,7 +160,7 @@ function initServer() {
 		messageBehaviour.applyCompactMode(el, msg, insertIndex, messageCache.cache);
 		messageBehaviour.attach(el, msg);
 		
-		messageHydrator.hydrate(el, assets, msg.id);
+		messageHydrator.hydrate(el, msg.assets, msg.id);
 
 		await emojis.replaceEl(el);
 
