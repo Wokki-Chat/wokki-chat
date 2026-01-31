@@ -4615,6 +4615,7 @@ input#clr-hue-slider {
     padding: unset !important;
     overflow: hidden;
     min-width: 70%;
+    
 }
 
 .popup-container#server-settings-popup .popup-header {
@@ -4632,11 +4633,13 @@ input#clr-hue-slider {
     height: calc(100vh - 60px);
 }
 .popup-container#server-settings-popup .setting-page {
-    width: unset;
+    width: calc(100% - 250px - 20px);
     position: static;
     height: calc(100vh - 60px);
     padding: 0px 20px;
     margin-left: unset;
+    display: flex;
+    align-items: center;
 }
 
 .popup-container#server-settings-popup .settings-tab {
@@ -4645,4 +4648,8 @@ input#clr-hue-slider {
 
 .popup-container#server-settings-popup .textarea-container {
     min-height: 30px;
+}
+
+.popup-container#server-settings-popup .settings-page-title {
+    align-self: center;
 }
