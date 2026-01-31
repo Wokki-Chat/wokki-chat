@@ -15,5 +15,15 @@ export default class SettingsManager {
             close_button: false,
             custom_id: "server-settings-popup",
         });
+        const closeBtn = document.getElementById("server-settings-popup").querySelector(".close-settings-container");
+        closeBtn.addEventListener("click", () => {
+            jspt.closePopup("server-settings-popup");
+        });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                const popup = document.getElementById("server-settings-popup");
+                if (popup) jspt.closePopup("server-settings-popup");
+            }
+        });
     }
 }

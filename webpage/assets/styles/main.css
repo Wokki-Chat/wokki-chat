@@ -4610,7 +4610,8 @@ input#clr-hue-slider {
     backdrop-filter: blur(5px);
 }
 
-.popup-container#server-settings-popup .popup-content {
+.popup-container#server-settings-popup .popup-content,
+.popup-container#server-settings-popup .popup {
     padding: unset !important;
     overflow: hidden;
 }
