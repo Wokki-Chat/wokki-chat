@@ -5,7 +5,7 @@ export default class SettingsManager {
     constructor() {}
 
     async open() {
-        const response = await fetch('../../../html/server/settings/ui.html');
+        const response = await fetch('/assets/html/server/settings/ui.html');
         const settingsContent = await response.text();
         jspt.makePopup({
             content_type: "html",
