@@ -417,16 +417,19 @@ if ($isServerAdmin) {
     $rolePlaceholders = implode(',', array_fill(0, count($roles), '?'));
     $types = str_repeat('s', count($roles));
 
-    $stmt = $mysqli->prepare("SELECT permission_name, permission_value FROM role_permissions WHERE role_id IN ($rolePlaceholders)");
+    $stmt = $mysqli->prepare("SELECT send_messages, view_channels, manage_channels, manage_server, manage_roles, kick_members, ban_members, mute_members, manage_groups, read_message_history FROM role_permissions WHERE role_id IN ($rolePlaceholders)");
     $stmt->bind_param($types, ...$roles);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     while ($row = $result->fetch_assoc()) {
-        if ($row['permission_value'] == 1) {
-            $finalPermissions[$row['permission_name']] = true;
+        foreach ($finalPermissions as $perm => $_) {
+            if (!empty($row[$perm]) && $row[$perm] == 1) {
+                $finalPermissions[$perm] = true;
+            }
         }
     }
+
     $stmt->close();
 }
 
