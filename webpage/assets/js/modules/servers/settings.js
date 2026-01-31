@@ -12,14 +12,14 @@ export default class SettingsManager {
         const serverNameEl = document.querySelector('[wchat-data][id="server-name"]');
         const serverDescriptionEl = document.querySelector('[wchat-data][id="server-description"]');
 
-        const serverName = serverNameEl ? serverNameEl.getAttribute('value') : '';
-        const serverDescription = serverDescriptionEl ? serverDescriptionEl.getAttribute('value') : '';
+        const serverName = serverNameEl ? serverNameEl.value : '';
+        const serverDescription = serverDescriptionEl ? serverDescriptionEl.value : '';
 
         const permissionsEl = document.querySelector('[wchat-data][id="permissions"]');
         let canManageServer = false;
         if (permissionsEl) {
             try {
-                const permissions = JSON.parse(permissionsEl.getAttribute('value'));
+                const permissions = JSON.parse(permissionsEl.value);
                 canManageServer = !!permissions.manage_server;
             } catch (e) {
                 console.error("Failed to parse permissions JSON", e);
