@@ -202,70 +202,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $general_role_id = generateUUIDv4();
 
-    $default_role_permissions = json_encode([
-        [
-            'permission_name' => 'Send Messages',
-            'permission_value' => true,
-            'permission_identifier' => 'send_messages',
-            'description' => 'Allows server members to send messages'
-        ],
-        [
-            'permission_name' => 'View Channels',
-            'permission_value' => true,
-            'permission_identifier' => 'view_channels',
-            'description' => 'Allows viewing of text and voice channels'
-        ],
-        [
-            'permission_name' => 'Manage Channels',
-            'permission_value' => false,
-            'permission_identifier' => 'manage_channels',
-            'description' => 'Allows creation, editing, and deletion of channels'
-        ],
-        [
-            'permission_name' => 'Manage Server',
-            'permission_value' => false,
-            'permission_identifier' => 'manage_server',
-            'description' => 'Allows changing server settings and configurations'
-        ],
-        [
-            'permission_name' => 'Manage Roles',
-            'permission_value' => false,
-            'permission_identifier' => 'manage_roles',
-            'description' => 'Allows editing and assigning of roles'
-        ],
-        [
-            'permission_name' => 'Kick Members',
-            'permission_value' => false,
-            'permission_identifier' => 'kick_members',
-            'description' => 'Allows kicking members from the server'
-        ],
-        [
-            'permission_name' => 'Ban Members',
-            'permission_value' => false,
-            'permission_identifier' => 'ban_members',
-            'description' => 'Allows banning members from the server'
-        ],
-        [
-            'permission_name' => 'Mute Members',
-            'permission_value' => false,
-            'permission_identifier' => 'mute_members',
-            'description' => 'Allows muting members in voice channels'
-        ],
-        [
-            'permission_name' => 'Manage Groups',
-            'permission_value' => false,
-            'permission_identifier' => 'manage_groups',
-            'description' => 'Allows creation and management of groups'
-        ],
-        [
-            'permission_name' => 'Read Message History',
-            'permission_value' => true,
-            'permission_identifier' => 'read_message_history',
-            'description' => 'Allows viewing old messages in a channel'
-        ]
-    ]);
-
-
     $general_role_name = 'General';
     $role_color = '#ffffff';
 
@@ -364,8 +300,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute();
     $stmt->close();
 
-    $stmt = $mysqli->prepare("INSERT INTO server_roles (role_id, role_name, role_color, permissions, server_id, add_on_join) VALUES (?, ?, ?, ?, ?, 1)");
-    $stmt->bind_param("sssss", $general_role_id, $general_role_name, $role_color, $default_role_permissions, $server_id);
+    $stmt = $mysqli->prepare("INSERT INTO server_roles (role_id, role_name, role_color, server_id, add_on_join) VALUES (?, ?, ?, ?, 1)");
+    $stmt->bind_param("sssss", $general_role_id, $general_role_name, $role_color, $server_id);
+    $stmt->execute();
+    $stmt->close();
+
+    $stmt = $mysqli->prepare("INSERT INTO role_permissions (role_id, send_messages, view_channels, manage_channels, manage_server, manage_roles, kick_members, ban_members, mute_members, manage_groups, read_message_history) VALUES (?, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1)");
+    $stmt->bind_param("s", $general_role_id);
     $stmt->execute();
     $stmt->close();
 
