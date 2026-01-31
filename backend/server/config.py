@@ -100,7 +100,7 @@ async def get_user_from_sid(sid: str) -> str | None:
 # --------------------
 async def add_typing_user(user_id: str, channel_id: str, server_id: str):
     key = f"typing_user:{server_id}:{channel_id}:{user_id}"
-    await redis_client.set(key, 1, expire=TYPING_TIMEOUT)
+    await redis_client.set(key, 1, ex=TYPING_TIMEOUT)
 
 async def remove_typing_user(user_id: str, channel_id: str, server_id: str):
     key = f"typing_user:{server_id}:{channel_id}:{user_id}"
