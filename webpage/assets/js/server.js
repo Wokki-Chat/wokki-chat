@@ -1,6 +1,7 @@
 import emojis from "./emojis.js";
 import { MessageRenderer, MessageBehaviour, MessageHydrator, MessageCache } from "./modules/servers/messages.js";
 import ReactionRenderer from "./modules/servers/reactions.js";
+import SettingsManager from "./modules/servers/settings.js";
 
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
@@ -35,6 +36,7 @@ function initServer() {
 	const reactionRenderer = new ReactionRenderer({ user_id, channel_id, server_id, access_token, socket });
 	const messageBehaviour = new MessageBehaviour({ user_id, channel_id, server_id, access_token, socket, messageContainer });
 	const messageHydrator = new MessageHydrator({ user_id, channels, server_id });
+	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
@@ -1615,6 +1617,13 @@ function initServer() {
 
 	const leaveServerBtn = document.getElementById("leave-server");
 	leaveServerBtn.addEventListener("click", leaveServer);
+
+	const serverSettings = document.getElementById("server-settings");
+	if (serverSettings) {
+		serverSettings.addEventListener("click", async () => {
+			await settingsManager.open();
+		});
+	}
 
 	function showInviteModal() {
 		if (!is_in_server) {
