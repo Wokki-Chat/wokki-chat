@@ -151,10 +151,10 @@ export class MessageBehaviour {
 	applyCompactMode(el, msg, insertIndex, messageCache) {
 		const prevMsg = messageCache[insertIndex - 1];
 		if (!prevMsg) return;
-		console.log(msg, prevMsg);
 
 		const prevSentBy = prevMsg?.el?.dataset?.sentBy || '';
-		if (prevSentBy !== msg.sent_by.toString()) return;
+		const msgSentBy = msg.sent_by ? msg.sent_by.toString() : msg.sent_by_bot ? msg.sent_by_bot.toString() : '';
+		if (prevSentBy !== msgSentBy) return;
 
 		const prevTime = new Date(prevMsg.timestamp).getTime();
 		const currTime = new Date(msg.created_at).getTime();
