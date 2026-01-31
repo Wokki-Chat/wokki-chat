@@ -781,6 +781,9 @@ $read_message_history = $finalPermissions['read_message_history'];
         <wchat-data id="is-in-server" value="<?php echo htmlspecialchars(json_encode($is_in_server)); ?>"></wchat-data>
         <wchat-data id="username-text" value="<?php echo htmlspecialchars($username); ?>"></wchat-data>
         <wchat-data id="profile-picture-url" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
+        <wchat-data id="permissions" value="<?php echo htmlspecialchars(json_encode($finalPermissions)); ?>"></wchat-data>
+        <wchat-data id="server-name" value="<?php echo htmlspecialchars($server['server_name']); ?>"></wchat-data>
+        <wchat-data id="server-description" value="<?php echo htmlspecialchars($server['server_description']); ?>"></wchat-data>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>

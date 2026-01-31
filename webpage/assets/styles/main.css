@@ -4635,3 +4635,7 @@ input#clr-hue-slider {
     position: static;
     height: calc(100vh - 60px);
 }
+
+.popup-container#server-settings-popup .settings-tab {
+    background-color: var(--clr-popup-a0);
+}

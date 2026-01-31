@@ -1,0 +1,23 @@
+<h2 class="settings-page-title">General Info</h2>
+<div class="profile-container">
+    <div class="edit-options">
+        <div class="profile-edit-option">
+            <label for="server-name" class="profile-input-label">Server Name</label>
+            <input type="text" placeholder="{{server_name}}" value="{{server_name}}" {{allow_server_management}} class="input-text-dark-bg w270" minlength="3" maxlength="25" autocomplete="off" id="server-name">
+        </div>
+        <div class="profile-edit-option">
+            <label for="description" class="profile-input-label">Description</label>
+            <div class="input-container-2 input-container-2-inline">
+                <div class="textarea-container">
+                    <div class="message-input-wrapper">
+                        <div class="message-input-bg {{allow_server_management}}" id="message-input-bg">{{description}}</div>
+                        <div class="message-input {{allow_server_management}}" id="message-input" contenteditable="true">{{description}}</div>
+                    </div>
+                </div>
+                <div class="max-message-length">
+                    <p class="max-characters-left"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
