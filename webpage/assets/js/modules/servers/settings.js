@@ -62,8 +62,8 @@ export default class SettingsManager {
                         .replace(/{{description}}/g, serverDescription)
                         .replace(/{{allow_server_management}}/g, allowAttr);
 
-                    const textarea = popupEl.getElementById("message-input");
-                    const preview = popupEl.getElementById("message-input-bg");
+                    const textarea = popupEl.querySelector("#message-input");
+                    const preview = popupEl.querySelector("#message-input-bg");
                     const messageInputWrapper = popupEl.querySelector('.message-input-wrapper');
                     const inputContainer = popupEl.querySelector(".input-container-2");
                     const maxMessageLengthEl = popupEl.querySelector('.max-message-length');
