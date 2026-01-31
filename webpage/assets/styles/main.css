@@ -1724,11 +1724,21 @@ input:checked + .slider:before {
 
 .typing-indicator {
     margin: 0px;
-    font-weight: var(--font-weight-semibold);
+    font-weight: normal;
+    font-size: 14px;
     user-select: none;
+}
+
+:root.floaty .typing-indicator {
     position: fixed;
     bottom: calc(15px + 58px + 5px);
     left: calc(15px + 67px + 15px + 278px + 15px + 9px);
+}
+
+:root.compact .typing-indicator {
+    position: fixed;
+    bottom: calc(58px + 10px);
+    left: calc(67px + 278px + 13px);
 }
 
 .message-options {
