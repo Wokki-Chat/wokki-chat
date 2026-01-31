@@ -381,6 +381,65 @@ $is_in_server = true;
 if (!$server_id || !isset($user_servers[$server_id])) {
     $is_in_server = false;
 }
+
+$userRoles = $mysqli->prepare("SELECT role_id FROM user_server_roles WHERE user_id = ? AND server_id = ?");
+$userRoles->bind_param("is", $user_id, $server_id);
+$userRoles->execute();
+$userRoles->store_result();
+$userRoles->bind_result($role_id);
+
+$roles = [];
+while ($userRoles->fetch()) {
+    $roles[] = $role_id;
+}
+$userRoles->close();
+
+$permissionsList = [
+    'send_messages',
+    'view_channels',
+    'manage_channels',
+    'manage_server',
+    'manage_roles',
+    'kick_members',
+    'ban_members',
+    'mute_members',
+    'manage_groups',
+    'read_message_history'
+];
+
+$finalPermissions = array_fill_keys($permissionsList, false);
+
+if ($isServerAdmin) {
+    foreach ($finalPermissions as $perm => $_) {
+        $finalPermissions[$perm] = true;
+    }
+} elseif (count($roles) > 0) {
+    $rolePlaceholders = implode(',', array_fill(0, count($roles), '?'));
+    $types = str_repeat('s', count($roles));
+
+    $stmt = $mysqli->prepare("SELECT permission_name, permission_value FROM role_permissions WHERE role_id IN ($rolePlaceholders)");
+    $stmt->bind_param($types, ...$roles);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    while ($row = $result->fetch_assoc()) {
+        if ($row['permission_value'] == 1) {
+            $finalPermissions[$row['permission_name']] = true;
+        }
+    }
+    $stmt->close();
+}
+
+$send_messages = $finalPermissions['send_messages'];
+$view_channels = $finalPermissions['view_channels'];
+$manage_channels = $finalPermissions['manage_channels'];
+$manage_server = $finalPermissions['manage_server'];
+$manage_roles = $finalPermissions['manage_roles'];
+$kick_members = $finalPermissions['kick_members'];
+$ban_members = $finalPermissions['ban_members'];
+$mute_members = $finalPermissions['mute_members'];
+$manage_groups = $finalPermissions['manage_groups'];
+$read_message_history = $finalPermissions['read_message_history'];
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme; ?>">
@@ -451,6 +510,12 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                         <p>Invite people</p>
                         <span class="material-symbols-rounded">group_add</span>
                     </div>
+                    <?php if ($manage_server): ?>
+                    <div class="settings-dropdown-item" id="server-settings">
+                        <p>Server Settings</p>
+                        <span class="material-symbols-rounded">settings</span>
+                    </div>
+                    <?php endif; ?>
                     <div class="divider"></div>
                     <div class="settings-dropdown-item danger" id="leave-server">
                         <p>Leave server</p>
