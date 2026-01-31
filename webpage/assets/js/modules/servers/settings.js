@@ -108,7 +108,7 @@ export default class SettingsManager {
                             updateHeight();
                             updateCharsLeft();
 
-                            preview.innerHTML = sanitize(textarea.innerText);
+                            preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
                         });
 
                         textarea.addEventListener('input', (e) => {
@@ -121,7 +121,7 @@ export default class SettingsManager {
                             updateHeight();
                             updateCharsLeft();
 
-                            preview.innerHTML = sanitize(textarea.innerText);
+                            preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
                         });
 
                         textarea.addEventListener('paste', (e) => {
@@ -163,7 +163,7 @@ export default class SettingsManager {
 
                         updateHeight();
                         updateCharsLeft();
-                        preview.innerHTML = sanitize(textarea.innerText);
+                        preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
                     }
                 }
 
