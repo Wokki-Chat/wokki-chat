@@ -25,5 +25,10 @@ export default class SettingsManager {
                 if (popup) jspt.closePopup("server-settings-popup");
             }
         });
+        document.getElementById("server-settings-popup").addEventListener("click", (e) => {
+            if (!e.target.closest(".popup")) {
+                jspt.closePopup("server-settings-popup");
+            }
+        });
     }
 }
