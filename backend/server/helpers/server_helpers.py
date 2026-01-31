@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import json
 import uuid
-from server.config import get_sids_for_user, get_bot_sid_from_id, get_cached_users, cache_users, save_command_id
+from server.config import get_sids_for_user, get_bot_sid_from_id, get_cached_users, cache_users, save_command_id, get_typing_users
 import server.sio_instance as sio_instance
 from server.helpers.user_helpers import auth_required, get_user_info_from_id
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server
@@ -419,5 +419,12 @@ async def change_room(sid, metadata, data):
     await sio_instance.sio.emit(
         'switch_channel_response',
         {"server_id": new_server_id, "channel_id": new_channel_id},
+        to=sid
+    )
+    
+    typing_users = await get_typing_users(new_server_id, new_channel_id)
+    await sio_instance.sio.emit(
+        'users_typing',
+        {'user_ids': list(typing_users), 'channel_id': new_channel_id, 'server_id': new_server_id},
         to=sid
     )

@@ -48,6 +48,7 @@ room = {}
 MAX_MESSAGES = 10
 TIME_WINDOW_SECONDS = 3
 DISCONNECT_TIMEOUT = 30
+TYPING_TIMEOUT = 10
 
 # --------------------
 # Regex / validation patterns
@@ -93,25 +94,23 @@ async def get_user_from_sid(sid: str) -> str | None:
         if sid in sids:
             return key.split("user_to_sid:")[1]
     return None
+
 # --------------------
 # TYPING USERS
 # --------------------
 async def add_typing_user(user_id: str, channel_id: str, server_id: str):
-    key = f"typing_users:{server_id}:{channel_id}"
-    await redis_client.sadd(key, user_id)
+    key = f"typing_user:{server_id}:{channel_id}:{user_id}"
+    await redis_client.set(key, 1, expire=TYPING_TIMEOUT)
 
 async def remove_typing_user(user_id: str, channel_id: str, server_id: str):
-    key = f"typing_users:{server_id}:{channel_id}"
-    await redis_client.srem(key, user_id)
+    key = f"typing_user:{server_id}:{channel_id}:{user_id}"
+    await redis_client.delete(key)
 
-async def get_typing_users():
-    users = set()
-    keys = await redis_client.keys("typing_users:*")
-    for key in keys:
-        members = await redis_client.smembers(key)
-        users.update(members)
+async def get_typing_users(channel_id: str, server_id: str):
+    pattern = f"typing_user:{server_id}:{channel_id}:*"
+    keys = await redis_client.keys(pattern)
+    users = {key.split(":")[-1] for key in keys}
     return users
-
 
 # --------------------
 # CACHING

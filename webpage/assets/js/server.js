@@ -564,6 +564,8 @@ function initServer() {
 		});
 	}
 
+	let typingInterval;
+
 	if (textarea) {
 		const maxHeight = 250;
 		const warningThreshold = 1000;
@@ -587,52 +589,69 @@ function initServer() {
 		const updateTypingStatus = () => {
 			const value = textarea.innerText.trim();
 			if (value.length && !typing) {
-			typing = true;
-			socket.emit('typing', { access_token, typing: true, channel_id, server_id });
+				typing = true;
+				socket.emit('typing', { access_token, typing: true, channel_id, server_id });
+				typingInterval = setInterval(() => {
+					if (typing) {
+						socket.emit('typing', { access_token, typing: true, channel_id, server_id });
+					} else {
+						clearInterval(typingInterval);
+					}
+				}, 10000);
+
 			} else if (!value.length && typing) {
-			typing = false;
-			socket.emit('typing', { access_token, typing: false, channel_id, server_id });
+				typing = false;
+				socket.emit('typing', { access_token, typing: false, channel_id, server_id });
+				clearInterval(typingInterval);
+			}
+		};
+
+		const stopTyping = () => {
+			if (typing) {
+				typing = false;
+				socket.emit('typing', { access_token, typing: false, channel_id, server_id });
+				clearInterval(typingInterval);
 			}
 		};
 
 		const updateCharsLeft = () => {
 			const charsLeft = maxChars - textarea.innerText.length;
 			if (charsLeft <= warningThreshold) {
-			maxMessageLengthEl.style.display = 'flex';
-			maxCharactersLeftEl.textContent = charsLeft;
-			maxCharactersLeftEl.classList.toggle('debt', charsLeft < 0);
+				maxMessageLengthEl.style.display = 'flex';
+				maxCharactersLeftEl.textContent = charsLeft;
+				maxCharactersLeftEl.classList.toggle('debt', charsLeft < 0);
 			} else {
-			maxMessageLengthEl.style.display = 'none';
-			maxCharactersLeftEl.classList.remove('debt');
+				maxMessageLengthEl.style.display = 'none';
+				maxCharactersLeftEl.classList.remove('debt');
 			}
 		};
 
 		const handleCommandAutocomplete = () => {
 			if (textarea.innerText.startsWith('/')) {
-			textarea.style.color = "var(--clr-text-a0)";
-			preview.style.display = "none";
-			showAvailableCommands(textarea.innerText, textarea, available_commands);
+				textarea.style.color = "var(--clr-text-a0)";
+				preview.style.display = "none";
+				showAvailableCommands(textarea.innerText, textarea, available_commands);
 			} else {
-			const popup = document.querySelector(".available-commands");
-			if (popup) popup.remove();
-			updateHeight();
+				const popup = document.querySelector(".available-commands");
+				if (popup) popup.remove();
+				updateHeight();
 			}
 		};
 
 		const handleMentions = () => {
 			const text = textarea.innerHTML.trim();
 			if (text.includes('@')) {
-			const lastAtIndex = text.lastIndexOf("@");
-			placeCaretAtEnd(textarea);
-			const afterAt = text.slice(lastAtIndex + 1);
-			const query = afterAt.split(/\s|\n/)[0];
-			textarea.style.color = "var(--clr-text-a0)";
-			preview.style.display = "none";
-			show_mentions(query, usersList);
+				const lastAtIndex = text.lastIndexOf("@");
+				placeCaretAtEnd(textarea);
+				const afterAt = text.slice(lastAtIndex + 1);
+				const query = afterAt.split(/\s|\n/)[0];
+				textarea.style.color = "var(--clr-text-a0)";
+				preview.style.display = "none";
+				show_mentions(query, usersList);
 			} else {
-			hide_mentions();
-			textarea.style.color = "transparent";
-			preview.style.display = "block";
+				hide_mentions();
+				textarea.style.color = "transparent";
+				preview.style.display = "block";
 			}
 		};
 
@@ -640,8 +659,8 @@ function initServer() {
 			if (e.target !== textarea) return;
 
 			if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
-			textarea.innerHTML = '';
-			hide_mentions();
+				textarea.innerHTML = '';
+				hide_mentions();
 			}
 
 			updateHeight();
@@ -657,72 +676,65 @@ function initServer() {
 			const text = textarea.innerText.trim();
 
 			if (e.key === "Enter" && !e.shiftKey) {
-			e.preventDefault();
+				e.preventDefault();
 
-			if (text.startsWith("/")) return;
+				if (text.startsWith("/")) return;
 
-			const uploadedNames = selectedFiles
-				.filter(f => f.savedName)
-				.map(f => ({ savedName: f.savedName, originalName: f.originalName }));
+				const uploadedNames = selectedFiles
+					.filter(f => f.savedName)
+					.map(f => ({ savedName: f.savedName, originalName: f.originalName }));
 
-			send_message(textarea, uploadedNames.length ? uploadedNames : undefined);
-			hide_mentions();
-			
-			preview.innerHTML = "";
-			textarea.innerText = "";
-			updateHeight();
-			renderPreviews();
-
-			if (typing) {
-				typing = false;
-				socket.emit('typing', { access_token, typing: false, channel_id, server_id });
-			}
-			return;
+				send_message(textarea, uploadedNames.length ? uploadedNames : undefined);
+				hide_mentions();
+				
+				preview.innerHTML = "";
+				textarea.innerText = "";
+				updateHeight();
+				renderPreviews();
+				stopTyping();
+				return;
 			}
 
 			if (e.key === ' ' && text.startsWith('/')) {
-			const matches = showAvailableCommands.lastMatches;
-			if (matches?.length === 1) {
-				textarea.innerText = matches[0].command + " ";
-				const popup = document.querySelector(".available-commands");
-				if (popup) popup.remove();
-				e.preventDefault();
-			}
+				const matches = showAvailableCommands.lastMatches;
+				if (matches?.length === 1) {
+					textarea.innerText = matches[0].command + " ";
+					const popup = document.querySelector(".available-commands");
+					if (popup) popup.remove();
+					e.preventDefault();
+				}
 			}
 
 			if (e.key === 'Enter') {
-			const matches = showAvailableCommands.lastMatches;
-			const match = matches?.find(m => m.command.toLowerCase() === text.toLowerCase());
-			if (match) {
-				e.preventDefault();
-				socket.emit("command", {
-				access_token,
-				command: match.command,
-				server_id,
-				channel_id,
-				bot_id: match.bot_id
-				});
-				textarea.innerText = "";
-				preview.innerHTML = "";
-				const popup = document.querySelector(".available-commands");
-				if (popup) popup.remove();
-			}
+				const matches = showAvailableCommands.lastMatches;
+				const match = matches?.find(m => m.command.toLowerCase() === text.toLowerCase());
+				if (match) {
+					e.preventDefault();
+					socket.emit("command", {
+						access_token,
+						command: match.command,
+						server_id,
+						channel_id,
+						bot_id: match.bot_id
+					});
+					textarea.innerText = "";
+					preview.innerHTML = "";
+					const popup = document.querySelector(".available-commands");
+					if (popup) popup.remove();
+				}
 			}
 		});
 
 		textarea.addEventListener('blur', () => {
-			if (typing) {
-			typing = false;
-			socket.emit('typing', { access_token, typing: false, channel_id, server_id });
-			}
+			stopTyping();
 		});
 
 		textarea.addEventListener('input', (e) => {
 			if (e.target !== textarea) return;
 
 			if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
-			textarea.innerHTML = '';
-			hide_mentions();
+				textarea.innerHTML = '';
+				hide_mentions();
 			}
 
 			updateHeight();
@@ -749,19 +761,6 @@ function initServer() {
 			textarea.dispatchEvent(new Event('input'));
 		});
 
-	}
-	
-	async function getAssetFileInsides(file) {
-		return fetch(`https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(file)}`)
-			.then(response => response.blob())
-			.then(blob => {
-			return new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onload = () => resolve(reader.result);
-				reader.onerror = () => reject("Failed to read file");
-				reader.readAsText(blob);
-			});
-			});
 	}
 
 	function deleteMsg(id) {
