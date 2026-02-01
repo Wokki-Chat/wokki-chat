@@ -126,12 +126,12 @@ export class UserPopupManager {
                 const isNewTab = e.ctrlKey || e.metaKey || e.button === 1;
                 if (isNewTab) return;
                 e.preventDefault();
+                e.stopImmediatePropagation();
                 this.openExtendedPopup(user.id);
             });
             
             popup.querySelector(".dm-info-container").appendChild(profileLink);
         }
-
 
         user.tags.forEach(tag => {
             const tagEl = document.createElement("div");
