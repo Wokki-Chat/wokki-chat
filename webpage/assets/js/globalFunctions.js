@@ -702,16 +702,18 @@ const topBarMenuButton = document.getElementById('top-bar-menu');
 const serverBar = document.querySelector('.server-bar');
 const channelBar = document.querySelector('.channel-bar');
 const selfInfo = document.querySelector('.self-info');
-topBarMenuButton.addEventListener('click', () => {
-  serverBar.classList.toggle('active');
-  channelBar.classList.toggle('active');
-  selfInfo.classList.toggle('active');
-  if (serverBar.classList.contains('active')) {
-    topBarMenuButton.textContent = 'close';
-  } else {
-    topBarMenuButton.textContent = 'menu';
-  }
-});
+if (topBarMenuButton && serverBar && channelBar && selfInfo) {
+  topBarMenuButton.addEventListener('click', () => {
+    serverBar.classList.toggle('active');
+    channelBar.classList.toggle('active');
+    selfInfo.classList.toggle('active');
+    if (serverBar.classList.contains('active')) {
+      topBarMenuButton.textContent = 'close';
+    } else {
+      topBarMenuButton.textContent = 'menu';
+    }
+  });
+}
 
 
 window.addEventListener("load", () => {
