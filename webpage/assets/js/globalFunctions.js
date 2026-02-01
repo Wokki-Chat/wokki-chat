@@ -152,6 +152,13 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
     return index >= openTagIndex && index < closeTagIndex + 4;
   }
 
+  const emojiStore = [];
+  text = text.replace(/:([a-zA-Z0-9_+-]+):/g, (m) => {
+    const id = emojiStore.length;
+    emojiStore.push(m);
+    return `__EMOJI_${id}__`;
+  });
+
   const parts = text.split(/(```(\w+)?\n[\s\S]*?```)/g);
 
   let processed = await Promise.all(parts.map(async part => {
@@ -297,6 +304,8 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
 
       escaped = escaped.replace(/\\([*_\-~`\\[\](){}])/g, '$1');
 
+      escaped = escaped.replace(/__EMOJI_(\d+)__/g, (_, i) => emojiStore[i]);
+
       return escaped;
     }
   }));
@@ -320,6 +329,13 @@ async function sanitizeMrk(text) {
       "'": '&#39;'
     })[ch]);
   }
+
+  const emojiStore = [];
+  text = text.replace(/:([a-zA-Z0-9_+-]+):/g, (m) => {
+    const id = emojiStore.length;
+    emojiStore.push(m);
+    return `__EMOJI_${id}__`;
+  });
 
   text = escapeHtml(text);
 
@@ -386,6 +402,8 @@ async function sanitizeMrk(text) {
   text = text.replace(/\n/g, '<br>');
   text = text.replace(/\\([*_\-~`\\[\](){}])/g, '$1');
 
+  text = text.replace(/__EMOJI_(\d+)__/g, (_, i) => emojiStore[i]);
+
   return text;
 }
 
@@ -449,7 +467,6 @@ function formatDynamicTime() {
 
 setInterval(formatDynamicTime, 1 * 1000);
 document.addEventListener('DOMContentLoaded', formatDynamicTime);
-
 
 function show_mentions(query, usersList) {
   const existingPopup = document.querySelector(".mentions-popup");
@@ -1015,9 +1032,16 @@ function renderMarkdownInTextarea(text) {
       "'": '&#39;',
     })[ch]);
 
+  const emojiStore = [];
+  text = text.replace(/:([a-zA-Z0-9_+-]+):/g, (m) => {
+    const id = emojiStore.length;
+    emojiStore.push(m);
+    return `__EMOJI_${id}__`;
+  });
+
   const escaped = escapeHtml(text);
 
-  return escaped
+  let rendered = escaped
     .replace(/(\\)?\*\*(.+?)\*\*/g, (match, esc, content) => {
       if (esc) return `<span class="md-escape">\\</span>**${content}**`;
       return `<span class="md-bold"><span class="md-syntax">**</span><b>${content}</b><span class="md-syntax">**</span></span>`;
@@ -1033,6 +1057,10 @@ function renderMarkdownInTextarea(text) {
       if (esc) return `<span class="md-escape">\\</span>~~${content}~~`;
       return `<span class="md-strike"><span class="md-syntax">~~</span><del>${content}</del><span class="md-syntax">~~</span></span>`;
     });
+
+  rendered = rendered.replace(/__EMOJI_(\d+)__/g, (_, i) => emojiStore[i]);
+
+  return rendered;
 }
 
 function getCaretCharacterOffsetWithin(element) {
