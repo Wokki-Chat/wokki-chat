@@ -468,7 +468,7 @@ function initSettings() {
 		}
 
 		(async () => {
-			bioProfile.innerHTML = (await sanitizeMrk(bioInput.textContent)) || "You have no bio yet.";
+			bioProfile.innerHTML = (await sanitizer.sanitizeMrk(bioInput.textContent)) || "You have no bio yet.";
 		})();
 
 	}
