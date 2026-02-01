@@ -768,6 +768,10 @@ function initServer() {
 			textarea.dispatchEvent(new Event('input'));
 		});
 
+		textarea.addEventListener('DOMSubtreeModified', () => {
+			preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+		});
+
 	}
 
 	function deleteMsg(id) {
