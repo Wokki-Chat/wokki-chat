@@ -131,5 +131,6 @@ $serverStmt->close();
     <script src="/assets/js/create_server.js" data-swup-ignore-script></script>
     <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
     <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
+    <script src="/assets/js/load_scripts.js" data-swup-ignore-script></script>
 </body>
 </html>
