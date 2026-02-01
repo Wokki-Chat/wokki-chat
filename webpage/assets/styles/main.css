@@ -4658,8 +4658,3 @@ input#clr-hue-slider {
 .popup-container#server-settings-popup .settings-page-title {
     justify-self: center;
 }
-
-.popup-container#user-profile-popup .popup {
-    border: inherit !important;
-    background: inherit !important;
-}

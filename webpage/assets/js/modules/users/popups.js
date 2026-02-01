@@ -167,7 +167,7 @@ export class UserPopupManager {
 
         `;
 
-        return {html, custom_style_data: customStyleData, profile_banner: user.profile_banner ? user.profile_banner : '', popup_style: popupStyle, border_style: borderStyle, lightText};
+        return {html, custom_style_data: customStyleData, popup_style: popupStyle, border_style: borderStyle, lightText};
     }
 
     async openExtendedPopup(user_id) {
@@ -177,7 +177,7 @@ export class UserPopupManager {
         
         const user = this.user_info;
 
-        const { html: popup_content, custom_style_data, profile_banner, popup_style, border_style, lightText } = await this.makeExtendedPopup(user);
+        const { html: popup_content, custom_style_data, popup_style, border_style, lightText } = await this.makeExtendedPopup(user);
 
         jspt.makePopup({
             content_type: "html",
@@ -191,15 +191,8 @@ export class UserPopupManager {
         if (custom_style_data && popup) {
             popup.setAttribute('data-light-text', lightText);
             popup.setAttribute('data-custom-style', 'true');
-            popup.style.background = popup_style;
-            popup.style.border = border_style;
-        }
-
-        if (profile_banner) {
-            const bannerImg = document.createElement("img");
-            bannerImg.src = profile_banner;
-            bannerImg.classList.add("extended-user-info-popup-banner");
-            popup.appendChild(bannerImg);
+            popup.style.background = popup_style + ' !important';
+            popup.style.border = border_style + ' !important';
         }
     }
 }
