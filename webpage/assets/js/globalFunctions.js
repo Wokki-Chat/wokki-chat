@@ -309,7 +309,7 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
     }
   }));
 
-  const result = processed.join('');
+  let result = processed.join('');
   
   emojiShortcodes.forEach((emoji, i) => {
     const placeholder = `__EMOJI_PLACEHOLDER_${i}__`;
