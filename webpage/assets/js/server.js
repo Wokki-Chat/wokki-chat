@@ -65,6 +65,11 @@ function initServer() {
 	const textarea = document.getElementById("message-input");
 	const preview = document.getElementById("message-input-bg");
 
+	const textareaEmojiOptions = document.getElementById("emoji-option");
+	textareaEmojiOptions.addEventListener("click", async () => {
+		await emojis.picker(textarea, textareaEmojiOptions, true);
+	})
+
 	let typing = false;
 
 	let offset = 0;
