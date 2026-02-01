@@ -75,9 +75,6 @@ export class UserPopupManager {
                     <p class="dm-info-item-key">Joined on</p>
                     <p class="dm-info-item-value">${new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric', year: 'numeric'}).format(new Date(user.created_at))}</p>
                 </div>
-                ${user.bot ? '' : `
-                    <a class="button-primary-filled no-underline dm-info-profile-link" ${user.profile_color_primary && user.profile_color_accent ? `data-custom-style="true" style="color: rgb(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}); background-color: rgba(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}, 0.1); border: 1px solid rgba(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}, 0.3);"` : ''} href="/profile/@${encodeURIComponent(user.username)}">View full profile</a>
-                `}
             </div>
 
             ${user.widgets?.Spotify?.item ? `
@@ -111,6 +108,29 @@ export class UserPopupManager {
                 </div>
             ` : ''}
         `;
+
+        if (!user.bot) {
+            const profileLink = document.createElement("a");
+            profileLink.className = "button-primary-filled no-underline dm-info-profile-link";
+            profileLink.href = `/profile/@${encodeURIComponent(user.username)}`;
+            profileLink.textContent = "View full profile";
+
+            if (user.profile_color_primary && user.profile_color_accent) {
+                profileLink.dataset.customStyle = "true";
+                profileLink.style.color = `rgb(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0})`;
+                profileLink.style.backgroundColor = `rgba(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}, 0.1)`;
+                profileLink.style.border = `1px solid rgba(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}, 0.3)`;
+            }
+
+            profileLink.addEventListener("click", e => {
+                if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                e.preventDefault();
+                this.openExtendedPopup(user.id);
+            });
+            
+            popup.querySelector(".dm-info-container").appendChild(profileLink);
+        }
+
 
         user.tags.forEach(tag => {
             const tagEl = document.createElement("div");
