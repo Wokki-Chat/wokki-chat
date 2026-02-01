@@ -22,6 +22,7 @@ export class Sanitizer {
     }
 
     escapeHtml(str) {
+        if (!str) return '';
         return str.replace(/[&<>"']/g, ch => ({
             '&': '&amp;',
             '<': '&lt;',
