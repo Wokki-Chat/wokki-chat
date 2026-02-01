@@ -73,8 +73,12 @@ $serverStmt->close();
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script src="/assets/js/call_reconnect.js"></script>
+    <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
+    <script src="https://cdn.wokki20.nl/dynamic/jspt/jspt.js"></script>
 </head>
 <body>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css"/>
+    <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js"></script>
     <div class="server-bar">
         <div class="server-bar-dms">
             <div class="server-bar-item active">
