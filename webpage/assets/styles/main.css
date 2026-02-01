@@ -3386,7 +3386,6 @@ h6 {
 .user-info-profile-popup-static {
     position: relative;
     right: unset;
-    z-index: unset;
     animation: none;
     border-radius: 16px;
 }
