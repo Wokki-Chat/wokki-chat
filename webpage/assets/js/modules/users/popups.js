@@ -140,8 +140,8 @@ export class UserPopupManager {
             g = Math.max(0, g - g * 0.1);
             b = Math.max(0, b - b * 0.1);
             let darker = `#${((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1)}`;
-            popupStyle = `${darker} !important`;
-            borderStyle = `4px solid ${user.profile_color_accent} !important`;
+            popupStyle = `${darker}`;
+            borderStyle = `4px solid ${user.profile_color_accent}`;
 
             let brightness = (r*299 + g*587 + b*114) / 1000;
             lightText = brightness <= 150;
