@@ -768,10 +768,17 @@ function initServer() {
 			textarea.dispatchEvent(new Event('input'));
 		});
 
-		textarea.addEventListener('DOMSubtreeModified', () => {
+		const observer = new MutationObserver(() => {
+			updateHeight();
+			updateCharsLeft();
 			preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
 		});
 
+		observer.observe(textarea, {
+			childList: true,
+			subtree: true,
+			characterData: true
+		});
 	}
 
 	function deleteMsg(id) {
