@@ -42,8 +42,8 @@ $stmt->execute();
 $result = $stmt->get_result();
 if ($result->num_rows > 0) {
     $row = $result->fetch_assoc();
-    $my_username = $row['username'];
-    $my_profile_picture = $row['profile_picture'];
+    $username = $row['username'];
+    $profile_picture = $row['profile_picture'];
     $premium = $row['premium'];
     $premium_expires_at = $row['premium_expires_at'];
     $premium_know = $row['premium_know'];
@@ -60,6 +60,36 @@ $serverStmt->bind_param("i", $user_id);
 $serverStmt->execute();
 $serverResult = $serverStmt->get_result();
 $serverStmt->close();
+
+
+$premium_popup = false;
+
+if ($premium && !$premium_know && ($premium_expires_at > time() || $premium_expires_at === null)) {
+    $premium_know = true;
+    $stmt = $mysqli->prepare("UPDATE users SET premium_know = ? WHERE id = ?");
+    $stmt->bind_param("ii", $premium_know, $user_id);
+    $stmt->execute();
+    $stmt->close();
+    $premium_popup = true;
+}
+
+$premium_active = $premium && ($premium_expires_at > time() || $premium_expires_at === null);
+
+function formatPremiumExpiration($timestamp) {
+    if ($timestamp === null) {
+        return "never";
+    }
+    if (!is_numeric($timestamp)) {
+        $timestamp = strtotime($timestamp);
+    }
+    $now = time();
+    $diff = $timestamp - $now;
+    if ($diff <= 0) {
+        return "0 days";
+    }
+    $days = ceil($diff / 86400);
+    return $days . " days";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme; ?>">
@@ -82,7 +112,7 @@ $serverStmt->close();
     <div class="server-bar">
         <div class="server-bar-dms">
             <a class="server-bar-item active" id="server-bar-item-home" href="/home">
-                <img src="assets/images/monochrome-logo-purple-background.png">
+                <img src="/assets/images/monochrome-logo-purple-background.png">
             </a>
         </div>
         <div class="divider"></div>
