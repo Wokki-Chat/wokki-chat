@@ -1078,7 +1078,7 @@ function initServer() {
 						</div>
 					</div>
 					<div class="user-info-profile-popup-status-username">
-						<div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${user.display_name ? sanitizer.sanitize(user.display_name) : sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
+						<div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${user.display_name ? sanitizer.sanitize(user.display_name) : sanitizer.sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
 						<p class="user-info-profile-popup-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
 					</div>
 				</div>
