@@ -152,14 +152,6 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
     return index >= openTagIndex && index < closeTagIndex + 4;
   }
 
-  const emojiShortcodes = [];
-  text = text.replace(/(:[a-zA-Z0-9_]+:)/g, (match) => {
-    const placeholder = `__EMOJI_PLACEHOLDER_${emojiShortcodes.length}__`;
-    emojiShortcodes.push(match);
-    return placeholder;
-  });
-
-
   const parts = text.split(/(```(\w+)?\n[\s\S]*?```)/g);
 
   let processed = await Promise.all(parts.map(async part => {
@@ -209,11 +201,10 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
       await replaceWithCheck(/(?<!\\)~~(.+?)~~/g, (match, content) => `<del>${content}</del>`);
       await replaceWithCheck(/(?<!\\)`([^`\n]+)`/g, (match, code) => `<code>${code}</code>`);
       await replaceWithCheck(/(?<!\\)\*\*(?!\*\*)([^*]+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
-      await replaceWithCheck(/(?<!\\)(\*|_)(.+?)\1/g, (match, wrap, content) => {
-        if (content.includes(wrap)) return match;
+      await replaceWithCheck(/(?<!\\)(\*|_)([^\s*_][^*_\n]*?[^\s*_])\1/g, (match, wrap, content) => {
         return `<em>${content}</em>`;
       });
-
+      
       await replaceWithCheck(/(^|\n)((?:&gt; ?.*(?:\n|$))+)/g, (match, before, quoteBlock) => {
         const lines = quoteBlock.trim().split('\n').map(line => line.replace(/^&gt; ?/, '')).join('<br>');
         return `${before}<div class="quote">${lines}</div>`;
@@ -309,12 +300,7 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
     }
   }));
 
-  let result = processed.join('');
-  
-  emojiShortcodes.forEach((emoji, i) => {
-    const placeholder = `__EMOJI_PLACEHOLDER_${i}__`;
-    result = result.replaceAll(placeholder, emoji);
-  });
+  const result = processed.join('');
 
   setTimeout(() => {
     hljs.highlightAll();
@@ -333,12 +319,6 @@ async function sanitizeMrk(text) {
       "'": '&#39;'
     })[ch]);
   }
-  const emojiShortcodes = [];
-  text = text.replace(/(:[a-zA-Z0-9_]+:)/g, (match) => {
-    const placeholder = `__EMOJI_PLACEHOLDER_${emojiShortcodes.length}__`;
-    emojiShortcodes.push(match);
-    return placeholder;
-  });
 
   text = escapeHtml(text);
 
@@ -360,7 +340,12 @@ async function sanitizeMrk(text) {
   text = await replaceWithCheck(text, /(?<!\\)~~(.+?)~~/g, (match, content) => `<del>${content}</del>`);
   text = await replaceWithCheck(text, /(?<!\\)`([^`\n]+)`/g, (match, code) => `<code>${code}</code>`);
   text = await replaceWithCheck(text, /(?<!\\)\*\*(?!\*\*)([^*]+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
-  text = await replaceWithCheck(text, /(?<!\\)(\*|_)([^*_]+?)\1/g, (match, wrap, content) => `<em>${content}</em>`);
+  text = await replaceWithCheck(
+    text,
+    /(?<!\\)(\*|_)([^\s*_][^*_\n]*?[^\s*_])\1/g,
+    (match, wrap, content) => `<em>${content}</em>`
+  );
+
 
   text = await replaceWithCheck(text, /(^|\n)((?:&gt; ?.*(?:\n|$))+)/g, (match, before, quoteBlock) => {
     const lines = quoteBlock.trim().split('\n').map(line => line.replace(/^&gt; ?/, '')).join('<br>');
@@ -404,11 +389,6 @@ async function sanitizeMrk(text) {
 
   text = text.replace(/\n/g, '<br>');
   text = text.replace(/\\([*_\-~`\\[\](){}])/g, '$1');
-
-  emojiShortcodes.forEach((emoji, i) => {
-    const placeholder = `__EMOJI_PLACEHOLDER_${i}__`;
-    text = text.replaceAll(placeholder, emoji);
-  });
 
   return text;
 }
@@ -1039,38 +1019,23 @@ function renderMarkdownInTextarea(text) {
       "'": '&#39;',
     })[ch]);
 
-  const emojiShortcodes = [];
-  text = text.replace(/(:[a-zA-Z0-9_]+:)/g, (match) => {
-    const placeholder = `__EMOJI_PLACEHOLDER_${emojiShortcodes.length}__`;
-    emojiShortcodes.push(match);
-    return placeholder;
-  });
-
   const escaped = escapeHtml(text);
 
-  let rendered = escaped
+  return escaped
     .replace(/(\\)?\*\*(.+?)\*\*/g, (match, esc, content) => {
       if (esc) return `<span class="md-escape">\\</span>**${content}**`;
       return `<span class="md-bold"><span class="md-syntax">**</span><b>${content}</b><span class="md-syntax">**</span></span>`;
     })
 
-    .replace(/(\\)?([*_])([^*_]*?)\2/g, (match, esc, wrap, content) => {
-      if (esc) return `<span class="md-escape">\\</span>${wrap}${content}${wrap}`;
-      if (content.includes(wrap)) return match;
-      return `<span class="md-italic"><span class="md-syntax">${wrap}</span><i>${content}</i><span class="md-syntax">${wrap}</span></span>`;
+    .replace(/(\\)?_([^\s_][^_]*?[^\s_])_/g, (match, esc, content) => {
+      if (esc) return `<span class="md-escape">\\</span>_${content}_`;
+      return `<span class="md-italic"><span class="md-syntax">_</span><i>${content}</i><span class="md-syntax">_</span></span>`;
     })
 
     .replace(/(\\)?~~(.+?)~~/g, (match, esc, content) => {
       if (esc) return `<span class="md-escape">\\</span>~~${content}~~`;
       return `<span class="md-strike"><span class="md-syntax">~~</span><del>${content}</del><span class="md-syntax">~~</span></span>`;
     });
-
-  emojiShortcodes.forEach((emoji, i) => {
-    const placeholder = `__EMOJI_PLACEHOLDER_${i}__`;
-    rendered = rendered.replaceAll(placeholder, emoji);
-  });
-
-  return rendered;
 }
 
 function getCaretCharacterOffsetWithin(element) {
