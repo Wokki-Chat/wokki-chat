@@ -61,6 +61,40 @@ $serverStmt->execute();
 $serverResult = $serverStmt->get_result();
 $serverStmt->close();
 
+$friendsStmt = $mysqli->prepare("
+    SELECT f1.friend_id
+    FROM friends f1
+    JOIN friends f2 ON f1.friend_id = f2.user_id AND f2.friend_id = f1.user_id
+    WHERE f1.user_id = ?
+");
+$friendsStmt->bind_param("i", $user_id);
+$friendsStmt->execute();
+$friendsResult = $friendsStmt->get_result();
+
+$friendsList = [];
+
+while ($row = $friendsResult->fetch_assoc()) {
+    $friendId = $row['friend_id'];
+
+    $userStmt = $mysqli->prepare("SELECT username, profile_picture, status, premium FROM users WHERE id = ?");
+    $userStmt->bind_param("i", $friendId);
+    $userStmt->execute();
+    $userResult = $userStmt->get_result();
+
+    if ($userData = $userResult->fetch_assoc()) {
+        $friendsList[] = [
+            'id' => $friendId,
+            'username' => $userData['username'],
+            'profile_picture' => $userData['profile_picture'],
+            'status' => $userData['status'], 
+            'premium' => $userData['premium']
+        ];
+    }
+
+    $userStmt->close();
+}
+
+$friendsStmt->close();
 
 $premium_popup = false;
 
