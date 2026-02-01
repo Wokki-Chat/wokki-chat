@@ -3373,13 +3373,19 @@ h6 {
     overflow: hidden;
 }
 
-.user-info-profile-popup {
+.user-info-profile-popup,
+.user-info-profile-popup-static {
     position: absolute;
     right: calc(356px + 15px + 10px);
     z-index: 10;
     animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     border: 3px solid var(--clr-popup-a0);
     overflow: hidden;
+}
+
+.user-info-profile-popup-static {
+    position: static;
+    animation: none;
 }
 
 .invite-item-container {

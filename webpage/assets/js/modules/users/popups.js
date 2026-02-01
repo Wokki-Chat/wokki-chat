@@ -185,7 +185,37 @@ export class UserPopupManager {
         }
 
         let html = `
-
+            <div class="user-info-profile-popup-static" ${customStyleData ? `data-custom-style="${customStyleData}" data-light-text="${lightText}" style="border: ${borderStyle} !important; background: transparent !important;"` : ''}>
+                ${user.profile_banner ? `<img draggable="false" class="user-info-profile-popup-banner" src="${user.profile_banner}">` : ''}
+                <div class="user-info-profile-popup-profile-picture-username-status">
+                    <div class="user-info-profile-popup-profile-status">
+                        <img draggable="false" class="dm-info-profile-picture" src="${user.profile_picture}">
+                        <div class="user-info-profile-popup-status-circle-outer">
+                            <div class="user-info-profile-popup-status-circle-inner ${user.status}"></div>
+                        </div>
+                    </div>
+                    <div class="user-info-profile-popup-status-username">
+                        <div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${user.display_name ? this.sanitizer.sanitize(user.display_name) : this.sanitizer.sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
+                        <p class="user-info-profile-popup-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
+                    </div>
+                </div>
+                <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
+                    <div class="dm-info-item">
+                        <p class="dm-info-item-value dm-info-item-username-original">${this.sanitizer.sanitize(user.username)}</p>
+                    </div>
+                    <div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
+                        ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
+                    </div>	
+                    <div class="dm-info-item">
+                        <p class="dm-info-item-key">Bio</p>
+                        <p class="dm-info-item-value">${user.bio ? userBio : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</p>
+                    </div>
+                    <div class="dm-info-item">
+                        <p class="dm-info-item-key">Joined on</p>
+                        <p class="dm-info-item-value">${new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric', year: 'numeric'}).format(new Date(user.created_at))}</p>
+                    </div>
+                </div>
+            </div>
         `;
 
         return {html, custom_style_data: customStyleData, popup_style: popupStyle, border_style: borderStyle, lightText};
@@ -206,6 +236,8 @@ export class UserPopupManager {
             custom_id: "user-profile-popup",
             content: popup_content,
         });
+
+        document.querySelector(".user-info-profile-popup")?.remove();
 
         const popup = document.querySelector("#user-profile-popup").querySelector(".popup");
 
