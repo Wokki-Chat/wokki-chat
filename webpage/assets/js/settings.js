@@ -1,4 +1,4 @@
-import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization";
+import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
 function initSettings() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');

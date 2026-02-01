@@ -1,4 +1,4 @@
-import { Sanitizer } from "./modules/global/sanitization";
+import { Sanitizer } from "./modules/global/sanitization.js";
 function initHome() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
