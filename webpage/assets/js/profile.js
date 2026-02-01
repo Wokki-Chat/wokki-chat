@@ -3,7 +3,7 @@ function initProfile() {
     const scripts = el.getAttribute('value').split(';');
     if (!scripts.includes('profile.js')) return;
 
-    const lastUrl = document.getElementById("last-url").getAttribute("value");
+    const lastPage = document.getElementById("last-page").getAttribute("value");
 
     const serverBar = document.querySelector(".server-bar");
     if (serverBar) serverBar.classList.remove("hidden");
@@ -13,7 +13,7 @@ function initProfile() {
     document.getElementById("server-bar-item-home").classList.add("active");
 
     if (typeof window.swup !== "undefined") {
-        window.swup.navigate(lastUrl);
+        window.swup.navigate(lastPage);
     }
 }
 if (typeof window.swup !== "undefined") {
