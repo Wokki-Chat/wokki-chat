@@ -233,7 +233,7 @@ const emojis = {
 					list.style.position = 'relative';
 					list.scrollTop = 0;
 
-					function renderVisible() {
+					async function renderVisible() {
 						const scrollTop = list.scrollTop;
 						const viewportHeight = list.clientHeight;
 
@@ -254,7 +254,7 @@ const emojis = {
 							const btn = document.createElement('button');
 							btn.classList.add('emoji-picker-item');
 							btn.title = e.annotation || e.shortcodes?.[0] || '';
-							btn.innerHTML = emojis.emojiToImg(e.emoji);
+							btn.innerHTML = await emojis.emojiToImg(e.emoji);
 
 							btn.addEventListener('click', () => {
 								let output = shortcode && e.shortcodes?.length ? e.shortcodes[0] : e.emoji;
@@ -289,13 +289,13 @@ const emojis = {
 						}
 					}
 
-					renderVisible();
+					await renderVisible();
 
 					let ticking = false;
 					list.onscroll = () => {
 						if (!ticking) {
-							requestAnimationFrame(() => {
-								renderVisible();
+							requestAnimationFrame(async () => {
+								await renderVisible();
 								ticking = false;
 							});
 							ticking = true;
