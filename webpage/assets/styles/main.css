@@ -3388,6 +3388,7 @@ h6 {
     right: unset;
     animation: none;
     border-radius: 16px;
+    padding: 0px;
 }
 
 .invite-item-container {
