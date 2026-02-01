@@ -1047,7 +1047,7 @@ function initServer() {
 			
 			userEl.classList.add("active");
 
-			const existingPopup = document.querySelector(`.user-info-profile-popup[data-user-id='${user.id}']`);
+			const existingPopup = document.querySelector(`.user-info-profile-popup`);
 			if (existingPopup) {
 				existingPopup.remove();
 				userEl.classList.remove("active");
