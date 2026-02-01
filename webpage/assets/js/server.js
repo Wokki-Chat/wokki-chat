@@ -39,9 +39,6 @@ function initServer() {
 	const messageHydrator = new MessageHydrator({ user_id, channels, server_id });
 	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
 
-	const sanitizer = new Sanitizer(user_id, channels, server_id);
-	const textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
-
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
 			el.parentElement.classList.toggle('expanded');
@@ -68,6 +65,9 @@ function initServer() {
 
 	const textarea = document.getElementById("message-input");
 	const preview = document.getElementById("message-input-bg");
+
+	const sanitizer = new Sanitizer(user_id, channels, server_id);
+	const textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
 
 	const textareaEmojiOptions = document.getElementById("emoji-option");
 	textareaEmojiOptions.addEventListener("click", async () => {
