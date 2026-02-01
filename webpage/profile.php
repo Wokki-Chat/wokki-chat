@@ -225,10 +225,18 @@ function formatPremiumExpiration($timestamp) {
             </div>
         <?php endif; ?>
 
-        <wchat-allowed-scripts value="home.js;"></wchat-allowed-scripts>
+        <wchat-allowed-scripts value="profile.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
         <wchat-data id="users-list" value="<?php echo htmlspecialchars(json_encode($friendsList)); ?>"></wchat-data>
+        <wchat-data id="last-page" value="<?php 
+            $lastPage = $_SESSION['last_page'];
+            if ($lastPage === null || $lastPage === '') {
+                echo htmlspecialchars('/home');
+            } else {
+                echo htmlspecialchars($lastPage);
+            }
+        ?>"></wchat-data>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
@@ -247,15 +255,13 @@ function formatPremiumExpiration($timestamp) {
                 })
             ]
         });
-
-        window.swup.navigate("<?php echo htmlspecialchars($_SERVER['REQUEST_URI'], ENT_QUOTES, 'UTF-8') || "/home"; ?>");
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="/assets/js/create_server.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/assets/js/notifiers.js"></script>
     <script src="/assets/js/globalFunctions.js"></script>
-    <script src="/assets/js/home.js" type="module"></script>
+    <script src="/assets/js/profile.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
 </body>
 </html>
