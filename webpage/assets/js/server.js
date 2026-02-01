@@ -3,7 +3,7 @@ import { MessageRenderer, MessageBehaviour, MessageHydrator, MessageCache } from
 import ReactionRenderer from "./modules/servers/reactions.js";
 import SettingsManager from "./modules/servers/settings.js";
 import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
-import { userPopupManager } from "./modules/users/popups.js";
+import { UserPopupManager } from "./modules/users/popups.js";
 
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
@@ -40,7 +40,7 @@ function initServer() {
 	const messageHydrator = new MessageHydrator({ user_id, channels, server_id });
 	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
 
-	const userPopupManager = new userPopupManager({ user_id });
+	const userPopupManager = new UserPopupManager({ user_id });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {

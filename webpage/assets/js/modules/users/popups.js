@@ -3,7 +3,7 @@
 import { Sanitizer } from "../global/sanitization.js";
 import emojis from "../../emojis.js";
 
-export class userPopupManager {
+export class UserPopupManager {
     constructor({ user_id }) {
         this.user_id = user_id;
         this.sanitizer = new Sanitizer(user_id);
