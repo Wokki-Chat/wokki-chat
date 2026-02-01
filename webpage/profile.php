@@ -81,9 +81,9 @@ $serverStmt->close();
     <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js"></script>
     <div class="server-bar">
         <div class="server-bar-dms">
-            <div class="server-bar-item active">
-                <img src="/assets/images/monochrome-logo-purple-background.png">
-            </div>
+            <a class="server-bar-item active" id="server-bar-item-home" href="/home">
+                <img src="assets/images/monochrome-logo-purple-background.png">
+            </a>
         </div>
         <div class="divider"></div>
         <div class="server-bar-channels">
@@ -93,7 +93,7 @@ $serverStmt->close();
                     $lowImage = preg_replace('/\.(webp|gif)$/', '-low.$1', $serverRow['image']);
 
                     echo '<a class="server-bar-item" id="server-bar-item-server" href="/server/'.$serverRow['id'].'" data-server-id="'.$serverRow['id'].'">
-                        <img src="'.$lowImage.'" loading="lazy" decoding="async" width="47" height="47" draggable="false" />
+                        <img src="'.$lowImage.'" loading="lazy" decoding="async" width="47" height="47" draggable="false"/>
                         <p class="tooltip">'.$serverRow['name'].'</p>
                     </a>';
                 }
@@ -110,8 +110,61 @@ $serverStmt->close();
         </div>
     </div>
     <main id="app">
-        <wchat-allowed-scripts value=""></wchat-allowed-scripts>
+        <div class="channel-bar">
+        </div>
+
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <span class="material-symbols-rounded top-bar-menu" id="top-bar-menu">menu</span>
+                
+            </div>
+        </div>
+
+        <div class="users">
+            
+        </div>
+
+        <div class="self-info">
+            <div class="self-info-left">
+                <div class="self-info-profile-status">
+                    <img class="self-info-profile-picture" src="<?php echo $profile_picture; ?>">
+                    <div class="self-info-status-circle-outer">
+                        <div class="self-info-status-circle-inner"></div>
+                    </div>
+                </div>
+                <div class="self-info-status-username">
+                    <p class="self-info-username"><?php echo htmlspecialchars($username, ENT_QUOTES, 'UTF-8'); ?></p>
+                    <p class="self-info-status">Online</p>
+                </div>
+            </div>
+
+            <div class="self-info-right" >
+                <a class="material-symbols-rounded self-info-right-settings no-underline" href="/settings?from=/home">settings</a>
+            </div>
+        </div>
+
+        <?php if ($premium_popup): ?>
+            <div class="premium-popup">
+                <div class="premium-popup-content">
+                    <div class="premium-popup-icon">
+                        <span class="material-symbols-rounded premium-popup-icon-icon">star</span>
+                    </div>
+                    <div class="premium-popup-text">
+                        <h3>You got upgraded to premium</h3>
+                        <p>You unlocked all premium features</p>
+                        <p>Premium expires in <?php echo formatPremiumExpiration($premium_expires_at); ?></p>
+                    </div>
+                    <div class="premium-popup-close">
+                        <button class="button-primary-filled" onclick="this.parentElement.parentElement.parentElement.remove();">Okay</button>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <wchat-allowed-scripts value="home.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
+        <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
+        <wchat-data id="users-list" value="<?php echo htmlspecialchars(json_encode($friendsList)); ?>"></wchat-data>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
@@ -131,11 +184,12 @@ $serverStmt->close();
             ]
         });
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" data-swup-ignore-script></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
-    <script src="/assets/js/create_server.js" data-swup-ignore-script></script>
-    <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
-    <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
-    <script src="/assets/js/load_scripts.js" data-swup-ignore-script></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="/assets/js/create_server.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="/assets/js/notifiers.js"></script>
+    <script src="/assets/js/globalFunctions.js"></script>
+    <script src="/assets/js/home.js" type="module"></script>
+    <script src="/assets/js/load_scripts.js"></script>
 </body>
 </html>
