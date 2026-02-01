@@ -247,6 +247,8 @@ function formatPremiumExpiration($timestamp) {
                 })
             ]
         });
+
+        window.swup.navigate("<?php echo htmlspecialchars($_SERVER['REQUEST_URI'], ENT_QUOTES, 'UTF-8') || "/home"; ?>");
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="/assets/js/create_server.js"></script>
