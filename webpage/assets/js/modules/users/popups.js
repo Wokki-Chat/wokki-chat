@@ -167,7 +167,7 @@ export class UserPopupManager {
 
         `;
 
-        return {html, customStyleData, profile_banner: user.profile_banner ? user.profile_banner : '', popupStyle, borderStyle};
+        return {html, custom_style_data: customStyleData, profile_banner: user.profile_banner ? user.profile_banner : '', popup_style: popupStyle, border_style: borderStyle};
     }
 
     async openExtendedPopup(user_id) {
