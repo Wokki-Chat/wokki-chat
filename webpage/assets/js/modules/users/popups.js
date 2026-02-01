@@ -181,7 +181,7 @@ export class UserPopupManager {
 
         jspt.makePopup({
             content_type: "html",
-            header: "Profile of @" + this.sanitizer.sanitize(user.username),
+            header: "Profile of <b>@" + this.sanitizer.sanitize(user.username) + "</b>",
             custom_id: "user-profile-popup",
             content: popup_content,
         });
@@ -194,5 +194,18 @@ export class UserPopupManager {
             if (popup_style) popup.style.setProperty('background', popup_style, 'important');
             if (border_style) popup.style.setProperty('border', border_style, 'important');
         }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                const popup = document.getElementById("user-profile-popup");
+                if (popup) jspt.closePopup("user-profile-popup");
+            }
+        });
+
+        document.querySelector("#user-profile-popup").addEventListener("click", (e) => {
+            if (!e.target.closest(".popup")) {
+                jspt.closePopup("user-profile-popup");
+            }
+        });
     }
 }
