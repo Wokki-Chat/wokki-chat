@@ -3,6 +3,7 @@ import { MessageRenderer, MessageBehaviour, MessageHydrator, MessageCache } from
 import ReactionRenderer from "./modules/servers/reactions.js";
 import SettingsManager from "./modules/servers/settings.js";
 import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
+import { userPopupManager } from "./modules/users/popups.js";
 
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
@@ -38,6 +39,8 @@ function initServer() {
 	const messageBehaviour = new MessageBehaviour({ user_id, channel_id, server_id, access_token, socket, messageContainer });
 	const messageHydrator = new MessageHydrator({ user_id, channels, server_id });
 	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
+
+	const userPopupManager = new userPopupManager({ user_id });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
@@ -1044,105 +1047,13 @@ function initServer() {
 			
 			userEl.classList.add("active");
 
-			document.querySelector(".user-info-profile-popup")?.remove();
-
-			let popup = document.createElement("div");
-			popup.className = "user-info-profile-popup";
-			let lightText = false;
-			if (user.profile_color_primary && user.profile_color_accent) {
-				let color = user.profile_color_primary;
-				let r = parseInt(color.slice(1,3),16);
-				let g = parseInt(color.slice(3,5),16);
-				let b = parseInt(color.slice(5,7),16);
-				r = Math.max(0, r - r * 0.1);
-				g = Math.max(0, g - g * 0.1);
-				b = Math.max(0, b - b * 0.1);
-				let darker = `#${((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1)}`;
-				popup.style.background = darker;
-				popup.style.border = `4px solid ${user.profile_color_accent}`;
-
-				let brightness = (r*299 + g*587 + b*114) / 1000;
-				lightText = brightness <= 150;
-				popup.dataset.lightText = lightText.toString();
-				popup.dataset.customStyle = 'true';
+			const existingPopup = document.querySelector(`.user-info-profile-popupp[data-user-id='${user.id}']`);
+			if (existingPopup) {
+				existingPopup.remove();
+				return;
 			}
-			let userBio = await sanitizer.sanitizeMrk(user.bio);
-			userBio = await emojis.replaceText(userBio);
-			popup.innerHTML = `
-				${user.profile_banner ? `<img draggable="false" class="user-info-profile-popup-banner" src="${user.profile_banner}">` : ''}
-				<div class="user-info-profile-popup-profile-picture-username-status">
-					<div class="user-info-profile-popup-profile-status">
-						<img draggable="false" class="dm-info-profile-picture" src="${user.profile_picture}">
-						<div class="user-info-profile-popup-status-circle-outer">
-							<div class="user-info-profile-popup-status-circle-inner ${user.status}"></div>
-						</div>
-					</div>
-					<div class="user-info-profile-popup-status-username">
-						<div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${user.display_name ? sanitizer.sanitize(user.display_name) : sanitizer.sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
-						<p class="user-info-profile-popup-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
-					</div>
-				</div>
-				<div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
-					<div class="dm-info-item">
-						<p class="dm-info-item-value dm-info-item-username-original">${sanitizer.sanitize(user.username)}</p>
-					</div>
-					<div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
-						${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
-					</div>	
-					<div class="dm-info-item">
-						<p class="dm-info-item-key">Bio</p>
-						<p class="dm-info-item-value">${user.bio ? userBio : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</p>
-					</div>
-					<div class="dm-info-item">
-						<p class="dm-info-item-key">Joined on</p>
-						<p class="dm-info-item-value">${new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric', year: 'numeric'}).format(new Date(user.created_at))}</p>
-					</div>
-					${user.bot ? '' : `
-						<a class="button-primary-filled no-underline dm-info-profile-link" ${user.profile_color_primary && user.profile_color_accent ? `data-custom-style="true" style="color: rgb(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}); background-color: rgba(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}, 0.1); border: 1px solid rgba(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}, 0.3);"` : ''} href="/profile/@${encodeURIComponent(user.username)}">View full profile</a>
-					`}
-				</div>
 
-				${user.widgets?.Spotify?.item ? `
-					<div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
-						<div class="dm-info-item">
-							<p class="dm-info-item-key">Playing Spotify</p>
-							<div class="spotify-info">
-								<div class="spotify-info-cover">
-									<img src="${user.widgets.Spotify.item.album.images[0]?.url}" alt="Album cover" />
-								</div>
-								<div class="spotify-info-text">
-									<a href="${user.widgets.Spotify.item.external_urls.spotify}" target="_blank" class="spotify-track-name" title="${user.widgets.Spotify.item.name}">
-										${user.widgets.Spotify.item.name.length > 23 ? user.widgets.Spotify.item.name.slice(0, 20) + '…' : user.widgets.Spotify.item.name}
-									</a>
-									<p class="spotify-artists">
-										${user.widgets.Spotify.item.artists.map(artist => {
-											const name = artist.name.length > 18 ? artist.name.slice(0, 15) + '…' : artist.name;
-											return `<a href="${artist.external_urls.spotify}" target="_blank" title="${artist.name}">${name}</a>`;
-										}).join(', ')}
-									</p>
-									<div class="spotify-progress-container">
-										<span class="spotify-time-left">${msToTime(user.widgets.Spotify.progress_ms)}</span>
-										<div class="spotify-progress-bar-wrapper">
-											<div class="spotify-progress-bar"></div>
-										</div>
-										<span class="spotify-time-right">${msToTime(user.widgets.Spotify.item.duration_ms)}</span>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				` : ''}
-			`;
-
-			user.tags.forEach(tag => {
-				const tagEl = document.createElement("div");
-				tagEl.classList.add("dm-info-tag");
-				tagEl.innerHTML = `
-					<img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/${tag.tag_icon}.svg">
-					<p class="dm-info-tag-tooltip">${tag.tag_name}</p>
-				`;
-				popup.querySelector(".dm-info-tags").appendChild(tagEl);
-			});
+			const popup = userPopupManager.openUserPopup(user);
 
 			document.body.appendChild(popup);
 
@@ -1273,7 +1184,6 @@ function initServer() {
 		await renderUser(user);
 	});
 
-
 	async function replyMessage(id) {
 		if (document.querySelector(".replying-to")) document.querySelector(".replying-to").remove();
 		replyingTo = id;
@@ -1300,338 +1210,338 @@ function initServer() {
 	if (document.getElementById("new-category")) document.getElementById("new-category").addEventListener("click", openCreateCategoryModal);
 
 	function openCreateCategoryModal() {
-	let modalHtml = `
-		<div class="modal" id="create-category-modal">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h2 class="modal-title">Create Category</h2>
-					<span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
-				</div>
-				<div class="modal-body">
-					<form id="create-category-form" class="create-category-form">
-						<label for="category-name">Category Name:</label>
-						<input type="text" id="category-name" name="category-name" class="input-text-dark-bg w270" required>
-						<button type="submit" class="button-primary-filled">Create</button>
-					</form>
+		let modalHtml = `
+			<div class="modal" id="create-category-modal">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h2 class="modal-title">Create Category</h2>
+						<span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
+					</div>
+					<div class="modal-body">
+						<form id="create-category-form" class="create-category-form">
+							<label for="category-name">Category Name:</label>
+							<input type="text" id="category-name" name="category-name" class="input-text-dark-bg w270" required>
+							<button type="submit" class="button-primary-filled">Create</button>
+						</form>
+					</div>
 				</div>
 			</div>
-		</div>
-	`;
+		`;
 
-	document.body.insertAdjacentHTML("beforeend", modalHtml);
+		document.body.insertAdjacentHTML("beforeend", modalHtml);
 
-	const modal = document.getElementById("create-category-modal");
-	const modalContent = modal.querySelector(".modal-content");
+		const modal = document.getElementById("create-category-modal");
+		const modalContent = modal.querySelector(".modal-content");
 
-	setTimeout(() => {
-		function handleClickOutside(event) {
-			if (!modalContent.contains(event.target)) {
-				modal.remove();
-				document.removeEventListener("click", handleClickOutside);
+		setTimeout(() => {
+			function handleClickOutside(event) {
+				if (!modalContent.contains(event.target)) {
+					modal.remove();
+					document.removeEventListener("click", handleClickOutside);
+				}
 			}
-		}
 
-		document.addEventListener("click", handleClickOutside);
-	}, 10);
+			document.addEventListener("click", handleClickOutside);
+		}, 10);
 
-	const modalCloseBtn = document.getElementById("close-modal-btn");
-	modalCloseBtn.addEventListener("click", () => {
-		modal.remove();
-	});
+		const modalCloseBtn = document.getElementById("close-modal-btn");
+		modalCloseBtn.addEventListener("click", () => {
+			modal.remove();
+		});
 
-	const createCategoryForm = document.getElementById("create-category-form");
-	createCategoryForm.addEventListener("submit", (event) => {
-		event.preventDefault();
-		const categoryName = document.getElementById("category-name").value;
-		createCategory(categoryName);
-		modal.remove();
-	});
+		const createCategoryForm = document.getElementById("create-category-form");
+		createCategoryForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			const categoryName = document.getElementById("category-name").value;
+			createCategory(categoryName);
+			modal.remove();
+		});
 	}
 
 	if (document.getElementById("new-channel")) document.getElementById("new-channel").addEventListener("click", openCreateChannelModal);
 
 	function openCreateChannelModal() {
-	let modalHtml = `
-		<div class="modal" id="create-channel-modal">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h2 class="modal-title">Create Channel</h2>
-					<span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
-				</div>
-				<div class="modal-body">
-					<form id="create-channel-form" class="create-channel-form">
-						<label for="channel-name">Channel Name:</label>
-						<input type="text" id="channel-name" name="channel-name" class="input-text-dark-bg w270" required>
-						<label for="channel-category">Category:</label>
-						<select id="channel-category" name="channel-category" class="input-text-dark-bg w270" required>
-							<option value="" disabled selected>Select a category</option>
-						</select>
-						<label for="channel-type">Channel Type:</label>
-						<select id="channel-type" name="channel-type" class="input-text-dark-bg w270" required>
-							<option value="text" selected>Text</option>
-							<option value="voice">Voice</option>
-						</select>
-						<button type="submit" class="button-primary-filled">Create</button>
-					</form>
+		let modalHtml = `
+			<div class="modal" id="create-channel-modal">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h2 class="modal-title">Create Channel</h2>
+						<span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
+					</div>
+					<div class="modal-body">
+						<form id="create-channel-form" class="create-channel-form">
+							<label for="channel-name">Channel Name:</label>
+							<input type="text" id="channel-name" name="channel-name" class="input-text-dark-bg w270" required>
+							<label for="channel-category">Category:</label>
+							<select id="channel-category" name="channel-category" class="input-text-dark-bg w270" required>
+								<option value="" disabled selected>Select a category</option>
+							</select>
+							<label for="channel-type">Channel Type:</label>
+							<select id="channel-type" name="channel-type" class="input-text-dark-bg w270" required>
+								<option value="text" selected>Text</option>
+								<option value="voice">Voice</option>
+							</select>
+							<button type="submit" class="button-primary-filled">Create</button>
+						</form>
+					</div>
 				</div>
 			</div>
-		</div>
-	`;
+		`;
 
-	document.body.insertAdjacentHTML("beforeend", modalHtml);
+		document.body.insertAdjacentHTML("beforeend", modalHtml);
 
-	const modal = document.getElementById("create-channel-modal");
-	const modalContent = modal.querySelector(".modal-content");
+		const modal = document.getElementById("create-channel-modal");
+		const modalContent = modal.querySelector(".modal-content");
 
-	channel_groups.forEach((category) => {
-		const option = document.createElement("option");
-		option.value = category.channel_group_id;
-		option.textContent = category.channel_group_name;
-		document.getElementById("channel-category").appendChild(option);
-	})
+		channel_groups.forEach((category) => {
+			const option = document.createElement("option");
+			option.value = category.channel_group_id;
+			option.textContent = category.channel_group_name;
+			document.getElementById("channel-category").appendChild(option);
+		})
 
-	setTimeout(() => {
-		function handleClickOutside(event) {
-			if (!modalContent.contains(event.target)) {
-				modal.remove();
-				document.removeEventListener("click", handleClickOutside);
+		setTimeout(() => {
+			function handleClickOutside(event) {
+				if (!modalContent.contains(event.target)) {
+					modal.remove();
+					document.removeEventListener("click", handleClickOutside);
+				}
 			}
-		}
 
-		document.addEventListener("click", handleClickOutside);
-	}, 10);
+			document.addEventListener("click", handleClickOutside);
+		}, 10);
 
-	const modalCloseBtn = document.getElementById("close-modal-btn");
-	modalCloseBtn.addEventListener("click", () => {
-		modal.remove();
-	});
+		const modalCloseBtn = document.getElementById("close-modal-btn");
+		modalCloseBtn.addEventListener("click", () => {
+			modal.remove();
+		});
 
-	const createChannelForm = document.getElementById("create-channel-form");
-	createChannelForm.addEventListener("submit", (event) => {
-		event.preventDefault();
-		const channelName = modal.querySelector("#channel-name").value;
-		const category = modal.querySelector("#channel-category").value;
-		const channelType = modal.querySelector("#channel-type").value;
-		createChannel(channelName, category, channelType);
-		modal.remove();
-	});
+		const createChannelForm = document.getElementById("create-channel-form");
+		createChannelForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			const channelName = modal.querySelector("#channel-name").value;
+			const category = modal.querySelector("#channel-category").value;
+			const channelType = modal.querySelector("#channel-type").value;
+			createChannel(channelName, category, channelType);
+			modal.remove();
+		});
 	}
 
 
 	function createCategory(name) {
-	const formData = new FormData();
-	formData.append("action", "create_category");
-	formData.append("category_name", name);
-	formData.append("server_id", server_id);
+		const formData = new FormData();
+		formData.append("action", "create_category");
+		formData.append("category_name", name);
+		formData.append("server_id", server_id);
 
-	fetch("/app/edit_server", {
-		method: "POST",
-		headers: {
-			"Authorization": `Bearer ${access_token}`
-		},
-		body: formData
-	})
-	.then(response => {
-		if (!response.ok) throw new Error("Failed to create category");
-		return response.json();
-	})
-	.then(data => {
-		if (data.status === "success") {
-			Toastify({
-				text: "Category created!",
-				duration: 3000,
-				gravity: "bottom",
-				position: "right",
-				close: true,
-				stopOnFocus: true,
-				style: {
-				background: "var(--clr-popup-a20)",
-				borderRadius: "12px",
-				boxShadow: "none"
-				}
-			}).showToast();
+		fetch("/app/edit_server", {
+			method: "POST",
+			headers: {
+				"Authorization": `Bearer ${access_token}`
+			},
+			body: formData
+		})
+		.then(response => {
+			if (!response.ok) throw new Error("Failed to create category");
+			return response.json();
+		})
+		.then(data => {
+			if (data.status === "success") {
+				Toastify({
+					text: "Category created!",
+					duration: 3000,
+					gravity: "bottom",
+					position: "right",
+					close: true,
+					stopOnFocus: true,
+					style: {
+					background: "var(--clr-popup-a20)",
+					borderRadius: "12px",
+					boxShadow: "none"
+					}
+				}).showToast();
 
-			window.location.reload();
+				window.location.reload();
 
-		} else {
-			Toastify({
-				text: "Failed to create category. Please try again.",
-				duration: 5000,
-				gravity: "bottom",
-				position: "right",
-				close: true,
-				stopOnFocus: true,
-				style: {
-				background: "var(--clr-popup-a20)",  
-				borderRadius: "12px", 
-				boxShadow: "none"
-				}
-			}).showToast();
-		}
-	})
-	.catch(error => {
-		console.error("Error creating category:", error);
-	});
+			} else {
+				Toastify({
+					text: "Failed to create category. Please try again.",
+					duration: 5000,
+					gravity: "bottom",
+					position: "right",
+					close: true,
+					stopOnFocus: true,
+					style: {
+					background: "var(--clr-popup-a20)",  
+					borderRadius: "12px", 
+					boxShadow: "none"
+					}
+				}).showToast();
+			}
+		})
+		.catch(error => {
+			console.error("Error creating category:", error);
+		});
 	}
 
 	function createChannel(name, category, type = "text") {
-	const formData = new FormData();
-	formData.append("action", "create_channel");
-	formData.append("channel_name", name);
-	formData.append("channel_category_id", category);
-	formData.append("server_id", server_id);
-	formData.append("channel_type", type);
+		const formData = new FormData();
+		formData.append("action", "create_channel");
+		formData.append("channel_name", name);
+		formData.append("channel_category_id", category);
+		formData.append("server_id", server_id);
+		formData.append("channel_type", type);
 
-	fetch("/app/edit_server", {
-		method: "POST",
-		headers: {
-			"Authorization": `Bearer ${access_token}`
-		},
-		body: formData
-	})
-	.then(response => {
-		if (!response.ok) throw new Error("Failed to create channel");
-		return response.json();
-	})
-	.then(data => {
-		if (data.status === "success") {
-			Toastify({
-				text: "Channel created!",
-				duration: 3000,
-				gravity: "bottom",
-				position: "right",
-				close: true,
-				stopOnFocus: true,
-				style: {
-				background: "var(--clr-popup-a20)",   
-				borderRadius: "12px",     
-				boxShadow: "none"
-				}
-			}).showToast();
+		fetch("/app/edit_server", {
+			method: "POST",
+			headers: {
+				"Authorization": `Bearer ${access_token}`
+			},
+			body: formData
+		})
+		.then(response => {
+			if (!response.ok) throw new Error("Failed to create channel");
+			return response.json();
+		})
+		.then(data => {
+			if (data.status === "success") {
+				Toastify({
+					text: "Channel created!",
+					duration: 3000,
+					gravity: "bottom",
+					position: "right",
+					close: true,
+					stopOnFocus: true,
+					style: {
+					background: "var(--clr-popup-a20)",   
+					borderRadius: "12px",     
+					boxShadow: "none"
+					}
+				}).showToast();
 
-			window.location.reload();
+				window.location.reload();
 
-		} else {
-			Toastify({
-				text: "Failed to create channel. Please try again.",
-				duration: 5000,
-				gravity: "bottom",
-				position: "right",
-				close: true,
-				stopOnFocus: true,
-				style: {
-				background: "var(--clr-popup-a20)",   
-				borderRadius: "12px", 
-				boxShadow: "none"
-				}
-			}).showToast();
-		}
-	})
-	.catch(error => {
-		console.error("Error creating channel:", error);
-	});
+			} else {
+				Toastify({
+					text: "Failed to create channel. Please try again.",
+					duration: 5000,
+					gravity: "bottom",
+					position: "right",
+					close: true,
+					stopOnFocus: true,
+					style: {
+					background: "var(--clr-popup-a20)",   
+					borderRadius: "12px", 
+					boxShadow: "none"
+					}
+				}).showToast();
+			}
+		})
+		.catch(error => {
+			console.error("Error creating channel:", error);
+		});
 	}
 	
 
 	function leaveServer() {
 		let modalHtml = `
-		<div class="modal" id="leave-modal">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h2 class="modal-title">Leave Server</h2>
-					<span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
-				</div>
-				<div class="modal-body">
-					<form id="leave-form" class="leave-form">
-						<label>Are you sure you want to leave this server? You will no longer be able to access it unless you get invited again.</label>
-						<button type="submit" class="button-primary-filled">Leave Server</button>
-					</form>
+			<div class="modal" id="leave-modal">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h2 class="modal-title">Leave Server</h2>
+						<span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
+					</div>
+					<div class="modal-body">
+						<form id="leave-form" class="leave-form">
+							<label>Are you sure you want to leave this server? You will no longer be able to access it unless you get invited again.</label>
+							<button type="submit" class="button-primary-filled">Leave Server</button>
+						</form>
+					</div>
 				</div>
 			</div>
-		</div>
-	`;
+		`;
 
-	document.body.insertAdjacentHTML("beforeend", modalHtml);
+		document.body.insertAdjacentHTML("beforeend", modalHtml);
 
-	const modal = document.getElementById("leave-modal");
-	const modalContent = modal.querySelector(".modal-content");
+		const modal = document.getElementById("leave-modal");
+		const modalContent = modal.querySelector(".modal-content");
 
-	setTimeout(() => {
-		function handleClickOutside(event) {
-			if (!modalContent.contains(event.target)) {
-				modal.remove();
-				document.removeEventListener("click", handleClickOutside);
+		setTimeout(() => {
+			function handleClickOutside(event) {
+				if (!modalContent.contains(event.target)) {
+					modal.remove();
+					document.removeEventListener("click", handleClickOutside);
+				}
 			}
-		}
 
-		document.addEventListener("click", handleClickOutside);
-	}, 10);
+			document.addEventListener("click", handleClickOutside);
+		}, 10);
 
-	const modalCloseBtn = document.getElementById("close-modal-btn");
-	modalCloseBtn.addEventListener("click", () => {
-		modal.remove();
-	});
+		const modalCloseBtn = document.getElementById("close-modal-btn");
+		modalCloseBtn.addEventListener("click", () => {
+			modal.remove();
+		});
 
-	const leaveServerForm = document.getElementById("leave-form");
-	leaveServerForm.addEventListener("submit", (event) => {
-		event.preventDefault();
-		leaveServerRequest();
-		modal.remove();
-	});
+		const leaveServerForm = document.getElementById("leave-form");
+		leaveServerForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			leaveServerRequest();
+			modal.remove();
+		});
 	}
 
 	function leaveServerRequest() {
-	const formData = new FormData();
-	formData.append("action", "leave_server");
-	formData.append("server_id", server_id);
+		const formData = new FormData();
+		formData.append("action", "leave_server");
+		formData.append("server_id", server_id);
 
-	fetch("/app/edit_server", {
-		method: "POST",
-		headers: {
-			"Authorization": `Bearer ${access_token}`
-		},
-		body: formData
-	})
-	.then(response => {
-		if (!response.ok) throw new Error("Failed to leave server");
-		return response.json();
-	})
-	.then(data => {
-		if (data.status === "success") {
-			Toastify({
-				text: "You have left the server. ",
-				duration: 3000,
-				gravity: "bottom",
-				position: "right",
-				close: true,
-				stopOnFocus: true,
-				style: {
-				background: "var(--clr-popup-a20)",
-				borderRadius: "12px",
-				boxShadow: "none"
-				}
-			}).showToast();
+		fetch("/app/edit_server", {
+			method: "POST",
+			headers: {
+				"Authorization": `Bearer ${access_token}`
+			},
+			body: formData
+		})
+		.then(response => {
+			if (!response.ok) throw new Error("Failed to leave server");
+			return response.json();
+		})
+		.then(data => {
+			if (data.status === "success") {
+				Toastify({
+					text: "You have left the server. ",
+					duration: 3000,
+					gravity: "bottom",
+					position: "right",
+					close: true,
+					stopOnFocus: true,
+					style: {
+					background: "var(--clr-popup-a20)",
+					borderRadius: "12px",
+					boxShadow: "none"
+					}
+				}).showToast();
 
-			window.location.href = "/home";
-		} else {
-			Toastify({
-				text: "Failed to leave server. Please try again.",
-				duration: 5000,
-				gravity: "bottom",
-				position: "right",
-				close: true,
-				stopOnFocus: true,
-				style: {
-				background: "var(--clr-popup-a20)",
-				borderRadius: "12px",
-				boxShadow: "none"
-				}
-			}).showToast();
-		}
-	})
-	.catch(error => {
-		console.error("Error leaving server:", error);
-	});
+				window.location.href = "/home";
+			} else {
+				Toastify({
+					text: "Failed to leave server. Please try again.",
+					duration: 5000,
+					gravity: "bottom",
+					position: "right",
+					close: true,
+					stopOnFocus: true,
+					style: {
+					background: "var(--clr-popup-a20)",
+					borderRadius: "12px",
+					boxShadow: "none"
+					}
+				}).showToast();
+			}
+		})
+		.catch(error => {
+			console.error("Error leaving server:", error);
+		});
 	}
 
 	const invitePeopleBtn = document.getElementById("invite-people");
