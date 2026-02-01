@@ -118,6 +118,7 @@ function formatPremiumExpiration($timestamp) {
     return $days . " days";
 }
 
+$_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme ?>">

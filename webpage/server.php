@@ -1,4 +1,5 @@
 <?php
+session_start();
 include 'app/config.php';
 include 'global.php';
 include 'app/maintenance.php';
@@ -443,6 +444,9 @@ $ban_members = $finalPermissions['ban_members'];
 $mute_members = $finalPermissions['mute_members'];
 $manage_groups = $finalPermissions['manage_groups'];
 $read_message_history = $finalPermissions['read_message_history'];
+
+$_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
+
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme; ?>">
