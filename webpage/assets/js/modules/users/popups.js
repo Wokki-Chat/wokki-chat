@@ -191,8 +191,8 @@ export class UserPopupManager {
         if (custom_style_data && popup) {
             popup.setAttribute('data-light-text', lightText);
             popup.setAttribute('data-custom-style', 'true');
-            popup.style.background = popup_style + ' !important';
-            popup.style.border = border_style + ' !important';
+            if (popup_style) popup.style.setProperty('background', popup_style, 'important');
+            if (border_style) popup.style.setProperty('border', border_style, 'important');
         }
     }
 }
