@@ -129,7 +129,7 @@ export class UserPopupManager {
         let lightText = false;
         let popupStyle = '';
         let borderStyle = '';
-        let customStyleData = '';
+        let customStyleData = false;
 
         if (user.profile_color_primary && user.profile_color_accent) {
             let color = user.profile_color_primary;
@@ -145,7 +145,7 @@ export class UserPopupManager {
 
             let brightness = (r*299 + g*587 + b*114) / 1000;
             lightText = brightness <= 150;
-            customStyleData = 'data-light-text="' + lightText + '" data-custom-style="true"';
+            customStyleData = true;
         }
 
         let userBio = await this.sanitizer.sanitizeMrk(user.bio);
@@ -167,7 +167,7 @@ export class UserPopupManager {
 
         `;
 
-        return {html, custom_style_data: customStyleData, profile_banner: user.profile_banner ? user.profile_banner : '', popup_style: popupStyle, border_style: borderStyle};
+        return {html, custom_style_data: customStyleData, profile_banner: user.profile_banner ? user.profile_banner : '', popup_style: popupStyle, border_style: borderStyle, lightText};
     }
 
     async openExtendedPopup(user_id) {
@@ -177,7 +177,7 @@ export class UserPopupManager {
         
         const user = this.user_info;
 
-        const { html: popup_content, custom_style_data, profile_banner, popup_style, border_style } = await this.makeExtendedPopup(user);
+        const { html: popup_content, custom_style_data, profile_banner, popup_style, border_style, lightText } = await this.makeExtendedPopup(user);
 
         jspt.makePopup({
             content_type: "html",
@@ -188,8 +188,9 @@ export class UserPopupManager {
 
         const popup = document.querySelector("#user-profile-popup").querySelector(".popup");
 
-        if (custom_style_data !== '' && popup) {
-            popup.setAttribute(custom_style_data, '');
+        if (custom_style_data && popup) {
+            popup.setAttribute('data-light-text', lightText);
+            popup.setAttribute('data-custom-style', 'true');
             popup.style.background = popup_style;
             popup.style.border = border_style;
         }
