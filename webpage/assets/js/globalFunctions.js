@@ -152,6 +152,12 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
     return index >= openTagIndex && index < closeTagIndex + 4;
   }
 
+  function isInShortcode(str, index) {
+    const before = str.lastIndexOf(':', index);
+    const after = str.indexOf(':', index);
+    return before !== -1 && after !== -1 && before < index && after > index;
+  }
+
   const parts = text.split(/(```(\w+)?\n[\s\S]*?```)/g);
 
   let processed = await Promise.all(parts.map(async part => {
@@ -161,8 +167,7 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
       if (!match) return '';
       const lang = match[1] || '';
       const code = match[2];
-      const escapedCode = escapeHtml(code);
-      return `<pre><code class="lang-${lang}" style="white-space: pre-wrap;">${escapedCode}</code></pre>`;
+      return `<pre><code class="lang-${lang}" style="white-space: pre-wrap;">${escapeHtml(code)}</code></pre>`;
     } else {
       let escaped = escapeHtml(part);
 
@@ -170,8 +175,8 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
         const matches = [...escaped.matchAll(regex)];
         for (const match of matches.reverse()) {
           const offset = match.index;
-          if (isInsideATag(escaped, offset)) continue;
-          escaped = escaped.slice(0, offset) + await replacer(...match) + escaped.slice(offset + match[0].length);
+          if (isInsideATag(escaped, offset) || isInShortcode(escaped, offset)) continue;
+          escaped = escaped.slice(0, offset) + await replacer(...match, offset) + escaped.slice(offset + match[0].length);
         }
       }
 
@@ -200,8 +205,17 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
 
       await replaceWithCheck(/(?<!\\)~~(.+?)~~/g, (match, content) => `<del>${content}</del>`);
       await replaceWithCheck(/(?<!\\)`([^`\n]+)`/g, (match, code) => `<code>${code}</code>`);
-      await replaceWithCheck(/(?<!\\)\*\*(?!\*\*)([^*]+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
-      await replaceWithCheck(/(?<!\\)(\*|_)(.+?)\1/g, (match, wrap, content) => {
+      await replaceWithCheck(/(?<!\\)\*\*(?!\*\*)([^*]+?)\*\*/g, (match, content, offset) => {
+        const before = escaped[offset - 1] || ' ';
+        const after = escaped[offset + match.length] || ' ';
+        if (/\w/.test(before) && /\w/.test(after)) return match;
+        return `<strong>${content}</strong>`;
+      });
+
+      await replaceWithCheck(/(?<!\\)(\*|_)(.+?)\1/g, (match, wrap, content, offset) => {
+        const before = escaped[offset - 1] || ' ';
+        const after = escaped[offset + match.length] || ' ';
+        if (/\w/.test(before) && /\w/.test(after)) return match;
         if (content.includes(wrap)) return match;
         return `<em>${content}</em>`;
       });
@@ -303,9 +317,7 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
 
   const result = processed.join('');
 
-  setTimeout(() => {
-    hljs.highlightAll();
-  }, 0);
+  setTimeout(() => { hljs.highlightAll(); }, 0);
 
   return result.trim();
 }
@@ -321,13 +333,20 @@ async function sanitizeMrk(text) {
     })[ch]);
   }
 
+  function isInShortcode(str, index) {
+    const before = str.lastIndexOf(':', index);
+    const after = str.indexOf(':', index);
+    return before !== -1 && after !== -1 && before < index && after > index;
+  }
+
   text = escapeHtml(text);
 
   async function replaceWithCheck(str, regex, replacer) {
     const matches = [...str.matchAll(regex)];
     for (const match of matches.reverse()) {
       const offset = match.index;
-      str = str.slice(0, offset) + await replacer(...match) + str.slice(offset + match[0].length);
+      if (isInShortcode(str, offset)) continue;
+      str = str.slice(0, offset) + await replacer(...match, offset) + str.slice(offset + match[0].length);
     }
     return str;
   }
@@ -340,8 +359,21 @@ async function sanitizeMrk(text) {
 
   text = await replaceWithCheck(text, /(?<!\\)~~(.+?)~~/g, (match, content) => `<del>${content}</del>`);
   text = await replaceWithCheck(text, /(?<!\\)`([^`\n]+)`/g, (match, code) => `<code>${code}</code>`);
-  text = await replaceWithCheck(text, /(?<!\\)\*\*(?!\*\*)([^*]+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
-  text = await replaceWithCheck(text, /(?<!\\)(\*|_)([^*_]+?)\1/g, (match, wrap, content) => `<em>${content}</em>`);
+
+  text = await replaceWithCheck(text, /(?<!\\)\*\*(?!\*\*)([^*]+?)\*\*/g, (match, content, offset) => {
+    const before = text[offset - 1] || ' ';
+    const after = text[offset + match.length] || ' ';
+    if (/\w/.test(before) && /\w/.test(after)) return match;
+    return `<strong>${content}</strong>`;
+  });
+
+  text = await replaceWithCheck(text, /(?<!\\)(\*|_)([^*_]+?)\1/g, (match, wrap, content, offset) => {
+    const before = text[offset - 1] || ' ';
+    const after = text[offset + match.length] || ' ';
+    if (/\w/.test(before) && /\w/.test(after)) return match;
+    if (content.includes(wrap)) return match;
+    return `<em>${content}</em>`;
+  });
 
   text = await replaceWithCheck(text, /(^|\n)((?:&gt; ?.*(?:\n|$))+)/g, (match, before, quoteBlock) => {
     const lines = quoteBlock.trim().split('\n').map(line => line.replace(/^&gt; ?/, '')).join('<br>');
