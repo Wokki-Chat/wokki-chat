@@ -1066,7 +1066,7 @@ function initServer() {
 				popup.dataset.lightText = lightText.toString();
 				popup.dataset.customStyle = 'true';
 			}
-			let userBio = await sanitizeMrk(user.bio);
+			let userBio = await sanitizer.sanitizeMrk(user.bio);
 			userBio = await emojis.replaceText(userBio);
 			popup.innerHTML = `
 				${user.profile_banner ? `<img draggable="false" class="user-info-profile-popup-banner" src="${user.profile_banner}">` : ''}
