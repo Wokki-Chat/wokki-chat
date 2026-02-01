@@ -1,4 +1,5 @@
 <?php
+session_start();
 include 'app/config.php';
 include 'global.php';
 include 'app/maintenance.php';
