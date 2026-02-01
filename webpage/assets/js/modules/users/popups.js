@@ -185,7 +185,7 @@ export class UserPopupManager {
         }
 
         let html = `
-            <div class="user-info-profile-popup user-info-profile-popup-static" ${customStyleData ? `data-custom-style="${customStyleData}" data-light-text="${lightText}" style="border: none !important; background: transparent !important;"` : ''}>
+            <div class="user-info-profile-static user-info-profile-popup-static" ${customStyleData ? `data-custom-style="${customStyleData}" data-light-text="${lightText}" style="border: none !important; background: transparent !important;"` : ''}>
                 ${user.profile_banner ? `<img draggable="false" class="user-info-profile-popup-banner" src="${user.profile_banner}">` : ''}
                 <div class="user-info-profile-popup-profile-picture-username-status">
                     <div class="user-info-profile-popup-profile-status">
