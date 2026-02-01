@@ -123,7 +123,8 @@ export class UserPopupManager {
             }
 
             profileLink.addEventListener("click", e => {
-                if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                const isNewTab = e.ctrlKey || e.metaKey || e.button === 1;
+                if (isNewTab) return;
                 e.preventDefault();
                 this.openExtendedPopup(user.id);
             });

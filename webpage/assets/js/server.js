@@ -40,7 +40,7 @@ function initServer() {
 	const messageHydrator = new MessageHydrator({ user_id, channels, server_id });
 	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
 
-	const userPopupManager = new UserPopupManager({ user_id });
+	const userPopupManager = new UserPopupManager({ user_id, access_token });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
