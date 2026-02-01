@@ -201,10 +201,11 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
       await replaceWithCheck(/(?<!\\)~~(.+?)~~/g, (match, content) => `<del>${content}</del>`);
       await replaceWithCheck(/(?<!\\)`([^`\n]+)`/g, (match, code) => `<code>${code}</code>`);
       await replaceWithCheck(/(?<!\\)\*\*(?!\*\*)([^*]+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
-      await replaceWithCheck(/(?<!\\)(\*|_)([^\s*_][^*_\n]*?[^\s*_])\1/g, (match, wrap, content) => {
+      await replaceWithCheck(/(?<!\\)(\*|_)(.+?)\1/g, (match, wrap, content) => {
+        if (content.includes(wrap)) return match;
         return `<em>${content}</em>`;
       });
-      
+
       await replaceWithCheck(/(^|\n)((?:&gt; ?.*(?:\n|$))+)/g, (match, before, quoteBlock) => {
         const lines = quoteBlock.trim().split('\n').map(line => line.replace(/^&gt; ?/, '')).join('<br>');
         return `${before}<div class="quote">${lines}</div>`;
@@ -340,12 +341,7 @@ async function sanitizeMrk(text) {
   text = await replaceWithCheck(text, /(?<!\\)~~(.+?)~~/g, (match, content) => `<del>${content}</del>`);
   text = await replaceWithCheck(text, /(?<!\\)`([^`\n]+)`/g, (match, code) => `<code>${code}</code>`);
   text = await replaceWithCheck(text, /(?<!\\)\*\*(?!\*\*)([^*]+?)\*\*/g, (match, content) => `<strong>${content}</strong>`);
-  text = await replaceWithCheck(
-    text,
-    /(?<!\\)(\*|_)([^\s*_][^*_\n]*?[^\s*_])\1/g,
-    (match, wrap, content) => `<em>${content}</em>`
-  );
-
+  text = await replaceWithCheck(text, /(?<!\\)(\*|_)([^*_]+?)\1/g, (match, wrap, content) => `<em>${content}</em>`);
 
   text = await replaceWithCheck(text, /(^|\n)((?:&gt; ?.*(?:\n|$))+)/g, (match, before, quoteBlock) => {
     const lines = quoteBlock.trim().split('\n').map(line => line.replace(/^&gt; ?/, '')).join('<br>');
@@ -1027,9 +1023,10 @@ function renderMarkdownInTextarea(text) {
       return `<span class="md-bold"><span class="md-syntax">**</span><b>${content}</b><span class="md-syntax">**</span></span>`;
     })
 
-    .replace(/(\\)?_([^\s_][^_]*?[^\s_])_/g, (match, esc, content) => {
-      if (esc) return `<span class="md-escape">\\</span>_${content}_`;
-      return `<span class="md-italic"><span class="md-syntax">_</span><i>${content}</i><span class="md-syntax">_</span></span>`;
+    .replace(/(\\)?([*_])([^*_]*?)\2/g, (match, esc, wrap, content) => {
+      if (esc) return `<span class="md-escape">\\</span>${wrap}${content}${wrap}`;
+      if (content.includes(wrap)) return match;
+      return `<span class="md-italic"><span class="md-syntax">${wrap}</span><i>${content}</i><span class="md-syntax">${wrap}</span></span>`;
     })
 
     .replace(/(\\)?~~(.+?)~~/g, (match, esc, content) => {
