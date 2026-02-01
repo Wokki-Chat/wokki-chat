@@ -205,29 +205,56 @@ const emojis = {
 
 				sidebar.querySelector('[data-group="all"]').classList.add('active');
 
+				let currentEmojis = [];
+				let rowHeight = 40;
+				let itemsPerRow = 8;
+				let bufferRows = 3;
+
 				async function renderList(allEmojis) {
 					list.innerHTML = '';
-					const filtered = activeGroup === 'all' ? allEmojis : allEmojis.filter(e => e.group === activeGroup);
-					const grouped = {};
-					for (const e of filtered) {
-						if (!grouped[e.group]) grouped[e.group] = [];
-						grouped[e.group].push(e);
-					}
+					currentEmojis = activeGroup === 'all'
+						? allEmojis
+						: allEmojis.filter(e => e.group === activeGroup);
 
-					for (const groupName in grouped) {
-						const title = document.createElement('div');
-						title.classList.add('emoji-picker-group-title');
-						title.textContent = groupName.replaceAll('_', ' ');
-						list.appendChild(title);
+					const totalRows = Math.ceil(currentEmojis.length / itemsPerRow);
 
-						const grid = document.createElement('div');
-						grid.classList.add('emoji-picker-grid');
+					const spacer = document.createElement('div');
+					spacer.style.height = `${totalRows * rowHeight}px`;
+					list.appendChild(spacer);
 
-						for (const e of grouped[groupName]) {
+					const grid = document.createElement('div');
+					grid.classList.add('emoji-picker-grid');
+					grid.style.position = 'absolute';
+					grid.style.top = '0';
+					grid.style.left = '0';
+					grid.style.right = '0';
+					list.appendChild(grid);
+
+					list.style.position = 'relative';
+					list.scrollTop = 0;
+
+					function renderVisible() {
+						const scrollTop = list.scrollTop;
+						const viewportHeight = list.clientHeight;
+
+						const startRow = Math.max(0, Math.floor(scrollTop / rowHeight) - bufferRows);
+						const endRow = Math.min(
+							totalRows,
+							Math.ceil((scrollTop + viewportHeight) / rowHeight) + bufferRows
+						);
+
+						const startIndex = startRow * itemsPerRow;
+						const endIndex = Math.min(currentEmojis.length, endRow * itemsPerRow);
+
+						grid.style.transform = `translateY(${startRow * rowHeight}px)`;
+						grid.innerHTML = '';
+
+						for (let i = startIndex; i < endIndex; i++) {
+							const e = currentEmojis[i];
 							const btn = document.createElement('button');
 							btn.classList.add('emoji-picker-item');
 							btn.title = e.annotation || e.shortcodes?.[0] || '';
-							btn.innerHTML = await emojis.emojiToImg(e.emoji);
+							btn.innerHTML = emojis.emojiToImg(e.emoji);
 
 							btn.addEventListener('click', () => {
 								let output = shortcode && e.shortcodes?.length ? e.shortcodes[0] : e.emoji;
@@ -260,9 +287,20 @@ const emojis = {
 
 							grid.appendChild(btn);
 						}
-
-						list.appendChild(grid);
 					}
+
+					renderVisible();
+
+					let ticking = false;
+					list.onscroll = () => {
+						if (!ticking) {
+							requestAnimationFrame(() => {
+								renderVisible();
+								ticking = false;
+							});
+							ticking = true;
+						}
+					};
 				}
 
 				renderList(emojis.all);
