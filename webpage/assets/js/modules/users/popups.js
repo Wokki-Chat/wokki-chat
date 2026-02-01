@@ -163,75 +163,11 @@ export class UserPopupManager {
             });
         }
 
-        return `
-            <div class="user-info-profile-popup" ${customStyleData} data-user-id="${user.id}" style="${popupStyle} ${borderStyle}">
-                ${user.profile_banner ? `<img draggable="false" class="user-info-profile-popup-banner" src="${user.profile_banner}">` : ''}
-                <div class="user-info-profile-popup-profile-picture-username-status">
-                    <div class="user-info-profile-popup-profile-status">
-                        <img draggable="false" class="dm-info-profile-picture" src="${user.profile_picture}">
-                        <div class="user-info-profile-popup-status-circle-outer">
-                            <div class="user-info-profile-popup-status-circle-inner ${user.status}"></div>
-                        </div>
-                    </div>
-                    <div class="user-info-profile-popup-status-username">
-                        <div class="user-info-profile-popup-username-container">
-                            <p class="user-info-profile-popup-username">${user.display_name ? this.sanitizer.sanitize(user.display_name) : this.sanitizer.sanitize(user.username)}</p>
-                            ${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
-                        </div>
-                        <p class="user-info-profile-popup-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
-                    </div>
-                </div>
-                <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
-                    <div class="dm-info-item">
-                        <p class="dm-info-item-value dm-info-item-username-original">${this.sanitizer.sanitize(user.username)}</p>
-                    </div>
-                    <div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
-                        ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
-                        ${tagsHtml}
-                    </div>	
-                    <div class="dm-info-item">
-                        <p class="dm-info-item-key">Bio</p>
-                        <p class="dm-info-item-value">${user.bio ? userBio : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</p>
-                    </div>
-                    <div class="dm-info-item">
-                        <p class="dm-info-item-key">Joined on</p>
-                        <p class="dm-info-item-value">${new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric', year: 'numeric'}).format(new Date(user.created_at))}</p>
-                    </div>
-                    ${user.bot ? '' : `<a class="button-primary-filled no-underline dm-info-profile-link" ${user.profile_color_primary && user.profile_color_accent ? `data-custom-style="true" style="color: rgb(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}); background-color: rgba(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}, 0.1); border: 1px solid rgba(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}, 0.3);"` : ''} href="/profile/@${encodeURIComponent(user.username)}">View full profile</a>`}
-                </div>
-
-                ${user.widgets?.Spotify?.item ? `
-                    <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
-                        <div class="dm-info-item">
-                            <p class="dm-info-item-key">Playing Spotify</p>
-                            <div class="spotify-info">
-                                <div class="spotify-info-cover">
-                                    <img src="${user.widgets.Spotify.item.album.images[0]?.url}" alt="Album cover" />
-                                </div>
-                                <div class="spotify-info-text">
-                                    <a href="${user.widgets.Spotify.item.external_urls.spotify}" target="_blank" class="spotify-track-name" title="${user.widgets.Spotify.item.name}">
-                                        ${user.widgets.Spotify.item.name.length > 23 ? user.widgets.Spotify.item.name.slice(0, 20) + '…' : user.widgets.Spotify.item.name}
-                                    </a>
-                                    <p class="spotify-artists">
-                                        ${user.widgets.Spotify.item.artists.map(artist => {
-                                            const name = artist.name.length > 18 ? artist.name.slice(0, 15) + '…' : artist.name;
-                                            return `<a href="${artist.external_urls.spotify}" target="_blank" title="${artist.name}">${name}</a>`;
-                                        }).join(', ')}
-                                    </p>
-                                    <div class="spotify-progress-container">
-                                        <span class="spotify-time-left">${msToTime(user.widgets.Spotify.progress_ms)}</span>
-                                        <div class="spotify-progress-bar-wrapper">
-                                            <div class="spotify-progress-bar"></div>
-                                        </div>
-                                        <span class="spotify-time-right">${msToTime(user.widgets.Spotify.item.duration_ms)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ` : ''}
-            </div>
+        let html = `
+            
         `;
+
+        return html, customStyleData, user.profile_banner ? user.profile_banner : '', popupStyle, borderStyle;
     }
 
     async openExtendedPopup(user_id) {
@@ -241,11 +177,28 @@ export class UserPopupManager {
         
         const user = this.user_info;
 
+        const { popup_content, custom_style_data, profile_banner, popup_style, border_style } = await this.makeExtendedPopup(user);
+
         jspt.makePopup({
             content_type: "html",
             header: "Profile of @" + this.sanitizer.sanitize(user.username),
-            custom_id: "user_profile_popup",
-            content: await this.makeExtendedPopup(user),
+            custom_id: "user-profile-popup",
+            content: popup_content,
         });
+
+        const popup = document.querySelector("#user-profile-popup").querySelector(".popup");
+
+        if (custom_style_data !== '' && popup) {
+            popup.setAttribute(custom_style_data, '');
+            popup.style.background = popup_style;
+            popup.style.border = border_style;
+        }
+
+        if (profile_banner) {
+            const bannerImg = document.createElement("img");
+            bannerImg.src = profile_banner;
+            bannerImg.classList.add("extended-user-info-popup-banner");
+            popup.appendChild(bannerImg);
+        }
     }
 }
