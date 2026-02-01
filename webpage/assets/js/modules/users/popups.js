@@ -4,9 +4,22 @@ import { Sanitizer } from "../global/sanitization.js";
 import emojis from "../../emojis.js";
 
 export class UserPopupManager {
-    constructor({ user_id }) {
+    constructor({ user_id, access_token }) {
         this.user_id = user_id;
         this.sanitizer = new Sanitizer(user_id);
+        this.user_info = null;
+        this.access_token = access_token;
+    }
+
+    async fetchUserInfo(user_id) {
+        let headers = new Headers();
+        headers.append('Authorization', `Bearer ${this.access_token}`);
+        let response = await fetch(`https://chat.wokki20.nl/app/user_info?user_id=${user_id}`, { headers });
+        let data = await response.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        this.user_info = data.user;
     }
 
     async openUserPopup(user) {
@@ -110,5 +123,20 @@ export class UserPopupManager {
         });
 
         return popup;
+    }
+
+    async openExtendedPopup(user_id) {
+        if (this.user_info === null) {
+            await this.fetchUserInfo(user_id);
+        }
+        
+        const user = this.user_info;
+
+        jspt.makePopup({
+            content_type: "html",
+            header: "Profile of @" + this.sanitizer.sanitize(user.username),
+            custom_id: "user_profile_popup",
+            content: 'test',
+        });
     }
 }

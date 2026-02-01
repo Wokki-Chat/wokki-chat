@@ -37,6 +37,19 @@ if (!$profile_user_name) {
     exit;
 }
 
+$stmt = $mysqli->prepare("SELECT id FROM users WHERE username = ?");
+$stmt->bind_param("s", $profile_user_name);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+    $profile_user_id = $row['id'];
+} else {
+    header('Location: /home');
+    exit;
+}
+$stmt->close();
+
 $stmt = $mysqli->prepare("SELECT username, profile_picture, premium, premium_expires_at, premium_know FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -229,6 +242,7 @@ function formatPremiumExpiration($timestamp) {
         <wchat-allowed-scripts value="profile.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
+        <wchat-data id="requested-user-id" value="<?php echo htmlspecialchars($profile_user_id); ?>"></wchat-data>
         <wchat-data id="users-list" value="<?php echo htmlspecialchars(json_encode($friendsList)); ?>"></wchat-data>
         <wchat-data id="last-page" value="<?php 
             $lastPage = $_SESSION['last_page'];
