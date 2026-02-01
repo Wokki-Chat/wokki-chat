@@ -2,6 +2,7 @@ import emojis from "./emojis.js";
 import { MessageRenderer, MessageBehaviour, MessageHydrator, MessageCache } from "./modules/servers/messages.js";
 import ReactionRenderer from "./modules/servers/reactions.js";
 import SettingsManager from "./modules/servers/settings.js";
+import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
 
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
@@ -37,6 +38,9 @@ function initServer() {
 	const messageBehaviour = new MessageBehaviour({ user_id, channel_id, server_id, access_token, socket, messageContainer });
 	const messageHydrator = new MessageHydrator({ user_id, channels, server_id });
 	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
+
+	const sanitizer = new Sanitizer(user_id, channels, server_id);
+	const textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
@@ -676,7 +680,7 @@ function initServer() {
 			handleCommandAutocomplete();
 			handleMentions();
 
-			preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+			preview.innerHTML = textareaFormatter.format(textarea.innerText);
 		});
 
 		textarea.addEventListener('keydown', async (e) => {
@@ -750,7 +754,7 @@ function initServer() {
 			handleCommandAutocomplete();
 			handleMentions();
 
-			preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+			preview.innerHTML = textareaFormatter.format(textarea.innerText);
 		});
 
 		textarea.addEventListener('paste', (e) => {
@@ -771,7 +775,7 @@ function initServer() {
 		const observer = new MutationObserver(() => {
 			updateHeight();
 			updateCharsLeft();
-			preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+			preview.innerHTML = textareaFormatter.format(textarea.innerText);
 		});
 
 		observer.observe(textarea, {
@@ -815,7 +819,7 @@ function initServer() {
 	}
 
 	function send_message(textareaEl, uploadedFileNames = null) {
-		const message = getCleanMessageFromTextarea(textareaEl);
+		const message = textareaFormatter.cleanMsg(textareaEl);
 
 		if (!message) return;
 
@@ -887,7 +891,7 @@ function initServer() {
 		if (!messageEl) return;
 		
 		if (message) {
-			messageEl.querySelector(".message-text").innerHTML = await sanitizeMsg(message, usersList, user_id, channels, server_id);
+			messageEl.querySelector(".message-text").innerHTML = await sanitizer.sanitizeMsg(message, usersList, user_id, channels, server_id);
 			hydrateInvites(messageEl);
 			hydrateSpotifyTracks(messageEl);
 		}
@@ -1020,7 +1024,7 @@ function initServer() {
 				</div>
 			</div>
 			<div class="self-info-status-username">
-				<div class="self-info-profile-username-container"><p class="self-info-username">${user.display_name ? sanitize(user.display_name) : sanitize(user.username)}</p>
+				<div class="self-info-profile-username-container"><p class="self-info-username">${user.display_name ? sanitizer.sanitize(user.display_name) : sanitizer.sanitize(user.username)}</p>
 					${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
 					</div>
 				<p class="self-info-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
@@ -1074,13 +1078,13 @@ function initServer() {
 						</div>
 					</div>
 					<div class="user-info-profile-popup-status-username">
-						<div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${user.display_name ? sanitize(user.display_name) : sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
+						<div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${user.display_name ? sanitizer.sanitize(user.display_name) : sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
 						<p class="user-info-profile-popup-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
 					</div>
 				</div>
 				<div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
 					<div class="dm-info-item">
-						<p class="dm-info-item-value dm-info-item-username-original">${sanitize(user.username)}</p>
+						<p class="dm-info-item-value dm-info-item-username-original">${sanitizer.sanitize(user.username)}</p>
 					</div>
 					<div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
 						${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
@@ -1258,6 +1262,8 @@ function initServer() {
 		offlineUsersEl.appendChild(offlineLabel);
 
 		usersList = users;
+
+		sanitizer.init(users);
 
 		await Promise.all(users.map(user => renderUser(user)));
 	});

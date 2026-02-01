@@ -1,3 +1,4 @@
+import { Sanitizer } from "./modules/global/sanitization";
 function initHome() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -17,6 +18,8 @@ function initHome() {
 
 	const serverbar_servers = document.querySelectorAll('#server-bar-item-server');
 	serverbar_servers.forEach(el => el.classList.remove('active'));
+
+    const sanitizer = new Sanitizer();
     
     document.getElementById("server-bar-item-home").classList.add("active");
     function renderUser(user) {
@@ -42,7 +45,7 @@ function initHome() {
                 </div>
             </div>
             <div class="self-info-status-username">
-                <div class="self-info-profile-username-container"><p class="self-info-username">${sanitize(user.username)}</p>
+                <div class="self-info-profile-username-container"><p class="self-info-username">${sanitizer.sanitize(user.username)}</p>
                     ${user.premium ? '<div class="premium-tag"><span class="material-symbols-rounded">star</span>PREMIUM</div>' : ''}
                     </div>
                 <p class="self-info-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
@@ -60,12 +63,6 @@ function initHome() {
             hour < 17 ? "Good afternoon" :
             "Good evening";
         daytime.textContent = greeting;
-    }
-
-    function sanitize(text) {
-        const div = document.createElement("div");
-        div.innerText = text;
-        return div.innerHTML;
     }
 }
 if (typeof window.swup !== "undefined") {

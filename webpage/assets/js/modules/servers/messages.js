@@ -1,19 +1,23 @@
 // modules/servers/messages.js
 // Module description: This module helps with managing messages in a server.
 import ReactionsRender from "./reactions.js";
+import { Sanitizer } from "../global/sanitization.js";
 
 export class MessageRenderer {
 	constructor({ user_id, channels, server_id }) {
 		this.user_id = user_id;
 		this.channels = channels;
 		this.server_id = server_id;
+		this.sanitizer = new Sanitizer(this.user_id, this.channels, this.server_id);
 	}
 
 	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, reactions }, usersList) {
 		if (!message && !embed) return null;
 
-		const sanitizedUsername = sender_info.display_name ? sanitize(sender_info.display_name) : sanitize(sender_info.username);
-		const sanitizedMessage = await sanitizeMsg(message, usersList, this.user_id, this.channels, this.server_id);
+		this.sanitizer.init(usersList);
+
+		const sanitizedUsername = sender_info.display_name ? this.sanitizer.sanitize(sender_info.display_name) : this.sanitizer.sanitize(sender_info.username);
+		const sanitizedMessage = await this.sanitizer.sanitizeMsg(message);
 		const createdAtDate = new Date(created_at);
 
 		let embedsRaw = null;
@@ -40,8 +44,8 @@ export class MessageRenderer {
 				parent_message_info !== null
 				? `<div class="message-reply" data-message-id="${parent_message_info.message_id}">
 					<img class="identification" src="/assets/images/identifier.svg">
-					<p class="username-reply">@${sanitize(parent_message_info.username)}</p>
-					<p class="message-text-reply">${sanitize(parent_message_info.message_preview)}</p>
+					<p class="username-reply">@${this.sanitizer.sanitize(parent_message_info.username)}</p>
+					<p class="message-text-reply">${this.sanitizer.sanitize(parent_message_info.message_preview)}</p>
 					</div>`
 				: ''
 			}
@@ -49,9 +53,9 @@ export class MessageRenderer {
 				command_info && command_info !== null
 				? `<div class="message-command">
 					<img class="identification" src="/assets/images/identifier.svg">
-					<p class="username-command">@${sanitize(command_info?.username) ?? ''}</p>
+					<p class="username-command">@${this.sanitizer.sanitize(command_info?.username) ?? ''}</p>
 					<p>used</p>
-					<p class="used-command">${sanitize(command_info?.command) ?? ''}</p>
+					<p class="used-command">${this.sanitizer.sanitize(command_info?.command) ?? ''}</p>
 					</div>`
 				: ''
 			}
@@ -99,13 +103,13 @@ export class MessageRenderer {
 
 		return `
 			<div class="embed" data-bot-id="${bot_id}" style="border-left: 4px solid ${embed.color || 'var(--clr-primary-a0)'};">
-			${embed.title ? `<h3 class="embed-title">${sanitize(embed.title)}</h3>` : ''}
-			${embed.description ? `<p class="embed-description">${await sanitizeMsg(embed.description, usersList, this.user_id, this.channels, this.server_id)}</p>` : ''}
+			${embed.title ? `<h3 class="embed-title">${this.sanitizer.sanitize(embed.title)}</h3>` : ''}
+			${embed.description ? `<p class="embed-description">${await this.sanitizer.sanitizeMsg(embed.description)}</p>` : ''}
 			
 			${embed.fields && embed.fields.length > 0 ? `
 				<div class="embed-fields">
 				${embed.fields.map(field => `
-					<div class="embed-field"><strong>${sanitize(field.name)}</strong>${sanitize(field.value)}</div>
+					<div class="embed-field"><strong>${this.sanitizer.sanitize(field.name)}</strong>${this.sanitizer.sanitize(field.value)}</div>
 				`).join('')}
 				</div>
 			` : ''}
@@ -125,7 +129,7 @@ export class MessageRenderer {
 				</div>
 			` : ''}
 			
-			${embed.footer ? `<h5 class="embed-footer">${sanitize(embed.footer)}</h5>` : ''}
+			${embed.footer ? `<h5 class="embed-footer">${this.sanitizer.sanitize(embed.footer)}</h5>` : ''}
 			</div>
 		`;
 	}
@@ -227,13 +231,13 @@ export class MessageHydrator {
 						</div>
 					`;
 				} else if (type === 'pdf') {
-					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${sanitize(asset.originalName)}</a>`;
+					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${this.sanitizer.sanitize(asset.originalName)}</a>`;
 				} else if (type === 'txt') {
 					return `<pre class="message-asset-text" id="txt-asset-${msgId}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
 				} else if (type === 'profile_picture') {
 					return `<img data-src="https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}" alt="${asset.originalName}" class="message-asset-image message-asset-profile-picture lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}', '${asset.originalName}')" />`;
 				} else {
-					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" download class="message-asset-file link">${sanitize(asset.savedName)}</a>`;
+					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" download class="message-asset-file link">${this.sanitizer.sanitize(asset.savedName)}</a>`;
 				}
 			}).join('');
 
@@ -258,7 +262,7 @@ export class MessageHydrator {
 
 				try {
 					const contents = await this.getAssetFileInsides(asset.savedName);
-					preEl.textContent = sanitize(contents);
+					preEl.textContent = this.sanitizer.sanitize(contents);
 
 					const pre = preEl.parentElement;
 					if (!pre.querySelector(".lang-bar")) {

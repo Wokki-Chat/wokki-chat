@@ -1,8 +1,11 @@
 // modules/servers/settings.js
 // Module description: This module helps with managing server settings.
+import { Sanitizer } from "../global/sanitization";
 
 export default class SettingsManager {
-    constructor() {}
+    constructor() {
+        this.sanitizer = new Sanitizer();
+    }
 
     async open() {
         let settingsContent = await fetch('/assets/html/server/settings/ui.html').then(r => r.text());
@@ -85,7 +88,7 @@ export default class SettingsManager {
 
                 updateHeight();
                 updateCharsLeft();
-                serverSettingsPreview.innerHTML = sanitize(serverSettingsTextarea.innerText);
+                serverSettingsPreview.innerHTML = this.sanitizer.sanitize(serverSettingsTextarea.innerText);
             };
 
             serverSettingsTextarea.removeEventListener('input', inputHandler);
@@ -121,7 +124,7 @@ export default class SettingsManager {
 
             updateHeight();
             updateCharsLeft();
-            serverSettingsPreview.innerHTML = sanitize(serverSettingsTextarea.innerText);
+            serverSettingsPreview.innerHTML = this.sanitizer.sanitize(serverSettingsTextarea.innerText);
         };
 
         setupGeneralInfo();

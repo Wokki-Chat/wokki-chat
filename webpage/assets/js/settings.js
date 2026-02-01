@@ -1,3 +1,4 @@
+import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization";
 function initSettings() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -21,6 +22,9 @@ function initSettings() {
 	const connections = JSON.parse(document.getElementById("connections").getAttribute("value"));
 	const kudo_items = JSON.parse(document.getElementById("kudo-items").getAttribute("value"));
 	const kudos = JSON.parse(document.getElementById("kudos").getAttribute("value"));
+
+	const sanitizer = new Sanitizer();
+	const textareaFormatter = new TextareaFormatter();
 
 	if (active_tab === "account") {
 
@@ -76,7 +80,7 @@ function initSettings() {
 				updateHeight();
 				updateCharsLeft();
 
-				preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+				preview.innerHTML = textareaFormatter.format(textarea.innerText);
 			});
 
 			textarea.addEventListener('input', (e) => {
@@ -89,7 +93,7 @@ function initSettings() {
 				updateHeight();
 				updateCharsLeft();
 
-				preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+				preview.innerHTML = textareaFormatter.format(textarea.innerText);
 			});
 
 			textarea.addEventListener('paste', (e) => {
@@ -131,7 +135,7 @@ function initSettings() {
 
 			updateHeight();
 			updateCharsLeft();
-			preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+			preview.innerHTML = textareaFormatter.format(textarea.innerText);
 		}
 		Coloris({
 			theme: 'default',
@@ -281,7 +285,7 @@ function initSettings() {
 					if (displayNameOnProfile) displayNameOnProfile.textContent = originalDisplayName !== "" ? originalDisplayName : originalUsername;
 					if (displayNameOnMessage) displayNameOnMessage.textContent = originalDisplayName !== "" ? originalDisplayName : originalUsername;
 					if (bioInput) bioInput.textContent = originalBio;
-					if (preview) preview.innerHTML = renderMarkdownInTextarea(originalBio);
+					if (preview) preview.innerHTML = textareaFormatter.format(originalBio);
 					container.remove();
 				});
 
@@ -436,18 +440,18 @@ function initSettings() {
 		bioInput.addEventListener("input", async () => {
 			if (bioProfile) {
 				let text = bioInput.textContent;
-				text = await sanitizeMrk(text);
+				text = await sanitizer.sanitizeMrk(text);
 				bioProfile.innerHTML = text || "You have no bio yet.";
 			}
 			if (accountFormChanged()) showSaveResetButtons();
 		});
 
 		display_name_input.addEventListener("input", () => {
-			if (displayNameOnProfile && display_name_input.value !== "") displayNameOnProfile.textContent = sanitize(display_name_input.value);
-			else if (displayNameOnProfile) displayNameOnProfile.textContent = originalDisplayName !== "" ? sanitize(originalDisplayName) : sanitize(originalUsername);
+			if (displayNameOnProfile && display_name_input.value !== "") displayNameOnProfile.textContent = sanitizer.sanitize(display_name_input.value);
+			else if (displayNameOnProfile) displayNameOnProfile.textContent = originalDisplayName !== "" ? sanitizer.sanitize(originalDisplayName) : sanitizer.sanitize(originalUsername);
 
-			if (displayNameOnMessage && display_name_input.value !== "") displayNameOnMessage.textContent = sanitize(display_name_input.value);
-			else if (displayNameOnMessage) displayNameOnMessage.textContent = originalDisplayName !== "" ? sanitize(originalDisplayName) : sanitize(originalUsername);
+			if (displayNameOnMessage && display_name_input.value !== "") displayNameOnMessage.textContent = sanitizer.sanitize(display_name_input.value);
+			else if (displayNameOnMessage) displayNameOnMessage.textContent = originalDisplayName !== "" ? sanitizer.sanitize(originalDisplayName) : sanitizer.sanitize(originalUsername);
 			if (accountFormChanged()) showSaveResetButtons();
 		});
 
