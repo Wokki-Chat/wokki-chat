@@ -4606,7 +4606,8 @@ input#clr-hue-slider {
     margin-bottom: -4px;
 }
 
-.popup-container#server-settings-popup {
+.popup-container#server-settings-popup,
+.popup-container#user-profile-popup {
     background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(5px);
 }
