@@ -106,6 +106,7 @@ $serverStmt->close();
         </div>
     </div>
     <main id="app">
+        <wchat-allowed-scripts value=""></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
