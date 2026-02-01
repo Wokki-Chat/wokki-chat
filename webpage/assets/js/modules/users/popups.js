@@ -31,7 +31,7 @@ export class UserPopupManager {
             popup.dataset.lightText = lightText.toString();
             popup.dataset.customStyle = 'true';
         }
-        let userBio = await sanitizer.sanitizeMrk(user.bio);
+        let userBio = await this.sanitizer.sanitizeMrk(user.bio);
         userBio = await emojis.replaceText(userBio);
         popup.innerHTML = `
             ${user.profile_banner ? `<img draggable="false" class="user-info-profile-popup-banner" src="${user.profile_banner}">` : ''}
@@ -43,13 +43,13 @@ export class UserPopupManager {
                     </div>
                 </div>
                 <div class="user-info-profile-popup-status-username">
-                    <div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${user.display_name ? sanitizer.sanitize(user.display_name) : sanitizer.sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
+                    <div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${user.display_name ? this.sanitizer.sanitize(user.display_name) : this.sanitizer.sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
                     <p class="user-info-profile-popup-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
                 </div>
             </div>
             <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
                 <div class="dm-info-item">
-                    <p class="dm-info-item-value dm-info-item-username-original">${sanitizer.sanitize(user.username)}</p>
+                    <p class="dm-info-item-value dm-info-item-username-original">${this.sanitizer.sanitize(user.username)}</p>
                 </div>
                 <div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
                     ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}

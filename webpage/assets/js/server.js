@@ -1053,7 +1053,7 @@ function initServer() {
 				return;
 			}
 
-			const popup = userPopupManager.openUserPopup(user);
+			const popup = await userPopupManager.openUserPopup(user);
 
 			document.body.appendChild(popup);
 
