@@ -1,6 +1,6 @@
 // modules/servers/settings.js
 // Module description: This module helps with managing server settings.
-import { Sanitizer } from "../global/sanitization";
+import { Sanitizer } from "../global/sanitization.js";
 
 export default class SettingsManager {
     constructor() {
