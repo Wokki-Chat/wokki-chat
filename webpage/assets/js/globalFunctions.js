@@ -152,6 +152,14 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
     return index >= openTagIndex && index < closeTagIndex + 4;
   }
 
+  const emojiShortcodes = [];
+  text = text.replace(/(:[a-zA-Z0-9_]+:)/g, (match) => {
+    const placeholder = `__EMOJI_PLACEHOLDER_${emojiShortcodes.length}__`;
+    emojiShortcodes.push(match);
+    return placeholder;
+  });
+
+
   const parts = text.split(/(```(\w+)?\n[\s\S]*?```)/g);
 
   let processed = await Promise.all(parts.map(async part => {
@@ -302,6 +310,11 @@ async function sanitizeMsg(text, usersList = [], user_id, channels, server_id) {
   }));
 
   const result = processed.join('');
+  
+  emojiShortcodes.forEach((emoji, i) => {
+    const placeholder = `__EMOJI_PLACEHOLDER_${i}__`;
+    result = result.replaceAll(placeholder, emoji);
+  });
 
   setTimeout(() => {
     hljs.highlightAll();
@@ -320,6 +333,12 @@ async function sanitizeMrk(text) {
       "'": '&#39;'
     })[ch]);
   }
+  const emojiShortcodes = [];
+  text = text.replace(/(:[a-zA-Z0-9_]+:)/g, (match) => {
+    const placeholder = `__EMOJI_PLACEHOLDER_${emojiShortcodes.length}__`;
+    emojiShortcodes.push(match);
+    return placeholder;
+  });
 
   text = escapeHtml(text);
 
@@ -385,6 +404,11 @@ async function sanitizeMrk(text) {
 
   text = text.replace(/\n/g, '<br>');
   text = text.replace(/\\([*_\-~`\\[\](){}])/g, '$1');
+
+  emojiShortcodes.forEach((emoji, i) => {
+    const placeholder = `__EMOJI_PLACEHOLDER_${i}__`;
+    text = text.replaceAll(placeholder, emoji);
+  });
 
   return text;
 }
@@ -1015,9 +1039,16 @@ function renderMarkdownInTextarea(text) {
       "'": '&#39;',
     })[ch]);
 
+  const emojiShortcodes = [];
+  text = text.replace(/(:[a-zA-Z0-9_]+:)/g, (match) => {
+    const placeholder = `__EMOJI_PLACEHOLDER_${emojiShortcodes.length}__`;
+    emojiShortcodes.push(match);
+    return placeholder;
+  });
+
   const escaped = escapeHtml(text);
 
-  return escaped
+  let rendered = escaped
     .replace(/(\\)?\*\*(.+?)\*\*/g, (match, esc, content) => {
       if (esc) return `<span class="md-escape">\\</span>**${content}**`;
       return `<span class="md-bold"><span class="md-syntax">**</span><b>${content}</b><span class="md-syntax">**</span></span>`;
@@ -1033,6 +1064,13 @@ function renderMarkdownInTextarea(text) {
       if (esc) return `<span class="md-escape">\\</span>~~${content}~~`;
       return `<span class="md-strike"><span class="md-syntax">~~</span><del>${content}</del><span class="md-syntax">~~</span></span>`;
     });
+
+  emojiShortcodes.forEach((emoji, i) => {
+    const placeholder = `__EMOJI_PLACEHOLDER_${i}__`;
+    rendered = rendered.replaceAll(placeholder, emoji);
+  });
+
+  return rendered;
 }
 
 function getCaretCharacterOffsetWithin(element) {
