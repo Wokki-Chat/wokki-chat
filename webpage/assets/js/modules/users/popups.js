@@ -164,7 +164,7 @@ export class UserPopupManager {
         }
 
         let html = `
-            
+
         `;
 
         return html, customStyleData, user.profile_banner ? user.profile_banner : '', popupStyle, borderStyle;
@@ -177,7 +177,7 @@ export class UserPopupManager {
         
         const user = this.user_info;
 
-        const { popup_content, custom_style_data, profile_banner, popup_style, border_style } = await this.makeExtendedPopup(user);
+        const { html: popup_content, custom_style_data, profile_banner, popup_style, border_style } = await this.makeExtendedPopup(user);
 
         jspt.makePopup({
             content_type: "html",
