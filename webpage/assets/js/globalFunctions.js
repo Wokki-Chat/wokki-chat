@@ -1017,20 +1017,32 @@ function renderMarkdownInTextarea(text) {
 
   const escaped = escapeHtml(text);
 
+  const isInShortcode = (str, index) => {
+    const before = str.lastIndexOf(':', index);
+    const after = str.indexOf(':', index);
+    return before !== -1 && after !== -1 && before < index && after > index;
+  };
+
   return escaped
-    .replace(/(\\)?\*\*(.+?)\*\*/g, (match, esc, content) => {
+    .replace(/(\\)?\*\*(.+?)\*\*/g, (match, esc, content, offset) => {
       if (esc) return `<span class="md-escape">\\</span>**${content}**`;
+      if (isInShortcode(escaped, offset)) return match;
       return `<span class="md-bold"><span class="md-syntax">**</span><b>${content}</b><span class="md-syntax">**</span></span>`;
     })
 
-    .replace(/(\\)?([*_])([^*_]*?)\2/g, (match, esc, wrap, content) => {
+    .replace(/(\\)?([*_])([^*_]+?)\2/g, (match, esc, wrap, content, offset) => {
       if (esc) return `<span class="md-escape">\\</span>${wrap}${content}${wrap}`;
+      if (isInShortcode(escaped, offset)) return match;
+      const before = escaped[offset - 1] || ' ';
+      const after = escaped[offset + match.length] || ' ';
+      if (/\w/.test(before) && /\w/.test(after)) return match;
       if (content.includes(wrap)) return match;
       return `<span class="md-italic"><span class="md-syntax">${wrap}</span><i>${content}</i><span class="md-syntax">${wrap}</span></span>`;
     })
 
-    .replace(/(\\)?~~(.+?)~~/g, (match, esc, content) => {
+    .replace(/(\\)?~~(.+?)~~/g, (match, esc, content, offset) => {
       if (esc) return `<span class="md-escape">\\</span>~~${content}~~`;
+      if (isInShortcode(escaped, offset)) return match;
       return `<span class="md-strike"><span class="md-syntax">~~</span><del>${content}</del><span class="md-syntax">~~</span></span>`;
     });
 }
