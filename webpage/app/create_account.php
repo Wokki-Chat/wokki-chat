@@ -184,6 +184,8 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
     } catch (Exception $e) {
         error_log("MAIL ERROR: " . $e->getMessage());
         echo "MAIL ERROR: " . $e->getMessage();
+        error_log('MAIL PASS LEN: ' . strlen($mail_password));
+        echo 'MAIL PASS LEN: ' . strlen($mail_password);
         exit;
     }
 
