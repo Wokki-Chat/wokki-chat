@@ -142,12 +142,9 @@ function registerUser($mysqli, $username, $email, $password, $mail_password) {
 
 function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) {
     $mail = new PHPMailer(true);
-    error_log('MAIL PASS LEN 1: ' . strlen($mail_password));
-    echo 'MAIL PASS LEN 1: ' . strlen($mail_password);
-
     try {
         $mail->isSMTP();
-        $mail->Host = 'mail.wokki20.nl';
+        $mail->Host = 'cm.wokki20.nl';
         $mail->SMTPAuth = true;
         $mail->Username = 'noreply@cm.wokki20.nl';
         $mail->Password = $mail_password;
@@ -186,8 +183,6 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
     } catch (Exception $e) {
         error_log("MAIL ERROR: " . $e->getMessage());
         echo "MAIL ERROR: " . $e->getMessage();
-        error_log('MAIL PASS LEN: ' . strlen($mail_password));
-        echo 'MAIL PASS LEN: ' . strlen($mail_password);
         exit;
     }
 
