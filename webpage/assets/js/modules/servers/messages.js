@@ -231,7 +231,7 @@ export class MessageHydrator {
 						</div>
 					`;
 				} else if (type === 'pdf') {
-					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${this.r.(asset.originalName)}</a>`;
+					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${this.sanitizer.sanitize(asset.originalName)}</a>`;
 				} else if (type === 'txt') {
 					return `<pre class="message-asset-text" id="txt-asset-${msgId}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
 				} else if (type === 'profile_picture') {
