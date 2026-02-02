@@ -460,7 +460,7 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
     <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
     <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
-    <script src="/assets/js/settings.js"></script>
+    <script src="/assets/js/settings.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
 </body>
 </html>
