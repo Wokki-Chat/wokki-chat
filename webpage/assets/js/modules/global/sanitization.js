@@ -156,7 +156,7 @@ export class Sanitizer {
                     if (!Array.isArray(this.channels)) return match;
                     const channel = this.channels.find(c => c.name.toLowerCase() === channelName.toLowerCase());
                     if (channel) {
-                        const url = `https://chat.wokki20.nl/server/${server_id}/channel/${channel.channel_id}`;
+                        const url = `https://chat.wokki20.nl/server/${this.server_id}/channel/${channel.channel_id}`;
                         return `<a href="${url}" rel="noopener noreferrer" class="channel-link">#${channelName}</a>`;
                     }
                     return match;
