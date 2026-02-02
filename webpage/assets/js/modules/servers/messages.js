@@ -121,8 +121,8 @@ export class MessageRenderer {
 					${row.map(btn => {
 						const customStyle = `background-color: ${btn.color || 'var(--clr-primary-a0)'}; color: ${btn.text_color || 'var(--clr-text-a0)'}; user-select: none;`;
 						return btn.type === 'link'
-						? `<a href="${btn.url}" target="_blank" rel="noopener noreferrer" class="button-primary-filled ${btn.disabled ? 'disabled' : ''}"  style="${customStyle}">${sanitize(btn.label)}</a>`
-						: `<button class="button-primary-filled ${btn.disabled ? 'disabled' : ''}" style="${customStyle}" ${btn.disabled ? 'disabled="true"' : ''} data-btn-id="${btn.id}">${sanitize(btn.label)}</button>`;
+						? `<a href="${btn.url}" target="_blank" rel="noopener noreferrer" class="button-primary-filled ${btn.disabled ? 'disabled' : ''}"  style="${customStyle}">${this.sanitizer.sanitize(btn.label)}</a>`
+						: `<button class="button-primary-filled ${btn.disabled ? 'disabled' : ''}" style="${customStyle}" ${btn.disabled ? 'disabled="true"' : ''} data-btn-id="${btn.id}">${this.sanitizer.sanitize(btn.label)}</button>`;
 					}).join('')}
 					</div>
 				`).join('')}
@@ -231,7 +231,7 @@ export class MessageHydrator {
 						</div>
 					`;
 				} else if (type === 'pdf') {
-					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${this.sanitizer.sanitize(asset.originalName)}</a>`;
+					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${this.r.(asset.originalName)}</a>`;
 				} else if (type === 'txt') {
 					return `<pre class="message-asset-text" id="txt-asset-${msgId}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
 				} else if (type === 'profile_picture') {
