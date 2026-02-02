@@ -152,7 +152,9 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = 465;
 
-        
+        $mail->SMTPDebug = 2;
+        $mail->Debugoutput = 'error_log';
+
         $mail->setFrom('noreply@wokki20.nl', 'wokki20 Chat');
         $mail->addAddress($email);
 
@@ -160,22 +162,29 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
         $mail->Subject = 'Verify your account';
 
         $htmlTemplate = file_get_contents('assets/email_activate_template.html');
-        $activationLink = 'https://chat.wokki20.nl/app/activate_account?activatecode=' . $activatecode . '&user_id=' . $user_id;
+
+        if ($htmlTemplate === false) {
+            error_log("Email template not found: assets/email_activate_template.html");
+            echo "ERROR: Email template file is missing.";
+            exit;
+        }
+
+        $activationLink = 'https://chat.wokki20.nl/app/activate_account?activatecode='
+            . $activatecode . '&user_id=' . $user_id;
+
         $htmlTemplate = str_replace('{{activate_link}}', $activationLink, $htmlTemplate);
         $htmlTemplate = str_replace('{{support_link}}', 'mailto:info@wokki20.nl', $htmlTemplate);
 
         $mail->Body = $htmlTemplate;
 
         if (!$mail->send()) {
-            throw new Exception('Failed to send verification email');
+            throw new Exception("PHPMailer send() returned false.");
         }
 
     } catch (Exception $e) {
-        return [
-            'status' => 'error',
-            'description' => $e->getMessage(),
-            'return_code' => 3
-        ];
+        error_log("MAIL ERROR: " . $e->getMessage());
+        echo "MAIL ERROR: " . $e->getMessage();
+        exit;
     }
 
     return [
@@ -184,7 +193,6 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
         'return_code' => 4
     ];
 }
-
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
