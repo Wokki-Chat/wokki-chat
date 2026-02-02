@@ -301,7 +301,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->close();
 
     $stmt = $mysqli->prepare("INSERT INTO server_roles (role_id, role_name, role_color, server_id, add_on_join) VALUES (?, ?, ?, ?, 1)");
-    $stmt->bind_param("sssss", $general_role_id, $general_role_name, $role_color, $server_id);
+    $stmt->bind_param("ssss", $general_role_id, $general_role_name, $role_color, $server_id);
     $stmt->execute();
     $stmt->close();
 
