@@ -181,8 +181,13 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
         }
 
     } catch (Exception $e) {
-        error_log("MAIL ERROR: " . $e->getMessage());
-        echo "MAIL ERROR: " . $e->getMessage();
+        $errorMsg = "MAIL ERROR: " . $e->getMessage() .
+            " | Host: " . $mail->Host .
+            " | Port: " . $mail->Port .
+            " | Encryption: " . $mail->SMTPSecure .
+            " | Username: " . $mail->Username;
+        error_log($errorMsg);
+        echo $errorMsg;
         exit;
     }
 
