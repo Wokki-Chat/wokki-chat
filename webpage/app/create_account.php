@@ -146,6 +146,7 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
         $mail->isSMTP();
         $mail->Host = 'mail.wokki20.nl';
         $mail->SMTPAuth = true;
+        $mail->AuthType = 'LOGIN';
         $mail->Username = 'noreply@cm.wokki20.nl';
         $mail->Password = $mail_password;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
@@ -154,7 +155,7 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
         $mail->SMTPDebug = 2;
         $mail->Debugoutput = 'error_log';
 
-        $mail->setFrom('noreply@cm.wokki20.nl', 'wokki20 Chat');
+        $mail->setFrom('noreply@cm.wokki20.nl', 'Wokki Chat');
         $mail->addAddress($email);
 
         $mail->isHTML(true);
