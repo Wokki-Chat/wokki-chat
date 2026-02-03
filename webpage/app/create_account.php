@@ -149,7 +149,7 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
         $mail->Username = 'noreply@cm.wokki20.nl';
         $mail->Password = $mail_password;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port = 465;
+        $mail->Port = 587;
 
         $mail->SMTPDebug = 2;
         $mail->Debugoutput = 'error_log';
