@@ -144,12 +144,12 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
-        $mail->Host = 'cm.wokki20.nl';
+        $mail->Host = 'mail.wokki20.nl';
         $mail->SMTPAuth = true;
         $mail->Username = 'noreply@cm.wokki20.nl';
         $mail->Password = $mail_password;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port = 587;
+        $mail->Port = 465;
 
         $mail->SMTPDebug = 2;
         $mail->Debugoutput = 'error_log';
