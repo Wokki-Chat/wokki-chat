@@ -84,14 +84,17 @@ function registerUser($mysqli, $username, $email, $password, $mail_password) {
     }
     
     try {
-        $stmt = $mysqli->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
-        $stmt->bind_param("sss", $username, $email, $password_hash);
+        $pfp = "/uploads/profile-pictures/default-profile.png"
+
+        $stmt = $mysqli->prepare("INSERT INTO users (username, email, password_hash, profile_picture) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $username, $email, $password_hash, $pfp);
         $stmt->execute();
         $user_id = $stmt->insert_id;
         $stmt->close();
 
         $activatecode = bin2hex(random_bytes(16));
 
+        
         $stmt = $mysqli->prepare("INSERT INTO email_verification_codes (user_id, code, expiry_date) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))");
         $stmt->bind_param("is", $user_id, $activatecode);
         $stmt->execute();
