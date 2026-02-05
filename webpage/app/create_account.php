@@ -84,7 +84,7 @@ function registerUser($mysqli, $username, $email, $password, $mail_password) {
     }
     
     try {
-        $pfp = "/uploads/profile-pictures/default-profile.png"
+        $pfp = "/uploads/profile-pictures/default-profile.png";
 
         $stmt = $mysqli->prepare("INSERT INTO users (username, email, password_hash, profile_picture) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("ssss", $username, $email, $password_hash, $pfp);
