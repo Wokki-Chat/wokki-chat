@@ -174,7 +174,13 @@ function initServer() {
 		messageBehaviour.applyCompactMode(el, msg, insertIndex, messageCache.cache);
 		messageBehaviour.attach(el, msg);
 		
-		messageHydrator.hydrate(el, msg.assets, msg.id);
+		const hydratePromise = messageHydrator.hydrate(el, msg.assets, msg.id).then(() => {
+			if (nearBottom) {
+				requestAnimationFrame(() => {
+					messageContainer.scrollTop = messageContainer.scrollHeight;
+				});
+			}
+		});
 
 		await emojis.replaceEl(el);
 
