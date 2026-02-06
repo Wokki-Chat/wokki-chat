@@ -170,7 +170,7 @@ export class Sanitizer {
                     const user = this.users_list.find(u => u.username.toLowerCase() === cleanUsername.toLowerCase());
                     if (user) {
                         const url = `https://chat.wokki20.nl/profile/@${encodeURIComponent(cleanUsername)}`;
-                        return `<a href="${url}" rel="noopener noreferrer" class="user-link ${user.id == user_id ? "self" : ""}" data-user-id="${user.id}">@${cleanUsername}</a>`;
+                        return `<a href="${url}" rel="noopener noreferrer" class="user-link ${user.id == this.user_id ? "self" : ""}" data-user-id="${user.id}">@${cleanUsername}</a>`;
                     }
                     return match;
                 });
