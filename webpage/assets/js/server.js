@@ -573,7 +573,7 @@ function initServer() {
 				const query = afterAt.split(/\s|\n/)[0];
 				textarea.style.color = "var(--clr-text-a0)";
 				preview.style.display = "none";
-				show_mentions(query, usersList);
+				show_mentions(query, usersList, sanitizer);
 			} else {
 				hide_mentions();
 				textarea.style.color = "transparent";

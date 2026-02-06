@@ -123,7 +123,7 @@ function formatFullDate(created_at) {
   });
 }
 
-function show_mentions(query, usersList) {
+function show_mentions(query, usersList, sanitizer) {
   const existingPopup = document.querySelector(".mentions-popup");
   if (existingPopup) existingPopup.remove();
 
@@ -147,7 +147,7 @@ function show_mentions(query, usersList) {
     `;
 
     userDiv.addEventListener("click", () => {
-      insertMention(user.username);
+      insertMention(user.username, sanitizer);
       container.remove();
     });
 
@@ -162,7 +162,7 @@ function hide_mentions() {
   if (existingPopup) existingPopup.remove();
 }
 
-function insertMention(username) {
+function insertMention(username, sanitizer) {
   const textarea = document.getElementById("message-input");
   const text = textarea.innerHTML;
 
