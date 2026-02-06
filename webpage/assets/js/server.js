@@ -556,7 +556,7 @@ function initServer() {
 			if (textarea.innerText.startsWith('/')) {
 				textarea.style.color = "var(--clr-text-a0)";
 				preview.style.display = "none";
-				showAvailableCommands(textarea.innerText, textarea, available_commands);
+				showAvailableCommands(textarea.innerText, textarea, available_commands, sanitizer);
 			} else {
 				const popup = document.querySelector(".available-commands");
 				if (popup) popup.remove();

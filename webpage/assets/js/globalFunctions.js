@@ -192,7 +192,7 @@ function placeCaretAtEnd(el) {
   }
 }
 
-function showAvailableCommands(command, textarea, available_commands) {
+function showAvailableCommands(command, textarea, available_commands, sanitizer) {
     const existingPopup = document.querySelector(".available-commands");
     if (existingPopup) existingPopup.remove();
     if (available_commands.length === 0) return;
