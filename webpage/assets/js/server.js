@@ -787,7 +787,6 @@ function initServer() {
 	}
 
 	function deleteMsg(id) {
-		console.log('deleteMsg', id);
 		const indexInCache = messageCache.delete(id);
 		if (indexInCache === -1) return;
 
