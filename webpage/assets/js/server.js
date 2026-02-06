@@ -512,7 +512,7 @@ function initServer() {
 
 
 	socket.on("message_deleted", (message_id) => {
-		deleteMsg(message_id);
+		deleteMsg(message_id.id);
 	});
 
 	const minHeight = 18;
@@ -788,7 +788,6 @@ function initServer() {
 	}
 
 	function deleteMsg(id) {
-		console.log('deleteMsg', id);
 		const indexInCache = messageCache.delete(id);
 		if (indexInCache === -1) return;
 
