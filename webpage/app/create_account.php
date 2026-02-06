@@ -79,7 +79,7 @@ function registerUser($mysqli, $username, $email, $password, $mail_password) {
         return [
             'status' => 'error',
             'description' => 'The maximum number of accounts has been reached',
-            'return_code' => 2
+            'return_code' => 3
         ];
     }
     
@@ -137,7 +137,7 @@ function registerUser($mysqli, $username, $email, $password, $mail_password) {
         return [
             'status' => 'error',
             'description' => 'Database error: ' . $e->getMessage(),
-            'return_code' => 18
+            'return_code' => 4
         ];
     }
 
@@ -195,11 +195,7 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
         exit;
     }
 
-    return [
-        'status' => 'success',
-        'description' => 'Verification email sent successfully',
-        'return_code' => 4
-    ];
+    return true;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -246,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'All fields are required',
-                'return_code' => 7
+                'return_code' => 8
             ]);
             exit;
         }
@@ -255,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Password must be at least 8 characters long',
-                'return_code' => 8
+                'return_code' => 9
             ]);
             exit;
         }
@@ -263,7 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Password cannot contain only spaces',
-                'return_code' => 9
+                'return_code' => 10
             ]);
             exit;
         }
@@ -271,7 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Password contains invalid characters',
-                'return_code' => 10
+                'return_code' => 11
             ]);
             exit;
         }
@@ -279,7 +275,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Username contains invalid characters',
-                'return_code' => 11
+                'return_code' => 12
             ]);
             exit;
         }
@@ -287,7 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Username cannot contain only spaces',
-                'return_code' => 12
+                'return_code' => 13
             ]);
             exit;
         }
@@ -295,7 +291,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Username can only contain letters, numbers, hyphens, spaces, and underscores',
-                'return_code' => 13
+                'return_code' => 14
             ]);
             exit;
         }
@@ -303,7 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Username must be at least 3 characters long',
-                'return_code' => 14
+                'return_code' => 15
             ]);
             exit;
         }
@@ -312,7 +308,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Username cannot contain newlines',
-                'return_code' => 15
+                'return_code' => 16
             ]);
             exit;
         }
@@ -325,14 +321,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'status' => 'error',
             'description' => 'Missing required fields',
             'missing_fields' => array_diff(['username', 'email', 'password'], array_keys($_POST)),
-            'return_code' => 16
+            'return_code' => 17
         ]);
     }
 } else {
     echo json_encode([
         'status' => 'error',
         'description' => 'Invalid request method',
-        'return_code' => 17
+        'return_code' => 18
     ]);
 }
 ?>

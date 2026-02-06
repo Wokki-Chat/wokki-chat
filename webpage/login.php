@@ -90,16 +90,16 @@ if (!isset($_POST['email']) || !isset($_POST['password']) && $_SERVER['REQUEST_M
                 const errorMessage = document.querySelector(\'.error-message\');
                 const successMessage = document.querySelector(\'.success-message\');
 
-                if (returnCode === \'23\') {
+                if (returnCode === \'22\') {
                     errorMessage.textContent = \'The request could not be processed.\';
                     errorMessage.style.display = \'block\';
-                } else if (returnCode === \'24\') {
+                } else if (returnCode === \'23\') {
                     errorMessage.textContent = \'The request is invalid or missing required information.\';
                     errorMessage.style.display = \'block\';
-                } else if (returnCode === \'25\') {
+                } else if (returnCode === \'24\') {
                     errorMessage.textContent = \'The email address or password entered is incorrect.\';
                     errorMessage.style.display = \'block\';
-                } else if (returnCode === \'26\') {
+                } else if (returnCode === \'25\') {
                     errorMessage.textContent = \'Please verify your email address before attempting to sign in.\';
                     errorMessage.style.display = \'block\';
                 } else if (returnCode === \'20\') {
@@ -107,9 +107,6 @@ if (!isset($_POST['email']) || !isset($_POST['password']) && $_SERVER['REQUEST_M
                     successMessage.style.display = \'block\';
                 } else if (returnCode === \'21\') {
                     errorMessage.textContent = \'Your email verification link has expired or is invalid. Please try again.\';
-                    errorMessage.style.display = \'block\';
-                } else if (returnCode === \'22\') {
-                    errorMessage.textContent = \'The request is invalid or missing required parameters.\';
                     errorMessage.style.display = \'block\';
                 } else if (returnCode === \'19\') {
                     errorMessage.textContent = \'The request is invalid or missing required parameters.\';
