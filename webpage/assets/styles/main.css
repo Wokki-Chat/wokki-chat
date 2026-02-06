@@ -3413,6 +3413,10 @@ h6 {
     align-items: center;
 }
 
+.invite-item-name-icon-container p {
+    margin: 0px;
+}
+
 .invite-item-name-date-container {
     display: flex;
     flex-direction: column;
