@@ -175,9 +175,7 @@ function initServer() {
 		messageBehaviour.attach(el, msg);
 		
 		const hydratePromise = messageHydrator.hydrate(el, msg.assets, msg.id).then(() => {
-			console.log("Hydrated message", msg.id);
 			if (nearBottom) {
-				console.log("Scrolling to bottom");
 				requestAnimationFrame(() => {
 					messageContainer.scrollTop = messageContainer.scrollHeight;
 				});
