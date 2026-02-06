@@ -431,85 +431,84 @@ function initServer() {
 	let popupWindow = localStorage.getItem("popupWindow") ?? null;
 
 	async function openParticipantsPopup(token, roomName) {
-	if (!popupWindow || popupWindow.closed || popupWindow === "null") {
-		popupWindow = window.open("", `${channel_name}`, "width=400,height=600");
-		localStorage.setItem("popupWindow", popupWindow);
+		if (!popupWindow || popupWindow.closed || popupWindow === "null") {
+			popupWindow = window.open("", `${channel_name}`, "width=400,height=600");
+			localStorage.setItem("popupWindow", popupWindow);
 
-		popupWindow.document.write(`
-		<html lang="en" class="dark">
-			<head>
-			<title>${channel_name}</title>
-			<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-			<link rel="stylesheet" href="/assets/styles/main.css" />
-			<script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
-			<link
-				href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
-				rel="stylesheet"
-			/>
-			</head>
-			<body>
-			<div class="participants">
+			popupWindow.document.write(`
+			<html lang="en" class="dark">
+				<head>
+				<title>${channel_name}</title>
+				<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+				<link rel="stylesheet" href="/assets/styles/main.css" />
+				<script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+				<link
+					href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+					rel="stylesheet"
+				/>
+				</head>
+				<body>
+				<div class="participants">
 
-			</div>
-			<div class="call-options">
-				<div class="call-option-group">
-					<div class="call-option" id="call-option-mic">
-						<span class="material-symbols-rounded call-option-icon">mic</span>
+				</div>
+				<div class="call-options">
+					<div class="call-option-group">
+						<div class="call-option" id="call-option-mic">
+							<span class="material-symbols-rounded call-option-icon">mic</span>
+						</div>
+						<div class="call-option" id="call-option-video">
+							<span class="material-symbols-rounded call-option-icon">videocam_off</span>
+						</div>
 					</div>
-					<div class="call-option" id="call-option-video">
-						<span class="material-symbols-rounded call-option-icon">videocam_off</span>
+					<div class="call-hangup">
+						<span class="material-symbols-rounded call-option-icon">call_end</span>
 					</div>
 				</div>
-				<div class="call-hangup">
-					<span class="material-symbols-rounded call-option-icon">call_end</span>
-				</div>
-			</div>
-			<script>
-				const server_id = "${server_id}";
-				const channel_id = "${channel_id}";
-				const access_token = "${access_token}";
+				<script>
+					const server_id = "${server_id}";
+					const channel_id = "${channel_id}";
+					const access_token = "${access_token}";
 
-				const socket = io("https://chat.wokki20.nl", {
-					path: "/socket.io",
-					transports: ["websocket"],
-					query: {
-					access_token: access_token
-					},
-				});
+					const socket = io("https://chat.wokki20.nl", {
+						path: "/socket.io",
+						transports: ["websocket"],
+						query: {
+						access_token: access_token
+						},
+					});
 
-				socket.emit("get_server_users", {
-				access_token,
-				server_id,
-				channel_id
-				});
+					socket.emit("get_server_users", {
+					access_token,
+					server_id,
+					channel_id
+					});
 
-				const token = "${token}";
-				const roomName = "${roomName}";
-				window.addEventListener('load', async () => {
-					await joinLiveKitRoom(token, roomName);
-				})
-				let usersList = [];
-				socket.on("server_users", (users) => {
-					usersList = users;
-				})
-			</script>
-			<script src="/assets/js/popupCallLogic.js"></script>
-			<script src="/assets/js/globalFunctions.js"></script>
-			</body>
-		</html>
-		`);
-		popupWindow.document.close();
+					const token = "${token}";
+					const roomName = "${roomName}";
+					window.addEventListener('load', async () => {
+						await joinLiveKitRoom(token, roomName);
+					})
+					let usersList = [];
+					socket.on("server_users", (users) => {
+						usersList = users;
+					})
+				</script>
+				<script src="/assets/js/popupCallLogic.js"></script>
+				<script src="/assets/js/globalFunctions.js"></script>
+				</body>
+			</html>
+			`);
+			popupWindow.document.close();
 
-		const checkPopupClosed = setInterval(() => {
-		if (popupWindow.closed) {
-			clearInterval(checkPopupClosed);
-			localStorage.removeItem("popupWindow");
-			window.location.href = `/server/${server_id}`;
+			const checkPopupClosed = setInterval(() => {
+			if (popupWindow.closed) {
+				clearInterval(checkPopupClosed);
+				localStorage.removeItem("popupWindow");
+				window.location.href = `/server/${server_id}`;
+			}
+			}, 1);
 		}
-		}, 1);
 	}
-	}
-
 
 	socket.on("message_deleted", (message_id) => {
 		deleteMsg(message_id.id);
@@ -788,6 +787,7 @@ function initServer() {
 	}
 
 	function deleteMsg(id) {
+		console.log("deleteMsg", id);
 		const indexInCache = messageCache.delete(id);
 		if (indexInCache === -1) return;
 
