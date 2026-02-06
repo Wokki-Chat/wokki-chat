@@ -49,7 +49,6 @@ if ((!isset($_POST['email']) || !isset($_POST['password'])) && $_SERVER['REQUEST
 if (!isset($_POST['email']) || !isset($_POST['password']) && $_SERVER['REQUEST_METHOD'] === 'GET') {
     $redirect = $_GET['redirect'] ?? '/home';
     echo '
-
         <!DOCTYPE html>
         <html lang="en" class="login dark">
         <head>
