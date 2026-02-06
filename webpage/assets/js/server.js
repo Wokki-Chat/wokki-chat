@@ -788,12 +788,11 @@ function initServer() {
 	}
 
 	function deleteMsg(id) {
+		console.log('deleteMsg', id);
 		const indexInCache = messageCache.delete(id);
-		console.log(indexInCache);
 		if (indexInCache === -1) return;
 
 		const nextMsg = messageCache.cache[indexInCache];
-		console.log(nextMsg);
 		if (!nextMsg) return;
 
 		const nextEl = nextMsg.el;
