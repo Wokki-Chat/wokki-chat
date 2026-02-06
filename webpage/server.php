@@ -552,7 +552,7 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
                                 if ($ch['channel_type'] === "text") {
                                     $channelIcon = "tag";
                                 } else if ($ch['channel_type'] === "voice") {
-                                    $channelIcon = "headset_mic";
+                                    continue;
                                 }
 
                                 echo '
@@ -634,11 +634,6 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
                 <div class="max-message-length">
                     <p class="max-characters-left"></p>
                 </div>
-                <?php endif; ?>
-                <?php if ($channel['channel_type'] === "voice"): ?>
-                    <script>
-                        openParticipantsPopup(token, roomName);
-                    </script>
                 <?php endif; ?>
             <?php endif; ?>
             <?php if (!$is_in_server): ?>

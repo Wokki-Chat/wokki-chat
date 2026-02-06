@@ -50,7 +50,6 @@ export default class ReactionsRender {
 		return container;
 	}
 
-    
 	async reaction({ reactionGroup, count }, msg_id) {
 		if (!reactionGroup || reactionGroup.length === 0) return null;
 
