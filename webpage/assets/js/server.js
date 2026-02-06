@@ -789,9 +789,9 @@ function initServer() {
 
 	function deleteMsg(id) {
 		const indexInCache = messageCache.delete(id);
-		if (indexInCache === null) return;
+		if (indexInCache === -1) return;
 
-		const nextMsg = messageCache.cache?.[indexInCache];
+		const nextMsg = messageCache.cache[indexInCache];
 		if (!nextMsg) return;
 
 		const nextEl = nextMsg.el;
@@ -804,8 +804,8 @@ function initServer() {
 			profilePic.style.height = '30px';
 		}
 
-		const prevMsg = messageCache.cache?.[indexInCache - 1];
-		if (prevMsg && prevMsg.el && prevMsg.sent_by === nextEl.dataset.sentBy) {
+		const prevMsg = messageCache.cache[indexInCache - 1];
+		if (prevMsg && prevMsg.el && prevMsg.sent_by === nextMsg.el.dataset.sentBy) {
 			const prevTime = new Date(prevMsg.timestamp).getTime();
 			const currTime = new Date(nextMsg.timestamp).getTime();
 			if ((currTime - prevTime) <= 10 * 60 * 1000) {
