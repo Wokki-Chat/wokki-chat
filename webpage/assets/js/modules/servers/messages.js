@@ -11,7 +11,7 @@ export class MessageRenderer {
 		this.sanitizer = new Sanitizer(this.user_id, this.channels, this.server_id);
 	}
 
-	async addAssets(asset, msgId, index) {
+	addAssets(asset, msgId, index) {
 		const type = getAssetType(asset.savedName);
 		if (type === 'image') {
 			return `<img data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" alt="${asset.originalName}" class="message-asset-image lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}', '${asset.originalName}')" />`;
