@@ -11,6 +11,17 @@ export class MessageRenderer {
 		this.sanitizer = new Sanitizer(this.user_id, this.channels, this.server_id);
 	}
 
+	updateAssetSize(el) {
+		const containerWidth = el.parentElement.clientWidth;
+		if (el.tagName === 'IMG') {
+			const ratio = el.naturalHeight / el.naturalWidth;
+			el.style.height = `${containerWidth * ratio}px`;
+		} else if (el.tagName === 'VIDEO') {
+			const ratio = el.videoHeight / el.videoWidth;
+			el.style.height = `${containerWidth * ratio}px`;
+		}
+	}
+
 	addAssets(asset, msgId, index) {
 		const type = getAssetType(asset.savedName);
 		const url = type === 'profile_picture'
@@ -18,7 +29,7 @@ export class MessageRenderer {
 			: `https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}`;
 
 		if (type === 'image' || type === 'profile_picture') {
-			return `<img data-src="${url}" alt="${asset.originalName}" class="message-asset-image${type === 'profile_picture' ? ' message-asset-profile-picture' : ''} lazyload" onload="updateAssetSize(this)" onclick="imageViewer('${url}', '${asset.originalName}')" />`;
+			return `<img data-src="${url}" alt="${asset.originalName}" class="message-asset-image${type === 'profile_picture' ? ' message-asset-profile-picture' : ''} lazyload" onload="this.updateAssetSize(this)" onclick="imageViewer('${url}', '${asset.originalName}')" />`;
 		} else if (type === 'video') {
 			return `<video data-src="${url}" controls class="message-asset-video lazyload" onloadedmetadata="updateAssetSize(this)"></video>`;
 		} else if (type === 'audio') {
