@@ -44,7 +44,7 @@ export class MessageRenderer {
 		}
 	}
 
-	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, reactions }, usersList) {
+	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, assets }, usersList) {
 		if (!message && !embed) return null;
 
 		this.sanitizer.init(usersList);
