@@ -417,10 +417,7 @@ export class MessageCache {
 	}
 
 	insertIntoCache(msg, el) {
-		let insertIndex = this.cache.findIndex(m => 
-			msg.created_at < m.timestamp || 
-			(msg.created_at === m.timestamp && msg.id < m.id)
-		);
+		let insertIndex = this.cache.findIndex(m => msg.created_at <= m.timestamp);
 		if (insertIndex === -1) insertIndex = this.cache.length;
 		this.cache.splice(insertIndex, 0, { id: msg.id, timestamp: msg.created_at, el });
 		return insertIndex;
