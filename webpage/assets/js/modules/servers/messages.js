@@ -330,6 +330,7 @@ export class MessageBehaviour {
 		if (!prevMsg) return;
 
 		const prevSentBy = prevMsg?.el?.dataset?.sentBy || '';
+		el.dataset.prevMsgSentBy = prevSentBy;
 		const msgSentBy = msg.sent_by ? msg.sent_by.toString() : msg.sent_by_bot ? msg.sent_by_bot.toString() : '';
 		if (prevSentBy !== msgSentBy) return;
 
@@ -340,7 +341,6 @@ export class MessageBehaviour {
 		if (el.querySelector(".message-command") || el.querySelector(".message-reply")) return;
 
 		el.classList.add("compact");
-		el.dataset.prevMsgSentBy = prevSentBy;
 	}
 
 	async attach(el, msg) {
