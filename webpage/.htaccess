@@ -74,3 +74,5 @@ DirectoryIndex index.php
 </Files>
 
 Options -Indexes
+
+ErrorDocument 404 /error-pages/404.php

@@ -1,7 +1,7 @@
 <?php
-include 'app/config.php';
-include 'global.php';
-include 'app/maintenance.php';
+include '../app/config.php';
+include '../global.php';
+include '../app/maintenance.php';
 
 $access_token = $_COOKIE['access_token'] ?? '';
 
@@ -27,8 +27,8 @@ if ($user_id) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wokki Chat - Support</title>
-    <link rel="stylesheet" href="assets/styles/index.css">
+    <title>Wokki Chat - Page Not Found</title>
+    <link rel="stylesheet" href="/assets/styles/index.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
@@ -58,29 +58,15 @@ if ($user_id) {
             </div>
         </div>
         <div class="support-content">
-            <h1 class="page-title">Need Help with Wokki Chat?</h1>
-            <p class="page-description">We're here to help you get the most out of Wokki Chat. Browse FAQs, contact support, or check our status.</p>
-
-            <div class="support-options">
-                <div class="support-card">
-                    <h2>📄 FAQs</h2>
-                    <p>Find answers to common questions about Wokki Chat.</p>
-                    <a href="/support/faqs" class="button-primary-outline no-underline">Browse FAQs</a>
-                </div>
-                <div class="support-card">
-                    <h2>📧 Email Support</h2>
-                    <p>Need direct help? Our support team is ready to assist you.</p>
-                    <a href="mailto:support@cm.wokki20.nl" class="button-primary-outline no-underline">Email Us</a>
-                </div>
-                <div class="support-card">
-                    <h2>⚙️ System Status</h2>
-                    <p>Check if Wokki Chat is running smoothly right now.</p>
-                    <a href="https://status.chat.wokki20.nl" target="_blank" class="button-primary-outline no-underline">View Status</a>
-                </div>
-            </div>
+            <h1 class="page-title">Oh snap!</h1>
+            <span class="page-description">It looks like the page you're looking for doesn't exist.</span>
+            <span class="page-description">Please check the URL and try again.</span>
+            <span class="page-description">If you're still having issues, here are some links that might help:</span>
+            <a class="page-description link" href="https://chat.wokki20.nl/support">Contact Support</a>
+            <a class="page-description link" href="https://status.chat.wokki20.nl">Status Page</a>
         </div>
     </div>
-    
+
     <footer class="footer">
         <div class="footer-container">
             <div class="footer-section">
