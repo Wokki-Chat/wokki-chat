@@ -258,6 +258,10 @@ body {
     .main-content.error {
         min-height: unset;
     }
+
+    .error-content {
+        padding: 20% 0px !important;
+    }
 }
 
 @media screen and (max-width: 550px) {
@@ -391,7 +395,7 @@ body {
     }
 }
 .error-content {
-    padding: 20% 0px;
+    padding: 10% 0px;
 }
 
 .faq-item {
