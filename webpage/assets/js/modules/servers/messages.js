@@ -328,9 +328,9 @@ export class MessageBehaviour {
 	applyCompactMode(el, msg, insertIndex, messageCache) {
 		const prevMsg = messageCache[insertIndex - 1];
 		if (!prevMsg) return;
+		console.log(el, msg, insertIndex, messageCache);
 
 		const prevSentBy = prevMsg?.el?.dataset?.sentBy || '';
-		el.dataset.prevMsgSentBy = prevSentBy;
 		const msgSentBy = msg.sent_by ? msg.sent_by.toString() : msg.sent_by_bot ? msg.sent_by_bot.toString() : '';
 		if (prevSentBy !== msgSentBy) return;
 
