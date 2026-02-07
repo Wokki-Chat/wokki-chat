@@ -27,7 +27,7 @@ if ($user_id) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wokki Chat - Page Not Found</title>
+    <title>Wokki Chat - Forbidden</title>
     <link rel="stylesheet" href="/assets/styles/index.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -58,8 +58,8 @@ if ($user_id) {
             </div>
         </div>
         <div class="error-content">
-            <h1 class="page-title">That page doesn't exist...</h1>
-            <span class="page-description">It looks like the page you're looking for doesn't exist.</span>
+            <h1 class="page-title">Shh... You aren't allowed to be here</h1>
+            <span class="page-description">You attempted to access a page that you're not allowed to access.</span>
             <span class="page-description">Please check the URL and try again.</span>
             <span class="page-description">If you're still having issues, here are some links that might help:</span>
             <a class="page-description link" href="https://chat.wokki20.nl/support">Contact Support</a>
