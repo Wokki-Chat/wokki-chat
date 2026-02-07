@@ -81,7 +81,7 @@ function create_account() {
         if (result.status === 'error') {
             showError(result.description);
         } else {
-            window.location.href = '/login';
+            window.location.href = '/verify_email';
         }
     })
     .catch(error => {

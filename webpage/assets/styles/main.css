@@ -204,6 +204,10 @@ input:checked + .slider:before {
     gap: 20px;
 }
 
+.register-form-content p {
+    margin: 0px;
+}
+
 @media screen and (max-width: 600px) {
     .login-form-content,
     .register-form-content {
