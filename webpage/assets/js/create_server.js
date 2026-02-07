@@ -131,7 +131,7 @@ function initCreateServer() {
     });
   }
 
-  const createServerBtn = document.getElementById("create-server-btn");
+  const createServerBtn = document.getElementById("open-create-server-modal");
   createServerBtn.addEventListener("click", openCreateServerModal);
 }
 
