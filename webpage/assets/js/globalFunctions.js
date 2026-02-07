@@ -1,5 +1,3 @@
-const uploadContainer = document.querySelector(".input-container-2 .file-upload-container");
-
 async function highlightAll() {
   await hljs.highlightAll();
 }
