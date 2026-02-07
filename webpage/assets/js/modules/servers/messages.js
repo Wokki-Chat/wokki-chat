@@ -328,7 +328,9 @@ export class MessageBehaviour {
 	applyCompactMode(el, msg, insertIndex, messageCache) {
 		const prevMsg = messageCache[insertIndex - 1];
 		if (!prevMsg) return;
-		console.log(el, msg, insertIndex, messageCache);
+		if (msg.id == "4fd7d3f3-da8b-4a1e-bac3-0cea6ed7e63a" || msg.id == "a13d59d2-0011-4493-ab8a-6adbc0fc6186") {
+			console.log(el, msg, insertIndex, messageCache, prevMsg);	
+		}
 
 		const prevSentBy = prevMsg?.el?.dataset?.sentBy || '';
 		const msgSentBy = msg.sent_by ? msg.sent_by.toString() : msg.sent_by_bot ? msg.sent_by_bot.toString() : '';
