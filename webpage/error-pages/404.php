@@ -34,7 +34,7 @@ if ($user_id) {
 </head>
 <body>
     <div class="hover-overlay"></div>
-    <div class="main-content no-gradient">
+    <div class="main-content no-gradient error">
         <div class="sticky-header">
             <a href="/" class="logo"></a>
             <?php echo $headerBtn; ?>
@@ -57,7 +57,7 @@ if ($user_id) {
                 </div>
             </div>
         </div>
-        <div class="support-content">
+        <div class="error-content">
             <h1 class="page-title">Oh snap!</h1>
             <span class="page-description">It looks like the page you're looking for doesn't exist.</span>
             <span class="page-description">Please check the URL and try again.</span>

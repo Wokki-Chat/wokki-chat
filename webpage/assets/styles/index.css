@@ -254,6 +254,10 @@ body {
         right: 10px;
         transform: unset;
     }
+
+    .main-content.error {
+        min-height: unset;
+    }
 }
 
 @media screen and (max-width: 550px) {
@@ -358,7 +362,8 @@ body {
 
 .support-content,
 .faq-content,
-.legal-content {
+.legal-content,
+.error-content {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -371,7 +376,8 @@ body {
 @media screen and (max-width: 1150px) {
     .support-content,
     .faq-content,
-    .legal-content {
+    .legal-content,
+    .error-content {
         width: 70%;
     }
 }
@@ -379,9 +385,13 @@ body {
 @media screen and (max-width: 750px) {
     .support-content,
     .faq-content,
-    .legal-content {
+    .legal-content,
+    .error-content {
         width: 90%;
     }
+}
+.error-content {
+    padding: 20% 0px;
 }
 
 .faq-item {
