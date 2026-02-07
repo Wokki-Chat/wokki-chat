@@ -11,7 +11,42 @@ export class MessageRenderer {
 		this.sanitizer = new Sanitizer(this.user_id, this.channels, this.server_id);
 	}
 
-	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, reactions }, usersList) {
+	addAssets(asset, msgId, index) {
+		const type = getAssetType(asset.savedName);
+		const url = type === 'profile_picture'
+			? `https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}`
+			: `https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}`;
+
+		if (type === 'image' || type === 'profile_picture') {
+			return `<img data-src="${url}" alt="${asset.originalName}" class="message-asset-image${type === 'profile_picture' ? ' message-asset-profile-picture' : ''} lazyload" data-prefetch-size="true" />`;
+		} else if (type === 'video') {
+			return `<video data-src="${url}" controls class="message-asset-video lazyload" data-prefetch-size="true"></video>`;
+		} else if (type === 'audio') {
+			return `
+				<div class="custom-player" data-originalName="${asset.originalName}" data-audio-src="${url}">
+					<span class="material-symbols-rounded play-pause" style="cursor:pointer;">play_arrow</span>
+					<div class="time-left-current">
+						<span class="current-time">0:00</span>
+						<span class="duration">/ 0:00</span>
+					</div>
+					<input type="range" class="seek-bar" value="0" step="1" min="0">
+					<div class="player-options">
+						<div class="player-option" id="download">
+							<span class="material-symbols-rounded">download</span>
+						</div>
+					</div>
+				</div>
+			`;
+		} else if (type === 'pdf') {
+			return `<a href="${url}" target="_blank" class="message-asset-pdf link">${this.sanitizer.sanitize(asset.originalName)}</a>`;
+		} else if (type === 'txt') {
+			return `<pre class="message-asset-text" id="txt-asset-${msgId}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
+		} else {
+			return `<a href="${url}" download class="message-asset-file link">${this.sanitizer.sanitize(asset.savedName)}</a>`;
+		}
+	}
+
+	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, assets }, usersList) {
 		if (!message && !embed) return null;
 
 		this.sanitizer.init(usersList);
@@ -92,6 +127,19 @@ export class MessageRenderer {
 				}
 			</div>
 		`;
+
+		if (assets && assets.length > 0) {
+			const assetsContainer = document.createElement("div");
+			assetsContainer.classList.add("message-assets");
+
+			assetsContainer.innerHTML = assets.map((asset, index) => {
+				return this.addAssets(asset, message_id, index);
+			}).join('');
+
+			const messageInfo = msgEl.querySelector(".message-info");
+			const reactionsDiv = messageInfo.querySelector(".message-reactions");
+			messageInfo.insertBefore(assetsContainer, reactionsDiv);
+		}
 
 		return msgEl;
 	}
@@ -205,46 +253,6 @@ export class MessageHydrator {
 		});
 
 		if (assets && assets.length > 0) {
-			const assetsContainer = document.createElement("div");
-			assetsContainer.classList.add("message-assets");
-
-			assetsContainer.innerHTML = assets.map((asset, index) => {
-				const type = getAssetType(asset.savedName);
-				if (type === 'image') {
-					return `<img data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" alt="${asset.originalName}" class="message-asset-image lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}', '${asset.originalName}')" />`;
-				} else if (type === 'video') {
-					return `<video data-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" controls class="message-asset-video lazyload"></video>`;
-				} else if (type === 'audio') {
-					return `
-						<div class="custom-player" data-originalName="${asset.originalName}" data-audio-src="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}">
-							<span class="material-symbols-rounded play-pause" style="cursor:pointer;">play_arrow</span>
-							<div class="time-left-current">
-								<span class="current-time">0:00</span>
-								<span class="duration">/ 0:00</span>
-							</div>
-							<input type="range" class="seek-bar" value="0" step="1" min="0">
-							<div class="player-options">
-								<div class="player-option" id="download">
-									<span class="material-symbols-rounded">download</span>
-								</div>
-							</div>
-						</div>
-					`;
-				} else if (type === 'pdf') {
-					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" target="_blank" class="message-asset-pdf link">${this.sanitizer.sanitize(asset.originalName)}</a>`;
-				} else if (type === 'txt') {
-					return `<pre class="message-asset-text" id="txt-asset-${msgId}-${index}"><div class="lang-bar"><p>Plaintext</p><span class="material-symbols-rounded">content_copy</span></div><code class="lang-plaintext">Loading...</code></pre>`;
-				} else if (type === 'profile_picture') {
-					return `<img data-src="https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}" alt="${asset.originalName}" class="message-asset-image message-asset-profile-picture lazyload" onclick="imageViewer('https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}', '${asset.originalName}')" />`;
-				} else {
-					return `<a href="https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}" download class="message-asset-file link">${this.sanitizer.sanitize(asset.savedName)}</a>`;
-				}
-			}).join('');
-
-			const messageInfo = msgEl.querySelector(".message-info");
-			const reactionsDiv = messageInfo.querySelector(".message-reactions");
-			messageInfo.insertBefore(assetsContainer, reactionsDiv);
-
 			const lazyEls = msgEl.querySelectorAll('[data-src]');
 			lazyEls.forEach(el => {
 				if (el.tagName === 'IMG' || el.tagName === 'VIDEO') {
