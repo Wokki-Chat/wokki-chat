@@ -180,7 +180,7 @@ function formatPremiumExpiration($timestamp) {
         </div>
         <div class="server-bar-options">    
             <div class="server-bar-option">
-                <div class="server-bar-option-icon" onclick="openCreateServerModal()">
+                <div class="server-bar-option-icon" id="open-create-server-modal">
                     <span class="material-symbols-rounded">add_circle</span>
                 </div>
                 <p class="tooltip">create server</p>
