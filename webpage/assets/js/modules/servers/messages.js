@@ -340,6 +340,7 @@ export class MessageBehaviour {
 		if (el.querySelector(".message-command") || el.querySelector(".message-reply")) return;
 
 		el.classList.add("compact");
+		el.dataset.prevMsgSentBy = prevSentBy;
 	}
 
 	async attach(el, msg) {
