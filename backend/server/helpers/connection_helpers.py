@@ -71,7 +71,13 @@ async def handle_connect(sid, environ):
                     )
                     await conn.commit()
                     await broadcast_user_update(user_id)
-
+                else:
+                    await cur.execute(
+                        "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = 0",
+                        (user_id,)
+                    )
+                    await conn.commit()
+                    
                 await cur.execute("""
                     SELECT widget_name, widget_access_token, widget_refresh_token, show_on_profile
                     FROM profile_widgets
@@ -83,13 +89,6 @@ async def handle_connect(sid, environ):
                     ((w["widget_access_token"], w["widget_refresh_token"]) for w in widgets if w["widget_name"] == "Spotify" and w["show_on_profile"]),
                     None
                 )
-
-                if not await redis_client.exists(disconnect_key):
-                    await cur.execute(
-                        "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = 0",
-                        (user_id,)
-                    )
-                    await conn.commit()
 
                 if spotify_tokens:
                     asyncio.create_task(poll_spotify(user_id, *spotify_tokens))
@@ -174,6 +173,11 @@ async def handle_disconnect(sid):
     if user_id:
         await addMessageToLogs(f"User {user_id} disconnected", "INFO")
         await remove_user_sid(user_id, sid)
+        
+        remaining_sids = await get_sids_for_user(user_id)
+        if remaining_sids:
+            await addMessageToLogs(f"User {user_id} still has active connections: {remaining_sids}, skipping disconnect flow", "INFO")
+            return
 
         token = str(uuid.uuid4())
         disconnect_key = f"user_disconnect:{user_id}"
