@@ -1519,7 +1519,8 @@ input:checked + .slider:before {
     color: var(--clr-text-a0) !important;
 }
 
-.availible-command-username {
+.availible-command-username,
+.availible-command-desc {
     margin: 0px;
     color: var(--clr-text-a30);
     font-size: 12px;
