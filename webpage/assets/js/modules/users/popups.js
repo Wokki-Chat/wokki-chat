@@ -176,7 +176,9 @@ export class UserPopupManager {
                                                 }
                                             });
                                         });
+
                                         allDays.sort((a, b) => a.dateObj - b.dateObj);
+
                                         let currentWeekCol = 1;
                                         let lastWeekday = -1;
                                         
@@ -193,27 +195,65 @@ export class UserPopupManager {
 
                                         const totalWeeks = currentWeekCol;
 
+                                        const weeksByCol = {};
+                                        allDays.forEach(day => {
+                                            if (!weeksByCol[day.weekCol]) {
+                                                weeksByCol[day.weekCol] = [];
+                                            }
+                                            weeksByCol[day.weekCol].push(day);
+                                        });
+
+                                        const weekMonths = {};
+                                        Object.keys(weeksByCol).forEach(weekCol => {
+                                            const daysInWeek = weeksByCol[weekCol];
+                                            const monthCounts = {};
+                                            
+                                            daysInWeek.forEach(day => {
+                                                const month = day.dateObj.toLocaleString('default', {month: 'short'});
+                                                monthCounts[month] = (monthCounts[month] || 0) + 1;
+                                            });
+                                            
+                                            let maxMonth = null;
+                                            let maxCount = 0;
+                                            Object.keys(monthCounts).forEach(month => {
+                                                if (monthCounts[month] > maxCount) {
+                                                    maxCount = monthCounts[month];
+                                                    maxMonth = month;
+                                                }
+                                            });
+                                            
+                                            if (maxCount >= 4) {
+                                                weekMonths[weekCol] = maxMonth;
+                                            }
+                                        });
+
                                         const monthSpans = [];
                                         let currentMonth = null;
-                                        let monthStartCol = 0;
+                                        let monthStartCol = null;
                                         
-                                        allDays.forEach(day => {
-                                            const month = day.dateObj.toLocaleString('default', {month: 'short'});
+                                        for (let col = 1; col <= totalWeeks; col++) {
+                                            const weekMonth = weekMonths[col];
                                             
-                                            if (month !== currentMonth) {
-                                                if (currentMonth !== null) {
+                                            if (weekMonth !== currentMonth) {
+                                                if (currentMonth !== null && monthStartCol !== null) {
                                                     monthSpans.push({
                                                         month: currentMonth,
                                                         start: monthStartCol,
-                                                        end: day.weekCol - 1
+                                                        end: col - 1
                                                     });
                                                 }
-                                                currentMonth = month;
-                                                monthStartCol = day.weekCol;
+                                                
+                                                if (weekMonth) {
+                                                    currentMonth = weekMonth;
+                                                    monthStartCol = col;
+                                                } else {
+                                                    currentMonth = null;
+                                                    monthStartCol = null;
+                                                }
                                             }
-                                        });
+                                        }
                                         
-                                        if (currentMonth !== null) {
+                                        if (currentMonth !== null && monthStartCol !== null) {
                                             monthSpans.push({
                                                 month: currentMonth,
                                                 start: monthStartCol,
