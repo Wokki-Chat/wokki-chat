@@ -430,51 +430,57 @@ export class UserPopupManager {
             const chunk = decoder.decode(value, { stream: true }).trim();
             if (!chunk) continue;
 
-            try {
-                const data = JSON.parse(chunk);
-                if (data.user && !popupCreated) {
-                    profileData = data.user;
+            const lines = chunk.split('\n').filter(line => line.trim());
+            
+            for (const line of lines) {
+                try {
+                    const data = JSON.parse(line);
+                    if (data.user && !popupCreated) {
+                        profileData = data.user;
 
-                    const { html, custom_style_data, popup_style, border_style, lightText } = await this.makeExtendedPopup(profileData);
+                        const { html, custom_style_data, popup_style, border_style, lightText } = await this.makeExtendedPopup(profileData);
 
-                    jspt.makePopup({
-                        content_type: "html",
-                        header: "Profile of <b>@" + this.sanitizer.sanitize(profileData.username) + "</b>",
-                        custom_id: "user-profile-popup",
-                        content: html,
-                    });
+                        jspt.makePopup({
+                            content_type: "html",
+                            header: "Profile of <b>@" + this.sanitizer.sanitize(profileData.username) + "</b>",
+                            custom_id: "user-profile-popup",
+                            content: html,
+                        });
 
-                    const popup = document.querySelector("#user-profile-popup .popup");
-                    if (custom_style_data && popup) {
-                        popup.setAttribute('data-light-text', lightText);
-                        popup.setAttribute('data-custom-style', 'true');
-                        if (popup_style) popup.style.setProperty('background', popup_style, 'important');
-                        if (border_style) popup.style.setProperty('border', border_style, 'important');
+                        const popup = document.querySelector("#user-profile-popup .popup");
+                        if (custom_style_data && popup) {
+                            popup.setAttribute('data-light-text', lightText);
+                            popup.setAttribute('data-custom-style', 'true');
+                            if (popup_style) popup.style.setProperty('background', popup_style, 'important');
+                            if (border_style) popup.style.setProperty('border', border_style, 'important');
+                        }
+
+                        popupCreated = true;
                     }
-
-                    popupCreated = true;
-                }
-                if (data.widgets && popupCreated) {
-                    const widgetsDiv = document.querySelector(".user-widgets-content");
-                    if (widgetsDiv) {
-                        widgetsDiv.innerHTML = '';
-                        const githubWidget = data.widgets['GitHub'];
-                        if (githubWidget) {
-                            if (githubWidget.error) {
-                                widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
+                    if (data.widgets && popupCreated) {
+                        const widgetsDiv = document.querySelector(".user-widgets-content");
+                        if (widgetsDiv) {
+                            widgetsDiv.innerHTML = '';
+                            const githubWidget = data.widgets['GitHub'];
+                            if (githubWidget) {
+                                if (githubWidget.error) {
+                                    widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
+                                } else {
+                                    widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, profileData);
+                                }
                             } else {
-                                widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, profileData);
+                                widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
                             }
-                        } else {
-                            widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
                         }
                     }
+                } catch(e) {
+                    console.error('JSON parse error:', e);
                 }
-            } catch(e) {
-                console.error(e);
             }
         }
+        
         if (!popupCreated) return;
+        
         const currentPageUrl = window.location.href;
         document.addEventListener("keydown", (e) => {
             if (e.key === "Escape") {
