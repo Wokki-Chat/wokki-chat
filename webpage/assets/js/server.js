@@ -11,7 +11,9 @@ function initServer() {
 	if (!scripts.includes('server.js')) return;
 
     const serverBar = document.querySelector(".server-bar");
-    if (serverBar) serverBar.classList.remove("hidden");
+    if (serverBar && window.matchMedia("(min-width: 525px)").matches) {
+        serverBar.classList.remove("hidden");
+    }
 	
 	const access_token = document.getElementById("access-token").getAttribute("value");
 	const server_id = document.getElementById("server-id").getAttribute("value");

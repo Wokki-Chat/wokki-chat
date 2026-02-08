@@ -5,7 +5,9 @@ function initHome() {
 	if (!scripts.includes('home.js')) return;
 
     const serverBar = document.querySelector(".server-bar");
-    if (serverBar) serverBar.classList.remove("hidden");
+    if (serverBar && window.matchMedia("(min-width: 525px)").matches) {
+        serverBar.classList.remove("hidden");
+    }
 
     const access_token = document.getElementById("access-token").getAttribute("value");
     const users = JSON.parse(document.getElementById("users-list").getAttribute("value"));
