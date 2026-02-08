@@ -472,6 +472,7 @@ export class UserPopupManager {
             } catch(e) {
             }
         }
+        if (!popupCreated) return;
         const currentPageUrl = window.location.href;
         document.addEventListener("keydown", (e) => {
             if (e.key === "Escape") {
