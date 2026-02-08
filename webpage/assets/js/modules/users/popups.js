@@ -136,11 +136,20 @@ export class UserPopupManager {
                                         }))
                                         .filter(week => week.length > 0);
                                     document.documentElement.style.setProperty('--weeks-count', filteredWeeks.length);
-                                    return filteredWeeks.map(week =>
-                                        week.map(day =>
-                                            `<div class="github-commit-day" title="${day.contributionCount} Contribution${day.contributionCount !== 1 ? 's' : ''} on ${new Date(day.date).toLocaleString('default', { month: 'long' })} ${new Date(day.date).getDate()}" style="background:${day.color}"></div>`
-                                        ).join('')
-                                    ).join('');
+
+                                    const getOrdinal = n => {
+                                        const s = ["th", "st", "nd", "rd"];
+                                        const v = n % 100;
+                                        return n + (s[(v-20)%10] || s[v] || s[0]);
+                                    };
+
+                                    return filteredWeeks.map(week => {
+                                        const paddedWeek = Array(7).fill({contributionCount:0, color:'#ebedf0', date:null});
+                                        week.forEach((day, i) => paddedWeek[i] = day);
+                                        return paddedWeek.map(day =>
+                                            `<div class="github-commit-day" title="${day.contributionCount} Contribution${day.contributionCount !== 1 ? 's' : ''}${day.date ? ' on ' + new Date(day.date).toLocaleString('default', { month: 'long' }) + ' ' + getOrdinal(new Date(day.date).getDate()) : ''}" style="background:${day.color}"></div>`
+                                        ).join('');
+                                    }).join('');
                                 })()}
                                 </div>
                             </div>
