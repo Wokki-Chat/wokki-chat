@@ -728,6 +728,22 @@ function initSettings() {
 				});
 			});
 		}
+
+		const githubCheckbox = document.getElementById("github-checkbox");
+		if (githubCheckbox) {
+			githubCheckbox.addEventListener("change", () => {
+				const formData = new FormData();
+				formData.append("github_widget_show", githubCheckbox.checked ? "true" : "false");
+
+				fetch("/app/widgets", {
+					method: "POST",
+					headers: {
+						"Authorization": `Bearer ${access_token}`
+					},
+					body: formData
+				});
+			});
+		}
 	}
 
   function unlinkConnection(connection) {

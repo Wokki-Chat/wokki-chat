@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Forbidden: Invalid Origin',
-                'return_code' => 27
+                'return_code' => 5
             ]);
             exit;
         }
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Forbidden: Invalid Referer',
-                'return_code' => 28
+                'return_code' => 6
             ]);
             exit;
         }
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode([
             'status' => 'error',
             'description' => 'Forbidden: No Origin or Referer',
-            'return_code' => 29
+            'return_code' => 7
         ]);
         exit;
     }
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode([
             'status' => 'error',
             'description' => 'Unauthorized: Missing or invalid Authorization header',
-            'return_code' => 32
+            'return_code' => 27
         ]);
         exit;
     }
@@ -101,13 +101,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode([
             'status' => 'error',
             'description' => 'Unauthorized: Invalid access token',
-            'return_code' => 33
+            'return_code' => 26
         ]);
         exit;
     }
 
     $user_id = $row['user_id'];
     $spotify_widget_show = $_POST['spotify_widget_show'];
+    $github_widget_show = $_POST['github_widget_show'];
 
     if (isset($spotify_widget_show) && !empty($spotify_widget_show)) {
         $show_widget = $spotify_widget_show == 'true' ? 1 : 0;
@@ -119,13 +120,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode([
             'status' => 'success',
             'description' => 'Spotify widget updated',
-            'return_code' => 30
+            'return_code' => 29
+        ]);
+    }
+    if (isset($github_widget_show) && !empty($github_widget_show)) {
+        $show_widget = $github_widget_show == 'true' ? 1 : 0;
+        $stmt = $mysqli->prepare("UPDATE profile_widgets SET show_on_profile = ? WHERE user_id = ? AND widget_name = 'GitHub' LIMIT 1");
+        $stmt->bind_param("ii", $show_widget, $user_id);
+        $stmt->execute();
+        $stmt->close();
+
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'GitHub widget updated',
+            'return_code' => 29
         ]);
     }
 } else {
     echo json_encode([
         'status' => 'error',
         'description' => 'Invalid request method',
-        'return_code' => 31
+        'return_code' => 18
     ]);
 }
