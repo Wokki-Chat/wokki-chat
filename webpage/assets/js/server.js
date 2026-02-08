@@ -45,7 +45,7 @@ function initServer() {
 	const messageHydrator = new MessageHydrator({ user_id, channels, server_id });
 	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
 	const mentions = new Mentions({ user_id, channels, server_id, users_list: [] });
-	const commandsManager = new CommandsManager({ user_id, channel_id, server_id, access_token, available_commands, socket });
+	const commandsManager = new CommandsManager({ user_id, channel_id, server_id, access_token, socket });
 
 	const userPopupManager = new UserPopupManager({ user_id, access_token });
 
@@ -437,6 +437,8 @@ function initServer() {
 	socket.on("server_commands_response", async (data) => {
 		if (data.success) {
 			available_commands = [builtInBot, ...data.bots];
+
+			commandsManager.init(available_commands);
 		}
 	});
 
