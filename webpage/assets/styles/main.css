@@ -4848,3 +4848,15 @@ input#clr-hue-slider {
 [data-custom-style="true"][data-light-text="false"] .connection-item .connection-name {
     color: var(--clr-text-black-a0);
 }
+
+.message-only-me {
+    font-size: 14px;
+    color: var(--clr-text-a30);
+    user-select: none;
+}
+
+.message-only-me .link {
+    color: var(--clr-primary-a0);
+    text-decoration: none;
+    cursor: pointer;
+}
