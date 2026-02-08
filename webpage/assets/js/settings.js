@@ -23,7 +23,7 @@ function initSettings() {
 		const newButton = document.getElementById('settings-sidebar-button');
 		newButton.addEventListener('click', () => {
 			settingsTabs.classList.toggle('active');
-			newButton.textContent = serverBar.classList.contains('active') ? 'close' : 'menu';
+			newButton.textContent = settingsTabs.classList.contains('active') ? 'close' : 'menu';
 		});
 	}
   
