@@ -1,5 +1,3 @@
-const uploadContainer = document.querySelector(".input-container-2 .file-upload-container");
-
 async function highlightAll() {
   await hljs.highlightAll();
 }
@@ -698,23 +696,32 @@ function setCaretCharacterOffsetWithin(element, offset) {
   } catch (e) {}
 }
 
-const topBarMenuButton = document.getElementById('top-bar-menu');
-const serverBar = document.querySelector('.server-bar');
-const channelBar = document.querySelector('.channel-bar');
-const selfInfo = document.querySelector('.self-info');
-if (topBarMenuButton && serverBar && channelBar && selfInfo) {
-  topBarMenuButton.addEventListener('click', () => {
-    serverBar.classList.toggle('active');
-    channelBar.classList.toggle('active');
-    selfInfo.classList.toggle('active');
-    if (serverBar.classList.contains('active')) {
-      topBarMenuButton.textContent = 'close';
-    } else {
-      topBarMenuButton.textContent = 'menu';
-    }
-  });
+function initTopBarMenu() {
+  const topBarMenuButton = document.getElementById('top-bar-menu');
+  const serverBar = document.querySelector('.server-bar');
+  const channelBar = document.querySelector('.channel-bar');
+  const selfInfo = document.querySelector('.self-info');
+  if (topBarMenuButton && serverBar && channelBar && selfInfo) {
+    topBarMenuButton.addEventListener('click', () => {
+      serverBar.classList.toggle('active');
+      channelBar.classList.toggle('active');
+      selfInfo.classList.toggle('active');
+      if (serverBar.classList.contains('active')) {
+        topBarMenuButton.textContent = 'close';
+      } else {
+        topBarMenuButton.textContent = 'menu';
+      }
+    });
+  }
 }
 
+initTopBarMenu();
+
+if (typeof window.swup !== "undefined") {
+	window.swup.hooks.on('page:view', (visit) => {
+		initTopBarMenu();
+	});
+}
 
 window.addEventListener("load", () => {
   if (socket) {

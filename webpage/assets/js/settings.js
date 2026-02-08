@@ -137,7 +137,6 @@ function initSettings() {
 			updateCharsLeft();
 			preview.innerHTML = textareaFormatter.format(textarea.innerText);
 		}
-		console.log(document.getElementById("profile-color-primary").getAttribute("value"), document.getElementById("profile-color-accent").getAttribute("value"));
 		Coloris({
 			theme: 'default',
 			themeMode: 'dark',
