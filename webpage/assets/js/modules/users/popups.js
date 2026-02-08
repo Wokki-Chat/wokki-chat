@@ -156,7 +156,6 @@ export class UserPopupManager {
 
         return `
             <style>
-                .github-commit-container { display: flex; flex-direction: column; }
                 .github-months { 
                     display: grid; 
                     grid-template-columns: repeat(${totalWeeks}, 14px);
@@ -164,28 +163,6 @@ export class UserPopupManager {
                     gap: 3px; 
                     font-size: 10px; 
                     margin-bottom: 5px;
-                }
-                .github-commit-grid-container { display: flex; }
-                .github-commit-labels { 
-                    display: flex; 
-                    flex-direction: column; 
-                    margin-right: 5px; 
-                    font-size: 10px; 
-                    gap: 3px;
-                }
-                .github-commit-labels > div {
-                    height: 14px;
-                    line-height: 14px;
-                }
-                .github-commit-grid { 
-                    display: grid; 
-                    grid-template-rows: repeat(7, 14px);
-                    gap: 3px; 
-                }
-                .github-commit-day { 
-                    width: 12px; 
-                    height: 12px; 
-                    border-radius: 2px; 
                 }
             </style>
             <div class="dm-info-container" ${containerStyle}>
