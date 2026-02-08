@@ -3,18 +3,22 @@
 import { Sanitizer } from "./sanitization.js";
 
 export class CommandsManager {
-    constructor({ user_id, channel_id, server_id, access_token, available_commands, socket }) {
+    constructor({ user_id, channel_id, server_id, access_token, socket }) {
         this.sanitizer = new Sanitizer();
         this.user_id = user_id;
         this.channel_id = channel_id;
         this.server_id = server_id;
         this.access_token = access_token;
-        this.available_commands = available_commands;
+        this.available_commands = [];
         this.socket = socket;
         
         this.currentOptions = null;
         this.currentCommand = null;
         this.currentBotId = null;
+    }
+
+    init(available_commands) {
+        this.available_commands = available_commands;
     }
 
     show(command, textarea) {
