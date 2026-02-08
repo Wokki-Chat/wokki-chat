@@ -4,7 +4,7 @@ include 'app/config.php';
 include 'global.php';
 
 if (!isset($_COOKIE['access_token'])) {
-    header('Location: login');
+    header('Location: /login');
     exit;
 }
 $access_token = $_COOKIE['access_token'];
@@ -20,7 +20,7 @@ if ($result->num_rows > 0) {
 $stmt->close();
 
 if (!$user_id) {
-    header('Location: login');
+    header('Location: /login');
     exit;
 }
 
