@@ -422,6 +422,7 @@ export class UserPopupManager {
 
         let profileData = null;
         let popupCreated = false;
+        const currentPageUrl = window.location.href;
 
         while (true) {
             const { done, value } = await reader.read();
@@ -432,6 +433,7 @@ export class UserPopupManager {
 
             try {
                 const data = JSON.parse(chunk);
+
                 if (data.user && !popupCreated) {
                     profileData = data.user;
 
@@ -453,11 +455,40 @@ export class UserPopupManager {
                     }
 
                     popupCreated = true;
+
+                    document.addEventListener("keydown", (e) => {
+                        if (e.key === "Escape") {
+                            const popup = document.getElementById("user-profile-popup");
+                            if (popup) jspt.closePopup("user-profile-popup");
+                            window.history.replaceState({}, '', currentPageUrl);
+                        }
+                    });
+
+                    const popupEl = document.querySelector("#user-profile-popup");
+                    if (popupEl) {
+                        popupEl.addEventListener("click", (e) => {
+                            if (!e.target.closest(".popup")) {
+                                jspt.closePopup("user-profile-popup");
+                                window.history.replaceState({}, '', currentPageUrl);
+                            }
+                        });
+                    }
+
+                    const closeBtn = document.querySelector(".popup-header-close");
+                    if (closeBtn) {
+                        closeBtn.addEventListener("click", () => {
+                            window.history.replaceState({}, '', currentPageUrl);
+                        });
+                    }
+
+                    window.history.replaceState({}, '', `https://chat.wokki20.nl/profile/@${this.sanitizer.sanitize(profileData.username)}`);
                 }
+
                 if (data.widgets && popupCreated) {
                     const widgetsDiv = document.querySelector(".user-widgets-content");
-                    if (!widgetsDiv) return;
+                    if (!widgetsDiv) continue;
                     widgetsDiv.innerHTML = '';
+
                     const githubWidget = data.widgets['GitHub'];
                     if (githubWidget) {
                         if (githubWidget.error) {
@@ -469,35 +500,10 @@ export class UserPopupManager {
                         widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
                     }
                 }
-            } catch(e) {
+
+            } catch (e) {
+                console.error('Failed to parse chunk', e);
             }
         }
-        const currentPageUrl = window.location.href;
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape") {
-                const popup = document.getElementById("user-profile-popup");
-                if (popup) jspt.closePopup("user-profile-popup");
-                window.history.replaceState({}, '', currentPageUrl);
-            }
-        });
-
-        const popup = document.querySelector("#user-profile-popup");
-        if (popup) {
-            popup.addEventListener("click", (e) => {
-                if (!e.target.closest(".popup")) {
-                    jspt.closePopup("user-profile-popup");
-                    window.history.replaceState({}, '', currentPageUrl);
-                }
-            });
-        }
-
-        const closeBtn = document.querySelector(".popup-header-close");
-        if (closeBtn) {
-            closeBtn.addEventListener("click", () => {
-                window.history.replaceState({}, '', currentPageUrl);
-            });
-        }
-
-        window.history.replaceState({}, '', `https://chat.wokki20.nl/profile/@${this.sanitizer.sanitize(profileData.username)}`);
     }
 }
