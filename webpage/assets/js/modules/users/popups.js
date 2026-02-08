@@ -29,10 +29,9 @@ export class UserPopupManager {
         let connections = '';
         user.connections.forEach(connection => {
             connections += `
-            <a class="connection-item" href="${connection.connection_user_url}">
+            <a class="connection-item" href="${connection.connection_user_url}" target="_blank">
                 <img src="/assets/icons/connections/${connection.connection_type.toLowerCase()}.svg" alt="${connection.connection_type} Icon" title="${connection.connection_type}" class="connection-icon">
-                <div class="connection-name">${connection.connection_name}</div>
-                <span class="material-symbols-rounded">open_in_new</span>
+                <div class="connection-name">${connection.connection_name}<span class="material-symbols-rounded connection-open-icon">open_in_new</span></div>
             </a>`;
         });
 
@@ -291,7 +290,7 @@ export class UserPopupManager {
                         </div>
                     </div>
                 `
-                : user.widgets?.Github
+                : user.widgets?.GitHub
                     ? await this.getGithubWidget(user)
                     : ''
             }
