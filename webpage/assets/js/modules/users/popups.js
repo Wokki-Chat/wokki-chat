@@ -68,7 +68,7 @@ export class UserPopupManager {
                 </div>	
                 <div class="dm-info-item">
                     <p class="dm-info-item-key">Bio</p>
-                    <p class="dm-info-item-value">${user.bio ? userBio : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</p>
+                    <div class="dm-info-item-value">${user.bio ? userBio : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</div>
                 </div>
                 <div class="dm-info-item">
                     <p class="dm-info-item-key">Joined on</p>

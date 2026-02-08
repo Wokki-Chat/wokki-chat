@@ -2975,6 +2975,10 @@ h6 {
     font-size: 16px;
 }
 
+.dm-info-item-value ul {
+    margin: 0px;
+}
+
 .dm-info-item-username-original {
     color: var(--clr-text-a0);
     font-size: 14px;
