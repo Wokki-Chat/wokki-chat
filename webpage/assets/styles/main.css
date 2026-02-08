@@ -3429,7 +3429,6 @@ h6 {
     gap: 10px;
     position: relative;
     z-index: 10;
-    overflow: hidden;
 }
 
 .user-info-profile-popup,
