@@ -3000,6 +3000,12 @@ h6 {
     font-weight: var(--font-weight-semibold);
 }
 
+.dm-info-item-key-desc {
+    color: var(--clr-text-a20);
+    margin: 0px;
+    font-size: 14px;
+}
+
 .user-info-profile-popup[data-custom-style="true"][data-light-text="true"] .dm-info-item,
 .user-info-profile-static[data-custom-style="true"][data-light-text="true"] .dm-info-item {
     color: var(--clr-text-white-a0);
@@ -3008,6 +3014,14 @@ h6 {
 .user-info-profile-popup[data-custom-style="true"][data-light-text="false"] .dm-info-item,
 .user-info-profile-static[data-custom-style="true"][data-light-text="false"] .dm-info-item {
     color: var(--clr-text-black-a0);
+}
+
+.user-info-profile-popup[data-custom-style="true"][data-light-text="true"] .dm-info-item-key-desc {
+    color: var(--clr-text-white-a20);
+}
+
+.user-info-profile-popup[data-custom-style="true"][data-light-text="false"] .dm-info-item-key-desc {
+    color: var(--clr-text-black-a20);
 }
 
 .dm-info-item-value {

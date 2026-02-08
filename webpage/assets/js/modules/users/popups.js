@@ -114,12 +114,13 @@ export class UserPopupManager {
                 </style>
                 <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
                     <div class="dm-info-item">
-                        <p class="dm-info-item-key">GitHub Contributions (Last 3 Months)</p>
+                        <p class="dm-info-item-key">GitHub Contributions</p>
+                        <p class="dm-info-item-key-desc">Over the last 4 months</p>
                         <div class="github-info">
                             <div class="github-commit-grid" id="github-commit-grid">
                             ${(() => {
                                 const now = new Date();
-                                const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+                                const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
                                 const filteredWeeks = user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks
                                     .map(week =>
                                         week.contributionDays.filter(day => {
