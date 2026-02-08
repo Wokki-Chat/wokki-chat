@@ -108,54 +108,79 @@ export class UserPopupManager {
             ` : ''}
 
             ${user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks ? `
-                <style>
-                    .github-commit-container { display: flex; }
-                    .github-commit-labels { display: flex; flex-direction: column; margin-right: 5px; }
-                    .github-commit-labels div { height: 14px; font-size: 10px; line-height: 14px; }
-                    .github-commit-grid { display: grid; grid-template-columns: repeat(var(--weeks-count), 14px); gap: 3px; }
-                    .github-commit-day { width: 12px; height: 12px; border-radius: 2px; }
-                </style>
-                <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
-                    <div class="dm-info-item">
-                        <p class="dm-info-item-key">GitHub Contributions</p>
-                        <p class="dm-info-item-key-desc">Over the last 4 months</p>
-                        <div class="github-info">
-                            <div class="github-commit-container">
+            <style>
+                .github-commit-container { display: flex; flex-direction: column; }
+                .github-months { display: grid; grid-template-columns: repeat(var(--weeks-count), 14px); margin-left: 20px; gap: 3px; font-size: 10px; }
+                .github-commit-grid-container { display: flex; }
+                .github-commit-labels { display: flex; flex-direction: column; margin-right: 5px; font-size: 10px; line-height: 14px; }
+                .github-commit-grid { display: grid; grid-template-columns: repeat(var(--weeks-count), 14px); gap: 3px; }
+                .github-commit-day { width: 12px; height: 12px; border-radius: 2px; }
+            </style>
+            <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
+                <div class="dm-info-item">
+                    <p class="dm-info-item-key">GitHub Contributions</p>
+                    <p class="dm-info-item-key-desc">Over the last 4 months</p>
+                    <div class="github-info">
+                        <div class="github-commit-container">
+                            <div class="github-months" id="github-months">
+                            </div>
+                            <div class="github-commit-grid-container">
                                 <div class="github-commit-labels">
-                                    ${['S','M','T','W','T','F','S'].map(day => `<div>${day}</div>`).join('')}
+                                    ${['S','M','T','W','T','F','S'].map(d => `<div>${d}</div>`).join('')}
                                 </div>
                                 <div class="github-commit-grid" id="github-commit-grid">
-                                ${(() => {
-                                    const now = new Date();
-                                    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-                                    const weeks = user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks;
-                                    const filteredWeeks = weeks
-                                        .map(week => week.contributionDays.filter(day => {
-                                            const d = new Date(day.date);
-                                            return d >= threeMonthsAgo && d <= now;
-                                        }))
-                                        .filter(week => week.length > 0);
-                                    document.documentElement.style.setProperty('--weeks-count', filteredWeeks.length);
+                                    ${(() => {
+                                        const now = new Date();
+                                        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+                                        const weeks = user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks;
 
-                                    const getOrdinal = n => {
-                                        const s = ["th", "st", "nd", "rd"];
-                                        const v = n % 100;
-                                        return n + (s[(v-20)%10] || s[v] || s[0]);
-                                    };
+                                        const getOrdinal = n => {
+                                            const s = ["th","st","nd","rd"];
+                                            const v = n % 100;
+                                            return n + (s[(v-20)%10] || s[v] || s[0]);
+                                        };
+                                        const days = [];
+                                        weeks.forEach(week => {
+                                            week.contributionDays.forEach(day => {
+                                                const d = new Date(day.date);
+                                                if(d >= threeMonthsAgo && d <= now) days.push(day);
+                                            });
+                                        });
+                                        const firstDate = new Date(days[0].date);
+                                        const firstWeekday = firstDate.getDay();
+                                        const paddedDays = [];
+                                        for(let i = 0; i < firstWeekday; i++) paddedDays.push({contributionCount:0, color:'#ebedf0', date:null});
+                                        paddedDays.push(...days);
+                                        const weeksArr = [];
+                                        for(let i=0;i<paddedDays.length;i+=7){
+                                            const weekSlice = paddedDays.slice(i,i+7);
+                                            while(weekSlice.length<7) weekSlice.push({contributionCount:0, color:'#ebedf0', date:null});
+                                            weeksArr.push(weekSlice);
+                                        }
 
-                                    return filteredWeeks.map(week => {
-                                        const paddedWeek = Array(7).fill({contributionCount:0, color:'#ebedf0', date:null});
-                                        week.forEach((day, i) => paddedWeek[i] = day);
-                                        return paddedWeek.map(day =>
-                                            `<div class="github-commit-day" title="${day.contributionCount} Contribution${day.contributionCount !== 1 ? 's' : ''}${day.date ? ' on ' + new Date(day.date).toLocaleString('default', { month: 'long' }) + ' ' + getOrdinal(new Date(day.date).getDate()) : ''}" style="background:${day.color}"></div>`
+                                        document.documentElement.style.setProperty('--weeks-count', weeksArr.length);
+                                        const monthLabels = [];
+                                        weeksArr.forEach((week,i) => {
+                                            const firstDay = week.find(day => day.date);
+                                            if(firstDay){
+                                                const month = new Date(firstDay.date).toLocaleString('default',{month:'short'});
+                                                if(!monthLabels.includes(month)) monthLabels.push({month, index:i});
+                                            }
+                                        });
+                                        const monthsHtml = monthLabels.map(m => `<div style="grid-column-start:${m.index+1}">${m.month}</div>`).join('');
+                                        setTimeout(()=>document.getElementById('github-months').innerHTML = monthsHtml,0);
+                                        return weeksArr.map(week =>
+                                            week.map(day =>
+                                                `<div class="github-commit-day" title="${day.contributionCount} Contribution${day.contributionCount!==1?'s':''}${day.date?' on '+new Date(day.date).toLocaleString('default',{month:'long'})+' '+getOrdinal(new Date(day.date).getDate()):''}" style="background:${day.color}"></div>`
+                                            ).join('')
                                         ).join('');
-                                    }).join('');
-                                })()}
+                                    })()}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
             ` : ''}
         `;
 
