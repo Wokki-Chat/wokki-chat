@@ -706,7 +706,7 @@ function initTopBarMenu() {
       serverBar.classList.toggle('hidden');
       channelBar.classList.toggle('active');
       selfInfo.classList.toggle('active');
-      if (serverBar.classList.contains('hidden')) {
+      if (!serverBar.classList.contains('hidden')) {
         topBarMenuButton.textContent = 'close';
       } else {
         topBarMenuButton.textContent = 'menu';
