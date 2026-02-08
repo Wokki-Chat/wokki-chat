@@ -436,6 +436,17 @@ export class UserPopupManager {
 
         const popup = document.querySelector("#user-profile-popup").querySelector(".popup");
 
+        user.tags.forEach(tag => {
+            const tagEl = document.createElement("div");
+            tagEl.classList.add("dm-info-tag");
+            tagEl.innerHTML = `
+                <img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/${tag.tag_icon}.svg">
+                <p class="dm-info-tag-tooltip">${tag.tag_name}</p>
+            `;
+            popup.querySelector(".dm-info-tags").appendChild(tagEl);
+        });
+
+
         if (custom_style_data && popup) {
             popup.setAttribute('data-light-text', lightText);
             popup.setAttribute('data-custom-style', 'true');
