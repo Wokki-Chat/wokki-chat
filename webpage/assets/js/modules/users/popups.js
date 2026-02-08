@@ -110,11 +110,36 @@ export class UserPopupManager {
             ${user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks ? `
             <style>
                 .github-commit-container { display: flex; flex-direction: column; }
-                .github-months { display: grid; grid-template-columns: repeat(var(--weeks-count), 14px); margin-left: 20px; gap: 3px; font-size: 10px; text-align: center; }
+                .github-months { 
+                    display: grid; 
+                    margin-left: 20px; 
+                    gap: 3px; 
+                    font-size: 10px; 
+                    margin-bottom: 5px;
+                }
                 .github-commit-grid-container { display: flex; }
-                .github-commit-labels { display: flex; flex-direction: column; margin-right: 5px; font-size: 10px; line-height: 14px; }
-                .github-commit-grid { display: grid; grid-template-columns: repeat(var(--weeks-count), 14px); grid-auto-rows: 14px; gap: 3px; }
-                .github-commit-day { width: 12px; height: 12px; border-radius: 2px; }
+                .github-commit-labels { 
+                    display: flex; 
+                    flex-direction: column; 
+                    margin-right: 5px; 
+                    font-size: 10px; 
+                    gap: 3px;
+                }
+                .github-commit-labels > div {
+                    height: 14px;
+                    line-height: 14px;
+                }
+                .github-commit-grid { 
+                    display: grid; 
+                    grid-template-rows: repeat(7, 14px);
+                    grid-auto-columns: 14px;
+                    gap: 3px; 
+                }
+                .github-commit-day { 
+                    width: 12px; 
+                    height: 12px; 
+                    border-radius: 2px; 
+                }
             </style>
             <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
                 <div class="dm-info-item">
@@ -130,7 +155,7 @@ export class UserPopupManager {
                                 <div class="github-commit-grid" id="github-commit-grid">
                                     ${(() => {
                                         const now = new Date();
-                                        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+                                        const fourMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
                                         const weeks = user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks;
 
                                         const getOrdinal = n => {
@@ -142,44 +167,62 @@ export class UserPopupManager {
                                         weeks.forEach(week => {
                                             week.contributionDays.forEach(day => {
                                                 const d = new Date(day.date);
-                                                if(d >= threeMonthsAgo && d <= now) allDays.push(day);
+                                                if(d >= fourMonthsAgo && d <= now) {
+                                                    allDays.push({
+                                                        ...day,
+                                                        dateObj: d
+                                                    });
+                                                }
                                             });
                                         });
-                                        const firstDate = new Date(allDays[0].date);
-                                        const firstWeekday = firstDate.getDay();
-                                        const paddedDays = Array(firstWeekday).fill({contributionCount:0, color:'#ebedf0', date:null});
-                                        paddedDays.push(...allDays);
-                                        const weeksArr = [];
-                                        for(let i=0;i<paddedDays.length;i+=7){
-                                            const weekSlice = paddedDays.slice(i,i+7);
-                                            while(weekSlice.length<7) weekSlice.push({contributionCount:0, color:'#ebedf0', date:null});
-                                            weeksArr.push(weekSlice);
-                                        }
-
-                                        document.documentElement.style.setProperty('--weeks-count', weeksArr.length);
-                                        const monthPositions = [];
-                                        let lastMonth = null;
-                                        weeksArr.forEach((week,i) => {
-                                            const firstDay = week.find(d => d.date);
-                                            if(firstDay){
-                                                const month = new Date(firstDay.date).toLocaleString('default',{month:'short'});
-                                                if(month !== lastMonth){
-                                                    monthPositions.push({month, index:i});
-                                                    lastMonth = month;
+                                        allDays.sort((a, b) => a.dateObj - b.dateObj);
+                                        const monthSpans = [];
+                                        let currentMonth = null;
+                                        let monthStart = 0;
+                                        
+                                        allDays.forEach((day, index) => {
+                                            const month = day.dateObj.toLocaleString('default', {month: 'short'});
+                                            const monthYear = `${month} ${day.dateObj.getFullYear()}`;
+                                            
+                                            if (monthYear !== currentMonth) {
+                                                if (currentMonth !== null) {
+                                                    monthSpans.push({
+                                                        month: currentMonth.split(' ')[0],
+                                                        start: monthStart + 1,
+                                                        end: index
+                                                    });
                                                 }
+                                                currentMonth = monthYear;
+                                                monthStart = index;
                                             }
                                         });
-                                        const monthsHtml = monthPositions.map((m,i)=>{
-                                            const nextIndex = monthPositions[i+1]?.index || weeksArr.length;
-                                            const colSpan = nextIndex - m.index;
-                                            return `<div style="grid-column-start:${m.index+1}; grid-column-end:${m.index+1 + colSpan}">${m.month}</div>`;
-                                        }).join('');
-                                        setTimeout(()=>document.getElementById('github-months').innerHTML = monthsHtml,0);
-                                        return weeksArr.map(week =>
-                                            week.map(day =>
-                                                `<div class="github-commit-day" title="${day.contributionCount} Contribution${day.contributionCount!==1?'s':''}${day.date?' on '+new Date(day.date).toLocaleString('default',{month:'long'})+' '+getOrdinal(new Date(day.date).getDate()):''}" style="background:${day.color}"></div>`
-                                            ).join('')
+                                        if (currentMonth !== null) {
+                                            monthSpans.push({
+                                                month: currentMonth.split(' ')[0],
+                                                start: monthStart + 1,
+                                                end: allDays.length
+                                            });
+                                        }
+                                        const monthsHtml = monthSpans.map(m => 
+                                            `<div style="grid-column: ${m.start} / ${m.end + 1}; text-align: center;">${m.month}</div>`
                                         ).join('');
+                                        
+                                        setTimeout(() => {
+                                            const monthsEl = document.getElementById('github-months');
+                                            if (monthsEl) {
+                                                monthsEl.style.gridTemplateColumns = `repeat(${allDays.length}, 14px)`;
+                                                monthsEl.innerHTML = monthsHtml;
+                                            }
+                                        }, 0);
+                                        return allDays.map((day, index) => {
+                                            const weekday = day.dateObj.getDay();
+                                            const col = index + 1;
+                                            const row = weekday + 1;
+                                            
+                                            return `<div class="github-commit-day" 
+                                                title="${day.contributionCount} Contribution${day.contributionCount !== 1 ? 's' : ''} on ${day.dateObj.toLocaleString('default', {month: 'long'})} ${getOrdinal(day.dateObj.getDate())}" 
+                                                style="background: ${day.color}; grid-column: ${col}; grid-row: ${row};"></div>`;
+                                        }).join('');
                                     })()}
                                 </div>
                             </div>
