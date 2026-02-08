@@ -174,6 +174,20 @@ $kudosArray = json_decode($kudosJson, true);
 $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAsAAAAGMAQMAAADuk4YmAAAAA1BMVEX///+nxBvIAAAAAXRSTlMAQObYZgAAADlJREFUeF7twDEBAAAAwiD7p7bGDlgYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAGJrAABgPqdWQAAAABJRU5ErkJggg==';
 
 $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
+
+$active_tab_formatted = "My Account";
+
+if ($active_tab === 'account') {
+    $active_tab_formatted = "My Account";
+} elseif ($active_tab === 'connections') {
+    $active_tab_formatted = "Connections";
+} elseif ($active_tab === 'appearance') {
+    $active_tab_formatted = "Appearance";
+} elseif ($active_tab === 'kudos') {
+    $active_tab_formatted = "Kudos";
+} elseif ($active_tab === 'logs') {
+    $active_tab_formatted = "Logs";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme; ?>">
@@ -260,6 +274,7 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
             <div class="setting-page">
                 <div class="settings-sidebar-button">
                     <span class="material-symbols-rounded top-bar-menu" id="settings-sidebar-button">menu</span>
+                    <h2 class="settings-page-title"><?php echo $active_tab_formatted; ?></h2>
                 </div>
                 <a class="close-settings-container no-underline" href="https://chat.wokki20.nl<?php echo $from; ?>">
                     <div class="close-settings">

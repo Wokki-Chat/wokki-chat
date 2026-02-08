@@ -2394,6 +2394,18 @@ code {
     color: var(--clr-text-a10);
 }
 
+.settings-sidebar-button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    position: absolute;
+    margin-top: 15px;
+}
+
+#settings-sidebar-button {
+    display: none !important;
+}
+
 @media screen and (max-width: 500px) {
     .settings-tabs {
         display: none;
@@ -2411,8 +2423,12 @@ code {
     }
 
     .setting-page {
-        width: calc(100% - 30px) !important;
-        margin-left: unset !important;
+        width: calc(100% - 20px) !important;
+        margin-left: 10px !important;
+    }
+
+    #settings-sidebar-button {
+        display: block !important;
     }
 }
 
