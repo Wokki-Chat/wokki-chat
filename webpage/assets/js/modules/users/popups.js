@@ -28,7 +28,7 @@ export class UserPopupManager {
     }
 
 
-    async getGithubWidget(github) {
+    async getGithubWidget(github, user) {
         if (!github?.data?.user?.contributionsCollection?.contributionCalendar?.weeks) {
             return '';
         }
@@ -284,7 +284,7 @@ export class UserPopupManager {
                     </div>
                 `
                 : user.widgets?.GitHub
-                    ? await this.getGithubWidget(user.widgets.GitHub)
+                    ? await this.getGithubWidget(user.widgets.GitHub, user)
                     : ''
             }
         `;
@@ -464,7 +464,7 @@ export class UserPopupManager {
                             widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
                         } else {
                             console.log(githubWidget);
-                            widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget);
+                            widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, profileData);
                         }
                     } else {
                         widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
