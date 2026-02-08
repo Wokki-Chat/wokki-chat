@@ -456,17 +456,18 @@ export class UserPopupManager {
                 }
                 if (data.widgets && popupCreated) {
                     const widgetsDiv = document.querySelector(".user-widgets-content");
-                    if (!widgetsDiv) return;
-                    widgetsDiv.innerHTML = '';
-                    const githubWidget = data.widgets['GitHub'];
-                    if (githubWidget) {
-                        if (githubWidget.error) {
-                            widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
+                    if (widgetsDiv) {
+                        widgetsDiv.innerHTML = '';
+                        const githubWidget = data.widgets['GitHub'];
+                        if (githubWidget) {
+                            if (githubWidget.error) {
+                                widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
+                            } else {
+                                widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, profileData);
+                            }
                         } else {
-                            widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, profileData);
+                            widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
                         }
-                    } else {
-                        widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
                     }
                 }
             } catch(e) {
