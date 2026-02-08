@@ -7,7 +7,6 @@ export class UserPopupManager {
     constructor({ user_id, access_token }) {
         this.user_id = user_id;
         this.sanitizer = new Sanitizer(user_id);
-        this.user_info = null;
         this.access_token = access_token;
     }
 
@@ -19,7 +18,7 @@ export class UserPopupManager {
         if (data.error) {
             throw new Error(data.error);
         }
-        this.user_info = data.user;
+        return data.user;
     }
 
     async openUserPopup(user) {
@@ -223,11 +222,7 @@ export class UserPopupManager {
     }
 
     async openExtendedPopup(user_id) {
-        if (this.user_info === null) {
-            await this.fetchUserInfo(user_id);
-        }
-        
-        const user = this.user_info;
+        const user = this.fetchUserInfo(user_id);
 
         const { html: popup_content, custom_style_data, popup_style, border_style, lightText } = await this.makeExtendedPopup(user);
 
