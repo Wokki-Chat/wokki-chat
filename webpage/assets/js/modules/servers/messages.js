@@ -143,9 +143,12 @@ export class MessageRenderer {
 			messageInfo.insertBefore(assetsContainer, reactionsDiv);
 		}
 
-		msgEl.querySelector('#message-only-me-dismiss').addEventListener('click', () => {
-			msgEl.remove();
-		});
+		const dismissEl = msgEl.querySelector('#message-only-me-dismiss');
+		if (dismissEl) {
+			dismissEl.addEventListener('click', () => {
+				msgEl.remove();
+			});
+		}
 
 		return msgEl;
 	}
