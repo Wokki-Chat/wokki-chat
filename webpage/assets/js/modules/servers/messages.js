@@ -108,7 +108,7 @@ export class MessageRenderer {
 					<p class="message-text">${sanitizedMessage}</p>
 					${embeds ? `<div class="message-embed">${await this.Embeds({ embeds }, usersList)}</div>` : ''}
 					<div class="message-reactions"></div>
-					${onlyMe ? `<div class="message-only-me" id="message-only-me">Only you can see this message <a class="link" id="message-only-me-dismiss">Dismiss</a></div>` : ""}
+					${onlyMe ? `<div class="message-only-me" id="message-only-me">Only you can see this message &bull; <a class="link" id="message-only-me-dismiss">Dismiss</a></div>` : ""}
 				</div>
 			</div>
 			<div class="message-options">
