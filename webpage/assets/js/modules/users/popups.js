@@ -431,7 +431,6 @@ export class UserPopupManager {
             buffer += decoder.decode(value, { stream: true });
             
             const lines = buffer.split('\n');
-            
             buffer = lines.pop() || '';
             
             for (const line of lines) {
@@ -480,6 +479,30 @@ export class UserPopupManager {
                 } catch(e) {
                     console.error('JSON parse error:', e, 'Line:', line);
                 }
+            }
+        }
+        
+        if (buffer.trim()) {
+            try {
+                const data = JSON.parse(buffer);
+                if (data.widgets && popupCreated) {
+                    const widgetsDiv = document.querySelector(".user-widgets-content");
+                    if (widgetsDiv) {
+                        widgetsDiv.innerHTML = '';
+                        const githubWidget = data.widgets['GitHub'];
+                        if (githubWidget) {
+                            if (githubWidget.error) {
+                                widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
+                            } else {
+                                widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, profileData);
+                            }
+                        } else {
+                            widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
+                        }
+                    }
+                }
+            } catch(e) {
+                console.error('Final buffer parse error:', e);
             }
         }
         
