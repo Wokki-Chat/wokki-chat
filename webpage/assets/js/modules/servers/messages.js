@@ -2,6 +2,7 @@
 // Module description: This module helps with managing messages in a server.
 import ReactionsRender from "./reactions.js";
 import { Sanitizer } from "../global/sanitization.js";
+import { UserPopupManager } from "../users/popups.js";
 
 export class MessageRenderer {
 	constructor({ user_id, channels, server_id }) {
@@ -323,6 +324,7 @@ export class MessageBehaviour {
 		this.user_id = user_id;
 		this.reactionRenderer = new ReactionsRender({ user_id, channel_id, server_id, access_token, socket });
 		this.messageContainer = messageContainer;
+		this.userPopupManager = new UserPopupManager({ user_id: user_id, access_token: access_token });
 	}
 
 	applyCompactMode(el, msg, insertIndex, messageCache) {
@@ -360,8 +362,24 @@ export class MessageBehaviour {
 			}
 		});
 
-		const mentionTags = el.querySelectorAll(`.user-link[data-user-id="${this.user_id}"], .user-link[data-user-id="everyone"]`);
-		if (mentionTags.length > 0) el.classList.add("mentioned");
+		const mentionTags = el.querySelectorAll(".user-link");
+		mentionTags.forEach(link => {
+			link.addEventListener("click", e => {
+				const isNewTab = e.ctrlKey || e.metaKey || e.button === 1;
+				if (isNewTab) return;
+				e.preventDefault();
+				e.stopImmediatePropagation();
+
+				const userId = link.dataset.userId;
+				if (!userId || userId === "everyone") return;
+
+				this.userPopupManager.openExtendedPopup(userId);
+			});
+		});
+
+		if (el.querySelectorAll(`.user-link[data-user-id="${this.user_id}"], .user-link[data-user-id="everyone"]`).length > 0) {
+			el.classList.add("mentioned");
+		}
 
 		const messageReplyEl = el.querySelector(".message-reply");
 		if (messageReplyEl) {
