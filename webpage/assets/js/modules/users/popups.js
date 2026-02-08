@@ -21,6 +21,23 @@ export class UserPopupManager {
         return data.user;
     }
 
+    async getConnections(user) {
+        if (!user.connections) {
+            return '';
+        }
+
+        let connections = '';
+        user.connections.forEach(connection => {
+            connections += `
+            <a class="connection-item" href="${connection.connection_user_url}">
+                <img src="/assets/icons/connections/${connection.connection_type.toLowerCase()}.svg" alt="${connection.connection_type} Icon" title="${connection.connection_type}" class="connection-icon">
+                <div class="connection-name">${connection.connection_name}</div>
+            </a>`;
+        });
+
+        return connections;
+    }
+
     async getGithubWidget(user) {
         if (!user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks) {
             return '';
@@ -242,38 +259,41 @@ export class UserPopupManager {
                 </div>
             </div>
 
-            ${user.widgets?.Spotify?.item ? `
-                <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
-                    <div class="dm-info-item">
-                        <p class="dm-info-item-key">Playing Spotify</p>
-                        <div class="spotify-info">
-                            <div class="spotify-info-cover">
-                                <img src="${user.widgets.Spotify.item.album.images[0]?.url}" alt="Album cover" />
-                            </div>
-                            <div class="spotify-info-text">
-                                <a href="${user.widgets.Spotify.item.external_urls.spotify}" target="_blank" class="spotify-track-name" title="${user.widgets.Spotify.item.name}">
-                                    ${user.widgets.Spotify.item.name.length > 23 ? user.widgets.Spotify.item.name.slice(0, 20) + '…' : user.widgets.Spotify.item.name}
-                                </a>
-                                <p class="spotify-artists">
-                                    ${user.widgets.Spotify.item.artists.map(artist => {
-                                        const name = artist.name.length > 18 ? artist.name.slice(0, 15) + '…' : artist.name;
-                                        return `<a href="${artist.external_urls.spotify}" target="_blank" title="${artist.name}">${name}</a>`;
-                                    }).join(', ')}
-                                </p>
-                                <div class="spotify-progress-container">
-                                    <span class="spotify-time-left">${msToTime(user.widgets.Spotify.progress_ms)}</span>
-                                    <div class="spotify-progress-bar-wrapper">
-                                        <div class="spotify-progress-bar"></div>
+            ${user.widgets?.Spotify?.item
+                ? `
+                    <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
+                        <div class="dm-info-item">
+                            <p class="dm-info-item-key">Playing Spotify</p>
+                            <div class="spotify-info">
+                                <div class="spotify-info-cover">
+                                    <img src="${user.widgets.Spotify.item.album.images[0]?.url}" alt="Album cover" />
+                                </div>
+                                <div class="spotify-info-text">
+                                    <a href="${user.widgets.Spotify.item.external_urls.spotify}" target="_blank" class="spotify-track-name" title="${user.widgets.Spotify.item.name}">
+                                        ${user.widgets.Spotify.item.name.length > 23 ? user.widgets.Spotify.item.name.slice(0, 20) + '…' : user.widgets.Spotify.item.name}
+                                    </a>
+                                    <p class="spotify-artists">
+                                        ${user.widgets.Spotify.item.artists.map(artist => {
+                                            const name = artist.name.length > 18 ? artist.name.slice(0, 15) + '…' : artist.name;
+                                            return `<a href="${artist.external_urls.spotify}" target="_blank" title="${artist.name}">${name}</a>`;
+                                        }).join(', ')}
+                                    </p>
+                                    <div class="spotify-progress-container">
+                                        <span class="spotify-time-left">${msToTime(user.widgets.Spotify.progress_ms)}</span>
+                                        <div class="spotify-progress-bar-wrapper">
+                                            <div class="spotify-progress-bar"></div>
+                                        </div>
+                                        <span class="spotify-time-right">${msToTime(user.widgets.Spotify.item.duration_ms)}</span>
                                     </div>
-                                    <span class="spotify-time-right">${msToTime(user.widgets.Spotify.item.duration_ms)}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            ` : ''}
-
-            ${await this.getGithubWidget(user)}
+                `
+                : user.widgets?.Github
+                    ? await this.getGithubWidget(user)
+                    : ''
+            }
         `;
 
         if (!user.bot) {
@@ -386,6 +406,10 @@ export class UserPopupManager {
             <div class="user-widgets">
                 <p class="dm-info-item-key">Widgets</p>
                 ${await this.getGithubWidget(user)}
+                <p class="dm-info-item-key">Connections</p>
+                <div class="connections-list">
+                    ${await this.getConnections(user)}
+                </div>
             </div>
         `;
 

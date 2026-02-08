@@ -4766,3 +4766,48 @@ input#clr-hue-slider {
     border-radius: 2px; 
 }
 .github-commit-container { display: flex; flex-direction: column; }
+
+.connections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.connection-item {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    align-items: center;
+    text-decoration: none;
+    cursor: pointer;
+    color: var(--clr-text-a0);
+}
+
+.connection-icon {
+    width: 15px;
+    height: 15px;
+    padding: 5px;
+    background-color: var(--clr-text-white-a0);
+    object-fit: contain;
+    border-radius: 5px;
+    border: 2px solid var(--clr-input-border-bg-darkest);
+    user-select: none;
+}
+
+.connection-name {
+    font-size: 12px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--clr-text-a0);
+    user-select: none;
+}
+
+
+[data-custom-style="true"][data-light-text="true"] .connection-name{
+    color: var(--clr-text-white-a0);
+}
+
+[data-custom-style="true"][data-light-text="false"] .connection-name {
+    color: var(--clr-text-black-a0);
+}
