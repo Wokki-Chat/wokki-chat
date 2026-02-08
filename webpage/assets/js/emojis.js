@@ -273,7 +273,7 @@ const emojis = {
 											range.collapse(false);
 											sel.removeAllRanges();
 											sel.addRange(range);
-											textareaFormatter.caret_end(textarea);
+											textareaFormatter.caret_end(targetField);
 										}
 									} else if ('selectionStart' in active) {
 										const start = active.selectionStart;
@@ -281,7 +281,7 @@ const emojis = {
 										const value = active.value;
 										active.value = value.slice(0, start) + output + value.slice(end);
 										active.selectionStart = active.selectionEnd = start + output.length;
-										textareaFormatter.caret_end(textarea);
+										textareaFormatter.caret_end(targetField);
 									}
 								}
 
