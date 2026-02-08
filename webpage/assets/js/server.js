@@ -5,7 +5,7 @@ import SettingsManager from "./modules/servers/settings.js";
 import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
 import { UserPopupManager } from "./modules/users/popups.js";
 import { Mentions } from "./modules/users/mentions.js";
-
+import { CommandsManager } from "./modules/global/commands.js";
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -45,6 +45,7 @@ function initServer() {
 	const messageHydrator = new MessageHydrator({ user_id, channels, server_id });
 	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
 	const mentions = new Mentions({ user_id, channels, server_id, users_list: [] });
+	const commandsManager = new CommandsManager({ user_id, channel_id, server_id, access_token, available_commands, socket });
 
 	const userPopupManager = new UserPopupManager({ user_id, access_token });
 
@@ -588,7 +589,7 @@ function initServer() {
 			if (textarea.innerText.startsWith('/')) {
 				textarea.style.color = "var(--clr-text-a0)";
 				preview.style.display = "none";
-				showAvailableCommands(textarea.innerText, textarea, available_commands, sanitizer);
+				commandsManager.show(textarea.innerText, textarea);
 			} else {
 				const popup = document.querySelector(".available-commands");
 				if (popup) popup.remove();
