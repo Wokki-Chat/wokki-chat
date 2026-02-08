@@ -143,6 +143,7 @@ function initSettings() {
 			format: 'hex',
 			formatToggle: false,
 			alpha: false,
+			forceAlpha: false,
 			parent: '.setting-page',
 			onChange: (color, input) => updateProfileColor(color, input),
 			el: '#profile-color-primary, #profile-color-accent'
