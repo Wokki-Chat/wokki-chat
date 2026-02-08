@@ -422,17 +422,21 @@ export class UserPopupManager {
 
         let profileData = null;
         let popupCreated = false;
+        let buffer = '';
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true }).trim();
-            if (!chunk) continue;
-
-            const lines = chunk.split('\n').filter(line => line.trim());
+            buffer += decoder.decode(value, { stream: true });
+            
+            const lines = buffer.split('\n');
+            
+            buffer = lines.pop() || '';
             
             for (const line of lines) {
+                if (!line.trim()) continue;
+                
                 try {
                     const data = JSON.parse(line);
                     if (data.user && !popupCreated) {
@@ -474,7 +478,7 @@ export class UserPopupManager {
                         }
                     }
                 } catch(e) {
-                    console.error('JSON parse error:', e);
+                    console.error('JSON parse error:', e, 'Line:', line);
                 }
             }
         }
