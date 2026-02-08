@@ -593,14 +593,6 @@ input:checked + .slider:before {
     white-space: nowrap;
 }
 
-.user-info-profile-popup[data-custom-style="true"][data-light-text="true"] .user-info-profile-popup-username {
-    color: var(--clr-text-white-a0);
-}
-
-.user-info-profile-popup[data-custom-style="true"][data-light-text="false"] .user-info-profile-popup-username {
-    color: var(--clr-text-black-a0);
-}
-
 .self-info-username {
     max-width: calc(278px - 20px - 41px - 10px);
 }
@@ -3047,7 +3039,7 @@ h6 {
 }
 
 [data-custom-style="true"][data-light-text="false"] .dm-info-item-username-original,
-[data-custom-style="true"][data-light-text="true"] .user-info-profile-popup-username {
+[data-custom-style="true"][data-light-text="false"] .user-info-profile-popup-username {
     color: var(--clr-text-black-a0) !important;
 }
 
