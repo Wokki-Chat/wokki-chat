@@ -490,6 +490,8 @@ export class UserPopupManager {
                         window.history.replaceState({}, '', `https://chat.wokki20.nl/profile/@${this.sanitizer.sanitize(profileData.username)}`);
                     }
 
+                    console.log(data.widgets);
+
                     if (data.widgets && popupCreated) {
                         const widgetsDiv = document.querySelector(".user-widgets-content");
                         if (!widgetsDiv) continue;
