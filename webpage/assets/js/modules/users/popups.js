@@ -107,7 +107,7 @@ export class UserPopupManager {
                 </div>
             ` : ''}
 
-            ${user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalandar?.weeks ? `
+            ${user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks ? `
                 <style>
                     .github-commit-grid { display: grid; grid-template-columns: repeat(${weeks.length}, 14px); gap: 3px; }
                     .github-commit-day { width: 12px; height: 12px; border-radius: 2px; }
@@ -117,7 +117,7 @@ export class UserPopupManager {
                         <p class="dm-info-item-key">GitHub Contributions This Month</p>
                         <div class="github-info">
                             <div class="github-commit-grid">
-                            ${user.widgets.GitHub.data.user.contributionsCollection.contributionCalandar.weeks.map(week =>
+                            ${user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks.map(week =>
                                 week.contributionDays.map(day =>
                                 `<div class="github-commit-day" title="${day.date}: ${day.contributionCount}" style="background:${day.color}"></div>`
                                 ).join('')
