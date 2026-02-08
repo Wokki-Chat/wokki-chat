@@ -2394,6 +2394,21 @@ code {
     color: var(--clr-text-a10);
 }
 
+@media screen and (max-width: 500px) {
+    .settings-tabs {
+        display: none;
+    }
+
+    .settings-tabs.active {
+        display: flex;
+    }
+
+    .setting-page {
+        width: calc(100% - 30px) !important;
+        margin-left: unset !important;
+    }
+}
+
 .settings-tab {
     cursor: pointer;
     padding: 10px;

@@ -258,6 +258,9 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
                 <?php endif; ?>
             </div>
             <div class="setting-page">
+                <div class="settings-sidebar-button">
+                    <span class="material-symbols-rounded top-bar-menu" id="settings-sidebar-button">menu</span>
+                </div>
                 <a class="close-settings-container no-underline" href="https://chat.wokki20.nl<?php echo $from; ?>">
                     <div class="close-settings">
                         <span class="material-symbols-rounded">close</span>

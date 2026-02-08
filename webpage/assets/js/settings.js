@@ -13,6 +13,19 @@ function initSettings() {
 			event.preventDefault();
 		}
 	});
+
+	const sidebarMenuButton = document.getElementById('settings-sidebar-button');
+	const settingsTabs = document.querySelector('.settings-tabs');
+
+	if (sidebarMenuButton && settingsTabs) {
+		sidebarMenuButton.replaceWith(sidebarMenuButton.cloneNode(true));
+
+		const newButton = document.getElementById('settings-sidebar-button');
+		newButton.addEventListener('click', () => {
+			settingsTabs.classList.toggle('active');
+			newButton.textContent = serverBar.classList.contains('active') ? 'close' : 'menu';
+		});
+	}
   
 	const access_token = document.getElementById("access-token").getAttribute("value");
 	const user_id = document.getElementById("user-id").getAttribute("value");
