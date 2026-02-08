@@ -109,6 +109,9 @@ export class UserPopupManager {
 
             ${user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks ? `
                 <style>
+                    .github-commit-container { display: flex; }
+                    .github-commit-labels { display: flex; flex-direction: column; margin-right: 5px; }
+                    .github-commit-labels div { height: 14px; font-size: 10px; line-height: 14px; }
                     .github-commit-grid { display: grid; grid-template-columns: repeat(var(--weeks-count), 14px); gap: 3px; }
                     .github-commit-day { width: 12px; height: 12px; border-radius: 2px; }
                 </style>
@@ -117,25 +120,29 @@ export class UserPopupManager {
                         <p class="dm-info-item-key">GitHub Contributions</p>
                         <p class="dm-info-item-key-desc">Over the last 4 months</p>
                         <div class="github-info">
-                            <div class="github-commit-grid" id="github-commit-grid">
-                            ${(() => {
-                                const now = new Date();
-                                const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-                                const filteredWeeks = user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks
-                                    .map(week =>
-                                        week.contributionDays.filter(day => {
+                            <div class="github-commit-container">
+                                <div class="github-commit-labels">
+                                    ${['S','M','T','W','T','F','S'].map(day => `<div>${day}</div>`).join('')}
+                                </div>
+                                <div class="github-commit-grid" id="github-commit-grid">
+                                ${(() => {
+                                    const now = new Date();
+                                    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+                                    const weeks = user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks;
+                                    const filteredWeeks = weeks
+                                        .map(week => week.contributionDays.filter(day => {
                                             const d = new Date(day.date);
                                             return d >= threeMonthsAgo && d <= now;
-                                        })
-                                    )
-                                    .filter(week => week.length > 0);
-                                document.documentElement.style.setProperty('--weeks-count', filteredWeeks.length);
-                                return filteredWeeks.map(week =>
-                                    week.map(day =>
-                                        `<div class="github-commit-day" title="${day.date}: ${day.contributionCount}" style="background:${day.color}"></div>`
-                                    ).join('')
-                                ).join('');
-                            })()}
+                                        }))
+                                        .filter(week => week.length > 0);
+                                    document.documentElement.style.setProperty('--weeks-count', filteredWeeks.length);
+                                    return filteredWeeks.map(week =>
+                                        week.map(day =>
+                                            `<div class="github-commit-day" title="${day.date}: ${day.contributionCount}" style="background:${day.color}"></div>`
+                                        ).join('')
+                                    ).join('');
+                                })()}
+                                </div>
                             </div>
                         </div>
                     </div>
