@@ -20,10 +20,9 @@ function initSettings() {
 	if (sidebarMenuButton && settingsTabs) {
 		sidebarMenuButton.replaceWith(sidebarMenuButton.cloneNode(true));
 
-		const newButton = document.getElementById('settings-sidebar-button');
-		newButton.addEventListener('click', () => {
+		sidebarMenuButton.addEventListener('click', () => {
 			settingsTabs.classList.toggle('active');
-			newButton.textContent = serverBar.classList.contains('active') ? 'close' : 'menu';
+			sidebarMenuButton.textContent = serverBar.classList.contains('active') ? 'close' : 'menu';
 		});
 	}
   
