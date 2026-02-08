@@ -432,6 +432,10 @@ export class UserPopupManager {
             content: popup_content,
         });
 
+        let currentPageUrl = window.location.href;
+
+        window.history.replaceState({}, '', `https://chat.wokki20.nl/profile/@${this.sanitizer.sanitize(user.username)}`);
+
         document.querySelector(".user-info-profile-popup")?.remove();
 
         const popup = document.querySelector("#user-profile-popup").querySelector(".popup");
@@ -446,7 +450,6 @@ export class UserPopupManager {
             popup.querySelector(".dm-info-tags").appendChild(tagEl);
         });
 
-
         if (custom_style_data && popup) {
             popup.setAttribute('data-light-text', lightText);
             popup.setAttribute('data-custom-style', 'true');
@@ -458,13 +461,19 @@ export class UserPopupManager {
             if (e.key === "Escape") {
                 const popup = document.getElementById("user-profile-popup");
                 if (popup) jspt.closePopup("user-profile-popup");
+                window.history.replaceState({}, '', currentPageUrl);
             }
         });
 
         document.querySelector("#user-profile-popup").addEventListener("click", (e) => {
             if (!e.target.closest(".popup")) {
                 jspt.closePopup("user-profile-popup");
+                window.history.replaceState({}, '', currentPageUrl);
             }
+        });
+
+        document.querySelector(".popup-header-close").addEventListener("click", () => {
+            window.history.replaceState({}, '', currentPageUrl);
         });
     }
 }
