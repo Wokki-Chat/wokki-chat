@@ -1403,7 +1403,7 @@ input:checked + .slider:before {
     }
 
     :root.compact .server-bar {
-        height: calc(100vh - 30px - 35px);
+        height: calc(100vh - 30px - 25px);
         bottom: 0px;
         top: 55px;
         left: 0px;
