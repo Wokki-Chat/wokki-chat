@@ -9,3 +9,6 @@ livekit.yaml
 
 .venv
 __pycache__
+
+/webpage/version-info.json
+/webpage/update-info.md

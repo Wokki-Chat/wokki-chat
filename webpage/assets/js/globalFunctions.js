@@ -190,6 +190,20 @@ function placeCaretAtEnd(el) {
   }
 }
 
+async function showUpdateInfo(sanitizer) {
+	const versionData = await fetch('version-info.json').then(res => res.json());
+	const updateMarkdown = await fetch(versionData["update-info"]).then(res => res.text());
+	const updateHTML = sanitizer.sanitizeMsg(updateMarkdown);
+
+	jspt.makePopup({
+		style: 'info',
+		content_type: 'html',
+		header: `Update ${versionData.version}`,
+		content: updateHTML,
+		custom_id: 'update_popup'
+	});
+}
+
 function showAvailableCommands(command, textarea, available_commands, sanitizer) {
     const existingPopup = document.querySelector(".available-commands");
     if (existingPopup) existingPopup.remove();
@@ -248,6 +262,20 @@ function showAvailableCommands(command, textarea, available_commands, sanitizer)
 
         const commandObj = bot.commands.find(c => c.command === commandText);
         if (!commandObj) return;
+
+        if (commandObj.builtIn) {
+            if (commandText === "/update-info") {
+                showUpdateInfo(sanitizer);
+                resetComposer();
+                const popup = document.querySelector(".available-commands");
+                if (popup) popup.remove();
+                return;
+            }
+
+            if (commandText === "/help") {
+                return;
+            }
+        }
 
         let options = null;
         if (commandObj.options) {
