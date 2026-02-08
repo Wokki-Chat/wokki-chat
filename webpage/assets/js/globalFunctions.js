@@ -701,16 +701,16 @@ function initTopBarMenu() {
   const serverBar = document.querySelector('.server-bar');
   const channelBar = document.querySelector('.channel-bar');
   const selfInfo = document.querySelector('.self-info');
+
   if (topBarMenuButton && serverBar && channelBar && selfInfo) {
-    topBarMenuButton.addEventListener('click', () => {
+    topBarMenuButton.replaceWith(topBarMenuButton.cloneNode(true));
+
+    const newButton = document.getElementById('top-bar-menu');
+    newButton.addEventListener('click', () => {
       serverBar.classList.toggle('hidden');
       channelBar.classList.toggle('active');
       selfInfo.classList.toggle('active');
-      if (!serverBar.classList.contains('hidden')) {
-        topBarMenuButton.textContent = 'close';
-      } else {
-        topBarMenuButton.textContent = 'menu';
-      }
+      newButton.textContent = serverBar.classList.contains('hidden') ? 'menu' : 'close';
     });
   }
 }
