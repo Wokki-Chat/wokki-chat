@@ -27,12 +27,13 @@ export class UserPopupManager {
         return connections;
     }
 
-    async getGithubWidget(user) {
-        if (!user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks) {
+
+    async getGithubWidget(github) {
+        if (!github?.data?.user?.contributionsCollection?.contributionCalendar?.weeks) {
             return '';
         }
 
-        const weeks = user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks;
+        const weeks = github.data.user.contributionsCollection.contributionCalendar.weeks;
         const now = new Date();
         const fourMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
 
@@ -283,7 +284,7 @@ export class UserPopupManager {
                     </div>
                 `
                 : user.widgets?.GitHub
-                    ? await this.getGithubWidget(user)
+                    ? await this.getGithubWidget(user.widgets.GitHub)
                     : ''
             }
         `;
@@ -456,16 +457,13 @@ export class UserPopupManager {
                 if (data.widgets && popupCreated) {
                     const widgetsDiv = document.querySelector(".user-widgets-content");
                     if (!widgetsDiv) return;
-
                     widgetsDiv.innerHTML = '';
-
-                    if (Object.keys(data.widgets).length) {
-                        for (const key in data.widgets) {
-                            if (key === 'GitHub' && data.widgets[key].error) {
-                                widgetsDiv.innerHTML += `<p class="dm-info-item-value">GitHub widget error: ${data.widgets[key].error}</p>`;
-                            } else {
-                                widgetsDiv.innerHTML += `<p class="dm-info-item-value">${key} widget loaded</p>`;
-                            }
+                    const githubWidget = data.widgets['GitHub'];
+                    if (githubWidget) {
+                        if (githubWidget.error) {
+                            widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
+                        } else {
+                            widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget);
                         }
                     } else {
                         widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
