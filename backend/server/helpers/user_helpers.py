@@ -200,6 +200,13 @@ async def get_user_widgets(cur, user_id, widget_name=None):
 
     if not widgets:
         return {}
+    
+    await cur.execute(
+        "SELECT connection_user_name, connection_name FROM user_connections WHERE user_id = %s",
+        (user_id,)
+    )
+    connections = await cur.fetchall() or []
+    connection_map = {c["connection_name"]: c["connection_user_name"] for c in connections}
 
     result = {}
     for widget in widgets:
@@ -237,6 +244,48 @@ async def get_user_widgets(cur, user_id, widget_name=None):
                             result["Spotify"] = await resp.json()
             except Exception:
                 pass
+        elif widget["widget_name"] == "GitHub" and widget["show_on_profile"] == 1:
+            try:
+                github_username = connection_map.get("GitHub")
+                access_token = widget.get("widget_access_token")
+                if not github_username or not access_token:
+                    continue
+
+                async with aiohttp.ClientSession() as session:
+                    graphql_query = {
+                        "query": f"""
+                        {{
+                          user(login: "{github_username}") {{
+                            contributionsCollection {{
+                              contributionCalendar {{
+                                totalContributions
+                                weeks {{
+                                  contributionDays {{
+                                    date
+                                    contributionCount
+                                    color
+                                  }}
+                                }}
+                              }}
+                            }}
+                          }}
+                        }}
+                        """
+                    }
+
+                    async with session.post(
+                        "https://api.github.com/graphql",
+                        json=graphql_query,
+                        headers={"Authorization": f"Bearer {access_token}"}
+                    ) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            result["GitHub"] = data
+                        else:
+                            result["GitHub"] = {"error": f"GitHub API returned status {resp.status}"}
+
+            except Exception as e:
+                result["GitHub"] = {"error": str(e)}
         else:
             result[widget["widget_name"]] = True
 
