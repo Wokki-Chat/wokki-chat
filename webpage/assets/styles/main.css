@@ -4703,6 +4703,8 @@ input#clr-hue-slider {
 
     .popup-container#user-profile-popup .popup {
         min-width: unset;
+        max-height: calc(100vh - 6px);
+        overflow-y: auto;
     }
 }
 
