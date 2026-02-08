@@ -16,6 +16,7 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 header('Content-Type: application/json');
+header('Connection: keep-alive');
 
 function getPremiumStatus($user_id, $mysqli) {
     $stmt = $mysqli->prepare("SELECT premium, premium_expires_at FROM users WHERE id = ?");
@@ -182,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Forbidden: Invalid Origin',
-                'return_code' => 38
+                'return_code' => 5
             ]);
             exit;
         }
@@ -193,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Forbidden: Invalid Referer',
-                'return_code' => 39
+                'return_code' => 6
             ]);
             exit;
         }
@@ -202,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode([
             'status' => 'error',
             'description' => 'Forbidden: No Origin or Referer',
-            'return_code' => 40
+            'return_code' => 7
         ]);
         exit;
     }
@@ -216,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode([
             'status' => 'error',
             'description' => 'Unauthorized: Missing or invalid Authorization header',
-            'return_code' => 41
+            'return_code' => 27
         ]);
         exit;
     }
@@ -235,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode([
             'status' => 'error',
             'description' => 'Unauthorized: Invalid access token',
-            'return_code' => 42
+            'return_code' => 26
         ]);
         exit;
     }
@@ -269,19 +270,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'tags' => getTags($requested_user_id, $mysqli),
         'staff' => $row['is_staff'] == 1,
         'developer' => $row['is_developer'] == 1,
-        'widgets' => getUserWidgets($mysqli, $requested_user_id),
         'connections' => getConnections($requested_user_id, $mysqli),
     ];
 
     echo json_encode([
         'status' => 'success',
+        'description' => 'User info fetched successfully',
         'user' => $user,
-        'return_code' => 0
+        'widgets' => new stdClass(),
+        'return_code' => 30
     ]);
+    echo "\n";
+    ob_flush();
+    flush();
+
+    $widgets = getUserWidgets($mysqli, $user_id);
+    echo json_encode([
+        'status' => 'success',
+        'description' => 'Widgets fetched successfully',
+        'widgets' => $widgets,
+        'return_code' => 31
+    ]);
+    ob_flush();
+    flush();
 } else {
     echo json_encode([
         'status' => 'error',
         'description' => 'Invalid request method',
-        'return_code' => 43
+        'return_code' => 18
     ]);
 }

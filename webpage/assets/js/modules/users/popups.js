@@ -10,17 +10,6 @@ export class UserPopupManager {
         this.access_token = access_token;
     }
 
-    async fetchUserInfo(user_id) {
-        let headers = new Headers();
-        headers.append('Authorization', `Bearer ${this.access_token}`);
-        let response = await fetch(`https://chat.wokki20.nl/app/user_info?user_id=${user_id}`, { headers });
-        let data = await response.json();
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        return data.user;
-    }
-
     async getConnections(user) {
         if (!user.connections) {
             return '';
@@ -408,7 +397,9 @@ export class UserPopupManager {
             </div>
             <div class="user-widgets">
                 <p class="dm-info-item-key">Widgets</p>
-                ${await this.getGithubWidget(user) || '<p class="dm-info-item-value">This user has no widgets</p>'}
+                <div class="user-widgets-content">
+                    <p class="dm-info-item-value">Loading widgets...</p>
+                </div>
 
                 <p class="dm-info-item-key">Connections</p>
                 <div class="connections-list">
@@ -421,42 +412,69 @@ export class UserPopupManager {
     }
 
     async openExtendedPopup(user_id) {
-        const user = await this.fetchUserInfo(user_id);
+        const headers = new Headers();
+        headers.append('Authorization', `Bearer ${this.access_token}`);
 
-        const { html: popup_content, custom_style_data, popup_style, border_style, lightText } = await this.makeExtendedPopup(user);
+        const res = await fetch(`https://chat.wokki20.nl/app/user_info?user_id=${user_id}`, { headers });
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
 
-        jspt.makePopup({
-            content_type: "html",
-            header: "Profile of <b>@" + this.sanitizer.sanitize(user.username) + "</b>",
-            custom_id: "user-profile-popup",
-            content: popup_content,
-        });
+        let profileData = null;
+        let popupCreated = false;
 
-        let currentPageUrl = window.location.href;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-        window.history.replaceState({}, '', `https://chat.wokki20.nl/profile/@${this.sanitizer.sanitize(user.username)}`);
+            const chunk = decoder.decode(value, { stream: true }).trim();
+            if (!chunk) continue;
 
-        document.querySelector(".user-info-profile-popup")?.remove();
+            try {
+                const data = JSON.parse(chunk);
+                if (data.user && !popupCreated) {
+                    profileData = data.user;
 
-        const popup = document.querySelector("#user-profile-popup").querySelector(".popup");
+                    const { html, custom_style_data, popup_style, border_style, lightText } = await this.makeExtendedPopup(profileData);
 
-        user.tags.forEach(tag => {
-            const tagEl = document.createElement("div");
-            tagEl.classList.add("dm-info-tag");
-            tagEl.innerHTML = `
-                <img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/${tag.tag_icon}.svg">
-                <p class="dm-info-tag-tooltip">${tag.tag_name}</p>
-            `;
-            popup.querySelector(".dm-info-tags").appendChild(tagEl);
-        });
+                    jspt.makePopup({
+                        content_type: "html",
+                        header: "Profile of <b>@" + this.sanitizer.sanitize(profileData.username) + "</b>",
+                        custom_id: "user-profile-popup",
+                        content: html,
+                    });
 
-        if (custom_style_data && popup) {
-            popup.setAttribute('data-light-text', lightText);
-            popup.setAttribute('data-custom-style', 'true');
-            if (popup_style) popup.style.setProperty('background', popup_style, 'important');
-            if (border_style) popup.style.setProperty('border', border_style, 'important');
+                    const popup = document.querySelector("#user-profile-popup .popup");
+                    if (custom_style_data && popup) {
+                        popup.setAttribute('data-light-text', lightText);
+                        popup.setAttribute('data-custom-style', 'true');
+                        if (popup_style) popup.style.setProperty('background', popup_style, 'important');
+                        if (border_style) popup.style.setProperty('border', border_style, 'important');
+                    }
+
+                    popupCreated = true;
+                }
+                if (data.widgets && popupCreated) {
+                    const widgetsDiv = document.querySelector(".user-widgets-content");
+                    if (!widgetsDiv) return;
+
+                    widgetsDiv.innerHTML = '';
+
+                    if (Object.keys(data.widgets).length) {
+                        for (const key in data.widgets) {
+                            if (key === 'GitHub' && data.widgets[key].error) {
+                                widgetsDiv.innerHTML += `<p class="dm-info-item-value">GitHub widget error: ${data.widgets[key].error}</p>`;
+                            } else {
+                                widgetsDiv.innerHTML += `<p class="dm-info-item-value">${key} widget loaded</p>`;
+                            }
+                        }
+                    } else {
+                        widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
+                    }
+                }
+            } catch(e) {
+            }
         }
-
+        const currentPageUrl = window.location.href;
         document.addEventListener("keydown", (e) => {
             if (e.key === "Escape") {
                 const popup = document.getElementById("user-profile-popup");
@@ -475,5 +493,7 @@ export class UserPopupManager {
         document.querySelector(".popup-header-close").addEventListener("click", () => {
             window.history.replaceState({}, '', currentPageUrl);
         });
+
+        window.history.replaceState({}, '', `https://chat.wokki20.nl/profile/@${this.sanitizer.sanitize(profileData.username)}`);
     }
 }
