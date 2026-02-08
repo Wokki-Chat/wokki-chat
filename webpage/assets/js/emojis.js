@@ -273,7 +273,7 @@ const emojis = {
 											range.collapse(false);
 											sel.removeAllRanges();
 											sel.addRange(range);
-											this.textareaFormatter.caret_end(textarea);
+											textareaFormatter.caret_end(textarea);
 										}
 									} else if ('selectionStart' in active) {
 										const start = active.selectionStart;
