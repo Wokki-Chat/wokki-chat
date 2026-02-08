@@ -81,7 +81,7 @@ if ($user_id) {
                 </div>
                 <div class="faq-item">
                     <h3>How do I contact support?</h3>
-                    <p>For assistance, you can reach out to our support team via email at <a class="link" href="mailto:support@chat.wokki20.nl">support@chat.wokki20.nl</a>.</p>
+                    <p>For assistance, you can reach out to our support team via email at <a class="link" href="mailto:support@cm.wokki20.nl">support@cm.wokki20.nl</a>.</p>
                 </div>
             </div>
         </div>
