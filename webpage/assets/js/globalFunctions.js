@@ -703,10 +703,10 @@ function initTopBarMenu() {
   const selfInfo = document.querySelector('.self-info');
   if (topBarMenuButton && serverBar && channelBar && selfInfo) {
     topBarMenuButton.addEventListener('click', () => {
-      serverBar.classList.toggle('active');
+      serverBar.classList.toggle('hidden');
       channelBar.classList.toggle('active');
       selfInfo.classList.toggle('active');
-      if (serverBar.classList.contains('active')) {
+      if (serverBar.classList.contains('hidden')) {
         topBarMenuButton.textContent = 'close';
       } else {
         topBarMenuButton.textContent = 'menu';
