@@ -196,7 +196,9 @@ export class UserPopupManager {
                     </div>
                     <div class="user-info-profile-popup-status-username">
                         <div class="user-info-profile-popup-username-container"><p class="user-info-profile-popup-username">${user.display_name ? this.sanitizer.sanitize(user.display_name) : this.sanitizer.sanitize(user.username)}</p>${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}</div>
-                        <p class="user-info-profile-popup-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
+                        <p class="user-info-profile-popup-status">
+                            ${user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Offline'}
+                        </p>
                     </div>
                 </div>
                 <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
