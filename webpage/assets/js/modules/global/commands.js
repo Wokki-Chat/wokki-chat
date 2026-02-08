@@ -86,7 +86,10 @@ export class CommandsManager {
 
         options.forEach(opt => {
             container.innerHTML += `
-                <span class="command-option">${opt.option_name}</span>
+                <span class="command-option">
+                    ${opt.option_name}
+                    <input type="text" class="command-option-input" name="${opt.option_name}" style="width:auto;" autocomplete="none">
+                </span>
             `;
         });
 
