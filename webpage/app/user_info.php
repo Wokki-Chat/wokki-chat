@@ -277,7 +277,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'status' => 'success',
         'description' => 'User info fetched successfully',
         'user' => $user,
-        'widgets' => new stdClass(),
         'return_code' => 30
     ]);
     echo "\n";
