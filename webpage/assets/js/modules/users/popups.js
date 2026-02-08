@@ -434,7 +434,7 @@ export class UserPopupManager {
 
             jsonBuffer = jsonLines.pop();
 
-            for (const line of lines) {
+            for (const line of jsonLines) {
                 const chunk = line.trim();
                 if (!chunk) continue;
                 try {
