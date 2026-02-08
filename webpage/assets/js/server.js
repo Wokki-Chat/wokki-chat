@@ -169,7 +169,7 @@ function initServer() {
 	async function handleMessage(msg) {
 		messageCache.removeExisting(msg.id);
 
-		const el = await messageRenderer.create(msg, usersList, true);
+		const el = await messageRenderer.create(msg, usersList);
 		if (!el) return;
 
 		const scrollTopBefore = messageContainer.scrollTop;

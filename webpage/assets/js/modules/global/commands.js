@@ -167,7 +167,7 @@ export class CommandsManager {
                 setTimeout(() => input.focus(), 0);
             });
 
-            input.addEventListener('keydown', (e) => {
+            input.addEventListener('keydown', async (e) => {
                 if (e.key === 'Tab') {
                     e.preventDefault();
                     const nextIndex = e.shiftKey ? index - 1 : index + 1;
@@ -195,13 +195,13 @@ export class CommandsManager {
                 
                 else if (e.key === 'Enter') {
                     e.preventDefault();
-                    this.validateAndSubmitCommand();
+                    await this.validateAndSubmitCommand();
                 }
             });
         });
     }
 
-    validateAndSubmitCommand() {
+    async validateAndSubmitCommand() {
         const textarea = document.getElementById("message-input");
         if (!this.currentOptions) {
             this.submitCommand({});
@@ -244,7 +244,7 @@ export class CommandsManager {
 
         if (!valid) return;
 
-        this.submitCommand(data);
+        await this.submitCommand(data);
     }
 
     validateOptionValue(option, val, errorEl, inputEl) {
@@ -295,7 +295,7 @@ export class CommandsManager {
         }
     }
 
-    submitCommand(optionsData) {
+    async submitCommand(optionsData) {
         const payload = {
             access_token: this.access_token || "",
             command: this.currentCommand,
@@ -305,15 +305,43 @@ export class CommandsManager {
             options: optionsData
         };
 
+        const reqId = crypto.randomUUID(); 
+        payload.req_id = reqId;
+
         this.socket.emit("command", payload);
         this.resetComposer();
 
         const popup = document.querySelector(".available-commands");
         if (popup) popup.remove();
 
+        const botId = this.currentBotId;
+        const commandSent = this.currentCommand;
+
         this.currentCommand = null;
         this.currentBotId = null;
         this.currentOptions = null;
+
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                this.socket.off("bot_response", onResponse);
+                reject(new Error("Bot did not respond in time"));
+            }, 15000); 
+
+            const onResponse = (msg) => {
+                if (
+                    msg.command_info?.command === commandSent &&
+                    msg.sent_by === botId
+                ) {
+                    clearTimeout(timeout);
+                    this.socket.off("bot_response", onResponse);
+                    resolve(msg);
+                }
+            };
+
+            this.socket.on("bot_response", onResponse);
+        }).catch(() => {
+            console.warn("No bot response received within 15 seconds");
+        });
     }
 
     resetComposer() {

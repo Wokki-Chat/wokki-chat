@@ -192,6 +192,7 @@ async def send_message(sid, metadata, data):
         'server_id': server_id,
         'channel_id': channel_id,
         'sent_by': account_id if not is_bot else None,
+        'sent_by_bot': account_id if is_bot else None,
         'assets': json.loads(assets_json) if assets_json else [],
         'embed': embed,
         'req_id': req_id,
