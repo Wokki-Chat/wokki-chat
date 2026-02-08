@@ -4673,6 +4673,7 @@ input#clr-hue-slider {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    vertical-align: middle;
 }
 
 .message-text .emoji {
