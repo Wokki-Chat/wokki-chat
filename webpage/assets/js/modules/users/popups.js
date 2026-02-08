@@ -471,6 +471,7 @@ export class UserPopupManager {
                     }
                 }
             } catch(e) {
+                console.error(e);
             }
         }
         if (!popupCreated) return;
