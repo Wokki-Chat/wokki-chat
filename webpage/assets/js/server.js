@@ -11,9 +11,11 @@ function initServer() {
 	if (!scripts.includes('server.js')) return;
 
     const serverBar = document.querySelector(".server-bar");
-    if (serverBar && window.matchMedia("(min-width: 525px)").matches) {
+    if (serverBar && window.matchMedia("(min-width: 768px)").matches) {
         serverBar.classList.remove("hidden");
-    }
+    } else {
+		serverBar.classList.add("hidden");
+	}
 	
 	const access_token = document.getElementById("access-token").getAttribute("value");
 	const server_id = document.getElementById("server-id").getAttribute("value");

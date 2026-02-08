@@ -5,9 +5,11 @@ function initHome() {
 	if (!scripts.includes('home.js')) return;
 
     const serverBar = document.querySelector(".server-bar");
-    if (serverBar && window.matchMedia("(min-width: 525px)").matches) {
+    if (serverBar && window.matchMedia("(min-width: 768px)").matches) {
         serverBar.classList.remove("hidden");
-    }
+    } else {
+		serverBar.classList.add("hidden");
+	}
 
     const access_token = document.getElementById("access-token").getAttribute("value");
     const users = JSON.parse(document.getElementById("users-list").getAttribute("value"));
