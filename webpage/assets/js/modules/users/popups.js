@@ -481,16 +481,22 @@ export class UserPopupManager {
             }
         });
 
-        document.querySelector("#user-profile-popup").addEventListener("click", (e) => {
-            if (!e.target.closest(".popup")) {
-                jspt.closePopup("user-profile-popup");
-                window.history.replaceState({}, '', currentPageUrl);
-            }
-        });
+        const popup = document.querySelector("#user-profile-popup");
+        if (popup) {
+            popup.addEventListener("click", (e) => {
+                if (!e.target.closest(".popup")) {
+                    jspt.closePopup("user-profile-popup");
+                    window.history.replaceState({}, '', currentPageUrl);
+                }
+            });
+        }
 
-        document.querySelector(".popup-header-close").addEventListener("click", () => {
-            window.history.replaceState({}, '', currentPageUrl);
-        });
+        const closeBtn = document.querySelector(".popup-header-close");
+        if (closeBtn) {
+            closeBtn.addEventListener("click", () => {
+                window.history.replaceState({}, '', currentPageUrl);
+            });
+        }
 
         window.history.replaceState({}, '', `https://chat.wokki20.nl/profile/@${this.sanitizer.sanitize(profileData.username)}`);
     }
