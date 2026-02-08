@@ -406,6 +406,10 @@ export class UserPopupManager {
                     </div>
                 </div>
             </div>
+            <div class="user-widgets">
+                <p class="dm-info-item-key">Widgets</p>
+                ${await this.getGithubWidget(user)}
+            </div>
         `;
 
         return {html, custom_style_data: customStyleData, popup_style: popupStyle, border_style: borderStyle, lightText};

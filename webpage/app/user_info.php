@@ -73,6 +73,106 @@ function getTags($user_id, $mysqli) {
     return $tags;
 }
 
+function getUserWidgets($mysqli, $user_id, $widget_name = null) {
+    $stmt = $mysqli->prepare("
+        SELECT widget_name, widget_access_token, widget_refresh_token, 
+               show_on_profile, widget_access_token_valid_until
+        FROM profile_widgets
+        WHERE user_id = ?
+    ");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $widgets = $result->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    
+    if (empty($widgets)) {
+        return [];
+    }
+    
+    $stmt = $mysqli->prepare("
+        SELECT connection_user_name, connection_name 
+        FROM user_connections 
+        WHERE user_id = ?
+    ");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $connections = $result->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    
+    $connection_map = [];
+    foreach ($connections as $conn) {
+        $connection_map[$conn['connection_name']] = $conn['connection_user_name'];
+    }
+    
+    $widget_result = [];
+    
+    foreach ($widgets as $widget) {
+        if ($widget_name && $widget['widget_name'] !== $widget_name) {
+            continue;
+        }
+        
+        if ($widget['widget_name'] === 'GitHub' && $widget['show_on_profile'] == 1) {
+            try {
+                $github_username = $connection_map['GitHub'] ?? null;
+                $access_token = $widget['widget_access_token'] ?? null;
+                
+                if (!$github_username || !$access_token) {
+                    continue;
+                }
+                
+                $graphql_query = [
+                    'query' => <<<GRAPHQL
+                    {
+                      user(login: "$github_username") {
+                        contributionsCollection {
+                          contributionCalendar {
+                            totalContributions
+                            weeks {
+                              contributionDays {
+                                date
+                                contributionCount
+                                color
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                    GRAPHQL
+                ];
+                
+                $ch = curl_init('https://api.github.com/graphql');
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($graphql_query));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Authorization: Bearer ' . $access_token,
+                    'Content-Type: application/json',
+                    'User-Agent: PHP-App'
+                ]);
+                
+                $response = curl_exec($ch);
+                $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                
+                if ($status === 200) {
+                    $widget_result['GitHub'] = json_decode($response, true);
+                } else {
+                    $widget_result['GitHub'] = ['error' => "GitHub API returned status $status"];
+                }
+            } catch (Exception $e) {
+                $widget_result['GitHub'] = ['error' => $e->getMessage()];
+            }
+        } else {
+            $widget_result[$widget['widget_name']] = true;
+        }
+    }
+    
+    return $widget_result;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $allowedOrigin = 'https://chat.wokki20.nl';
 
@@ -169,7 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'tags' => getTags($requested_user_id, $mysqli),
         'staff' => $row['is_staff'] == 1,
         'developer' => $row['is_developer'] == 1,
-        'widgets' => [],
+        'widgets' => getUserWidgets($mysqli, $requested_user_id),
         'connections' => getConnections($requested_user_id, $mysqli),
     ];
 
