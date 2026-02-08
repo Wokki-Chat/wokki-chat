@@ -1,9 +1,10 @@
+import { TextareaFormatter } from "./modules/global/sanitization.js";
+
 const emojis = {
 	map: {},
 	regex: null,
 	missingFound: false,
 	iconCache: {},
-
 	all: null,
 
 	async load(path = '/assets/json/emojis.json') {
@@ -134,6 +135,7 @@ const emojis = {
 	},
 
 	async picker(targetField = null, relativeTo = null, shortcode = false) {
+		const textareaFormatter = new TextareaFormatter();
 		if (!Array.isArray(this.all) || this.all.length === 0) {
 			await this.load();
 		}
@@ -271,6 +273,7 @@ const emojis = {
 											range.collapse(false);
 											sel.removeAllRanges();
 											sel.addRange(range);
+											this.textareaFormatter.caret_end(textarea);
 										}
 									} else if ('selectionStart' in active) {
 										const start = active.selectionStart;
@@ -278,6 +281,7 @@ const emojis = {
 										const value = active.value;
 										active.value = value.slice(0, start) + output + value.slice(end);
 										active.selectionStart = active.selectionEnd = start + output.length;
+										textareaFormatter.caret_end(textarea);
 									}
 								}
 

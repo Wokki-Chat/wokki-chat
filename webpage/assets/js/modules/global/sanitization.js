@@ -368,4 +368,16 @@ export class TextareaFormatter extends Sanitizer {
                 return `<span class="md-strike"><span class="md-syntax">~~</span><del>${content}</del><span class="md-syntax">~~</span></span>`;
             });
     }
+
+    caret_end(textarea) {
+		textarea.focus();
+		if (typeof window.getSelection != "undefined" && typeof document.createRange != "undefined") {
+			const range = document.createRange();
+			range.selectNodeContents(textarea);
+			range.collapse(false);
+			const sel = window.getSelection();
+			sel.removeAllRanges();
+			sel.addRange(range);
+		}
+    }
 }

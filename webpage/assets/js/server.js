@@ -4,6 +4,7 @@ import ReactionRenderer from "./modules/servers/reactions.js";
 import SettingsManager from "./modules/servers/settings.js";
 import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
 import { UserPopupManager } from "./modules/users/popups.js";
+import { Mentions } from "./modules/users/mentions.js";
 
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
@@ -43,6 +44,7 @@ function initServer() {
 	const messageBehaviour = new MessageBehaviour({ user_id, channel_id, server_id, access_token, socket, messageContainer });
 	const messageHydrator = new MessageHydrator({ user_id, channels, server_id });
 	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
+	const mentions = new Mentions({ user_id, channels, server_id, users_list: [] });
 
 	const userPopupManager = new UserPopupManager({ user_id, access_token });
 
@@ -598,14 +600,14 @@ function initServer() {
 			const text = textarea.innerHTML.trim();
 			if (text.includes('@')) {
 				const lastAtIndex = text.lastIndexOf("@");
-				placeCaretAtEnd(textarea);
+				textareaFormatter.caret_end(textarea);
 				const afterAt = text.slice(lastAtIndex + 1);
 				const query = afterAt.split(/\s|\n/)[0];
 				textarea.style.color = "var(--clr-text-a0)";
 				preview.style.display = "none";
-				show_mentions(query, usersList, sanitizer);
+				mentions.show(query, usersList, sanitizer);
 			} else {
-				hide_mentions();
+				mentions.hide();
 				textarea.style.color = "transparent";
 				preview.style.display = "block";
 			}
@@ -616,7 +618,7 @@ function initServer() {
 
 			if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
 				textarea.innerHTML = '';
-				hide_mentions();
+				mentions.hide();
 			}
 
 			updateHeight();
@@ -641,7 +643,7 @@ function initServer() {
 					.map(f => ({ savedName: f.savedName, originalName: f.originalName }));
 
 				send_message(textarea, uploadedNames.length ? uploadedNames : undefined);
-				hide_mentions();
+				mentions.hide();
 				
 				preview.innerHTML = "";
 				textarea.innerText = "";
@@ -690,7 +692,7 @@ function initServer() {
 
 			if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
 				textarea.innerHTML = '';
-				hide_mentions();
+				mentions.hide();
 			}
 
 			updateHeight();
@@ -1120,6 +1122,7 @@ function initServer() {
 		usersList = users;
 
 		sanitizer.init(users);
+		mentions.init(users);
 
 		await Promise.all(users.map(user => renderUser(user)));
 	});
