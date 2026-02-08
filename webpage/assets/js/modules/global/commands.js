@@ -15,10 +15,13 @@ export class CommandsManager {
         this.currentOptions = null;
         this.currentCommand = null;
         this.currentBotId = null;
+
+        this.users_list = [];
     }
 
-    init(available_commands) {
+    init(available_commands, users_list) {
         this.available_commands = available_commands;
+        this.users_list = users_list;
     }
 
     show(command, textarea) {
@@ -272,7 +275,7 @@ export class CommandsManager {
             }
 
             const username = val.slice(1);
-            const user = usersList.find(u => u.username === username);
+            const user = this.users_list.find(u => u.username === username);
 
             if (!user) {
                 errorEl.classList.add('input-error');
