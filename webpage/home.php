@@ -139,7 +139,7 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
 </head>
 <body>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css"/>
-    <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js" defer></script>
     <div class="server-bar">
         <div class="server-bar-dms">
             <a class="server-bar-item active" id="server-bar-item-home" href="/home">

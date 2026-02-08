@@ -142,31 +142,10 @@ function initSettings() {
 			themeMode: 'dark',
 			format: 'hex',
 			formatToggle: false,
-			parent: '.setting-page',
-			alpha: false,
-			swatches: [
-				"#185929",
-				"#0c4752",
-				"#1d0a45"
-			],
-			onChange: (color, input) => updateProfileColor(color, input),
-			el: '#profile-color-primary'
-		});
-
-		Coloris({
-			theme: 'default',
-			themeMode: 'dark',
-			format: 'hex',
-			formatToggle: false,
 			alpha: false,
 			parent: '.setting-page',
-			swatches: [
-				"#006332",
-				"#137385",
-				"#371f69"
-			],
 			onChange: (color, input) => updateProfileColor(color, input),
-			el: '#profile-color-accent'
+			el: '#profile-color-primary, #profile-color-accent'
 		});
 
 		const updateProfileColor = (color, input) => {
