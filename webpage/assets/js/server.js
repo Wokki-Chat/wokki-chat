@@ -1126,7 +1126,7 @@ function initServer() {
 
 		sanitizer.init(users);
 		mentions.init(users);
-		commands.init(availableCommands, users);
+		commandsManager.init(availableCommands, users);
 
 		await Promise.all(users.map(user => renderUser(user)));
 	});
