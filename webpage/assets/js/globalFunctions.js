@@ -191,8 +191,8 @@ function placeCaretAtEnd(el) {
 }
 
 async function showUpdateInfo(sanitizer) {
-	const versionData = await fetch('version-info.json').then(res => res.json());
-	const updateMarkdown = await fetch(versionData["update-info"]).then(res => res.text());
+	const versionData = await fetch('/version-info.json').then(res => res.json());
+	const updateMarkdown = await fetch('/' + versionData["update-info"]).then(res => res.text());
 	const updateHTML = sanitizer.sanitizeMsg(updateMarkdown);
 
 	jspt.makePopup({
