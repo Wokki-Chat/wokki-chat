@@ -132,7 +132,6 @@ export class UserPopupManager {
                 .github-commit-grid { 
                     display: grid; 
                     grid-template-rows: repeat(7, 14px);
-                    grid-auto-columns: 14px;
                     gap: 3px; 
                 }
                 .github-commit-day { 
@@ -163,57 +162,62 @@ export class UserPopupManager {
                                             const v = n % 100;
                                             return n + (s[(v-20)%10] || s[v] || s[0]);
                                         };
-                                        const filteredWeeks = [];
+
+                                        const allDays = [];
                                         weeks.forEach(week => {
-                                            const weekDays = week.contributionDays.filter(day => {
+                                            week.contributionDays.forEach(day => {
                                                 const d = new Date(day.date);
-                                                return d >= fourMonthsAgo && d <= now;
+                                                if(d >= fourMonthsAgo && d <= now) {
+                                                    allDays.push({
+                                                        ...day,
+                                                        dateObj: d,
+                                                        weekday: d.getDay()
+                                                    });
+                                                }
                                             });
-                                            if (weekDays.length > 0) {
-                                                filteredWeeks.push(weekDays);
+                                        });
+                                        allDays.sort((a, b) => a.dateObj - b.dateObj);
+                                        let currentWeekCol = 1;
+                                        let lastWeekday = -1;
+                                        
+                                        allDays.forEach(day => {
+                                            if (lastWeekday === 6 && day.weekday === 0) {
+                                                currentWeekCol++;
+                                            } else if (lastWeekday > day.weekday && lastWeekday !== 6) {
+                                                currentWeekCol++;
                                             }
+                                            
+                                            day.weekCol = currentWeekCol;
+                                            lastWeekday = day.weekday;
                                         });
 
-                                        if (filteredWeeks.length > 0) {
-                                            const firstWeek = filteredWeeks[0];
-                                            const firstDate = new Date(firstWeek[0].date);
-                                            const firstWeekday = firstDate.getDay();
-                                            
-                                            for (let i = 0; i < firstWeekday; i++) {
-                                                firstWeek.unshift({
-                                                    contributionCount: 0,
-                                                    color: '#ebedf0',
-                                                    date: null
-                                                });
-                                            }
-                                        }
+                                        const totalWeeks = currentWeekCol;
+
                                         const monthSpans = [];
                                         let currentMonth = null;
-                                        let monthStartWeek = 0;
+                                        let monthStartCol = 0;
                                         
-                                        filteredWeeks.forEach((week, weekIndex) => {
-                                            const firstDayWithDate = week.find(d => d.date);
-                                            if (firstDayWithDate) {
-                                                const month = new Date(firstDayWithDate.date).toLocaleString('default', {month: 'short'});
-                                                
-                                                if (month !== currentMonth) {
-                                                    if (currentMonth !== null) {
-                                                        monthSpans.push({
-                                                            month: currentMonth,
-                                                            start: monthStartWeek + 1,
-                                                            end: weekIndex
-                                                        });
-                                                    }
-                                                    currentMonth = month;
-                                                    monthStartWeek = weekIndex;
+                                        allDays.forEach(day => {
+                                            const month = day.dateObj.toLocaleString('default', {month: 'short'});
+                                            
+                                            if (month !== currentMonth) {
+                                                if (currentMonth !== null) {
+                                                    monthSpans.push({
+                                                        month: currentMonth,
+                                                        start: monthStartCol,
+                                                        end: day.weekCol - 1
+                                                    });
                                                 }
+                                                currentMonth = month;
+                                                monthStartCol = day.weekCol;
                                             }
                                         });
+                                        
                                         if (currentMonth !== null) {
                                             monthSpans.push({
                                                 month: currentMonth,
-                                                start: monthStartWeek + 1,
-                                                end: filteredWeeks.length
+                                                start: monthStartCol,
+                                                end: totalWeeks
                                             });
                                         }
 
@@ -224,18 +228,19 @@ export class UserPopupManager {
                                         setTimeout(() => {
                                             const monthsEl = document.getElementById('github-months');
                                             if (monthsEl) {
-                                                monthsEl.style.gridTemplateColumns = `repeat(${filteredWeeks.length}, 14px)`;
+                                                monthsEl.style.gridTemplateColumns = `repeat(${totalWeeks}, 14px)`;
                                                 monthsEl.innerHTML = monthsHtml;
                                             }
                                         }, 0);
 
-                                        return filteredWeeks.map(week =>
-                                            week.map(day =>
-                                                `<div class="github-commit-day" 
-                                                    title="${day.contributionCount} Contribution${day.contributionCount !== 1 ? 's' : ''}${day.date ? ' on ' + new Date(day.date).toLocaleString('default', {month: 'long'}) + ' ' + getOrdinal(new Date(day.date).getDate()) : ''}" 
-                                                    style="background: ${day.color};"></div>`
-                                            ).join('')
-                                        ).join('');
+                                        return allDays.map(day => {
+                                            const row = day.weekday + 1;
+                                            const col = day.weekCol;
+                                            
+                                            return `<div class="github-commit-day" 
+                                                title="${day.contributionCount} Contribution${day.contributionCount !== 1 ? 's' : ''} on ${day.dateObj.toLocaleString('default', {month: 'long'})} ${getOrdinal(day.dateObj.getDate())}" 
+                                                style="background: ${day.color}; grid-column: ${col}; grid-row: ${row};"></div>`;
+                                        }).join('');
                                     })()}
                                 </div>
                             </div>
