@@ -127,6 +127,7 @@ export class UserPopupManager {
                 if (isNewTab) return;
                 e.preventDefault();
                 e.stopImmediatePropagation();
+                console.log(user.id);
                 this.openExtendedPopup(user.id);
             });
             
