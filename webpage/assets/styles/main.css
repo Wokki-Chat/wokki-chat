@@ -1458,6 +1458,10 @@ input:checked + .slider:before {
     color: var(--clr-text-a20);
 }
 
+.available-command {
+    justify-content: space-between;
+}
+
 .info-profile {
     position: relative;
     overflow: hidden;
@@ -1493,10 +1497,17 @@ input:checked + .slider:before {
     object-fit: cover;
 }
 
-.availible-command-username-command { 
+.availible-command-desc-command { 
     display: flex;
     flex-direction: column;
     justify-content: center;
+}
+
+.availible-command-bot-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
 }
 
 .availible-command-command,

@@ -218,11 +218,14 @@ function showAvailableCommands(command, textarea, available_commands, sanitizer)
                 commandDiv.dataset.command = command_info.command;
                 commandDiv.dataset.botId = bot_id;
                 commandDiv.innerHTML = `
-                    <img class="availible-command-bot-profile-picture" src="${profilePicture}" />
-                    <div class="availible-command-username-command">
-                        <p class="availible-command-username">${username}</p>
-                        <p class="availible-command-command">${sanitizer.sanitize(command_info.command)}</p>
+                    <div class="availible-command-bot-container">
+                      <img class="availible-command-bot-profile-picture" src="${profilePicture}" />
+                      <div class="availible-command-desc-command">
+                          <p class="availible-command-command">${sanitizer.sanitize(command_info.command)}</p>
+                          <p class="availible-command-desc">${sanitizer.sanitize(command_info.description)}</p>
+                      </div>
                     </div>
+                    <p class="availible-command-username">${username}</p>
                 `;
                 container.appendChild(commandDiv);
             }
