@@ -550,7 +550,7 @@ input:checked + .slider:before {
     top: 0;
     left: 0;
     z-index: -1;
-    
+    border-radius: 13px;
     -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-size: cover;
