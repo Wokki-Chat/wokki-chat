@@ -257,7 +257,7 @@ function showAvailableCommands(command, textarea, available_commands, sanitizer)
 
         if (!options || options.length === 0) {
             const payload = {
-                access_token,
+                access_token: document.getElementById("access-token")?.getAttribute("value") || "",
                 command: commandText,
                 server_id: document.getElementById("server-id")?.getAttribute("value") || "",
                 channel_id: document.getElementById("channel-id")?.getAttribute("value") || "",
