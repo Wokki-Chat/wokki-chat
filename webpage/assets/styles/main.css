@@ -4689,6 +4689,22 @@ input#clr-hue-slider {
     gap: 15px;
 }
 
+.popup-container#user-profile-popup .popup {
+    min-width: 520px;
+}
+
+@media screen and (max-width: 710px) {
+    .popup-container#user-profile-popup .popup-content {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .popup-container#user-profile-popup .popup {
+        min-width: unset;
+    }
+}
+
 .popup-container#server-settings-popup .popup-content,
 .popup-container#server-settings-popup .popup {
     padding: unset !important;
