@@ -132,15 +132,8 @@ export class CommandsManager {
             optionSpan.dataset.optionName = option.option_name;
             optionSpan.dataset.required = option.required || false;
             
-            const requiredBadge = option.required ? '<span class="option-required">*</span>' : '<span class="option-optional">optional</span>';
-            const typeBadge = `<span class="option-type">${option.option_type || 'string'}</span>`;
-            
             optionSpan.innerHTML = `
-                <span class="option-info">
-                    <span class="option-name">${option.option_name}</span>
-                    ${typeBadge}
-                    ${requiredBadge}
-                </span>
+                <span class="option-name">${option.option_name}</span>
                 <input type="text" 
                        class="command-option-input" 
                        name="${option.option_name}" 

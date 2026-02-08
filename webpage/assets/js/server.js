@@ -657,7 +657,7 @@ function initServer() {
 			}
 
 			if (e.key === ' ' && text.startsWith('/')) {
-				const matches = showAvailableCommands.lastMatches;
+				const matches = commandsManager.show.lastMatches;
 				if (matches?.length === 1) {
 					textarea.innerText = matches[0].command + " ";
 					const popup = document.querySelector(".available-commands");
@@ -667,7 +667,7 @@ function initServer() {
 			}
 
 			if (e.key === 'Enter') {
-				const matches = showAvailableCommands.lastMatches;
+				const matches = commandsManager.show.lastMatches;
 				const match = matches?.find(m => m.command.toLowerCase() === text.toLowerCase());
 				if (match) {
 					e.preventDefault();
