@@ -116,6 +116,9 @@ $onclickEventChat = "window.location.href = '/connections/chat'";
 $spotify_connected = "Not Connected";
 $onclickEventSpotify = "window.location.href = '/connections/spotify'";
 
+$github_connected = "Not Connected";
+$onclickEventGithub = "window.location.href = '/connections/github'";
+
 $connectionsStmt = $mysqli->prepare("SELECT connection_user_id, connection_user_name, connection_user_url, connected_at, connection_user_image, connection_name FROM user_connections WHERE user_id = ?");
 $connectionsStmt->bind_param("i", $user_id);
 $connectionsStmt->execute();
@@ -126,6 +129,18 @@ foreach ($connections as $index => &$connection) {
     if ($connection['connection_name'] === "Chat") {
         $chat_connected = "Connected";
         $onclickEventChat = "openConnectionModal('Chat')";
+    }
+    if ($connection['connection_name'] === "GitHub") {
+        $github_connected = "Connected";
+        $onclickEventGithub = "openConnectionModal('GitHub')";
+
+        $connection['show_on_profile'] = false;
+        foreach ($widgets as $widget) {
+            if ($widget['widget_name'] === 'GitHub') {
+                $connection['show_on_profile'] = $widget['show_on_profile'] == 1;
+                break;
+            }
+        }
     }
     if ($connection['connection_name'] === "Spotify") {
         $spotify_connected = "Connected";
@@ -383,6 +398,8 @@ if ($active_tab === 'account') {
                     $connectionsHtml = str_replace("{{onclick_event.chat}}", $onclickEventChat, $connectionsHtml);
                     $connectionsHtml = str_replace("{{connection_status.spotify}}", $spotify_connected, $connectionsHtml);
                     $connectionsHtml = str_replace("{{onclick_event.spotify}}", $onclickEventSpotify, $connectionsHtml);
+                    $connectionsHtml = str_replace("{{connection_status.github}}", $github_connected, $connectionsHtml);
+                    $connectionsHtml = str_replace("{{onclick_event.github}}", $onclickEventGithub, $connectionsHtml);
                     echo $connectionsHtml;
                 }
                 ?>

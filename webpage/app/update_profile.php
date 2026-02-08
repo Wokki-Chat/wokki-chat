@@ -122,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Forbidden: Invalid Origin',
-                'return_code' => 38
+                'return_code' => 5
             ]);
             exit;
         }
@@ -133,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Forbidden: Invalid Referer',
-                'return_code' => 39
+                'return_code' => 6
             ]);
             exit;
         }
@@ -142,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode([
             'status' => 'error',
             'description' => 'Forbidden: No Origin or Referer',
-            'return_code' => 40
+            'return_code' => 7
         ]);
         exit;
     }
@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode([
             'status' => 'error',
             'description' => 'Unauthorized: Missing or invalid Authorization header',
-            'return_code' => 41
+            'return_code' => 27
         ]);
         exit;
     }
@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode([
             'status' => 'error',
             'description' => 'Unauthorized: Invalid access token',
-            'return_code' => 42
+            'return_code' => 26
         ]);
         exit;
     }
@@ -379,7 +379,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo json_encode([
         'status' => 'success',
         'description' => 'Profile updated successfully',
-        'return_code' => 0,
+        'return_code' => 28,
         'profile_picture_success' => $profilePictureSuccess,
         'display_name_success' => $displayNameSuccess,
         'profile_colors_success' => $profileColorsSuccess,
@@ -390,6 +390,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo json_encode([
         'status' => 'error',
         'description' => 'Invalid request method',
-        'return_code' => 43
+        'return_code' => 18
     ]);
 }

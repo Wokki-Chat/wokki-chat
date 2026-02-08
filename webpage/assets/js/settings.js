@@ -629,6 +629,7 @@ function initSettings() {
 			}
 		})
 		let spotifyToggleHtml = '';
+		let githubToggleHtml = '';
 		if (connection["connection_name"] === "Spotify") {
 			spotifyToggleHtml = `
 			<div class="connection-modal-spotify-toggle">
@@ -639,6 +640,22 @@ function initSettings() {
 				<div class="container">
 					<label class="switch" for="spotify-checkbox">
 						<input type="checkbox" id="spotify-checkbox" ${connection["show_on_profile"] ? "checked" : ""} />
+						<div class="slider round"></div>
+					</label>
+				</div>
+			</div>
+			`;
+		}
+		if (connection["connection_name"] === "GitHub") {
+			githubToggleHtml = `
+			<div class="connection-modal-spotify-toggle">
+				<div class="option-description-container">
+					<p class="option-title">Show on profile</p>
+					<p class="option-description">Show your GitHub commit graph on your profile</p>
+				</div>
+				<div class="container">
+					<label class="switch" for="github-checkbox">
+						<input type="checkbox" id="github-checkbox" ${connection["show_on_profile"] ? "checked" : ""} />
 						<div class="slider round"></div>
 					</label>
 				</div>
@@ -661,6 +678,7 @@ function initSettings() {
 						<p class="connection-modal-connected-since-date">${formatFullDate(connection["connected_at"])}</p>
 					</div>
 					${spotifyToggleHtml}
+					${githubToggleHtml}
 					<div class="connection-modal-buttons">
 						<button class="connection-modal-button button-primary-filled" onclick="window.open('${connection["connection_user_url"]}', '_blank')">Open Profile Page</button>
 						<button class="connection-modal-button button-primary-outline" data-id="${connection["connection_name"]}" id="unlink-connection-btn">Unlink</button>
