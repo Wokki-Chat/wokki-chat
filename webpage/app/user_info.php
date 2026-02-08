@@ -288,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     echo json_encode([
         'status' => 'success',
         'description' => 'Widgets fetched successfully',
-        'widgets' => $widgets,
+        'widgets' => empty($widgets) ? new stdClass() : $widgets,
         'return_code' => 31
     ]);
     ob_flush();
