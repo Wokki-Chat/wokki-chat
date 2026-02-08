@@ -4804,7 +4804,7 @@ input#clr-hue-slider {
     color: var(--clr-text-a0);
 }
 
-.connection-icon {
+.connection-item .connection-icon {
     width: 20px;
     height: 20px;
     padding: 5px;
@@ -4814,7 +4814,7 @@ input#clr-hue-slider {
     user-select: none;
 }
 
-.connection-name {
+.connection-item .connection-name {
     font-size: 14px;
     color: var(--clr-text-a0);
     user-select: none;
@@ -4824,15 +4824,15 @@ input#clr-hue-slider {
     align-items: center;
 }
 
-.connection-open-icon {
+.connection-item .connection-open-icon {
     font-size: 20px !important;
     user-select: none;
 }
 
-[data-custom-style="true"][data-light-text="true"] .connection-name{
+[data-custom-style="true"][data-light-text="true"] .connection-item .connection-name{
     color: var(--clr-text-white-a0);
 }
 
-[data-custom-style="true"][data-light-text="false"] .connection-name {
+[data-custom-style="true"][data-light-text="false"] .connection-item .connection-name {
     color: var(--clr-text-black-a0);
 }
