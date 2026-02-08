@@ -21,6 +21,195 @@ export class UserPopupManager {
         return data.user;
     }
 
+    async getGithubWidget(user) {
+        if (!user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks) {
+            return '';
+        }
+
+        const weeks = user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks;
+        const now = new Date();
+        const fourMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+
+        const getOrdinal = (n) => {
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        };
+
+        const allDays = [];
+        weeks.forEach(week => {
+            week.contributionDays.forEach(day => {
+                const d = new Date(day.date);
+                if (d >= fourMonthsAgo && d <= now) {
+                    allDays.push({
+                        ...day,
+                        dateObj: d,
+                        weekday: d.getDay()
+                    });
+                }
+            });
+        });
+
+        allDays.sort((a, b) => a.dateObj - b.dateObj);
+
+        let currentWeekCol = 1;
+        let lastWeekday = -1;
+        
+        allDays.forEach(day => {
+            if (lastWeekday === 6 && day.weekday === 0) {
+                currentWeekCol++;
+            } else if (lastWeekday > day.weekday && lastWeekday !== 6) {
+                currentWeekCol++;
+            }
+            
+            day.weekCol = currentWeekCol;
+            lastWeekday = day.weekday;
+        });
+
+        const totalWeeks = currentWeekCol;
+
+        const weeksByCol = {};
+        allDays.forEach(day => {
+            if (!weeksByCol[day.weekCol]) {
+                weeksByCol[day.weekCol] = [];
+            }
+            weeksByCol[day.weekCol].push(day);
+        });
+
+        const weekMonths = {};
+        Object.keys(weeksByCol).forEach(weekCol => {
+            const daysInWeek = weeksByCol[weekCol];
+            const monthCounts = {};
+            
+            daysInWeek.forEach(day => {
+                const month = day.dateObj.toLocaleString('default', { month: 'short' });
+                monthCounts[month] = (monthCounts[month] || 0) + 1;
+            });
+            
+            let maxMonth = null;
+            let maxCount = 0;
+            Object.keys(monthCounts).forEach(month => {
+                if (monthCounts[month] > maxCount) {
+                    maxCount = monthCounts[month];
+                    maxMonth = month;
+                }
+            });
+            
+            if (maxCount >= 4) {
+                weekMonths[weekCol] = maxMonth;
+            }
+        });
+
+        const monthSpans = [];
+        let currentMonth = null;
+        let monthStartCol = null;
+        
+        for (let col = 1; col <= totalWeeks; col++) {
+            const weekMonth = weekMonths[col];
+            
+            if (weekMonth !== currentMonth) {
+                if (currentMonth !== null && monthStartCol !== null) {
+                    monthSpans.push({
+                        month: currentMonth,
+                        start: monthStartCol,
+                        end: col - 1
+                    });
+                }
+                
+                if (weekMonth) {
+                    currentMonth = weekMonth;
+                    monthStartCol = col;
+                } else {
+                    currentMonth = null;
+                    monthStartCol = null;
+                }
+            }
+        }
+        
+        if (currentMonth !== null && monthStartCol !== null) {
+            monthSpans.push({
+                month: currentMonth,
+                start: monthStartCol,
+                end: totalWeeks
+            });
+        }
+
+        const monthsHTML = monthSpans.map(m => 
+            `<div style="grid-column: ${m.start} / ${m.end + 1}; text-align: center;">${m.month}</div>`
+        ).join('');
+
+        const gridHTML = allDays.map(day => {
+            const row = day.weekday + 1;
+            const col = day.weekCol;
+            const monthName = day.dateObj.toLocaleString('default', { month: 'long' });
+            const dateOrdinal = getOrdinal(day.dateObj.getDate());
+            const contributionText = day.contributionCount !== 1 ? 's' : '';
+            
+            return `<div class="github-commit-day" 
+                title="${day.contributionCount} Contribution${contributionText} on ${monthName} ${dateOrdinal}" 
+                style="background: ${day.color}; grid-column: ${col}; grid-row: ${row};"></div>`;
+        }).join('');
+
+        const containerStyle = user.profile_color_primary && user.profile_color_accent 
+            ? 'style="background-color: rgba(255, 255, 255, 0.1); border: none;"' 
+            : '';
+
+        return `
+            <style>
+                .github-commit-container { display: flex; flex-direction: column; }
+                .github-months { 
+                    display: grid; 
+                    grid-template-columns: repeat(${totalWeeks}, 14px);
+                    margin-left: 20px; 
+                    gap: 3px; 
+                    font-size: 10px; 
+                    margin-bottom: 5px;
+                }
+                .github-commit-grid-container { display: flex; }
+                .github-commit-labels { 
+                    display: flex; 
+                    flex-direction: column; 
+                    margin-right: 5px; 
+                    font-size: 10px; 
+                    gap: 3px;
+                }
+                .github-commit-labels > div {
+                    height: 14px;
+                    line-height: 14px;
+                }
+                .github-commit-grid { 
+                    display: grid; 
+                    grid-template-rows: repeat(7, 14px);
+                    gap: 3px; 
+                }
+                .github-commit-day { 
+                    width: 12px; 
+                    height: 12px; 
+                    border-radius: 2px; 
+                }
+            </style>
+            <div class="dm-info-container" ${containerStyle}>
+                <div class="dm-info-item">
+                    <p class="dm-info-item-key">GitHub Contributions</p>
+                    <p class="dm-info-item-key-desc">Over the last 4 months</p>
+                    <div class="github-info">
+                        <div class="github-commit-container">
+                            <div class="github-months">${monthsHTML}</div>
+                            <div class="github-commit-grid-container">
+                                <div class="github-commit-labels">
+                                    ${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => `<div>${d}</div>`).join('')}
+                                </div>
+                                <div class="github-commit-grid">
+                                    ${gridHTML}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     async openUserPopup(user) {
         let popup = document.createElement("div");
         popup.className = "user-info-profile-popup";
@@ -107,188 +296,7 @@ export class UserPopupManager {
                 </div>
             ` : ''}
 
-            ${user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks ? `
-            <style>
-                .github-commit-container { display: flex; flex-direction: column; }
-                .github-months { 
-                    display: grid; 
-                    margin-left: 20px; 
-                    gap: 3px; 
-                    font-size: 10px; 
-                    margin-bottom: 5px;
-                }
-                .github-commit-grid-container { display: flex; }
-                .github-commit-labels { 
-                    display: flex; 
-                    flex-direction: column; 
-                    margin-right: 5px; 
-                    font-size: 10px; 
-                    gap: 3px;
-                }
-                .github-commit-labels > div {
-                    height: 14px;
-                    line-height: 14px;
-                }
-                .github-commit-grid { 
-                    display: grid; 
-                    grid-template-rows: repeat(7, 14px);
-                    gap: 3px; 
-                }
-                .github-commit-day { 
-                    width: 12px; 
-                    height: 12px; 
-                    border-radius: 2px; 
-                }
-            </style>
-            <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
-                <div class="dm-info-item">
-                    <p class="dm-info-item-key">GitHub Contributions</p>
-                    <p class="dm-info-item-key-desc">Over the last 4 months</p>
-                    <div class="github-info">
-                        <div class="github-commit-container">
-                            <div class="github-months" id="github-months"></div>
-                            <div class="github-commit-grid-container">
-                                <div class="github-commit-labels">
-                                    ${['S','M','T','W','T','F','S'].map(d => `<div>${d}</div>`).join('')}
-                                </div>
-                                <div class="github-commit-grid" id="github-commit-grid">
-                                    ${(() => {
-                                        const now = new Date();
-                                        const fourMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-                                        const weeks = user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks;
-
-                                        const getOrdinal = n => {
-                                            const s = ["th","st","nd","rd"];
-                                            const v = n % 100;
-                                            return n + (s[(v-20)%10] || s[v] || s[0]);
-                                        };
-
-                                        const allDays = [];
-                                        weeks.forEach(week => {
-                                            week.contributionDays.forEach(day => {
-                                                const d = new Date(day.date);
-                                                if(d >= fourMonthsAgo && d <= now) {
-                                                    allDays.push({
-                                                        ...day,
-                                                        dateObj: d,
-                                                        weekday: d.getDay()
-                                                    });
-                                                }
-                                            });
-                                        });
-
-                                        allDays.sort((a, b) => a.dateObj - b.dateObj);
-
-                                        let currentWeekCol = 1;
-                                        let lastWeekday = -1;
-                                        
-                                        allDays.forEach(day => {
-                                            if (lastWeekday === 6 && day.weekday === 0) {
-                                                currentWeekCol++;
-                                            } else if (lastWeekday > day.weekday && lastWeekday !== 6) {
-                                                currentWeekCol++;
-                                            }
-                                            
-                                            day.weekCol = currentWeekCol;
-                                            lastWeekday = day.weekday;
-                                        });
-
-                                        const totalWeeks = currentWeekCol;
-
-                                        const weeksByCol = {};
-                                        allDays.forEach(day => {
-                                            if (!weeksByCol[day.weekCol]) {
-                                                weeksByCol[day.weekCol] = [];
-                                            }
-                                            weeksByCol[day.weekCol].push(day);
-                                        });
-
-                                        const weekMonths = {};
-                                        Object.keys(weeksByCol).forEach(weekCol => {
-                                            const daysInWeek = weeksByCol[weekCol];
-                                            const monthCounts = {};
-                                            
-                                            daysInWeek.forEach(day => {
-                                                const month = day.dateObj.toLocaleString('default', {month: 'short'});
-                                                monthCounts[month] = (monthCounts[month] || 0) + 1;
-                                            });
-                                            
-                                            let maxMonth = null;
-                                            let maxCount = 0;
-                                            Object.keys(monthCounts).forEach(month => {
-                                                if (monthCounts[month] > maxCount) {
-                                                    maxCount = monthCounts[month];
-                                                    maxMonth = month;
-                                                }
-                                            });
-                                            
-                                            if (maxCount >= 4) {
-                                                weekMonths[weekCol] = maxMonth;
-                                            }
-                                        });
-
-                                        const monthSpans = [];
-                                        let currentMonth = null;
-                                        let monthStartCol = null;
-                                        
-                                        for (let col = 1; col <= totalWeeks; col++) {
-                                            const weekMonth = weekMonths[col];
-                                            
-                                            if (weekMonth !== currentMonth) {
-                                                if (currentMonth !== null && monthStartCol !== null) {
-                                                    monthSpans.push({
-                                                        month: currentMonth,
-                                                        start: monthStartCol,
-                                                        end: col - 1
-                                                    });
-                                                }
-                                                
-                                                if (weekMonth) {
-                                                    currentMonth = weekMonth;
-                                                    monthStartCol = col;
-                                                } else {
-                                                    currentMonth = null;
-                                                    monthStartCol = null;
-                                                }
-                                            }
-                                        }
-                                        
-                                        if (currentMonth !== null && monthStartCol !== null) {
-                                            monthSpans.push({
-                                                month: currentMonth,
-                                                start: monthStartCol,
-                                                end: totalWeeks
-                                            });
-                                        }
-
-                                        const monthsHtml = monthSpans.map(m => 
-                                            `<div style="grid-column: ${m.start} / ${m.end + 1}; text-align: center;">${m.month}</div>`
-                                        ).join('');
-                                        
-                                        setTimeout(() => {
-                                            const monthsEl = document.getElementById('github-months');
-                                            if (monthsEl) {
-                                                monthsEl.style.gridTemplateColumns = `repeat(${totalWeeks}, 14px)`;
-                                                monthsEl.innerHTML = monthsHtml;
-                                            }
-                                        }, 0);
-
-                                        return allDays.map(day => {
-                                            const row = day.weekday + 1;
-                                            const col = day.weekCol;
-                                            
-                                            return `<div class="github-commit-day" 
-                                                title="${day.contributionCount} Contribution${day.contributionCount !== 1 ? 's' : ''} on ${day.dateObj.toLocaleString('default', {month: 'long'})} ${getOrdinal(day.dateObj.getDate())}" 
-                                                style="background: ${day.color}; grid-column: ${col}; grid-row: ${row};"></div>`;
-                                        }).join('');
-                                    })()}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            ` : ''}
+            ${await this.getGithubWidget(user)}
         `;
 
         if (!user.bot) {
