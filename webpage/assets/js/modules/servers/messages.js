@@ -47,7 +47,7 @@ export class MessageRenderer {
 		}
 	}
 
-	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, assets }, usersList) {
+	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, assets }, usersList, onlyMe = false) {
 		if (!message && !embed) return null;
 
 		this.sanitizer.init(usersList);
@@ -108,6 +108,7 @@ export class MessageRenderer {
 					<p class="message-text">${sanitizedMessage}</p>
 					${embeds ? `<div class="message-embed">${await this.Embeds({ embeds }, usersList)}</div>` : ''}
 					<div class="message-reactions"></div>
+					${onlyMe ? `<div class="message-only-me" id="message-only-me">Only you can see this message <a class="link" id="message-only-me-dismiss">Dismiss</a></div>` : ""}
 				</div>
 			</div>
 			<div class="message-options">
@@ -141,6 +142,10 @@ export class MessageRenderer {
 			const reactionsDiv = messageInfo.querySelector(".message-reactions");
 			messageInfo.insertBefore(assetsContainer, reactionsDiv);
 		}
+
+		msgEl.querySelector('#message-only-me-dismiss').addEventListener('click', () => {
+			msgEl.remove();
+		});
 
 		return msgEl;
 	}
