@@ -411,9 +411,27 @@ function initServer() {
 		});
 	}
 
+	const builtInBot = {
+		id: "wchat-built-in",
+		username: "Built In",
+		profile_picture: "/uploads/profile-pictures/default-profile.png",
+		commands: [
+			{
+				command: "/help",
+				options: "[]",
+				description: "Show all available commands"
+			},
+			{
+				command: "/update-info",
+				options: "[]",
+				description: "Show update and version information"
+			}
+		]
+	};
+
 	socket.on("server_commands_response", async (data) => {
 		if (data.success) {
-			available_commands = data.bots;
+			available_commands = [builtInBot, ...data.bots];
 		}
 	});
 
