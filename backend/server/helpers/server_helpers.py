@@ -202,7 +202,7 @@ async def server_commands(sid, metadata, data):
                 if not bot['id']:
                     continue
                 await cur.execute(
-                    'SELECT command, options FROM bot_commands WHERE bot_id = %s', 
+                    'SELECT command, options, description FROM bot_commands WHERE bot_id = %s', 
                     (bot['id'],)
                 )
                 commands = await cur.fetchall()
