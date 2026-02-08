@@ -109,19 +109,34 @@ export class UserPopupManager {
 
             ${user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks ? `
                 <style>
-                    .github-commit-grid { display: grid; grid-template-columns: repeat(${user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks.length}, 14px); gap: 3px; }
+                    .github-commit-grid { display: grid; grid-template-columns: repeat(var(--weeks-count), 14px); gap: 3px; }
                     .github-commit-day { width: 12px; height: 12px; border-radius: 2px; }
                 </style>
                 <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
                     <div class="dm-info-item">
                         <p class="dm-info-item-key">GitHub Contributions This Month</p>
                         <div class="github-info">
-                            <div class="github-commit-grid">
-                            ${user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks.map(week =>
-                                week.contributionDays.map(day =>
-                                `<div class="github-commit-day" title="${day.date}: ${day.contributionCount}" style="background:${day.color}"></div>`
-                                ).join('')
-                            ).join('')}
+                            <div class="github-commit-grid" id="github-commit-grid">
+                            ${(() => {
+                                const now = new Date();
+                                const currentMonth = now.getMonth();
+                                const currentYear = now.getFullYear();
+
+                                const filteredWeeks = user.widgets.GitHub.data.user.contributionsCollection.contributionCalendar.weeks
+                                    .map(week => week.contributionDays.filter(day => {
+                                        const d = new Date(day.date);
+                                        return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+                                    }))
+                                    .filter(week => week.length > 0);
+
+                                document.documentElement.style.setProperty('--weeks-count', filteredWeeks.length);
+
+                                return filteredWeeks.map(week =>
+                                    week.map(day =>
+                                        `<div class="github-commit-day" title="${day.date}: ${day.contributionCount}" style="background:${day.color}"></div>`
+                                    ).join('')
+                                ).join('');
+                            })()}
                             </div>
                         </div>
                     </div>
