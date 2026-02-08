@@ -106,6 +106,27 @@ export class UserPopupManager {
                     </div>
                 </div>
             ` : ''}
+
+            ${user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalandar?.weeks ? `
+                <style>
+                    .github-commit-grid { display: grid; grid-template-columns: repeat(${weeks.length}, 14px); gap: 3px; }
+                    .github-commit-day { width: 12px; height: 12px; border-radius: 2px; }
+                </style>
+                <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
+                    <div class="dm-info-item">
+                        <p class="dm-info-item-key">GitHub Contributions This Month</p>
+                        <div class="github-info">
+                            <div class="github-commit-grid">
+                            ${user.widgets.GitHub.data.user.contributionsCollection.contributionCalandar.weeks.map(week =>
+                                week.contributionDays.map(day =>
+                                `<div class="github-commit-day" title="${day.date}: ${day.contributionCount}" style="background:${day.color}"></div>`
+                                ).join('')
+                            ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
         `;
 
         if (!user.bot) {

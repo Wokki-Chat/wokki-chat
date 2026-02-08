@@ -4209,7 +4209,8 @@ input#clr-hue-slider {
     margin: 0px;
 }
 
-.spotify-info {
+.spotify-info,
+.github-info {
     display: flex;
     flex-direction: row;
     gap: 10px;
