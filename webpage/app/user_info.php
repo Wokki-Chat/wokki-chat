@@ -284,7 +284,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     ob_flush();
     flush();
 
-    $widgets = getUserWidgets($mysqli, $user_id);
+    $widgets = getUserWidgets($mysqli, $requested_user_id);
     echo json_encode([
         'status' => 'success',
         'description' => 'Widgets fetched successfully',
