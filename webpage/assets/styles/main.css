@@ -3000,12 +3000,14 @@ h6 {
 
 [data-custom-style="true"][data-light-text="true"] .dm-info-item,
 [data-custom-style="true"][data-light-text="true"] .dm-info-item-key,
+[data-custom-style="true"][data-light-text="true"] .cutoff,
 [data-custom-style="true"][data-light-text="true"] .popup-header-title {
     color: var(--clr-text-white-a0);
 }
 
 [data-custom-style="true"][data-light-text="false"] .dm-info-item,
 [data-custom-style="true"][data-light-text="false"] .dm-info-item-key,
+[data-custom-style="true"][data-light-text="false"] .cutoff,
 [data-custom-style="true"][data-light-text="false"] .popup-header-title {
     color: var(--clr-text-black-a0);
 }
