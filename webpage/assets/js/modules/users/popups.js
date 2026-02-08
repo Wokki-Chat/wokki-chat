@@ -463,6 +463,7 @@ export class UserPopupManager {
                         if (githubWidget.error) {
                             widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
                         } else {
+                            console.log(githubWidget);
                             widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget);
                         }
                     } else {
