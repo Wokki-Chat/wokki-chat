@@ -1391,7 +1391,7 @@ input:checked + .slider:before {
         z-index: 503;
         border-radius: 0px !important;
     }
-    :root.floaty .server-bar.active {
+    :root.floaty .server-bar {
         height: calc(100vh - 30px - 35px);
         bottom: 0px;
         top: 55px;
@@ -1402,7 +1402,7 @@ input:checked + .slider:before {
         border-bottom: 1px solid var(--clr-popup-a0);
     }
 
-    :root.compact .server-bar.active {
+    :root.compact .server-bar {
         height: calc(100vh - 30px - 35px);
         bottom: 0px;
         top: 55px;
