@@ -4770,7 +4770,7 @@ input#clr-hue-slider {
 .connections-list {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 10px;
     overflow-y: auto;
     scrollbar-width: none;
 }
@@ -4778,7 +4778,7 @@ input#clr-hue-slider {
 .connection-item {
     display: flex;
     flex-direction: row;
-    gap: 5px;
+    gap: 10px;
     align-items: center;
     text-decoration: none;
     cursor: pointer;
@@ -4797,7 +4797,6 @@ input#clr-hue-slider {
 
 .connection-name {
     font-size: 14px;
-    font-weight: var(--font-weight-semibold);
     color: var(--clr-text-a0);
     user-select: none;
 }

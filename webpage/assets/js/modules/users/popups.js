@@ -32,6 +32,7 @@ export class UserPopupManager {
             <a class="connection-item" href="${connection.connection_user_url}">
                 <img src="/assets/icons/connections/${connection.connection_type.toLowerCase()}.svg" alt="${connection.connection_type} Icon" title="${connection.connection_type}" class="connection-icon">
                 <div class="connection-name">${connection.connection_name}</div>
+                <span class="material-symbols-rounded">open_in_new</span>
             </a>`;
         });
 
