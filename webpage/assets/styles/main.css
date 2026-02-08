@@ -1386,9 +1386,6 @@ input:checked + .slider:before {
 
 @media screen and (max-width: 525px) {
     .server-bar {
-        display: none;
-    }
-    .server-bar.active {
         display: block;
         position: fixed;
         z-index: 503;
