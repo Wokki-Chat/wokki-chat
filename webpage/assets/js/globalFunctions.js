@@ -199,7 +199,7 @@ async function showUpdateInfo(sanitizer) {
 		style: 'info',
 		content_type: 'html',
 		header: `Update ${versionData.version}`,
-		content: updateHTML,
+		content: updateHTML ? updateHTML : 'No update info found',
 		custom_id: 'update_popup'
 	});
 }
