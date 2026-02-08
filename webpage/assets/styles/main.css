@@ -2543,6 +2543,13 @@ code {
     gap: 10px;
 }
 
+.settings-appearance-container,
+.kudos-container,
+.logs-container {
+    margin-top: 50px;
+}
+
+
 .profile-container {
     flex-direction: row;
     justify-content: space-between;
