@@ -19,8 +19,11 @@ export class CommandsManager {
         this.users_list = [];
     }
 
-    init(available_commands, users_list) {
+    init(available_commands) {
         this.available_commands = available_commands;
+    }
+
+    initU(users_list) {
         this.users_list = users_list;
     }
 
