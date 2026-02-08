@@ -4786,18 +4786,17 @@ input#clr-hue-slider {
 }
 
 .connection-icon {
-    width: 15px;
-    height: 15px;
+    width: 20px;
+    height: 20px;
     padding: 5px;
     background-color: var(--clr-text-white-a0);
     object-fit: contain;
-    border-radius: 5px;
-    border: 2px solid var(--clr-input-border-bg-darkest);
+    border-radius: 9px;
     user-select: none;
 }
 
 .connection-name {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: var(--font-weight-semibold);
     color: var(--clr-text-a0);
     user-select: none;
