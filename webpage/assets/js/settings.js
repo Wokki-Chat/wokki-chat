@@ -603,6 +603,7 @@ function initSettings() {
 	if (active_tab === "connections") {
 		const chatAction = document.getElementById("chat-action");
 		const spotifyAction = document.getElementById("spotify-action");
+		const githubAction = document.getElementById("github-action");
 
 		function handleAction(element) {
 			const action = element.dataset.action;
@@ -620,6 +621,7 @@ function initSettings() {
 
 		chatAction.addEventListener("click", () => handleAction(chatAction));
 		spotifyAction.addEventListener("click", () => handleAction(spotifyAction));
+		githubAction.addEventListener("click", () => handleAction(githubAction));
 	}
 
 	function openConnectionModal(connection) {
