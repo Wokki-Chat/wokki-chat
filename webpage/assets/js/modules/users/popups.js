@@ -147,8 +147,6 @@ export class UserPopupManager {
     }
 
     async makeExtendedPopup(user) {
-        console.log(user);
-
         let lightText = false;
         let popupStyle = '';
         let borderStyle = '';
@@ -224,7 +222,7 @@ export class UserPopupManager {
     }
 
     async openExtendedPopup(user_id) {
-        const user = this.fetchUserInfo(user_id);
+        const user = await this.fetchUserInfo(user_id);
 
         const { html: popup_content, custom_style_data, popup_style, border_style, lightText } = await this.makeExtendedPopup(user);
 
