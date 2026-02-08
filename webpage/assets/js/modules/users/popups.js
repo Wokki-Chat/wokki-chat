@@ -405,11 +405,11 @@ export class UserPopupManager {
             </div>
             <div class="user-widgets">
                 <p class="dm-info-item-key">Widgets</p>
-                ${await this.getGithubWidget(user) || '<p>This user has no widgets</p>'}
+                ${await this.getGithubWidget(user) || '<p class="dm-info-item-value">This user has no widgets</p>'}
 
                 <p class="dm-info-item-key">Connections</p>
                 <div class="connections-list">
-                    ${ (await this.getConnections(user)) || '<p>This user has no connections</p>' }
+                    ${ (await this.getConnections(user)) || '<p class="dm-info-item-value">This user has no connections</p>' }
                 </div>
             </div>
         `;
