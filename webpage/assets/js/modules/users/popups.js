@@ -228,6 +228,9 @@ export class UserPopupManager {
         }
         let userBio = await this.sanitizer.sanitizeMrk(user.bio);
         userBio = await emojis.replaceText(userBio);
+        if (userBio.length > 55) {
+            userBio = userBio.slice(0, 55) + '...';
+        }
         popup.innerHTML = `
             ${user.profile_banner ? `<img draggable="false" class="user-info-profile-popup-banner" src="${user.profile_banner}">` : ''}
             <div class="user-info-profile-popup-profile-picture-username-status">
