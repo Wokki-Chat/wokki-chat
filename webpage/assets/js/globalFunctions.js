@@ -440,7 +440,7 @@ function showAvailableCommands(command, textarea, available_commands, sanitizer)
               if (!valid) return;
 
               const payload = {
-                access_token,
+                access_token: document.getElementById("access-token")?.getAttribute("value") || "",
                 command: commandText,
                 server_id: document.getElementById("server-id")?.getAttribute("value") || "",
                 channel_id: document.getElementById("channel-id")?.getAttribute("value") || "",
@@ -475,7 +475,7 @@ function showAvailableCommands(command, textarea, available_commands, sanitizer)
 
           if (typeof typing !== "undefined" && typing) {
             typing = false;
-            socket.emit("typing", { access_token, typing: false, channel_id, server_id });
+            socket.emit("typing", { access_token: document.getElementById("access-token")?.getAttribute("value") || "", typing: false, channel_id, server_id });
           }
 
           textarea.dispatchEvent(new InputEvent("input", { bubbles: true }));
