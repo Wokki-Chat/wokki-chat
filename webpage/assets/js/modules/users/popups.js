@@ -138,7 +138,7 @@ export class UserPopupManager {
                                     document.documentElement.style.setProperty('--weeks-count', filteredWeeks.length);
                                     return filteredWeeks.map(week =>
                                         week.map(day =>
-                                            `<div class="github-commit-day" title="${day.date}: ${day.contributionCount}" style="background:${day.color}"></div>`
+                                            `<div class="github-commit-day" title="${day.contributionCount} Contribution${day.contributionCount !== 1 ? 's' : ''} on ${new Date(day.date).toLocaleString('default', { month: 'long' })} ${new Date(day.date).getDate()}" style="background:${day.color}"></div>`
                                         ).join('')
                                     ).join('');
                                 })()}
