@@ -163,46 +163,60 @@ export class UserPopupManager {
                                             const v = n % 100;
                                             return n + (s[(v-20)%10] || s[v] || s[0]);
                                         };
-                                        const allDays = [];
+                                        const filteredWeeks = [];
                                         weeks.forEach(week => {
-                                            week.contributionDays.forEach(day => {
+                                            const weekDays = week.contributionDays.filter(day => {
                                                 const d = new Date(day.date);
-                                                if(d >= fourMonthsAgo && d <= now) {
-                                                    allDays.push({
-                                                        ...day,
-                                                        dateObj: d
-                                                    });
-                                                }
+                                                return d >= fourMonthsAgo && d <= now;
                                             });
+                                            if (weekDays.length > 0) {
+                                                filteredWeeks.push(weekDays);
+                                            }
                                         });
-                                        allDays.sort((a, b) => a.dateObj - b.dateObj);
+
+                                        if (filteredWeeks.length > 0) {
+                                            const firstWeek = filteredWeeks[0];
+                                            const firstDate = new Date(firstWeek[0].date);
+                                            const firstWeekday = firstDate.getDay();
+                                            
+                                            for (let i = 0; i < firstWeekday; i++) {
+                                                firstWeek.unshift({
+                                                    contributionCount: 0,
+                                                    color: '#ebedf0',
+                                                    date: null
+                                                });
+                                            }
+                                        }
                                         const monthSpans = [];
                                         let currentMonth = null;
-                                        let monthStart = 0;
+                                        let monthStartWeek = 0;
                                         
-                                        allDays.forEach((day, index) => {
-                                            const month = day.dateObj.toLocaleString('default', {month: 'short'});
-                                            const monthYear = `${month} ${day.dateObj.getFullYear()}`;
-                                            
-                                            if (monthYear !== currentMonth) {
-                                                if (currentMonth !== null) {
-                                                    monthSpans.push({
-                                                        month: currentMonth.split(' ')[0],
-                                                        start: monthStart + 1,
-                                                        end: index
-                                                    });
+                                        filteredWeeks.forEach((week, weekIndex) => {
+                                            const firstDayWithDate = week.find(d => d.date);
+                                            if (firstDayWithDate) {
+                                                const month = new Date(firstDayWithDate.date).toLocaleString('default', {month: 'short'});
+                                                
+                                                if (month !== currentMonth) {
+                                                    if (currentMonth !== null) {
+                                                        monthSpans.push({
+                                                            month: currentMonth,
+                                                            start: monthStartWeek + 1,
+                                                            end: weekIndex
+                                                        });
+                                                    }
+                                                    currentMonth = month;
+                                                    monthStartWeek = weekIndex;
                                                 }
-                                                currentMonth = monthYear;
-                                                monthStart = index;
                                             }
                                         });
                                         if (currentMonth !== null) {
                                             monthSpans.push({
-                                                month: currentMonth.split(' ')[0],
-                                                start: monthStart + 1,
-                                                end: allDays.length
+                                                month: currentMonth,
+                                                start: monthStartWeek + 1,
+                                                end: filteredWeeks.length
                                             });
                                         }
+
                                         const monthsHtml = monthSpans.map(m => 
                                             `<div style="grid-column: ${m.start} / ${m.end + 1}; text-align: center;">${m.month}</div>`
                                         ).join('');
@@ -210,19 +224,18 @@ export class UserPopupManager {
                                         setTimeout(() => {
                                             const monthsEl = document.getElementById('github-months');
                                             if (monthsEl) {
-                                                monthsEl.style.gridTemplateColumns = `repeat(${allDays.length}, 14px)`;
+                                                monthsEl.style.gridTemplateColumns = `repeat(${filteredWeeks.length}, 14px)`;
                                                 monthsEl.innerHTML = monthsHtml;
                                             }
                                         }, 0);
-                                        return allDays.map((day, index) => {
-                                            const weekday = day.dateObj.getDay();
-                                            const col = index + 1;
-                                            const row = weekday + 1;
-                                            
-                                            return `<div class="github-commit-day" 
-                                                title="${day.contributionCount} Contribution${day.contributionCount !== 1 ? 's' : ''} on ${day.dateObj.toLocaleString('default', {month: 'long'})} ${getOrdinal(day.dateObj.getDate())}" 
-                                                style="background: ${day.color}; grid-column: ${col}; grid-row: ${row};"></div>`;
-                                        }).join('');
+
+                                        return filteredWeeks.map(week =>
+                                            week.map(day =>
+                                                `<div class="github-commit-day" 
+                                                    title="${day.contributionCount} Contribution${day.contributionCount !== 1 ? 's' : ''}${day.date ? ' on ' + new Date(day.date).toLocaleString('default', {month: 'long'}) + ' ' + getOrdinal(new Date(day.date).getDate()) : ''}" 
+                                                    style="background: ${day.color};"></div>`
+                                            ).join('')
+                                        ).join('');
                                     })()}
                                 </div>
                             </div>
