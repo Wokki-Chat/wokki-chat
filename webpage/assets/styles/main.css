@@ -3006,17 +3006,13 @@ h6 {
     font-size: 14px;
 }
 
-.user-info-profile-popup[data-custom-style="true"][data-light-text="true"] .dm-info-item,
-.user-info-profile-static[data-custom-style="true"][data-light-text="true"] .dm-info-item,
-.user-info-profile-popup[data-custom-style="true"][data-light-text="true"] .dm-info-item-key,
-.user-info-profile-static[data-custom-style="true"][data-light-text="true"] .dm-info-item-key {
+[data-custom-style="true"][data-light-text="true"] .dm-info-item,
+[data-custom-style="true"][data-light-text="true"] .dm-info-item-key {
     color: var(--clr-text-white-a0);
 }
 
-.user-info-profile-popup[data-custom-style="true"][data-light-text="false"] .dm-info-item,
-.user-info-profile-static[data-custom-style="true"][data-light-text="false"] .dm-info-item,
-.user-info-profile-popup[data-custom-style="true"][data-light-text="false"] .dm-info-item-key,
-.user-info-profile-static[data-custom-style="true"][data-light-text="false"] .dm-info-item-key {
+[data-custom-style="true"][data-light-text="false"] .dm-info-item,
+[data-custom-style="true"][data-light-text="false"] .dm-info-item-key {
     color: var(--clr-text-black-a0);
 }
 
