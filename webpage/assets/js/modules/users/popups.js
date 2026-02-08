@@ -109,7 +109,7 @@ export class UserPopupManager {
 
             ${user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks ? `
                 <style>
-                    .github-commit-grid { display: grid; grid-template-columns: repeat(${weeks.length}, 14px); gap: 3px; }
+                    .github-commit-grid { display: grid; grid-template-columns: repeat(${user.widgets?.GitHub?.data?.user?.contributionsCollection?.contributionCalendar?.weeks.length}, 14px); gap: 3px; }
                     .github-commit-day { width: 12px; height: 12px; border-radius: 2px; }
                 </style>
                 <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
