@@ -100,20 +100,6 @@ function formatFullDate(created_at) {
   });
 }
 
-async function showUpdateInfo(sanitizer) {
-	const versionData = await fetch('/version-info.json').then(res => res.json());
-	const updateMarkdown = await fetch('/' + versionData["update-info"]).then(res => res.text());
-	const updateHTML = await sanitizer.sanitizeMsg(updateMarkdown);
-
-	jspt.makePopup({
-		style: 'info',
-		content_type: 'html',
-		header: `Update ${versionData.version}`,
-		content: updateHTML ? updateHTML : 'No update info found',
-		custom_id: 'update_popup'
-	});
-}
-
 function getAssetType(fileName) {
   const parts = fileName.toLowerCase().split('.');
 

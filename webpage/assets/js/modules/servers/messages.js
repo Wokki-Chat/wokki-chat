@@ -105,7 +105,7 @@ export class MessageRenderer {
 						${bot_message == 1 ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
 						<p class="date">${createdAtDate.toLocaleString()}</p>
 					</div>
-					<p class="message-text">${sanitizedMessage}</p>
+					<div class="message-text">${sanitizedMessage}</div>
 					${embeds ? `<div class="message-embed">${await this.Embeds({ embeds }, usersList)}</div>` : ''}
 					<div class="message-reactions"></div>
 					${onlyMe ? `<div class="message-only-me" id="message-only-me">Only you can see this message &bull; <a class="link" id="message-only-me-dismiss">Dismiss</a></div>` : ""}

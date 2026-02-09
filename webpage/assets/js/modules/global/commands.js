@@ -93,7 +93,7 @@ export class CommandsManager {
 
         if (commandObj.builtIn) {
             if (commandText === "/update-info") {
-                showUpdateInfo(this.sanitizer);
+                this.showUpdateInfo(this.sanitizer);
                 this.resetComposer();
                 const popup = document.querySelector(".available-commands");
                 if (popup) popup.remove();
@@ -408,5 +408,18 @@ export class CommandsManager {
                 borderRadius: "12px"
             }
         }).showToast();
+    }
+    async showUpdateInfo(sanitizer) {
+        const versionData = await fetch('/version-info.json').then(res => res.json());
+        const updateMarkdown = await fetch('/' + versionData["update-info"]).then(res => res.text());
+        const updateHTML = `<div>${await sanitizer.sanitizeMsg(updateMarkdown)}</div>`;
+
+        jspt.makePopup({
+            style: 'info',
+            content_type: 'html',
+            header: `Update ${versionData.version}`,
+            content: updateHTML ? updateHTML : 'No update info found',
+            custom_id: 'update_popup'
+        });
     }
 }
