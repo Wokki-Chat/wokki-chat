@@ -118,16 +118,13 @@ export class Sanitizer {
                     return url;
                 });
 
-                escaped = await this.replaceWithCheck(escaped, /^#{1,6} .*/gm, async (line) => {
-                    const level = line.match(/^#+/)[0].length;
-                    const content = line.slice(level + 1).trim();
-                    return `<h${level} style="margin: 0;">${content}</h${level}>`;
+                escaped = await this.replaceWithCheck(escaped, /^(#{1,6}) (.+)$/gm, async (match, hashes, content) => {
+                    const level = hashes.length;
+                    return `<h${level} style="margin: 0;">${content.trim()}</h${level}>`;
                 });
 
-                escaped = await this.replaceWithCheck(escaped, /(^|\n)((?:- .+(?:\n|$))+)/g, async (match, before, list) => {
-                    const items = list.trim().split('\n')
-                        .filter(line => line.trim().startsWith('- '))
-                        .map(i => i.replace(/^- /, '').trim());
+                escaped = await this.replaceWithCheck(escaped, /(^|\n)((?:- .+(?:\n(?=- )|(?=\n)|(?=$)))+)/g, async (match, before, list) => {
+                    const items = list.trim().split(/\n/).filter(line => line.startsWith('- ')).map(i => i.replace(/^- /, '').trim());
                     const lis = items.map(i => `<li>${i}</li>`).join('');
                     return `${before}<ul>${lis}</ul>`;
                 });
