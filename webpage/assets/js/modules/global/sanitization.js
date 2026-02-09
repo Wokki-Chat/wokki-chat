@@ -196,8 +196,6 @@ export class Sanitizer {
                     return await this.getTimeEl(timeNumber, type);
                 });
 
-                escaped = escaped.replace(/\n/g, '<br>');
-
                 escaped = await this.replaceWithCheck(escaped, /(?<!["'>])(https?:\/\/chat\.wokki20\.nl\/invite\/[^\s)]+)/g, async (url) => {
                     const inviteId = url.split("/").pop();
                     return `
