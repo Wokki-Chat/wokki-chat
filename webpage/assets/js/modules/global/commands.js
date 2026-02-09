@@ -340,7 +340,7 @@ export class CommandsManager {
 
             this.socket.on("bot_response", onResponse);
         }).catch(() => {
-            console.warn("No bot response received within 15 seconds");
+            console.warn("No bot response received within 15 seconds"); // TODO: make it show a message that is only for the user
         });
     }
 
