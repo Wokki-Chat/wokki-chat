@@ -107,6 +107,34 @@ export class Sanitizer {
             } else {
                 let escaped = this.escapeHtml(part);
 
+                const lines = escaped.split('\n');
+                const processedLines = [];
+                let i = 0;
+
+                while (i < lines.length) {
+                    const line = lines[i];
+                    
+                    if (/^#{1,6} /.test(line)) {
+                        const level = line.match(/^#+/)[0].length;
+                        const content = line.slice(level + 1).trim();
+                        processedLines.push(`<h${level} style="margin: 0;">${content}</h${level}>`);
+                        i++;
+                    } else if (line.startsWith('- ')) {
+                        const listItems = [];
+                        while (i < lines.length && lines[i].startsWith('- ')) {
+                            listItems.push(lines[i].replace(/^- /, '').trim());
+                            i++;
+                        }
+                        const lis = listItems.map(item => `<li>${item}</li>`).join('');
+                        processedLines.push(`<ul>${lis}</ul>`);
+                    } else {
+                        processedLines.push(line);
+                        i++;
+                    }
+                }
+
+                escaped = processedLines.join('\n');
+
                 escaped = await this.replaceWithCheck(escaped, /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, async (match, linkText, url) => {
                     return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${linkText}</a>`;
                 });
@@ -116,17 +144,6 @@ export class Sanitizer {
                         return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>`;
                     }
                     return url;
-                });
-
-                escaped = await this.replaceWithCheck(escaped, /^(#{1,6}) (.+)$/gm, async (match, hashes, content) => {
-                    const level = hashes.length;
-                    return `<h${level} style="margin: 0;">${content.trim()}</h${level}>`;
-                });
-
-                escaped = await this.replaceWithCheck(escaped, /(^|\n)((?:- .+(?:\n(?=- )|(?=\n)|(?=$)))+)/g, async (match, before, list) => {
-                    const items = list.trim().split(/\n/).filter(line => line.startsWith('- ')).map(i => i.replace(/^- /, '').trim());
-                    const lis = items.map(i => `<li>${i}</li>`).join('');
-                    return `${before}<ul>${lis}</ul>`;
                 });
 
                 escaped = await this.replaceWithCheck(escaped, /(?<!\\)~~([\s\S]+?)~~/g, async (match, content) => `<del>${content}</del>`);
