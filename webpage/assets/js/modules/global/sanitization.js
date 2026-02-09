@@ -124,26 +124,29 @@ export class Sanitizer {
                     return `<h${level} style="margin: 0;">${content}</h${level}>`;
                 });
 
-                escaped = await this.replaceWithCheck(escaped, /(^|\n)((- .+\n?)+)/g, async (match, before, list) => {
-                    const items = list.trim().split('\n').map(i => i.replace(/^- /, '').trim());
+                escaped = await this.replaceWithCheck(escaped, /(^|\n)((?:- .+(?:\n|$))+)/g, async (match, before, list) => {
+                    const items = list.trim().split('\n')
+                        .filter(line => line.trim().startsWith('- '))
+                        .map(i => i.replace(/^- /, '').trim());
                     const lis = items.map(i => `<li>${i}</li>`).join('');
                     return `${before}<ul>${lis}</ul>`;
                 });
 
-                escaped = await this.replaceWithCheck(escaped, /(?<!\\)~~(.+?)~~/g, async (match, content) => `<del>${content}</del>`);
+                escaped = await this.replaceWithCheck(escaped, /(?<!\\)~~([\s\S]+?)~~/g, async (match, content) => `<del>${content}</del>`);
                 escaped = await this.replaceWithCheck(escaped, /(?<!\\)`([^`\n]+)`/g, async (match, code) => `<code>${code}</code>`);
-                escaped = await this.replaceWithCheck(escaped, /(?<!\\)\*\*(?!\*\*)([^*]+?)\*\*/g, async (match, content, offset) => {
+                
+                escaped = await this.replaceWithCheck(escaped, /(?<!\\)\*\*(?!\*)([\s\S]+?)\*\*/g, async (match, content, offset) => {
                     const before = escaped[offset - 1] || ' ';
                     const after = escaped[offset + match.length] || ' ';
                     if (/\w/.test(before) && /\w/.test(after)) return match;
                     return `<strong>${content}</strong>`;
                 });
 
-                escaped = await this.replaceWithCheck(escaped, /(?<!\\)(\*|_)(.+?)\1/g, async (match, wrap, content, offset) => {
+                escaped = await this.replaceWithCheck(escaped, /(?<!\\)(\*|_)([\s\S]+?)\1/g, async (match, wrap, content, offset) => {
                     const before = escaped[offset - 1] || ' ';
                     const after = escaped[offset + match.length] || ' ';
                     if (/\w/.test(before) && /\w/.test(after)) return match;
-                    if (content.includes(wrap)) return match;
+                    if (content.includes('**')) return match;
                     return `<em>${content}</em>`;
                 });
 

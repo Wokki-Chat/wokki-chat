@@ -3038,7 +3038,7 @@ h6 {
     font-size: 16px;
 }
 
-.dm-info-item-value ul {
+ul {
     margin: 0px;
 }
 
@@ -4691,7 +4691,8 @@ input#clr-hue-slider {
 }
 
 .popup-container#server-settings-popup,
-.popup-container#user-profile-popup {
+.popup-container#user-profile-popup,
+.popup-container#update_popup {
     background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(5px);
 }
