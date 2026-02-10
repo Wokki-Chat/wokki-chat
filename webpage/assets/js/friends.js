@@ -1,4 +1,4 @@
-import { Sanitizer } from "./modules/global/sanitization";
+import { Sanitizer } from "./modules/global/sanitization.js";
 window.addEventListener("load", () => {
 
 const sanitizer = new Sanitizer();
