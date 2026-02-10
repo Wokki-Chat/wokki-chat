@@ -489,10 +489,10 @@ export class MessageHandler {
 	}
 
 	insertMessageEl(el, insertIndex) {
-		if (insertIndex === messageContainer.children.length) {
-			messageContainer.appendChild(el)
+		if (insertIndex === this.messageContainer.children.length) {
+			this.messageContainer.appendChild(el)
 		} else {
-			messageContainer.insertBefore(el, messageContainer.children[insertIndex])
+			this.messageContainer.insertBefore(el, this.messageContainer.children[insertIndex])
 		}
 	}
 
@@ -502,9 +502,9 @@ export class MessageHandler {
 		const el = await this.messageRenderer.create(msg, this.usersList);
 		if (!el) return;
 
-		const scrollTopBefore = messageContainer.scrollTop;
-		const scrollHeightBefore = messageContainer.scrollHeight;
-		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
+		const scrollTopBefore = this.messageContainer.scrollTop;
+		const scrollHeightBefore = this.messageContainer.scrollHeight;
+		const nearBottom = scrollHeightBefore - scrollTopBefore - this.messageContainer.clientHeight <= 10;
 
 		const insertIndex = this.messageCache.insertIntoCache(msg, el);
 		insertMessageEl(el, insertIndex);
@@ -514,7 +514,7 @@ export class MessageHandler {
 		const hydratePromise = this.messageHydrator.hydrate(el, msg.assets, msg.id).then(() => {
 			if (nearBottom) {
 				requestAnimationFrame(() => {
-					messageContainer.scrollTop = messageContainer.scrollHeight;
+					this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
 				});
 			}
 		});
