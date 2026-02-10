@@ -154,7 +154,8 @@ export class Sanitizer {
                         i++;
                     } else {
                         if (line.trim()) {
-                            processedLines.push(`<span>${line}</span>`);
+                            const processedLine = await this.processInline(line);
+                            processedLines.push(`<span>${processedLine}</span>`);
                         }
                         i++;
                     }

@@ -412,7 +412,7 @@ export class CommandsManager {
     async showUpdateInfo(sanitizer) {
         const versionData = await fetch('/version-info.json').then(res => res.json());
         const updateMarkdown = await fetch('/' + versionData["update-info"]).then(res => res.text());
-        const updateHTML = `<div>${await sanitizer.sanitizeMsg(updateMarkdown)}</div><span class="ai-disclaimer">Updates are based on actual code changes. AI is used to summarize commit messages for readability.</span>`;
+        const updateHTML = `<span class="ai-disclaimer">Updates are based on actual code changes. AI is used to summarize commit messages for readability.</span><div>${await sanitizer.sanitizeMsg(updateMarkdown)}</div>`;
 
         jspt.makePopup({
             style: 'info',
