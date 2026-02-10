@@ -1,5 +1,6 @@
 from server.sio_instance import sio
-from server.helpers.server_helpers import server_commands, command, get_server_users, change_room
+from server.helpers.server_helpers import server_commands, command, get_server_users
+from server.helpers.connection_helpers import change_room
 
 @sio.safe('get_server_users')
 async def handle_get_server_users(sid, data):

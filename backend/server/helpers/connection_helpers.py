@@ -1,6 +1,6 @@
 import uuid
 from server.config import typing_lock, user_current_room, add_user_to_sid, get_sids_for_user, remove_user_sid, get_user_from_sid, get_bot_sid_from_id, add_sid_to_bot, get_bot_id_from_sid, remove_sid, get_typing_users, remove_typing_user, redis_client, server_name, acquire_user_lock, release_user_lock, DISCONNECT_TIMEOUT
-from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status, broadcast_user_widget_update
+from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status, broadcast_user_widget_update, auth_required
 from server.helpers.server_helpers import is_user_in_server, get_member_ids_from_server
 from server.helpers.bot_helpers import is_bot_in_server, verify_bot_token
 import server.sio_instance as sio_instance
@@ -245,3 +245,73 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
             await broadcast_user_update(user_id)
 
     await redis_client.delete(disconnect_key)
+
+@auth_required(server_required=True, allow_bots=False)
+async def change_room(sid, metadata, data):
+    user_id = metadata.get('account_id')
+    new_server_id = data.get('server_id')
+    new_channel_id = data.get('channel_id')
+    new_contact_id = data.get('contact_id')
+
+    if new_contact_id:
+        combined_room = f"contact:{new_contact_id}"
+        current_rooms = sio_instance.sio.rooms(sid)
+        for room in current_rooms:
+            if room.startswith("contact:") and room != combined_room:
+                await sio_instance.sio.leave_room(sid, room)
+            elif room.startswith("server:") or room.startswith("channel:"):
+                await sio_instance.sio.leave_room(sid, room)
+        if combined_room not in current_rooms:
+            await sio_instance.sio.enter_room(sid, combined_room)
+        
+        await sio_instance.sio.emit(
+            'switch_channel_response',
+            {"contact_id": new_contact_id},
+            to=sid
+        )
+        return
+
+    if not new_server_id or not new_channel_id:
+        await addMessageToLogs("Missing required fields for change_room", "INFO")
+        await sio_instance.sio.emit('switch_channel_response', None, to=sid)
+        return
+
+    combined_room = f"server:{new_server_id}:channel:{new_channel_id}"
+    server_room = f"server:{new_server_id}"
+    channel_room = f"channel:{new_channel_id}"
+
+    current_rooms = sio_instance.sio.rooms(sid)
+
+    for room in current_rooms:
+        if room.startswith("server:") and room != server_room and ":channel:" not in room:
+            await sio_instance.sio.leave_room(sid, room)
+
+    for room in current_rooms:
+        if room.startswith("channel:") and room != channel_room:
+            await sio_instance.sio.leave_room(sid, room)
+
+    for room in current_rooms:
+        if room.startswith("server:") and ":channel:" in room and room != combined_room:
+            await sio_instance.sio.leave_room(sid, room)
+
+    if server_room not in current_rooms:
+        await sio_instance.sio.enter_room(sid, server_room)
+
+    if channel_room not in current_rooms:
+        await sio_instance.sio.enter_room(sid, channel_room)
+
+    if combined_room not in current_rooms:
+        await sio_instance.sio.enter_room(sid, combined_room)
+        
+    await sio_instance.sio.emit(
+        'switch_channel_response',
+        {"server_id": new_server_id, "channel_id": new_channel_id},
+        to=sid
+    )
+    
+    typing_users = await get_typing_users(new_server_id, new_channel_id)
+    await sio_instance.sio.emit(
+        'users_typing',
+        {'user_ids': list(typing_users), 'channel_id': new_channel_id, 'server_id': new_server_id},
+        to=sid
+    )

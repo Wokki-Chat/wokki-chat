@@ -1,5 +1,5 @@
 import emojis from "./emojis.js";
-import { MessageRenderer, MessageBehaviour, MessageHydrator, MessageCache } from "./modules/servers/messages.js";
+import { MessageHandler } from "./modules/servers/messages.js";
 import ReactionRenderer from "./modules/servers/reactions.js";
 import SettingsManager from "./modules/servers/settings.js";
 import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
@@ -38,14 +38,12 @@ function initServer() {
 
 	const messageContainer = document.querySelector("#message-container");
 	
-	const messageRenderer = new MessageRenderer({ user_id, channels, server_id });
-	const messageCache = new MessageCache();
 	const reactionRenderer = new ReactionRenderer({ user_id, channel_id, server_id, access_token, socket });
-	const messageBehaviour = new MessageBehaviour({ user_id, channel_id, server_id, access_token, socket, messageContainer });
-	const messageHydrator = new MessageHydrator({ user_id, channels, server_id });
 	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
 	const mentions = new Mentions({ user_id, channels, server_id, users_list: [] });
 	const commandsManager = new CommandsManager({ user_id, channel_id, server_id, access_token, socket });
+
+	const messageHandler = new MessageHandler({ user_id, channel_id: channel_id, server_id: server_id, access_token, socket, messageContainer });
 
 	const userPopupManager = new UserPopupManager({ user_id, access_token });
 
@@ -154,64 +152,7 @@ function initServer() {
 		}
 
 		for (const msg of messages) {
-			await handleMessage(msg);
-		}
-	}
-
-	function insertMessageEl(el, insertIndex) {
-		if (insertIndex === messageContainer.children.length) {
-			messageContainer.appendChild(el)
-		} else {
-			messageContainer.insertBefore(el, messageContainer.children[insertIndex])
-		}
-	}
-
-	async function handleMessage(msg) {
-		messageCache.removeExisting(msg.id);
-
-		const el = await messageRenderer.create(msg, usersList);
-		if (!el) return;
-
-		const scrollTopBefore = messageContainer.scrollTop;
-		const scrollHeightBefore = messageContainer.scrollHeight;
-		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
-
-		const insertIndex = messageCache.insertIntoCache(msg, el);
-		insertMessageEl(el, insertIndex);
-		messageBehaviour.applyCompactMode(el, msg, insertIndex, messageCache.cache);
-		messageBehaviour.attach(el, msg);
-		
-		const hydratePromise = messageHydrator.hydrate(el, msg.assets, msg.id).then(() => {
-			if (nearBottom) {
-				requestAnimationFrame(() => {
-					messageContainer.scrollTop = messageContainer.scrollHeight;
-				});
-			}
-		});
-
-		await emojis.replaceEl(el);
-
-		const customPlayer = el.querySelector(".custom-player");
-		if (customPlayer) await initCustomPlayer(customPlayer);
-
-		const replyBtn = el.querySelector("#reply-btn");
-		replyBtn.addEventListener("click", () => replyMessage(msg.id));
-
-		const deleteBtn = el.querySelector("#delete-btn");
-		if (deleteBtn) {
-			deleteBtn.addEventListener("click", () => {
-				socket.emit("delete_message", { access_token, message_id: msg.id, server_id, channel_id });
-				deleteMsg(msg.id);
-			});
-		}
-
-		if (!nearBottom) {
-			const scrollHeightAfter = messageContainer.scrollHeight;
-			messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
-		} else {
-			requestAnimationFrame(() => {
-				messageContainer.scrollTop = messageContainer.scrollHeight;
-			});
+			await messageHandler.handleMessage(msg);
 		}
 	}
 
@@ -312,107 +253,6 @@ function initServer() {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
 		if (el) updateReactionUI(el, message_id, reaction, reactingUserId, true);
 	});
-	
-	const customPlayers = new Map();
-
-	function audioLoaded(audio) {
-		return new Promise((resolve) => {
-			if (audio.readyState >= 1) {
-				resolve();
-			} else {
-				audio.addEventListener('loadedmetadata', () => resolve(), { once: true });
-			}
-		});
-	}
-
-	async function initCustomPlayer(el) {
-		const audioSrc = el.dataset.audioSrc;
-		const originalName = el.dataset.originalname;
-
-		if (!audioSrc) return;
-
-		let audio;
-		if (customPlayers.has(audioSrc)) {
-			audio = customPlayers.get(audioSrc);
-		} else {
-			audio = new Audio(audioSrc);
-			audio.preload = "metadata";
-			customPlayers.set(audioSrc, audio);
-		}
-
-		const playPauseBtn = el.querySelector('.play-pause');
-		const seekBar = el.querySelector('.seek-bar');
-		const currentTimeEl = el.querySelector('.current-time');
-		const durationEl = el.querySelector('.duration');
-		const timeBox = el.querySelector('.time-left-current');
-		const downloadBtn = el.querySelector('#download');
-
-		let updateInterval;
-
-		function formatTime(seconds) {
-			const mins = Math.floor(seconds / 60);
-			const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
-			return `${mins}:${secs}`;
-		}
-
-		function updateSeekBarProgress() {
-			const val = seekBar.value;
-			const max = seekBar.max || 100;
-			const percentage = (val / max) * 100;
-			seekBar.style.background = `
-				linear-gradient(
-					to right,
-					var(--clr-primary-a0) 0%,
-					var(--clr-primary-a0) ${percentage}%,
-					var(--clr-input-border-bg-dark) ${percentage}%,
-					var(--clr-input-border-bg-dark) 100%
-				)
-			`;
-		}
-
-		await audioLoaded(audio);
-
-		seekBar.max = audio.duration;
-		durationEl.textContent = `/ ${formatTime(audio.duration)}`;
-		updateSeekBarProgress();
-
-		playPauseBtn.addEventListener('click', () => {
-			if (audio.paused) {
-				audio.play();
-				playPauseBtn.textContent = 'pause';
-
-				updateInterval = setInterval(() => {
-					seekBar.value = audio.currentTime;
-					currentTimeEl.textContent = formatTime(audio.currentTime);
-					updateSeekBarProgress();
-				}, 250);
-			} else {
-				audio.pause();
-				playPauseBtn.textContent = 'play_arrow';
-				clearInterval(updateInterval);
-			}
-		});
-
-		seekBar.addEventListener('input', () => {
-			audio.currentTime = seekBar.value;
-			currentTimeEl.textContent = formatTime(audio.currentTime);
-			updateSeekBarProgress();
-		});
-
-		downloadBtn.addEventListener('click', () => {
-			const a = document.createElement('a');
-			a.href = audioSrc;
-			a.download = originalName;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-		});
-
-		requestAnimationFrame(() => {
-			const width = timeBox.offsetWidth;
-			timeBox.style.minWidth = `${width}px`;
-		});
-	}
 
 	const builtInBot = {
 		id: "wchat-built-in",
@@ -446,7 +286,7 @@ function initServer() {
 
 		const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
 
-		await handleMessage(msg);
+		await messageHandler.handleMessage(msg);
 
 		if (isAtBottom) {
 			messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
@@ -454,7 +294,7 @@ function initServer() {
 	});
 
 	socket.on("message_deleted", (message_id) => {
-		deleteMsg(message_id.message_id);
+		messageHandler.deleteMsg(message_id.message_id);
 	});
 
 	const minHeight = 18;
@@ -729,39 +569,6 @@ function initServer() {
 		});
 	}
 
-	function deleteMsg(id) {
-		const indexInCache = messageCache.delete(id);
-		if (indexInCache === -1) return;
-
-		const nextMsg = messageCache.cache[indexInCache];
-		if (!nextMsg) return;
-
-		const nextEl = nextMsg.el;
-		const usernameDateEl = nextEl.querySelector('.username-date');
-		if (usernameDateEl) usernameDateEl.style.display = 'flex';
-
-		const profilePic = nextEl.querySelector('.profile-picture');
-		if (profilePic) {
-			profilePic.style.opacity = '1';
-			profilePic.style.height = '30px';
-		}
-
-		const prevMsg = messageCache.cache[indexInCache - 1];
-		if (prevMsg && prevMsg.el && prevMsg.sent_by === nextMsg.el.dataset.sentBy) {
-			const prevTime = new Date(prevMsg.timestamp).getTime();
-			const currTime = new Date(nextMsg.timestamp).getTime();
-			if ((currTime - prevTime) <= 10 * 60 * 1000) {
-				if (!nextEl.querySelector('.message-command') && !nextEl.querySelector('.message-reply')) {
-					nextEl.classList.add('compact');
-				}
-			} else {
-				nextEl.classList.remove('compact');
-			}
-		} else {
-			nextEl.classList.remove('compact');
-		}
-	}
-
 	function send_message(textareaEl, uploadedFileNames = null) {
 		const message = textareaFormatter.cleanMsg(textareaEl);
 
@@ -902,52 +709,6 @@ function initServer() {
 			if (dots === 3 || dots === 0) dotsDirection *= -1;
 		}, 300);
 	});
-
-	async function loadParentMessage(parent_message_id) {
-		if (!parent_message_id) return { parent_message_text: "message deleted", parent_message_user: "deleted" };
-
-		try {
-			const parentMessageInfo = await getMessageById(parent_message_id);
-			if (!parentMessageInfo) {
-			return { parent_message_text: "message deleted", parent_message_user: "deleted" };
-			}
-
-			const parent_message_text = parentMessageInfo.message;
-			const parent_message_user = parentMessageInfo.sender ?? usersList.find(user => user.id == parentMessageInfo.sender_id)?.username ?? "Someone";
-
-			return { parent_message_text, parent_message_user };
-
-		} catch (err) {
-			console.error("Failed to get parent message:", err);
-			return { parent_message_text: "message deleted", parent_message_user: "deleted" };
-		}
-	}
-
-	function getMessageById(id) {
-		return new Promise((resolve, reject) => {
-			if (!id) return resolve(null);
-
-			socket.emit("get_message_by_id", { access_token, message_id: id, server_id, channel_id });
-
-			function handler(message) {
-			if (message === null || message === undefined) {
-				socket.off("message_by_id", handler);
-				resolve(null);
-				return;
-			}
-
-			socket.off("message_by_id", handler);
-			resolve(message);
-			}
-
-			socket.on("message_by_id", handler);
-
-			setTimeout(() => {
-			socket.off("message_by_id", handler);
-			reject(new Error("Timeout getting message_by_id"));
-			}, 5000);
-		});
-	}
 
 	const onlineUsersEl = document.getElementById("online-users");
 	const offlineUsersEl = document.getElementById("offline-users");
@@ -1129,29 +890,6 @@ function initServer() {
 		if (!usersList.some(u => String(u.id) === user.id)) return;
 		await renderUser(user);
 	});
-
-	async function replyMessage(id) {
-		if (document.querySelector(".replying-to")) document.querySelector(".replying-to").remove();
-		replyingTo = id;
-		document.getElementById("message-input").focus();
-
-		const { parent_message_text, parent_message_user } = await loadParentMessage(id);
-
-		document.querySelector(".input-container-2").insertAdjacentHTML("afterbegin", `
-			<div class="replying-to">
-				<div class="replying-to-username-container">
-				<p>Replying to:</p>
-				<p class="replying-to-username">${parent_message_user}</p> 
-				</div>
-				<span class="material-symbols-rounded close-replying-to" id="close-replying-to">close</span>
-			</div>
-		`);
-
-		document.getElementById("close-replying-to").addEventListener("click", () => {
-			replyingTo = null;
-			document.querySelector(".replying-to").remove();
-		});
-	}
 
 	if (document.getElementById("new-category")) document.getElementById("new-category").addEventListener("click", openCreateCategoryModal);
 

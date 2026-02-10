@@ -117,13 +117,27 @@ async def get_typing_users(channel_id: str, server_id: str):
 # --------------------
 CHANNEL_CACHE_LIMIT = 100
 
-async def cache_message(server_id: str, channel_id: str, message: dict):
-    key = f"channel_messages:{server_id}:{channel_id}"
+async def cache_message(server_id: str = None, channel_id: str = None, contact_id: str = None, message: dict = None):
+    """Cache a message for either a channel or contact"""
+    if contact_id:
+        key = f"contact_messages:{contact_id}"
+    elif server_id and channel_id:
+        key = f"channel_messages:{server_id}:{channel_id}"
+    else:
+        raise ValueError("Must provide either contact_id or (server_id and channel_id)")
+    
     await redis_client.rpush(key, json.dumps(message))
     await redis_client.ltrim(key, 0, CHANNEL_CACHE_LIMIT - 1)
 
-async def get_cached_messages(server_id: str, channel_id: str, offset: int = 0, limit: int = 50):
-    key = f"channel_messages:{server_id}:{channel_id}"
+async def get_cached_messages(server_id: str = None, channel_id: str = None, contact_id: str = None, offset: int = 0, limit: int = 50):
+    """Get cached messages for either a channel or contact"""
+    if contact_id:
+        key = f"contact_messages:{contact_id}"
+    elif server_id and channel_id:
+        key = f"channel_messages:{server_id}:{channel_id}"
+    else:
+        return []
+    
     total = await redis_client.llen(key)
     if offset >= total:
         return []
@@ -132,15 +146,22 @@ async def get_cached_messages(server_id: str, channel_id: str, offset: int = 0, 
     cached = await redis_client.lrange(key, start, end)
     return [json.loads(msg) for msg in cached]
 
-async def delete_cached_message(server_id: str, channel_id: str, message_id: str):
-    key = f"channel_messages:{server_id}:{channel_id}"
+async def delete_cached_message(server_id: str = None, channel_id: str = None, contact_id: str = None, message_id: str = None):
+    """Delete a cached message for either a channel or contact"""
+    if contact_id:
+        key = f"contact_messages:{contact_id}"
+    elif server_id and channel_id:
+        key = f"channel_messages:{server_id}:{channel_id}"
+    else:
+        raise ValueError("Must provide either contact_id or (server_id and channel_id)")
+    
     cached = await redis_client.lrange(key, 0, -1)
     for msg in cached:
         data = json.loads(msg)
         if data.get("id") == message_id:
             await redis_client.lrem(key, 0, msg)
             break
-
+        
 async def get_cached_users(server_id: str):
     key = f"server_users:{server_id}"
     cached = await redis_client.lrange(key, 0, -1)

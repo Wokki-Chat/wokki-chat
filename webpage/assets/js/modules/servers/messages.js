@@ -466,3 +466,275 @@ export class MessageCache {
 		return index;
 	}
 }
+
+export class MessageHandler {
+	constructor({ user_id, channel_id = null, server_id = null, access_token, socket, messageContainer, contact_id = null }) {
+		this.user_id = user_id;
+		this.channel_id = channel_id;
+		this.server_id = server_id;
+		this.access_token = access_token;
+		this.socket = socket;
+		this.messageContainer = messageContainer;
+		this.messageCache = new MessageCache();
+		this.messageRenderer = new MessageRenderer({ user_id, channel_id, server_id });
+		this.messageHydrator = new MessageHydrator();
+		this.messageBehaviour = new MessageBehaviour({ user_id, channel_id, server_id, access_token, socket, messageContainer });
+		this.customPlayers = new Map();
+		this.contact_id = contact_id;
+	}
+
+	insertMessageEl(el, insertIndex) {
+		if (insertIndex === messageContainer.children.length) {
+			messageContainer.appendChild(el)
+		} else {
+			messageContainer.insertBefore(el, messageContainer.children[insertIndex])
+		}
+	}
+
+	async handleMessage(msg) {
+		this.messageCache.removeExisting(msg.id);
+
+		const el = await this.messageRenderer.create(msg, usersList);
+		if (!el) return;
+
+		const scrollTopBefore = messageContainer.scrollTop;
+		const scrollHeightBefore = messageContainer.scrollHeight;
+		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
+
+		const insertIndex = this.messageCache.insertIntoCache(msg, el);
+		insertMessageEl(el, insertIndex);
+		this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
+		this.messageBehaviour.attach(el, msg);
+		
+		const hydratePromise = this.messageHydrator.hydrate(el, msg.assets, msg.id).then(() => {
+			if (nearBottom) {
+				requestAnimationFrame(() => {
+					messageContainer.scrollTop = messageContainer.scrollHeight;
+				});
+			}
+		});
+
+		await emojis.replaceEl(el);
+
+		const customPlayer = el.querySelector(".custom-player");
+		if (customPlayer) await initCustomPlayer(customPlayer);
+
+		const replyBtn = el.querySelector("#reply-btn");
+		replyBtn.addEventListener("click", async () => await this.replyMessage(msg.id));
+
+		const deleteBtn = el.querySelector("#delete-btn");
+		if (deleteBtn) {
+			deleteBtn.addEventListener("click", () => {
+				this.socket.emit("delete_message", { access_token: this.access_token, message_id: msg.id, server_id: this.server_id, channel_id: this.channel_id, contact_id: this.contact_id });
+				this.deleteMsg(msg.id);
+			});
+		}
+
+		if (!nearBottom) {
+			const scrollHeightAfter = messageContainer.scrollHeight;
+			messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
+		} else {
+			requestAnimationFrame(() => {
+				messageContainer.scrollTop = messageContainer.scrollHeight;
+			});
+		}
+	}
+	audioLoaded(audio) {
+		return new Promise((resolve) => {
+			if (audio.readyState >= 1) {
+				resolve();
+			} else {
+				audio.addEventListener('loadedmetadata', () => resolve(), { once: true });
+			}
+		});
+	}
+	async initCustomPlayer(el) {
+		const audioSrc = el.dataset.audioSrc;
+		const originalName = el.dataset.originalname;
+
+		if (!audioSrc) return;
+
+		let audio;
+		if (this.customPlayers.has(audioSrc)) {
+			audio = this.customPlayers.get(audioSrc);
+		} else {
+			audio = new Audio(audioSrc);
+			audio.preload = "metadata";
+			this.customPlayers.set(audioSrc, audio);
+		}
+
+		const playPauseBtn = el.querySelector('.play-pause');
+		const seekBar = el.querySelector('.seek-bar');
+		const currentTimeEl = el.querySelector('.current-time');
+		const durationEl = el.querySelector('.duration');
+		const timeBox = el.querySelector('.time-left-current');
+		const downloadBtn = el.querySelector('#download');
+
+		let updateInterval;
+
+		function formatTime(seconds) {
+			const mins = Math.floor(seconds / 60);
+			const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+			return `${mins}:${secs}`;
+		}
+
+		function updateSeekBarProgress() {
+			const val = seekBar.value;
+			const max = seekBar.max || 100;
+			const percentage = (val / max) * 100;
+			seekBar.style.background = `
+				linear-gradient(
+					to right,
+					var(--clr-primary-a0) 0%,
+					var(--clr-primary-a0) ${percentage}%,
+					var(--clr-input-border-bg-dark) ${percentage}%,
+					var(--clr-input-border-bg-dark) 100%
+				)
+			`;
+		}
+
+		await this.audioLoaded(audio);
+
+		seekBar.max = audio.duration;
+		durationEl.textContent = `/ ${formatTime(audio.duration)}`;
+		updateSeekBarProgress();
+
+		playPauseBtn.addEventListener('click', () => {
+			if (audio.paused) {
+				audio.play();
+				playPauseBtn.textContent = 'pause';
+
+				updateInterval = setInterval(() => {
+					seekBar.value = audio.currentTime;
+					currentTimeEl.textContent = formatTime(audio.currentTime);
+					updateSeekBarProgress();
+				}, 250);
+			} else {
+				audio.pause();
+				playPauseBtn.textContent = 'play_arrow';
+				clearInterval(updateInterval);
+			}
+		});
+
+		seekBar.addEventListener('input', () => {
+			audio.currentTime = seekBar.value;
+			currentTimeEl.textContent = formatTime(audio.currentTime);
+			updateSeekBarProgress();
+		});
+
+		downloadBtn.addEventListener('click', () => {
+			const a = document.createElement('a');
+			a.href = audioSrc;
+			a.download = originalName;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+		});
+
+		requestAnimationFrame(() => {
+			const width = timeBox.offsetWidth;
+			timeBox.style.minWidth = `${width}px`;
+		});
+	}
+	deleteMsg(id) {
+		const indexInCache = this.messageCache.delete(id);
+		if (indexInCache === -1) return;
+
+		const nextMsg = this.messageCache.cache[indexInCache];
+		if (!nextMsg) return;
+
+		const nextEl = nextMsg.el;
+		const usernameDateEl = nextEl.querySelector('.username-date');
+		if (usernameDateEl) usernameDateEl.style.display = 'flex';
+
+		const profilePic = nextEl.querySelector('.profile-picture');
+		if (profilePic) {
+			profilePic.style.opacity = '1';
+			profilePic.style.height = '30px';
+		}
+
+		const prevMsg = this.messageCache.cache[indexInCache - 1];
+		if (prevMsg && prevMsg.el && prevMsg.sent_by === nextMsg.el.dataset.sentBy) {
+			const prevTime = new Date(prevMsg.timestamp).getTime();
+			const currTime = new Date(nextMsg.timestamp).getTime();
+			if ((currTime - prevTime) <= 10 * 60 * 1000) {
+				if (!nextEl.querySelector('.message-command') && !nextEl.querySelector('.message-reply')) {
+					nextEl.classList.add('compact');
+				}
+			} else {
+				nextEl.classList.remove('compact');
+			}
+		} else {
+			nextEl.classList.remove('compact');
+		}
+	}
+
+	async replyMessage(id) {
+		if (document.querySelector(".replying-to")) document.querySelector(".replying-to").remove();
+		replyingTo = id;
+		document.getElementById("message-input").focus();
+
+		const { parent_message_text, parent_message_user } = await this.loadParentMessage(id);
+
+		document.querySelector(".input-container-2").insertAdjacentHTML("afterbegin", `
+			<div class="replying-to">
+				<div class="replying-to-username-container">
+				<p>Replying to:</p>
+				<p class="replying-to-username">${parent_message_user}</p> 
+				</div>
+				<span class="material-symbols-rounded close-replying-to" id="close-replying-to">close</span>
+			</div>
+		`);
+
+		document.getElementById("close-replying-to").addEventListener("click", () => {
+			replyingTo = null;
+			document.querySelector(".replying-to").remove();
+		});
+	}
+
+	async loadParentMessage(parent_message_id) {
+		if (!parent_message_id) return { parent_message_text: "message deleted", parent_message_user: "deleted" };
+
+		try {
+			const parentMessageInfo = await this.getMessageById(parent_message_id);
+			if (!parentMessageInfo) {
+			return { parent_message_text: "message deleted", parent_message_user: "deleted" };
+			}
+
+			const parent_message_text = parentMessageInfo.message;
+			const parent_message_user = parentMessageInfo.sender ?? usersList.find(user => user.id == parentMessageInfo.sender_id)?.username ?? "Someone";
+
+			return { parent_message_text, parent_message_user };
+
+		} catch (err) {
+			console.error("Failed to get parent message:", err);
+			return { parent_message_text: "message deleted", parent_message_user: "deleted" };
+		}
+	}
+
+	getMessageById(id) {
+		return new Promise((resolve, reject) => {
+			if (!id) return resolve(null);
+
+			this.socket.emit("get_message_by_id", { access_token: this.access_token, message_id: id, server_id: this.server_id, channel_id: this.channel_id, contact_id: this.contact_id });
+
+			function handler(message) {
+				if (message === null || message === undefined) {
+					this.socket.off("message_by_id", handler);
+					resolve(null);
+					return;
+				}
+
+				this.socket.off("message_by_id", handler);
+				resolve(message);
+			}
+
+			this.socket.on("message_by_id", handler);
+
+			setTimeout(() => {
+				this.socket.off("message_by_id", handler);
+				reject(new Error("Timeout getting message_by_id"));
+			}, 5000);
+		});
+	}
+}

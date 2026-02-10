@@ -220,7 +220,7 @@ async def send_message(sid, metadata, data):
             'command': command,
             'username': command_username
         }
-    await cache_message(server_id, channel_id, message_response)
+    await cache_message(server_id=server_id, channel_id=channel_id, message=message_response)
 
     await sio_instance.sio.emit('new_message', message_response, room=f"server:{server_id}:channel:{channel_id}")
     await addMessageToLogs(f"new_message emitted for server_id: {server_id} and channel_id: {channel_id}", "INFO")
@@ -234,10 +234,14 @@ async def send_message(sid, metadata, data):
 async def get_messages(sid, metadata, data):
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
+    contact_id = data.get('contact_id')
     offset = data.get('offset', 0)
     user_id = metadata.get('account_id')
-
-    if not all([server_id, channel_id]):
+    
+    is_contact = bool(contact_id)
+    is_channel = bool(server_id and channel_id)
+    
+    if not (is_contact or is_channel):
         await addMessageToLogs(f"Missing required fields for get_messages", "INFO")
         await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
@@ -251,7 +255,11 @@ async def get_messages(sid, metadata, data):
 
     limit = 25
     
-    cached_messages = await get_cached_messages(server_id, channel_id, offset, limit)
+    if is_contact:
+        cached_messages = await get_cached_messages(contact_id=contact_id, offset=offset, limit=limit)
+    else:
+        cached_messages = await get_cached_messages(server_id=server_id, channel_id=channel_id, offset=offset, limit=limit)
+    
     if cached_messages:
         await sio_instance.sio.emit('all_messages', cached_messages, to=sid)
     
@@ -259,27 +267,21 @@ async def get_messages(sid, metadata, data):
         try:
             async with config.pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
-                    if not await server_permissions(cur, user_id, server_id, 'view_channels'):
-                        await addMessageToLogs(f"User does not have permission to view channels for get_messages, user id: {user_id}, server id: {server_id}", "INFO")
-                        await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'User does not have permission to view channels'}, to=sid)
-                        return
-
-                    can_read_history = await server_permissions(cur, user_id, server_id, 'read_message_history')
-
-                    await cur.execute(
-                        "SELECT joined_at FROM server_members WHERE server_id = %s AND user_id = %s",
-                        (server_id, user_id)
-                    )
-                    result = await cur.fetchone()
-
-                    if not result:
-                        await addMessageToLogs(f"Server not found for get_messages, server id: {server_id}", "INFO")
-                        await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'Server not found'}, to=sid)
-                        return
-
                     joined_at = None
-                    if not can_read_history:
-                        joined_at_value = result.get('joined_at')
+                    
+                    if is_contact:
+                        await cur.execute(
+                            "SELECT created_at FROM contacts WHERE contact_id = %s AND (user_id = %s OR contact_user_id = %s)",
+                            (contact_id, user_id, user_id)
+                        )
+                        result = await cur.fetchone()
+                        
+                        if not result:
+                            await addMessageToLogs(f"Contact not found for get_messages, contact id: {contact_id}", "INFO")
+                            await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'Contact not found'}, to=sid)
+                            return
+                        
+                        joined_at_value = result.get('created_at')
                         if joined_at_value:
                             if isinstance(joined_at_value, str):
                                 try:
@@ -288,43 +290,71 @@ async def get_messages(sid, metadata, data):
                                     joined_at = None
                             else:
                                 joined_at = joined_at_value
-
-                    if joined_at and not can_read_history:
-                        joined_at_filter_count = " AND created_at >= %s"
-                        count_params = [server_id, channel_id, joined_at]
+                        
+                        can_read_history = True
+                        
                     else:
-                        joined_at_filter_count = ""
-                        count_params = [server_id, channel_id]
+                        if not await server_permissions(cur, user_id, server_id, 'view_channels'):
+                            await addMessageToLogs(f"User does not have permission to view channels for get_messages, user id: {user_id}, server id: {server_id}", "INFO")
+                            await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'User does not have permission to view channels'}, to=sid)
+                            return
+
+                        can_read_history = await server_permissions(cur, user_id, server_id, 'read_message_history')
+
+                        await cur.execute(
+                            "SELECT joined_at FROM server_members WHERE server_id = %s AND user_id = %s",
+                            (server_id, user_id)
+                        )
+                        result = await cur.fetchone()
+
+                        if not result:
+                            await addMessageToLogs(f"Server not found for get_messages, server id: {server_id}", "INFO")
+                            await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'Server not found'}, to=sid)
+                            return
+
+                        if not can_read_history:
+                            joined_at_value = result.get('joined_at')
+                            if joined_at_value:
+                                if isinstance(joined_at_value, str):
+                                    try:
+                                        joined_at = datetime.strptime(joined_at_value, '%Y-%m-%d %H:%M:%S')
+                                    except Exception:
+                                        joined_at = None
+                                else:
+                                    joined_at = joined_at_value
+
+                    if is_contact:
+                        where_clause = "contact_id = %s"
+                        where_params = [contact_id]
+                    else:
+                        where_clause = "server_id = %s AND channel_id = %s"
+                        where_params = [server_id, channel_id]
+                    
+                    if joined_at and not can_read_history:
+                        where_clause += " AND created_at >= %s"
+                        where_params.append(joined_at)
 
                     count_query = f"""
                         SELECT COUNT(*) AS total
                         FROM messages
-                        WHERE server_id = %s
-                        AND channel_id = %s
-                        {joined_at_filter_count}
+                        WHERE {where_clause}
                     """
-                    await cur.execute(count_query, count_params)
+                    await cur.execute(count_query, where_params)
                     total_count = (await cur.fetchone())['total']
 
-                    if joined_at and not can_read_history:
-                        joined_at_filter_msg = " AND m.created_at >= %s"
-                        messages_params = [server_id, channel_id, joined_at, limit, offset]
-                    else:
-                        joined_at_filter_msg = ""
-                        messages_params = [server_id, channel_id, limit, offset]
-
+                    messages_params = where_params + [limit, offset]
                     messages_query = f"""
                         SELECT * FROM (
                             SELECT 
-                                m.id, m.message, m.sent_by, m.sent_by_bot, m.created_at, m.updated_at, m.edited, m.server_id, m.channel_id,
+                                m.id, m.message, m.sent_by, m.sent_by_bot, m.created_at, m.updated_at, m.edited, 
+                                m.server_id, m.channel_id, m.contact_id,
                                 m.parent_message_id, m.assets, m.command, m.command_user_id, m.embed,
                                 u.username, u.nickname AS display_name, u.profile_picture, u.is_staff AS staff,
                                 (m.sent_by_bot IS NOT NULL) AS bot_message
                             FROM messages m
                             LEFT JOIN users u ON m.sent_by = u.id
                             LEFT JOIN bots b ON m.sent_by_bot = b.id
-                            WHERE m.server_id = %s AND m.channel_id = %s
-                            {joined_at_filter_msg}
+                            WHERE {where_clause}
                         ) AS combined_messages
                         ORDER BY created_at DESC
                         LIMIT %s OFFSET %s
@@ -580,7 +610,7 @@ async def delete_message(sid, metadata, data):
                 )
                 await addMessageToLogs(f"Message couldn't be deleted for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
                 return
-            await delete_cached_message(server_id, channel_id, message_id)
+            await delete_cached_message(server_id=server_id, channel_id=channel_id, message_id=message_id)
             await conn.commit()
             await sio_instance.sio.emit(
                 'message_deleted',
