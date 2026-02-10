@@ -271,7 +271,7 @@ async def get_messages(sid, metadata, data):
                     
                     if is_contact:
                         await cur.execute(
-                            "SELECT created_at FROM contacts WHERE contact_id = %s AND (user_id = %s OR contact_user_id = %s)",
+                            "SELECT contact_created_at FROM contacts WHERE contact_id = %s AND (user_id = %s OR contact_user_id = %s)",
                             (contact_id, user_id, user_id)
                         )
                         result = await cur.fetchone()
