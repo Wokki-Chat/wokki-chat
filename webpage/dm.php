@@ -228,13 +228,12 @@ setcookie(
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wokki Chat - <?php echo $dm_info['username'] ?></title>
-    <link rel="stylesheet" href="assets/styles/main.css">
+    <link rel="stylesheet" href="/assets/styles/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/dark.min.css" />
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script src="/assets/js/call_reconnect.js"></script>
     <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
     <script src="https://cdn.wokki20.nl/dynamic/jspt/jspt.js"></script>
 </head>
@@ -244,7 +243,7 @@ setcookie(
     <div class="server-bar">
         <div class="server-bar-dms">
             <a class="server-bar-item active" id="server-bar-item-home" href="/home">
-                <img src="assets/images/monochrome-logo-purple-background.png">
+                <img src="/assets/images/monochrome-logo-purple-background.png">
             </a>
         </div>
         <div class="divider"></div>

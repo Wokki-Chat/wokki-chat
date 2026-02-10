@@ -468,7 +468,7 @@ export class MessageCache {
 }
 
 export class MessageHandler {
-	constructor({ user_id, channel_id = null, server_id = null, access_token, socket, messageContainer, contact_id = null }) {
+	constructor({ user_id, channel_id = null, server_id = null, access_token, socket, messageContainer, contact_id = null}) {
 		this.user_id = user_id;
 		this.channel_id = channel_id;
 		this.server_id = server_id;
@@ -481,6 +481,11 @@ export class MessageHandler {
 		this.messageBehaviour = new MessageBehaviour({ user_id, channel_id, server_id, access_token, socket, messageContainer });
 		this.customPlayers = new Map();
 		this.contact_id = contact_id;
+		this.usersList = [];
+	}
+
+	initU(usersList) {
+		this.usersList = usersList;
 	}
 
 	insertMessageEl(el, insertIndex) {
@@ -494,7 +499,7 @@ export class MessageHandler {
 	async handleMessage(msg) {
 		this.messageCache.removeExisting(msg.id);
 
-		const el = await this.messageRenderer.create(msg, usersList);
+		const el = await this.messageRenderer.create(msg, this.usersList);
 		if (!el) return;
 
 		const scrollTopBefore = messageContainer.scrollTop;
@@ -702,7 +707,7 @@ export class MessageHandler {
 			}
 
 			const parent_message_text = parentMessageInfo.message;
-			const parent_message_user = parentMessageInfo.sender ?? usersList.find(user => user.id == parentMessageInfo.sender_id)?.username ?? "Someone";
+			const parent_message_user = parentMessageInfo.sender ?? this.usersList.find(user => user.id == parentMessageInfo.sender_id)?.username ?? "Someone";
 
 			return { parent_message_text, parent_message_user };
 

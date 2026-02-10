@@ -882,6 +882,7 @@ function initServer() {
 		sanitizer.init(users);
 		mentions.init(users);
 		commandsManager.initU(users);
+		messageHandler.initU(users);
 
 		await Promise.all(users.map(user => renderUser(user)));
 	});
