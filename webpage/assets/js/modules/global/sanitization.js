@@ -141,9 +141,7 @@ export class Sanitizer {
                         processedLines.push('<hr>');
                         i++;
                     } else {
-                        if (line.trim()) {
-                            processedLines.push(`<span>${line}</span>`);
-                        }
+                        processedLines.push(line);
                         i++;
                     }
                 }
