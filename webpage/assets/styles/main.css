@@ -3996,7 +3996,6 @@ ul {
     font-weight: var(--font-weight-semibold);
     color: var(--clr-text-a0);
     user-select: none;
-    margin: 15px;
 }
 
 .profile-picture-preview-wrapper,
@@ -4908,4 +4907,8 @@ input#clr-hue-slider {
 hr {
     border: none;
     border-top: 1px solid var(--clr-input-border-bg-darkest);
+}
+
+.home-content {
+    padding: 15px;
 }

@@ -206,7 +206,7 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
             </div>
         </div>
 
-        <div class="main-content">
+        <div class="main-content home-content">
             <?php echo $maintenanceHtml; ?>
             <h1 class="main-content-title"><span id="main-content-daytime">Good afternoon</span><span id="main-content-username">, <?php echo htmlspecialchars($username, ENT_QUOTES, 'UTF-8'); ?></span></h1>
             
