@@ -127,6 +127,17 @@ export class Sanitizer {
                         }
                         const lis = listItems.map(item => `<li>${item}</li>`).join('');
                         processedLines.push(`<ul>${lis}</ul>`);
+                    } else if (/^\d+\.\s/.test(line)) {
+                        const listItems = [];
+                        while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+                            listItems.push(lines[i].replace(/^\d+\.\s/, '').trim());
+                            i++;
+                        }
+                        const lis = listItems.map(item => `<li>${item}</li>`).join('');
+                        processedLines.push(`<ol>${lis}</ol>`);
+                    } else if (/^-{3,}$/.test(line.trim())) {
+                        processedLines.push('<hr>');
+                        i++;
                     } else {
                         processedLines.push(line);
                         i++;
