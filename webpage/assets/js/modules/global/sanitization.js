@@ -48,14 +48,26 @@ export class Sanitizer {
         return before !== -1 && after !== -1 && before < index && after > index;
     }
 
-    async replaceWithCheck(str = null, regex, replacer) {
+    async replaceWithCheck(str = null, regex, replacer, options = {}) {
+        const { skipInShortcode = true, skipAcrossHtmlTags = false } = options;
+        
         const matches = [...str.matchAll(regex)];
         for (const match of matches.reverse()) {
             const offset = match.index;
-            if (this.isInShortcode(str, offset)) continue;
+            const matchEnd = offset + match[0].length;
+            
+            if (skipInShortcode && this.isInShortcode(str, offset)) continue;
+            
+            if (skipAcrossHtmlTags && this.crossesHtmlBoundary(str, offset, matchEnd)) continue;
+            
             str = str.slice(0, offset) + await replacer(...match, offset) + str.slice(offset + match[0].length);
         }
         return str;
+    }
+
+    crossesHtmlBoundary(str, start, end) {
+        const segment = str.slice(start, end);
+        return /<\/?[a-z][^>]*>/i.test(segment);
     }
 
     async getTimeEl(timeNum, type) {
@@ -119,10 +131,10 @@ export class Sanitizer {
                         const content = line.slice(level + 1).trim();
                         processedLines.push(`<h${level} style="margin: 0;">${content}</h${level}>`);
                         i++;
-                    } else if (line.startsWith('- ')) {
+                    } else if (/^[-*] /.test(line)) {
                         const listItems = [];
-                        while (i < lines.length && lines[i].startsWith('- ')) {
-                            listItems.push(lines[i].replace(/^- /, '').trim());
+                        while (i < lines.length && /^[-*] /.test(lines[i])) {
+                            listItems.push(lines[i].replace(/^[-*] /, '').trim());
                             i++;
                         }
                         const processedItems = await Promise.all(listItems.map(item => this.processInline(item)));
@@ -141,7 +153,9 @@ export class Sanitizer {
                         processedLines.push('<hr>');
                         i++;
                     } else {
-                        processedLines.push(line);
+                        if (line.trim()) {
+                            processedLines.push(`<span>${line}</span>`);
+                        }
                         i++;
                     }
                 }
@@ -150,7 +164,7 @@ export class Sanitizer {
 
                 escaped = await this.replaceWithCheck(escaped, /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, async (match, linkText, url) => {
                     return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${linkText}</a>`;
-                });
+                }, { skipAcrossHtmlTags: true });
 
                 escaped = await this.replaceWithCheck(escaped, /(?<!["'>])(https?:\/\/[^\s<]+)/g, async (url) => {
                     if (!url.startsWith('https://open.spotify.com/track/') && !url.startsWith('https://chat.wokki20.nl/invite/')) {
@@ -159,15 +173,15 @@ export class Sanitizer {
                     return url;
                 });
 
-                escaped = await this.replaceWithCheck(escaped, /(?<!\\)~~([\s\S]+?)~~/g, async (match, content) => `<del>${content}</del>`);
-                escaped = await this.replaceWithCheck(escaped, /(?<!\\)`([^`\n]+)`/g, async (match, code) => `<code>${code}</code>`);
+                escaped = await this.replaceWithCheck(escaped, /(?<!\\)~~([\s\S]+?)~~/g, async (match, content) => `<del>${content}</del>`, { skipAcrossHtmlTags: true });
+                escaped = await this.replaceWithCheck(escaped, /(?<!\\)`([^`\n]+)`/g, async (match, code) => `<code>${code}</code>`, { skipAcrossHtmlTags: true });
                 
                 escaped = await this.replaceWithCheck(escaped, /(?<!\\)\*\*(?!\*)([\s\S]+?)\*\*/g, async (match, content, offset) => {
                     const before = escaped[offset - 1] || ' ';
                     const after = escaped[offset + match.length] || ' ';
                     if (/\w/.test(before) && /\w/.test(after)) return match;
                     return `<strong>${content}</strong>`;
-                });
+                }, { skipAcrossHtmlTags: true });
 
                 escaped = await this.replaceWithCheck(escaped, /(?<!\\)(\*|_)([\s\S]+?)\1/g, async (match, wrap, content, offset) => {
                     const before = escaped[offset - 1] || ' ';
@@ -175,12 +189,12 @@ export class Sanitizer {
                     if (/\w/.test(before) && /\w/.test(after)) return match;
                     if (content.includes('**')) return match;
                     return `<em>${content}</em>`;
-                });
+                }, { skipAcrossHtmlTags: true });
 
                 escaped = await this.replaceWithCheck(escaped, /(^|\n)((?:&gt; ?.*(?:\n|$))+)/g, async (match, before, quoteBlock) => {
                     const lines = quoteBlock.trim().split('\n').map(line => line.replace(/^&gt; ?/, '')).join('<br>');
                     return `${before}<div class="quote">${lines}</div>`;
-                });
+                }, { skipAcrossHtmlTags: true });
 
                 escaped = await this.replaceWithCheck(escaped, /#([^\s#<]+)/g, async (match, channelName) => {
                     if (!Array.isArray(this.channels)) return match;
@@ -190,7 +204,7 @@ export class Sanitizer {
                         return `<a href="${url}" rel="noopener noreferrer" class="channel-link">#${channelName}</a>`;
                     }
                     return match;
-                });
+                }, { skipAcrossHtmlTags: true });
 
                 escaped = await this.replaceWithCheck(escaped, /&lt;@([^&]+)&gt;/g, async (match, username) => {
                     const cleanUsername = username.trim();
@@ -203,13 +217,13 @@ export class Sanitizer {
                         return `<a href="${url}" rel="noopener noreferrer" class="user-link ${user.id == this.user_id ? "self" : ""}" data-user-id="${user.id}">@${cleanUsername}</a>`;
                     }
                     return match;
-                });
+                }, { skipAcrossHtmlTags: true });
 
                 escaped = await this.replaceWithCheck(escaped, /&lt;t:(\d+):(\w+)&gt;/g, async (match, timeNumber, type) => {
                     return await this.getTimeEl(timeNumber, type);
-                });
+                }, { skipAcrossHtmlTags: true });
 
-                escaped = escaped.replace(/\n/g, '');
+                escaped = escaped.replace(/\n/g, '', { skipAcrossHtmlTags: true });
 
                 escaped = await this.replaceWithCheck(escaped, /(?<!["'>])(https?:\/\/chat\.wokki20\.nl\/invite\/[^\s)]+)/g, async (url) => {
                     const inviteId = url.split("/").pop();
@@ -221,7 +235,7 @@ export class Sanitizer {
                         <p>Loading invite…</p>
                     </div>
                     `;
-                });
+                }, { skipAcrossHtmlTags: true });
 
                 escaped = await this.replaceWithCheck(escaped, /(?<!["'>])(https?:\/\/open\.spotify\.com\/track\/[0-9A-Za-z]+)(\?[^\s]*)?/g, async (url) => {
                     const trackId = url.split("/").pop().split("?")[0];
@@ -233,9 +247,9 @@ export class Sanitizer {
                         <p>Loading Spotify Embed…</p>
                     </div>
                     `;
-                });
+                }, { skipAcrossHtmlTags: true });
 
-                escaped = escaped.replace(/\\([*_\-~`\\[\](){}])/g, '$1');
+                escaped = escaped.replace(/\\([*_\-~`\\[\](){}])/g, '$1', { skipAcrossHtmlTags: true });
 
                 return escaped;
             }
