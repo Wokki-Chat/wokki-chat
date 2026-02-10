@@ -140,11 +140,8 @@ export class Sanitizer {
                         i++;
                     } else {
                         if (line.trim()) {
-                            processedLines.push(`<p style="margin: 0;">${line}</p>`);
-                        } else {
-                            processedLines.push('');
+                            processedLines.push(`<span>${line}</span>`);
                         }
-                        processedLines.push(line);
                         i++;
                     }
                 }
