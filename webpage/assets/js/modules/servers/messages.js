@@ -483,6 +483,7 @@ export class MessageHandler {
 		this.customPlayers = new Map();
 		this.contact_id = contact_id;
 		this.usersList = [];
+		this.replyingTo = null;
 	}
 
 	initU(usersList) {
@@ -677,7 +678,7 @@ export class MessageHandler {
 
 	async replyMessage(id) {
 		if (document.querySelector(".replying-to")) document.querySelector(".replying-to").remove();
-		replyingTo = id;
+		this.replyingTo = id;
 		document.getElementById("message-input").focus();
 
 		const { parent_message_text, parent_message_user } = await this.loadParentMessage(id);
@@ -693,7 +694,7 @@ export class MessageHandler {
 		`);
 
 		document.getElementById("close-replying-to").addEventListener("click", () => {
-			replyingTo = null;
+			this.replyingTo = null;
 			document.querySelector(".replying-to").remove();
 		});
 	}
