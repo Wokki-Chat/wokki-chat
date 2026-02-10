@@ -255,7 +255,6 @@ function formatPremiumExpiration($timestamp) {
             </div>
         </div>
     <?php endif; ?>
-    <script src="/assets/js/create_server.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/assets/js/friends.js" type="module"></script>
     <script src="/assets/js/globalFunctions.js"></script>
