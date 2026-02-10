@@ -507,7 +507,7 @@ export class MessageHandler {
 		const nearBottom = scrollHeightBefore - scrollTopBefore - this.messageContainer.clientHeight <= 10;
 
 		const insertIndex = this.messageCache.insertIntoCache(msg, el);
-		insertMessageEl(el, insertIndex);
+		this.insertMessageEl(el, insertIndex);
 		this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
 		this.messageBehaviour.attach(el, msg);
 		
