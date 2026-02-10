@@ -3,6 +3,7 @@
 import ReactionsRender from "./reactions.js";
 import { Sanitizer } from "../global/sanitization.js";
 import { UserPopupManager } from "../users/popups.js";
+import emojis from "../../emojis.js";
 
 export class MessageRenderer {
 	constructor({ user_id, channels, server_id }) {
@@ -522,7 +523,7 @@ export class MessageHandler {
 		await emojis.replaceEl(el);
 
 		const customPlayer = el.querySelector(".custom-player");
-		if (customPlayer) await initCustomPlayer(customPlayer);
+		if (customPlayer) await this.initCustomPlayer(customPlayer);
 
 		const replyBtn = el.querySelector("#reply-btn");
 		replyBtn.addEventListener("click", async () => await this.replyMessage(msg.id));
