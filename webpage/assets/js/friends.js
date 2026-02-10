@@ -1,5 +1,7 @@
+import { Sanitizer } from "./modules/global/sanitization";
 window.addEventListener("load", () => {
 
+const sanitizer = new Sanitizer();
 
 const addFriendBtn = document.getElementById("add-friend-btn");
 addFriendBtn.addEventListener("click", openAddFriendModal);
@@ -22,9 +24,9 @@ socket.on("pending_friend_requests", (requests) => {
     requests.friend_requests.forEach(request => {
         const requestEl = `
             <div class="request-item" data-id="${request.user_id}">
-                <img src="${request.profile_picture}" alt="tsgamer" class="request-pfp">
+                <img src="${request.profile_picture}" class="request-pfp">
                 <div class="request-item-options-username">
-                    <span class="request-username">${sanitize(request.username)}</span>
+                    <span class="request-username">${sanitizer.sanitize(request.username)}</span>
                     <div class="request-item-options">
                         <span class="request-accept">Accept</span>
                         <span class="request-decline">Decline</span>
@@ -69,9 +71,9 @@ socket.on("outgoing_friend_requests", (requests) => {
     requests.outgoing_friend_requests.forEach(request => {
         const requestEl = `
             <div class="request-item" data-id="${request.user_id}">
-                <img src="${request.profile_picture}" alt="tsgamer" class="request-pfp">
+                <img src="${request.profile_picture}" class="request-pfp">
                 <div class="request-item-options-username">
-                    <span class="request-username">${sanitize(request.username)}</span>
+                    <span class="request-username">${sanitizer.sanitize(request.username)}</span>
                     <span class="request-cancel">Cancel</span>
                 </div>
             </div>
@@ -102,9 +104,9 @@ socket.on("friend_request_received", (request) => {
 
     const requestEl = `
         <div class="request-item" data-id="${request.user_id}">
-            <img src="${request.profile_picture}" alt="tsgamer" class="request-pfp">
+            <img src="${request.profile_picture}" class="request-pfp">
             <div class="request-item-options-username">
-                <span class="request-username">${sanitize(request.username)}</span>
+                <span class="request-username">${sanitizer.sanitize(request.username)}</span>
                 <div class="request-item-options">
                     <span class="request-accept">Accept</span>
                     <span class="request-decline">Decline</span>
