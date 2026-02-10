@@ -541,7 +541,7 @@ export class MessageHandler {
 			this.messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
 		} else {
 			requestAnimationFrame(() => {
-				this.messageContainer.scrollTop = messageContainer.scrollHeight;
+				this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
 			});
 		}
 	}
