@@ -727,19 +727,19 @@ export class MessageHandler {
 
 			function handler(message) {
 				if (message === null || message === undefined) {
-					this.socket.off("message_by_id", handler);
+					this.socket.on("message_by_id", handler);
 					resolve(null);
 					return;
 				}
 
-				this.socket.off("message_by_id", handler);
+				this.socket.on("message_by_id", handler);
 				resolve(message);
 			}
 
 			this.socket.on("message_by_id", handler);
 
 			setTimeout(() => {
-				this.socket.off("message_by_id", handler);
+				this.socket.on("message_by_id", handler);
 				reject(new Error("Timeout getting message_by_id"));
 			}, 5000);
 		});
