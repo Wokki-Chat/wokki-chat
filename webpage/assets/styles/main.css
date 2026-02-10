@@ -4699,15 +4699,14 @@ input#clr-hue-slider {
 
 .popup-container#update_popup .popup {
     max-width: 700px !important;
-    max-height: 620px !important;
-    overflow: hidden !important;
 }
 
-@media screen and (max-width: 710px) {
-    .popup-container#update_popup .popup {
-        max-width: unset !important;
-        max-height: calc(100% - 6px) !important;
-    }
+.popup-container#update_popup .popup .popup-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 600px !important;
+    overflow-y: auto !important;
 }
 
 .popup-container#update_popup .popup .popup-content div {
@@ -4716,7 +4715,16 @@ input#clr-hue-slider {
     word-break: break-word;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
-    overflow-y: auto;
+}
+
+@media screen and (max-width: 710px) {
+    .popup-container#update_popup .popup {
+        max-width: unset !important;
+        max-height: calc(100% - 6px) !important;
+    }
+    .popup-container#update_popup .popup .popup-content {
+        max-height: unset !important;
+    }
 }
 
 .ai-disclaimer {

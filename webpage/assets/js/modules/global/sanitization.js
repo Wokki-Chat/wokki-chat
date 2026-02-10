@@ -125,7 +125,8 @@ export class Sanitizer {
                             listItems.push(lines[i].replace(/^- /, '').trim());
                             i++;
                         }
-                        const lis = listItems.map(item => `<li>${item}</li>`).join('');
+                        const processedItems = await Promise.all(listItems.map(item => this.processInline(item)));
+                        const lis = processedItems.map(item => `<li>${item}</li>`).join('');
                         processedLines.push(`<ul>${lis}</ul>`);
                     } else if (/^\d+\.\s/.test(line)) {
                         const listItems = [];
@@ -133,7 +134,8 @@ export class Sanitizer {
                             listItems.push(lines[i].replace(/^\d+\.\s/, '').trim());
                             i++;
                         }
-                        const lis = listItems.map(item => `<li>${item}</li>`).join('');
+                        const processedItems = await Promise.all(listItems.map(item => this.processInline(item)));
+                        const lis = processedItems.map(item => `<li>${item}</li>`).join('');
                         processedLines.push(`<ol>${lis}</ol>`);
                     } else if (/^-{3,}$/.test(line.trim())) {
                         processedLines.push('<hr>');
@@ -246,6 +248,36 @@ export class Sanitizer {
         setTimeout(() => { hljs.highlightAll(); }, 0);
 
         return result.trim();
+    }
+
+    async processInline(text) {
+        text = await this.replaceWithCheck(text, /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, async (match, linkText, url) => {
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${linkText}</a>`;
+        });
+        text = await this.replaceWithCheck(text, /(?<!\\)~~([\s\S]+?)~~/g, async (match, content) => `<del>${content}</del>`);
+        text = await this.replaceWithCheck(text, /(?<!\\)`([^`\n]+)`/g, async (match, code) => `<code>${code}</code>`);
+        text = await this.replaceWithCheck(text, /(?<!\\)\*\*(?!\*)([\s\S]+?)\*\*/g, async (match, content) => {
+            return `<strong>${content}</strong>`;
+        });
+        text = await this.replaceWithCheck(text, /(?<!\\)(\*|_)([\s\S]+?)\1/g, async (match, wrap, content) => {
+            if (content.includes('**')) return match;
+            return `<em>${content}</em>`;
+        });
+        text = await this.replaceWithCheck(text, /&lt;@([^&]+)&gt;/g, async (match, username) => {
+            const cleanUsername = username.trim();
+            if (cleanUsername.toLowerCase() === "everyone") {
+                return `<a href="#" rel="noopener noreferrer" class="user-link everyone self" data-user-id="everyone">@everyone</a>`;
+            }
+            const user = this.users_list.find(u => u.username.toLowerCase() === cleanUsername.toLowerCase());
+            if (user) {
+                const url = `https://chat.wokki20.nl/profile/@${encodeURIComponent(cleanUsername)}`;
+                return `<a href="${url}" rel="noopener noreferrer" class="user-link ${user.id == this.user_id ? "self" : ""}" data-user-id="${user.id}">@${cleanUsername}</a>`;
+            }
+            return match;
+        });
+        text = text.replace(/\\([*_\-~`\\[\](){}])/g, '$1');
+
+        return text;
     }
 
     async sanitizeMrk(text) {
