@@ -275,16 +275,6 @@ async def get_messages(sid, metadata, data):
                             await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'User is not in contact'}, to=sid)
                             return
                         
-                        joined_at_value = result.get('created_at')
-                        if joined_at_value:
-                            if isinstance(joined_at_value, str):
-                                try:
-                                    joined_at = datetime.strptime(joined_at_value, '%Y-%m-%d %H:%M:%S')
-                                except Exception:
-                                    joined_at = None
-                            else:
-                                joined_at = joined_at_value
-                        
                         can_read_history = True
                         
                     else:
