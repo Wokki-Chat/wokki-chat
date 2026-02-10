@@ -66,6 +66,14 @@ async def friends(cur, user_id, friend_id):
            AND COUNT(DISTINCT user_id) = 2
     """, (user_id, friend_id))
     return await cur.fetchone() is not None
+
+async def inContact(cur, user_id, contact_id):
+    await cur.execute("""
+        SELECT contact_id
+        FROM contact_users
+        WHERE user_id = %s AND contact_id = %s
+    """, (user_id, contact_id))
+    return await cur.fetchone() is not None
    
 @auth_required(server_required=False, allow_bots=False)
 async def accept_friend_request(sid, metadata, data):

@@ -3,6 +3,7 @@ import json
 from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, get_cached_users, cache_users, delete_cached_message, get_command_id
 from server.helpers.user_helpers import get_user_premium_status, auth_required
 from server.helpers.server_helpers import server_permissions, is_user_in_server, is_bot_in_server
+from server.helpers.friend_helpers import inContact
 import aiomysql
 import uuid
 import server.sio_instance as sio_instance
@@ -270,15 +271,8 @@ async def get_messages(sid, metadata, data):
                     joined_at = None
                     
                     if is_contact:
-                        await cur.execute(
-                            "SELECT contact_created_at FROM contacts WHERE contact_id = %s AND (user_id = %s OR contact_user_id = %s)",
-                            (contact_id, user_id, user_id)
-                        )
-                        result = await cur.fetchone()
-                        
-                        if not result:
-                            await addMessageToLogs(f"Contact not found for get_messages, contact id: {contact_id}", "INFO")
-                            await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'Contact not found'}, to=sid)
+                        if not await inContact(cur, user_id, contact_id):
+                            await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'User is not in contact'}, to=sid)
                             return
                         
                         joined_at_value = result.get('created_at')
