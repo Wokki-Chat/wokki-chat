@@ -99,7 +99,7 @@ def auth_required(server_required = True, allow_bots = True): # problem: it does
                                 'error', {'success': False, 'error': 'Invalid access token'}, to=sid
                             )
                             return
-                        if server_required and not await is_user_in_server(cur, user_id, server_id):
+                        if server_required and server_id and not await is_user_in_server(cur, user_id, server_id) :
                             await addMessageToLogs(f"User not in server, user id: {user_id}, server id: {server_id}", "INFO")
                             await sio_instance.sio.emit(
                                 'error', {'success': False, 'error': 'User not in server'}, to=sid

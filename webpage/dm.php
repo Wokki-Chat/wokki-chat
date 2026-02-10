@@ -288,7 +288,7 @@ setcookie(
                     $encodedUsername = urlencode($friend['username']);
 
                     echo '
-                    <a class="info-profile '.($friend['id'] == $dm_info['id'] ? 'active' : '').'" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
+                    <a class="info-profile '.($friend['id'] == $dm_id ? 'active' : '').'" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
                         <div class="self-info-profile-status" data-user-id="'.$friend['id'].'">
                             <img class="self-info-profile-picture" src="'.$friend['profile_picture'].'" />
                             <div class="self-info-status-circle-outer">
