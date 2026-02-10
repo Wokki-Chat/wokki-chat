@@ -56,38 +56,27 @@ $serverResult = $serverStmt->get_result();
 $serverStmt->close();
 
 $friendsStmt = $mysqli->prepare("
-    SELECT f1.friend_id
-    FROM friends f1
-    JOIN friends f2 ON f1.friend_id = f2.user_id AND f2.friend_id = f1.user_id
-    WHERE f1.user_id = ?
+    SELECT u.id, u.username, u.profile_picture, u.status, u.premium
+    FROM contact_users cu1
+    JOIN contact_users cu2 ON cu1.contact_id = cu2.contact_id AND cu2.user_id != cu1.user_id
+    JOIN users u ON cu2.user_id = u.id
+    LEFT JOIN contact_requests cr ON cu1.contact_id = cr.contact_id
+    WHERE cu1.user_id = ? AND cr.contact_id IS NULL
 ");
 $friendsStmt->bind_param("i", $user_id);
 $friendsStmt->execute();
 $friendsResult = $friendsStmt->get_result();
 
 $friendsList = [];
-
 while ($row = $friendsResult->fetch_assoc()) {
-    $friendId = $row['friend_id'];
-
-    $userStmt = $mysqli->prepare("SELECT username, profile_picture, status, premium FROM users WHERE id = ?");
-    $userStmt->bind_param("i", $friendId);
-    $userStmt->execute();
-    $userResult = $userStmt->get_result();
-
-    if ($userData = $userResult->fetch_assoc()) {
-        $friendsList[] = [
-            'id' => $friendId,
-            'username' => $userData['username'],
-            'profile_picture' => $userData['profile_picture'],
-            'status' => $userData['status'], 
-            'premium' => $userData['premium']
-        ];
-    }
-
-    $userStmt->close();
+    $friendsList[] = [
+        'id' => $row['id'],
+        'username' => $row['username'],
+        'profile_picture' => $row['profile_picture'],
+        'status' => $row['status'], 
+        'premium' => $row['premium']
+    ];
 }
-
 $friendsStmt->close();
 
 $premium_popup = false;
