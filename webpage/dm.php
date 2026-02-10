@@ -273,7 +273,7 @@ setcookie(
     <main id="app">
         <div class="channel-bar">
             <div class="dm-users">
-                <a class="info-profile active" href="/home">
+                <a class="info-profile" href="/home">
                     <span class="material-symbols-rounded channel-bar-channel-icon">home</span>
                     <p class="channel-bar-channel-name">Home</p>
                 </a>
@@ -288,7 +288,7 @@ setcookie(
                     $encodedUsername = urlencode($friend['username']);
 
                     echo '
-                    <a class="info-profile" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
+                    <a class="info-profile '.($friend['id'] == $dm_info['id'] ? 'active' : '').'" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
                         <div class="self-info-profile-status" data-user-id="'.$friend['id'].'">
                             <img class="self-info-profile-picture" src="'.$friend['profile_picture'].'" />
                             <div class="self-info-status-circle-outer">
