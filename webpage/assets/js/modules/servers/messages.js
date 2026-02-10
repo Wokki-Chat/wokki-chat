@@ -538,10 +538,10 @@ export class MessageHandler {
 
 		if (!nearBottom) {
 			const scrollHeightAfter = messageContainer.scrollHeight;
-			messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
+			this.messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
 		} else {
 			requestAnimationFrame(() => {
-				messageContainer.scrollTop = messageContainer.scrollHeight;
+				this.messageContainer.scrollTop = messageContainer.scrollHeight;
 			});
 		}
 	}
