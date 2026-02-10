@@ -4738,6 +4738,14 @@ input#clr-hue-slider {
     gap: 15px;
 }
 
+.popup-container#user-profile-popup .user-info-profile-popup-static .user-info-profile-popup-profile-picture-username-status {
+    height: max-content !important;
+}
+
+.popup-container#user-profile-popup .user-info-profile-popup-static .dm-info-container {
+    height: 100% !important;
+}
+
 .popup-container#user-profile-popup .popup {
     min-width: 520px;
 }
