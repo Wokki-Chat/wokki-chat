@@ -537,7 +537,7 @@ export class MessageHandler {
 		}
 
 		if (!nearBottom) {
-			const scrollHeightAfter = messageContainer.scrollHeight;
+			const scrollHeightAfter = this.messageContainer.scrollHeight;
 			this.messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
 		} else {
 			requestAnimationFrame(() => {
