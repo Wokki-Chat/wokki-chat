@@ -377,15 +377,6 @@ async def refresh_spotify_token(refresh_token):
             valid_until = datetime.now(timezone.utc) + timedelta(seconds=expires_in) if expires_in else None
             return new_access_token, new_refresh_token, valid_until
 
-async def is_user_friends_with(cur, user_id, friend_id):
-    await cur.execute("SELECT 1 FROM friends WHERE user_id = %s AND friend_id = %s LIMIT 1", (user_id, friend_id))
-    row1 = await cur.fetchone()
-    
-    await cur.execute("SELECT 1 FROM friends WHERE user_id = %s AND friend_id = %s LIMIT 1", (friend_id, user_id))
-    row2 = await cur.fetchone()
-    
-    return row1 is not None and row2 is not None
-
 async def get_user_info(sid, data):
     access_token = data.get('access_token')
     bot_token = data.get('bot_token')

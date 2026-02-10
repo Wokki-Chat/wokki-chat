@@ -420,12 +420,6 @@ function initServer() {
 		profile_picture: "/uploads/profile-pictures/default-profile.png",
 		commands: [
 			{
-				command: "/help",
-				options: "[]",
-				description: "Show all available commands",
-				builtIn: true
-			},
-			{
 				command: "/update-info",
 				options: "[]",
 				description: "Show update and version information",

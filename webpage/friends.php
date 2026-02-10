@@ -49,38 +49,27 @@ $serverResult = $serverStmt->get_result();
 $serverStmt->close();
 
 $friendsStmt = $mysqli->prepare("
-    SELECT f1.friend_id
-    FROM friends f1
-    JOIN friends f2 ON f1.friend_id = f2.user_id AND f2.friend_id = f1.user_id
-    WHERE f1.user_id = ?
+    SELECT u.id, u.username, u.profile_picture, u.status, u.premium
+    FROM contact_users cu1
+    JOIN contact_users cu2 ON cu1.contact_id = cu2.contact_id AND cu2.user_id != cu1.user_id
+    JOIN users u ON cu2.user_id = u.id
+    LEFT JOIN contact_requests cr ON cu1.contact_id = cr.contact_id
+    WHERE cu1.user_id = ? AND cr.contact_id IS NULL
 ");
 $friendsStmt->bind_param("i", $user_id);
 $friendsStmt->execute();
 $friendsResult = $friendsStmt->get_result();
 
 $friendsList = [];
-
 while ($row = $friendsResult->fetch_assoc()) {
-    $friendId = $row['friend_id'];
-
-    $userStmt = $mysqli->prepare("SELECT username, profile_picture, status, premium FROM users WHERE id = ?");
-    $userStmt->bind_param("i", $friendId);
-    $userStmt->execute();
-    $userResult = $userStmt->get_result();
-
-    if ($userData = $userResult->fetch_assoc()) {
-        $friendsList[] = [
-            'id' => $friendId,
-            'username' => $userData['username'],
-            'profile_picture' => $userData['profile_picture'],
-            'status' => $userData['status'], 
-            'premium' => $userData['premium']
-        ];
-    }
-
-    $userStmt->close();
+    $friendsList[] = [
+        'id' => $row['id'],
+        'username' => $row['username'],
+        'profile_picture' => $row['profile_picture'],
+        'status' => $row['status'], 
+        'premium' => $row['premium']
+    ];
 }
-
 $friendsStmt->close();
 
 $premium_popup = false;
@@ -93,7 +82,6 @@ if ($premium && !$premium_know && ($premium_expires_at > time() || $premium_expi
     $stmt->close();
 
     $premium_popup = true;
-
 }
 
 $premium_active = $premium && ($premium_expires_at > time() || $premium_expires_at === null);
@@ -125,7 +113,7 @@ function formatPremiumExpiration($timestamp) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>wokki chat</title>
+    <title>Wokki Chat - Friends</title>
     <link rel="stylesheet" href="assets/styles/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
