@@ -162,7 +162,7 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
     <main id="app">
         <div class="channel-bar">
             <div class="dm-users">
-                <a class="info-profile" href="/home">
+                <a class="info-profile active" href="/home">
                     <span class="material-symbols-rounded channel-bar-channel-icon">home</span>
                     <p class="channel-bar-channel-name">Home</p>
                 </a>
