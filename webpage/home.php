@@ -162,9 +162,9 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
     <main id="app">
         <div class="channel-bar">
             <div class="dm-users">
-                <a class="info-profile" href="/friends">
-                    <span class="material-symbols-rounded channel-bar-channel-icon">group</span>
-                    <p class="channel-bar-channel-name">friends</p>
+                <a class="info-profile" href="/home">
+                    <span class="material-symbols-rounded channel-bar-channel-icon">home</span>
+                    <p class="channel-bar-channel-name">Home</p>
                 </a>
                 <?php
                 foreach ($friendsList as $friend) {
@@ -177,7 +177,7 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
                     $encodedUsername = urlencode($friend['username']);
 
                     echo '
-                    <div class="info-profile" data-user-id="'.$friend['id'].'" onclick="window.location.href = \'/dm/@'.$encodedUsername.'\'">
+                    <a class="info-profile" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
                         <div class="self-info-profile-status" data-user-id="'.$friend['id'].'">
                             <img class="self-info-profile-picture" src="'.$friend['profile_picture'].'" />
                             <div class="self-info-status-circle-outer">
@@ -190,7 +190,7 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
                             </div>
                             <p class="self-info-status">'.$capitalizedStatus.'</p>
                         </div>
-                    </div>';
+                    </a>';
                 }
                 ?>
 
@@ -200,13 +200,30 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
         <div class="top-bar">
             <div class="top-bar-left">
                 <span class="material-symbols-rounded top-bar-menu" id="top-bar-menu">menu</span>
-                
+            </div>
+            <div class="top-bar-item">
+                <button class="button-primary-filled" id="add-friend-btn">Add Friend</button>
             </div>
         </div>
 
         <div class="main-content">
             <?php echo $maintenanceHtml; ?>
             <h1 class="main-content-title"><span id="main-content-daytime">Good afternoon</span><span id="main-content-username">, <?php echo htmlspecialchars($username, ENT_QUOTES, 'UTF-8'); ?></span></h1>
+            
+            <div class="pending-friend-requests">
+                <p class="pending-friend-requests-title">Pending Friend Requests</p>
+                <div class="pending-friend-requests-list" id="pending-friend-requests">
+                    <p>No pending friend requests</p>
+                </div>
+
+            </div>
+            <br>
+            <div class="outgoing-friend-requests">
+                <p class="outgoing-friend-requests-title">Outgoing Friend Requests</p>
+                <div class="outgoing-friend-requests-list" id="outgoing-friend-requests">
+                    <p>No outgoing friend requests</p>
+                </div>
+            </div>
         </div>
 
         <div class="users">
