@@ -487,7 +487,6 @@ export class MessageHandler {
 		this.sanitizer = new Sanitizer(this.user_id, null, null);
 		this.textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
 		this.textarea = textarea;
-		this.currentFloatingPlayer = null;
 	}
 
 	initU(usersList) {
@@ -559,210 +558,6 @@ export class MessageHandler {
 			}
 		});
 	}
-
-	getSnapPositions() {
-		const padding = 20;
-		const playerWidth = 320;
-		const playerHeight = 80;
-		
-		const viewportWidth = window.innerWidth;
-		const viewportHeight = window.innerHeight;
-		
-		return {
-			'top-left': { x: padding, y: padding },
-			'top-center': { x: (viewportWidth - playerWidth) / 2, y: padding },
-			'top-right': { x: viewportWidth - playerWidth - padding, y: padding },
-			'center-left': { x: padding, y: (viewportHeight - playerHeight) / 2 },
-			'center-right': { x: viewportWidth - playerWidth - padding, y: (viewportHeight - playerHeight) / 2 },
-			'bottom-left': { x: padding, y: viewportHeight - playerHeight - padding },
-			'bottom-center': { x: (viewportWidth - playerWidth) / 2, y: viewportHeight - playerHeight - padding },
-			'bottom-right': { x: viewportWidth - playerWidth - padding, y: viewportHeight - playerHeight - padding }
-		};
-	}
-
-	findClosestSnapPosition(x, y) {
-		const positions = this.getSnapPositions();
-		let closest = null;
-		let minDistance = Infinity;
-		
-		for (const [name, pos] of Object.entries(positions)) {
-			const distance = Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2));
-			if (distance < minDistance) {
-				minDistance = distance;
-				closest = { name, ...pos };
-			}
-		}
-		
-		return closest;
-	}
-
-	stopAndRemoveFloatingPlayer() {
-		if (!this.currentFloatingPlayer) return;
-		
-		const audioSrc = this.currentFloatingPlayer.dataset.audioSrc;
-		const audio = this.customPlayers.get(audioSrc);
-		
-		if (audio) {
-			audio.pause();
-			audio.currentTime = 0;
-		}
-		
-		this.currentFloatingPlayer.remove();
-		this.currentFloatingPlayer = null;
-	}
-
-	makePlayerFloating(el, audioSrc) {
-		if (el.classList.contains('floating-player')) return;
-		
-		this.stopAndRemoveFloatingPlayer();
-		
-		el.dataset.originalPage = window.location.pathname;
-		
-		const originalParent = el.parentElement;
-		const originalIndex = Array.from(originalParent.children).indexOf(el);
-		el.dataset.originalParentClass = originalParent.className;
-		el.dataset.originalParentTag = originalParent.tagName;
-		el.dataset.originalIndex = originalIndex;
-		
-		el.classList.add('floating-player');
-		el.style.position = 'fixed';
-		el.style.zIndex = '9999';
-		el.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
-		el.style.borderRadius = '12px';
-		el.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-		el.style.cursor = 'move';
-		
-		const snapPos = this.getSnapPositions()['bottom-right'];
-		el.style.left = `${snapPos.x}px`;
-		el.style.top = `${snapPos.y}px`;
-		
-		this.attachDragBehavior(el);
-		
-		document.body.appendChild(el);
-		
-		this.currentFloatingPlayer = el;
-	}
-
-	restorePlayerToOriginal(el) {
-		if (!el) return;
-		
-		el.classList.remove('floating-player');
-		el.style.position = '';
-		el.style.zIndex = '';
-		el.style.boxShadow = '';
-		el.style.borderRadius = '';
-		el.style.transition = '';
-		el.style.cursor = '';
-		el.style.left = '';
-		el.style.top = '';
-		
-		const originalParentClass = el.dataset.originalParentClass;
-		const originalParentTag = el.dataset.originalParentTag;
-		const originalIndex = parseInt(el.dataset.originalIndex);
-		
-		const newParentSelector = originalParentClass 
-			? `.${originalParentClass.split(' ').join('.')}`
-			: originalParentTag;
-		
-		const potentialParents = document.querySelectorAll(newParentSelector);
-		let targetParent = potentialParents[0];
-		
-		if (targetParent) {
-			const children = Array.from(targetParent.children);
-			if (originalIndex >= children.length) {
-				targetParent.appendChild(el);
-			} else {
-				targetParent.insertBefore(el, children[originalIndex]);
-			}
-		}
-		
-		delete el.dataset.originalPage;
-		delete el.dataset.originalParentClass;
-		delete el.dataset.originalParentTag;
-		delete el.dataset.originalIndex;
-		
-		if (this.currentFloatingPlayer === el) {
-			this.currentFloatingPlayer = null;
-		}
-	}
-
-	attachDragBehavior(el) {
-		let isDragging = false;
-		let startX, startY, initialLeft, initialTop;
-		
-		const onMouseDown = (e) => {
-			if (e.target.closest('button, input[type="range"]')) return;
-			
-			isDragging = true;
-			startX = e.clientX;
-			startY = e.clientY;
-			initialLeft = el.offsetLeft;
-			initialTop = el.offsetTop;
-			
-			el.style.transition = 'none';
-			el.style.cursor = 'grabbing';
-			
-			e.preventDefault();
-		};
-		
-		const onMouseMove = (e) => {
-			if (!isDragging) return;
-			
-			const deltaX = e.clientX - startX;
-			const deltaY = e.clientY - startY;
-			
-			const newLeft = initialLeft + deltaX;
-			const newTop = initialTop + deltaY;
-			
-			const maxLeft = window.innerWidth - el.offsetWidth;
-			const maxTop = window.innerHeight - el.offsetHeight;
-			
-			el.style.left = `${Math.max(0, Math.min(newLeft, maxLeft))}px`;
-			el.style.top = `${Math.max(0, Math.min(newTop, maxTop))}px`;
-		};
-		
-		const onMouseUp = () => {
-			if (!isDragging) return;
-			
-			isDragging = false;
-			el.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-			el.style.cursor = 'move';
-			
-			const currentLeft = el.offsetLeft;
-			const currentTop = el.offsetTop;
-			const snapPos = this.findClosestSnapPosition(currentLeft, currentTop);
-			
-			el.style.left = `${snapPos.x}px`;
-			el.style.top = `${snapPos.y}px`;
-			
-			localStorage.setItem('floatingPlayerPosition', snapPos.name);
-		};
-		
-		el.addEventListener('mousedown', onMouseDown);
-		document.addEventListener('mousemove', onMouseMove);
-		document.addEventListener('mouseup', onMouseUp);
-		
-		el.addEventListener('touchstart', (e) => {
-			const touch = e.touches[0];
-			onMouseDown({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => e.preventDefault(), target: e.target });
-		});
-		
-		document.addEventListener('touchmove', (e) => {
-			if (!isDragging) return;
-			const touch = e.touches[0];
-			onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
-		});
-		
-		document.addEventListener('touchend', onMouseUp);
-		
-		const savedPosition = localStorage.getItem('floatingPlayerPosition');
-		if (savedPosition && this.getSnapPositions()[savedPosition]) {
-			const pos = this.getSnapPositions()[savedPosition];
-			el.style.left = `${pos.x}px`;
-			el.style.top = `${pos.y}px`;
-		}
-	}
-
 	async initCustomPlayer(el) {
 		const audioSrc = el.dataset.audioSrc;
 		const originalName = el.dataset.originalname;
@@ -816,10 +611,6 @@ export class MessageHandler {
 
 		playPauseBtn.addEventListener('click', () => {
 			if (audio.paused) {
-				if (this.currentFloatingPlayer && this.currentFloatingPlayer !== el) {
-					this.stopAndRemoveFloatingPlayer();
-				}
-				
 				audio.play();
 				playPauseBtn.textContent = 'pause';
 
@@ -854,24 +645,6 @@ export class MessageHandler {
 			const width = timeBox.offsetWidth;
 			timeBox.style.minWidth = `${width}px`;
 		});
-
-		if (window.swup) {
-			window.swup.hooks.on('page:view', () => {
-				const currentPageUrl = window.location.pathname;
-				
-				if (this.currentFloatingPlayer) {
-					const originalPage = this.currentFloatingPlayer.dataset.originalPage;
-					
-					if (originalPage === currentPageUrl) {
-						this.restorePlayerToOriginal(this.currentFloatingPlayer);
-					}
-				}
-				
-				if (!audio.paused && !el.classList.contains('floating-player')) {
-					this.makePlayerFloating(el, audioSrc);
-				}
-			});
-		}
 	}
 	deleteMsg(id) {
 		const indexInCache = this.messageCache.delete(id);
