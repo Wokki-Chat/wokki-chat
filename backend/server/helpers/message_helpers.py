@@ -17,6 +17,7 @@ async def send_message(sid, metadata, data):
     message = data.get('message')
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
+    contact_id = data.get('contact_id')
     parent_message_id = data.get('parent_message_id')
     file_names = data.get('file_names')
 
@@ -27,9 +28,25 @@ async def send_message(sid, metadata, data):
     is_bot = metadata.get('is_bot', False)
     account_id = metadata.get('account_id')
 
-    if not all([message, server_id, channel_id]):
-        await addMessageToLogs(f"Missing required fields for send_message", "INFO")
-        await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
+    is_contact = bool(contact_id)
+    is_channel = bool(server_id and channel_id)
+
+    if not (is_contact or is_channel) or (is_contact and is_channel):
+        await addMessageToLogs(f"Invalid message target for send_message", "INFO")
+        await sio_instance.sio.emit('send_message_response', {
+            'success': False, 
+            'error': 'Must specify either contact_id OR (server_id AND channel_id)', 
+            'req_id': req_id
+        }, to=sid)
+        return
+
+    if not message:
+        await addMessageToLogs(f"Missing message content for send_message", "INFO")
+        await sio_instance.sio.emit('send_message_response', {
+            'success': False, 
+            'error': 'Missing required field: message', 
+            'req_id': req_id
+        }, to=sid)
         return
 
     message_id = str(uuid.uuid4())
@@ -40,10 +57,24 @@ async def send_message(sid, metadata, data):
             timestamps = message_timestamps[account_id]
             
             if not is_bot:
-                if not await server_permissions(cur, account_id, server_id, 'send_messages'):
-                    await addMessageToLogs(f"User does not have permission to send messages for send_message for user id: {account_id}", "INFO")
-                    await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'User does not have permission to send messages'}, to=sid)
-                    return
+                if is_contact:
+                    if not await inContact(cur, account_id, contact_id):
+                        await addMessageToLogs(f"User is not in contact for send_message, user id: {account_id}, contact id: {contact_id}", "INFO")
+                        await sio_instance.sio.emit('send_message_response', {
+                            'success': False, 
+                            'error': 'User is not in contact', 
+                            'req_id': req_id
+                        }, to=sid)
+                        return
+                else:
+                    if not await server_permissions(cur, account_id, server_id, 'send_messages'):
+                        await addMessageToLogs(f"User does not have permission to send messages for send_message for user id: {account_id}", "INFO")
+                        await sio_instance.sio.emit('send_message_response', {
+                            'success': False, 
+                            'error': 'User does not have permission to send messages', 
+                            'req_id': req_id
+                        }, to=sid)
+                        return
             
             while timestamps and (now - timestamps[0]).total_seconds() > TIME_WINDOW_SECONDS:
                 timestamps.popleft()
@@ -78,14 +109,22 @@ async def send_message(sid, metadata, data):
                 row = await cur.fetchone()
                 if not row:
                     await addMessageToLogs(f"Bot not found for send_message for bot id: {account_id}", "INFO")
-                    await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Bot not found', 'req_id': req_id}, to=sid)
+                    await sio_instance.sio.emit('send_message_response', {
+                        'success': False, 
+                        'error': 'Bot not found', 
+                        'req_id': req_id
+                    }, to=sid)
                     return
             else:
                 await cur.execute('SELECT username, nickname, profile_picture, is_staff FROM users WHERE id = %s', (account_id,))
                 row = await cur.fetchone()
                 if not row:
                     await addMessageToLogs(f"User not found for send_message for user id: {account_id}", "INFO")
-                    await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'User not found'}, to=sid)
+                    await sio_instance.sio.emit('send_message_response', {
+                        'success': False, 
+                        'error': 'User not found', 
+                        'req_id': req_id
+                    }, to=sid)
                     return
 
             username = is_bot and row.get('name') or row.get('username')
@@ -93,6 +132,7 @@ async def send_message(sid, metadata, data):
             is_staff = is_bot and False or row.get('is_staff')
             profile_picture = row['profile_picture']
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            
             command_data = None
             if command_id is not None:
                 command_data = await get_command_id(command_id)
@@ -100,7 +140,6 @@ async def send_message(sid, metadata, data):
             command_user_id = command_data.get('user_id') if command_data else None
             command = command_data.get('command') if command_data else None
 
-            
             if command_user_id:
                 await cur.execute('SELECT username FROM users WHERE id = %s', (command_user_id,))
                 row = await cur.fetchone()
@@ -127,24 +166,35 @@ async def send_message(sid, metadata, data):
                         })
                 assets_json = json.dumps(assets_list) if assets_list else None
                 
+            parent_username = None
+            parent_user_id = None
+            parent_msg = None
+            
             if parent_message_id:
                 await cur.execute('SELECT sent_by, sent_by_bot, message FROM messages WHERE id = %s', (parent_message_id,))
                 parent_message = await cur.fetchone()
                 if not parent_message:
                     await addMessageToLogs(f"Parent message not found for send_message for parent message id: {parent_message_id}", "INFO")
-                    await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Parent message not found', 'req_id': req_id}, to=sid)
+                    await sio_instance.sio.emit('send_message_response', {
+                        'success': False, 
+                        'error': 'Parent message not found', 
+                        'req_id': req_id
+                    }, to=sid)
                     return
 
                 parent_msg = parent_message.get('message')
 
-                parent_username = None
                 if parent_message.get('sent_by'):
                     parent_user_id = parent_message.get('sent_by')
                     await cur.execute('SELECT username FROM users WHERE id = %s', (parent_user_id,))
                     parent_user = await cur.fetchone()
                     if not parent_user:
                         await addMessageToLogs(f"Parent user not found for send_message for parent user id: {parent_user_id}", "INFO")
-                        await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Parent user not found', 'req_id': req_id}, to=sid)
+                        await sio_instance.sio.emit('send_message_response', {
+                            'success': False, 
+                            'error': 'Parent user not found', 
+                            'req_id': req_id
+                        }, to=sid)
                         return
                     parent_username = parent_user.get('username')
                 elif parent_message.get('sent_by_bot'):
@@ -153,7 +203,11 @@ async def send_message(sid, metadata, data):
                     parent_bot = await cur.fetchone()
                     if not parent_bot:
                         await addMessageToLogs(f"Parent bot not found for send_message for parent bot id: {parent_user_id}", "INFO")
-                        await sio_instance.sio.emit('send_message_response', {'success': False, 'error': 'Parent bot not found', 'req_id': req_id}, to=sid)
+                        await sio_instance.sio.emit('send_message_response', {
+                            'success': False, 
+                            'error': 'Parent bot not found', 
+                            'req_id': req_id
+                        }, to=sid)
                         return
                     parent_username = parent_bot.get('name')
 
@@ -167,18 +221,32 @@ async def send_message(sid, metadata, data):
             await cur.execute(
                 '''
                 INSERT INTO messages 
-                (id, message, sent_by, sent_by_bot, created_at, updated_at, edited, server_id, channel_id, command, command_user_id, embed, assets, parent_message_id)
-                VALUES (%s, %s, %s, %s, %s, NULL, FALSE, %s, %s, %s, %s, %s, %s, %s)
+                (id, message, sent_by, sent_by_bot, created_at, updated_at, edited, server_id, channel_id, contact_id, command, command_user_id, embed, assets, parent_message_id)
+                VALUES (%s, %s, %s, %s, %s, NULL, FALSE, %s, %s, %s, %s, %s, %s, %s, %s)
                 ''',
-                (message_id, message, sent_by, sent_by_bot, timestamp, server_id, channel_id, command if is_bot else None,
-                command_user_id if is_bot else None, embed_str if is_bot else None, assets_json, parent_message_id)
+                (
+                    message_id, 
+                    message, 
+                    sent_by, 
+                    sent_by_bot, 
+                    timestamp, 
+                    server_id if is_channel else None, 
+                    channel_id if is_channel else None, 
+                    contact_id if is_contact else None,
+                    command if is_bot else None,
+                    command_user_id if is_bot else None, 
+                    embed_str if is_bot else None, 
+                    assets_json, 
+                    parent_message_id
+                )
             )
 
             if is_bot:
                 await addMessageToLogs(f"Inserted bot message for bot id: {account_id}", "INFO")
             else:
                 await addMessageToLogs(f"Inserted message for user id: {account_id}", "INFO")
-                await addKudos(cur, account_id, 1, message, server_id, channel_id)
+                if is_channel:
+                    await addKudos(cur, account_id, 1, message, server_id, channel_id)
 
             await conn.commit()
                 
@@ -190,8 +258,9 @@ async def send_message(sid, metadata, data):
         'bot_message': 1 if is_bot else 0,
         'message': message,
         'created_at': timestamp.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z'),
-        'server_id': server_id,
-        'channel_id': channel_id,
+        'server_id': server_id if is_channel else None,
+        'channel_id': channel_id if is_channel else None,
+        'contact_id': contact_id if is_contact else None,
         'sent_by': account_id if not is_bot else None,
         'sent_by_bot': account_id if is_bot else None,
         'assets': json.loads(assets_json) if assets_json else [],
@@ -221,14 +290,24 @@ async def send_message(sid, metadata, data):
             'command': command,
             'username': command_username
         }
-    await cache_message(server_id=server_id, channel_id=channel_id, message=message_response)
 
-    await sio_instance.sio.emit('new_message', message_response, room=f"server:{server_id}:channel:{channel_id}")
-    await addMessageToLogs(f"new_message emitted for server_id: {server_id} and channel_id: {channel_id}", "INFO")
+    if is_contact:
+        await cache_message(contact_id=contact_id, message=message_response)
+    else:
+        await cache_message(server_id=server_id, channel_id=channel_id, message=message_response)
+
+    if is_contact:
+        await sio_instance.sio.emit('new_message', message_response, room=f"contact:{contact_id}")
+        await addMessageToLogs(f"new_message emitted for contact_id: {contact_id}", "INFO")
+    else:
+        await sio_instance.sio.emit('new_message', message_response, room=f"server:{server_id}:channel:{channel_id}")
+        await addMessageToLogs(f"new_message emitted for server_id: {server_id} and channel_id: {channel_id}", "INFO")
     
-    # await send_server_notifications(cur, server_id, channel_id)
-    
-    await sio_instance.sio.emit('send_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
+    await sio_instance.sio.emit('send_message_response', {
+        'success': True, 
+        'message_id': message_id, 
+        'req_id': req_id
+    }, to=sid)
     await addMessageToLogs(f"send_message_response emitted for sid: {sid}", "INFO")
 
 @auth_required(server_required=True, allow_bots=False)
