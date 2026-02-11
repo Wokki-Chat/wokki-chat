@@ -53,6 +53,8 @@ function initDm() {
     const limit = 25;
     let selectedFiles = [];
 
+	let usersList = [];
+
     async function loadMessages(offsetValue = 0) {
         socket.emit("get_messages", {
             access_token,
