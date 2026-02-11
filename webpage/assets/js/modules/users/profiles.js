@@ -532,9 +532,9 @@ export class UserPopupManager {
     }
 }
 
-export class StaticProfileManager extends ProfileManager {
+export class StaticProfileManager {
     constructor(access_token) {
-        super(access_token);
+        this.access_token = access_token;
     }
 
     async loadStaticProfile(user_id) {
