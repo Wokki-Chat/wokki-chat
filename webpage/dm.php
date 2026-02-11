@@ -239,7 +239,11 @@ if (!$is_group) {
         FROM contact_users cu1
         JOIN contact_users cu2 ON cu1.contact_id = cu2.contact_id
         LEFT JOIN contact_requests cr ON cu1.contact_id = cr.contact_id
-        WHERE cu1.user_id = ? AND cu2.user_id = ? AND cr.contact_id IS NULL
+        WHERE cu1.user_id = ? 
+        AND cu2.user_id = ? 
+        AND cr.contact_id IS NULL
+        AND (SELECT COUNT(*) FROM contact_users WHERE contact_id = cu1.contact_id) = 2
+        LIMIT 1
     ");
     $contactStmt->bind_param("ii", $user_id, $dm_id);
     $contactStmt->execute();
