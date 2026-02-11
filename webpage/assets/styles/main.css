@@ -4933,9 +4933,9 @@ hr {
     padding: 10px;
 }
 
-.dm-info-item .horizontal-spacebetween {
+.dm-info-item.horizontal-spacebetween {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
 }
