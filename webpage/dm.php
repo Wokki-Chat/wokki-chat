@@ -189,9 +189,9 @@ if ($userLookupResult->num_rows > 0) {
     $is_group = false;
 } else {
     $groupLookupStmt = $mysqli->prepare("
-        SELECT c.id
+        SELECT c.contact_id
         FROM contacts c
-        JOIN contact_users cu ON cu.contact_id = c.id
+        JOIN contact_users cu ON cu.contact_id = c.contact_id
         WHERE c.contact_name = ? AND cu.user_id = ?
     ");
     $groupLookupStmt->bind_param("si", $dm_name, $user_id);
