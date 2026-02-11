@@ -2,6 +2,7 @@ import emojis from "./emojis.js";
 import { MessageHandler } from "./modules/servers/messages.js";
 import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
 import { Mentions } from "./modules/users/mentions.js";
+import { StaticProfileManager } from "./modules/users/profiles.js";
 
 function initDm() {
     const el = document.querySelector('wchat-allowed-scripts');
@@ -24,9 +25,14 @@ function initDm() {
     const textarea = document.getElementById("message-input");
     const preview = document.getElementById("message-input-bg");
 
+	const dm_type = document.getElementById("dm-type").getAttribute("value");
+
+	const usersContainer = document.querySelector(".users");
+
     const sanitizer = new Sanitizer(user_id, [], null);
     const textareaFormatter = new TextareaFormatter(user_id, [], null, textarea);
     const mentions = new Mentions({ user_id, channels: [], server_id: null, users_list: [] });
+	const staticProfileManager = new StaticProfileManager(access_token);
     
     const messageHandler = new MessageHandler({ 
         user_id, 
@@ -285,6 +291,10 @@ function initDm() {
 			messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
 		}
 	});
+
+	if (dm_type == "individual") {
+		staticProfileManager.openStaticProfile(contact_id, usersContainer);
+	}
 }
 
 if (typeof window.swup !== "undefined") {

@@ -531,3 +531,171 @@ export class UserPopupManager {
         window.history.replaceState({}, '', `https://chat.wokki20.nl/profile/@${this.sanitizer.sanitize(profileData.username)}`);
     }
 }
+
+export class StaticProfileManager extends ProfileManager {
+    constructor(access_token) {
+        super(access_token);
+    }
+
+    async loadStaticProfile(user_id) {
+        const res = await fetch(`https://chat.wokki20.nl/app/user_info?user_id=${user_id}`);
+        const data = await res.json();
+        return data.user;
+    }
+
+    async makeStaticProfile(user) {
+        let lightText = false;
+        let customStyleData = false;
+
+        let popupStyle = '';
+        let borderStyle = '';
+
+        if (user.profile_color_primary && user.profile_color_accent) {
+            let color = user.profile_color_primary;
+            let r = parseInt(color.slice(1,3),16);
+            let g = parseInt(color.slice(3,5),16);
+            let b = parseInt(color.slice(5,7),16);
+            r = Math.max(0, r - r * 0.1);
+            g = Math.max(0, g - g * 0.1);
+            b = Math.max(0, b - b * 0.1);
+            popupStyle = `#${((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1)}`;
+            borderStyle = `4px solid ${user.profile_color_accent}`;
+
+            let brightness = (r*299 + g*587 + b*114) / 1000;
+            lightText = brightness <= 150;
+            customStyleData = true;
+        }
+
+        let userBio = user.bio ? await this.sanitizer.sanitizeMrk(user.bio) : '';
+        if (userBio.length > 55) userBio = userBio.slice(0, 55) + '<span class="cutoff">...</span>';
+        userBio = await emojis.replaceText(userBio);
+
+        const container = document.createElement("div");
+        container.className = "user-info-profile-static";
+        if (customStyleData) {
+            container.dataset.customStyle = "true";
+            container.dataset.lightText = lightText.toString();
+            container.style.background = popupStyle;
+            container.style.border = borderStyle;
+        }
+
+        container.innerHTML = `
+            ${user.profile_banner ? `<img draggable="false" class="user-info-profile-popup-banner" src="${user.profile_banner}">` : ''}
+            <div class="user-info-profile-popup-profile-picture-username-status">
+                <div class="user-info-profile-popup-profile-status">
+                    <img draggable="false" class="dm-info-profile-picture" src="${user.profile_picture}">
+                    <div class="user-info-profile-popup-status-circle-outer">
+                        <div class="user-info-profile-popup-status-circle-inner ${user.status}"></div>
+                    </div>
+                </div>
+                <div class="user-info-profile-popup-status-username">
+                    <div class="user-info-profile-popup-username-container">
+                        <p class="user-info-profile-popup-username">${user.display_name ? this.sanitizer.sanitize(user.display_name) : this.sanitizer.sanitize(user.username)}</p>
+                        ${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
+                    </div>
+                    <p class="user-info-profile-popup-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
+                </div>
+            </div>
+            <div class="dm-info-container" ${customStyleData ? 'style="background-color: rgba(255, 255, 255, 0.1); border: none;"' : ''}>
+                <div class="dm-info-item">
+                    <p class="dm-info-item-value dm-info-item-username-original">${this.sanitizer.sanitize(user.username)}</p>
+                </div>
+                <div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
+                    ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
+                </div>	
+                <div class="dm-info-item">
+                    <p class="dm-info-item-key">Bio</p>
+                    <div class="dm-info-item-value">${user.bio ? userBio : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</div>
+                </div>
+                <div class="dm-info-item">
+                    <p class="dm-info-item-key">Joined on</p>
+                    <p class="dm-info-item-value">${new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric', year: 'numeric'}).format(new Date(user.created_at))}</p>
+                </div>
+            </div>
+
+            <div class="user-widgets">
+                <div class="user-widgets-content">
+                    <p class="dm-info-item-value">Loading widgets...</p>
+                </div>
+            </div>
+        `;
+
+        return container;
+    }
+
+    async openStaticProfile(user_id, appendToDiv) {
+        const headers = new Headers();
+        headers.append('Authorization', `Bearer ${this.access_token}`);
+
+        const res = await fetch(`https://chat.wokki20.nl/app/user_info?user_id=${user_id}`, { headers });
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+
+        let buffer = '';
+        let profileDiv = null;
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+
+                try {
+                    const data = JSON.parse(line);
+                    if (data.user && !profileDiv) {
+                        profileDiv = await this.makeStaticProfile(data.user);
+                        appendToDiv.appendChild(profileDiv);
+                    }
+
+                    if (data.widgets && profileDiv) {
+                        const widgetsDiv = profileDiv.querySelector(".user-widgets-content");
+                        if (widgetsDiv) {
+                            widgetsDiv.innerHTML = '';
+                            const githubWidget = data.widgets['GitHub'];
+                            if (githubWidget) {
+                                if (githubWidget.error) {
+                                    widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
+                                } else {
+                                    widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, data.user);
+                                }
+                            } else if (data.widgets.Spotify) {
+                                widgetsDiv.innerHTML = '';
+                            } else {
+                                widgetsDiv.innerHTML = '';
+                            }
+                        }
+                    }
+                } catch(e) {
+                    console.error('JSON parse error:', e, 'Line:', line);
+                }
+            }
+        }
+
+        if (buffer.trim() && profileDiv) {
+            try {
+                const data = JSON.parse(buffer);
+                const widgetsDiv = profileDiv.querySelector(".user-widgets-content");
+                if (widgetsDiv && data.widgets) {
+                    widgetsDiv.innerHTML = '';
+                    const githubWidget = data.widgets['GitHub'];
+                    if (githubWidget) {
+                        if (githubWidget.error) {
+                            widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
+                        } else {
+                            widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, data.user);
+                        }
+                    } else {
+                        widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
+                    }
+                }
+            } catch(e) {
+                console.error('Final buffer parse error:', e);
+            }
+        }
+    }
+}

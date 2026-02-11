@@ -3,7 +3,7 @@ import { MessageHandler } from "./modules/servers/messages.js";
 import ReactionRenderer from "./modules/servers/reactions.js";
 import SettingsManager from "./modules/servers/settings.js";
 import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
-import { UserPopupManager } from "./modules/users/popups.js";
+import { UserPopupManager } from "./modules/users/profiles.js";
 import { Mentions } from "./modules/users/mentions.js";
 import { CommandsManager } from "./modules/global/commands.js";
 function initServer() {

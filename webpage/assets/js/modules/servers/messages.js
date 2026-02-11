@@ -2,7 +2,7 @@
 // Module description: This module helps with managing messages in a server.
 import ReactionsRender from "./reactions.js";
 import { Sanitizer, TextareaFormatter } from "../global/sanitization.js";
-import { UserPopupManager } from "../users/popups.js";
+import { UserPopupManager } from "../users/profiles.js";
 import emojis from "../../emojis.js";
 
 export class MessageRenderer {

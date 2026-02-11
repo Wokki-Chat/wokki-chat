@@ -282,6 +282,7 @@ if ($is_group) {
             'bio' => null,
             'created_at' => null,
             'is_group' => true,
+            'type' => 'group'
         ];
     }
     
@@ -300,6 +301,7 @@ if ($is_group) {
 
     if ($dm_info) {
         $dm_info['is_group'] = false;
+        $dm_info['type'] = 'individual';
         $dm_info_result->data_seek(0);
         while ($row = $dm_info_result->fetch_assoc()) {
             if ($row['tag_name']) {
@@ -452,7 +454,12 @@ setcookie(
         </div>
 
         <div class="users">
-            
+            <?php if ($dm_info['is_group']): ?>
+            <p class="users-title">Members - <?php echo $dm_info['members_count']; ?></p>
+            <div class="group-users">
+
+            </div>
+            <?php endif; ?>
         </div>
 
         <div class="self-info">
@@ -498,6 +505,7 @@ setcookie(
         <wchat-data id="users-list" value="<?php echo htmlspecialchars(json_encode($friendsList)); ?>"></wchat-data>
         <wchat-data id="contact-id" value="<?php echo htmlspecialchars($contact_id); ?>"></wchat-data>
         <wchat-data id="premium" value="<?php echo htmlspecialchars(json_encode($premium_active)); ?>"></wchat-data>
+        <wchat-data id="contact-type" value="<?php echo htmlspecialchars($dm_info['type']); ?>"></wchat-data>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
