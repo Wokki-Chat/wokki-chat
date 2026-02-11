@@ -426,6 +426,8 @@ export class UserPopupManager {
         let popupCreated = false;
         let buffer = '';
 
+        let customStyleData = false
+
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -454,6 +456,7 @@ export class UserPopupManager {
 
                         const popup = document.querySelector("#user-profile-popup .popup");
                         if (custom_style_data && popup) {
+                            customStyleData = true;
                             popup.setAttribute('data-light-text', lightText);
                             popup.setAttribute('data-custom-style', 'true');
                             if (popup_style) popup.style.setProperty('background', popup_style, 'important');
@@ -471,7 +474,7 @@ export class UserPopupManager {
                                 if (githubWidget.error) {
                                     widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
                                 } else {
-                                    widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, custom_style_data);
+                                    widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, customStyleData);
                                 }
                             } else {
                                 widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
@@ -496,7 +499,7 @@ export class UserPopupManager {
                             if (githubWidget.error) {
                                 widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
                             } else {
-                                widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, custom_style_data);
+                                widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, customStyleData);
                             }
                         } else {
                             widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
@@ -638,6 +641,8 @@ export class StaticProfileManager extends UserPopupManager {
         let buffer = '';
         let profileDiv = null;
 
+        let customStyleData = false
+
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -654,6 +659,10 @@ export class StaticProfileManager extends UserPopupManager {
                     if (data.user && !profileDiv) {
                         const { html: profileDiv, custom_style_data } = await this.makeStaticProfile(data.user);
                         appendToDiv.appendChild(profileDiv);
+
+                        if (custom_style_data) {
+                            customStyleData = true;
+                        }
                     }
 
                     if (data.widgets && profileDiv) {
@@ -665,7 +674,7 @@ export class StaticProfileManager extends UserPopupManager {
                                 if (githubWidget.error) {
                                     widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
                                 } else {
-                                    widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, custom_style_data);
+                                    widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, customStyleData);
                                 }
                             } else if (data.widgets.Spotify) {
                                 widgetsDiv.innerHTML = '';
@@ -691,7 +700,7 @@ export class StaticProfileManager extends UserPopupManager {
                         if (githubWidget.error) {
                             widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
                         } else {
-                            widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, custom_style_data);
+                            widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, customStyleData);
                         }
                     } else {
                         widgetsDiv.innerHTML = '<p class="dm-info-item-value"></p>';
