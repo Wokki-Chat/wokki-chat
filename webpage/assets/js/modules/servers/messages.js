@@ -796,7 +796,9 @@ export class MessageHandler {
 		console.log(this.uploadContainer);
 
 		if (this.uploadContainer) {
+			console.log(this.uploadContainer);
 			this.uploadContainer.innerHTML = '';
+			console.log(this.uploadContainer);
 		}
 		this.selectedFiles = [];
 	}
