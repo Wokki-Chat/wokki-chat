@@ -551,7 +551,7 @@ export class MessageHandler {
 		}
 	}
 	audioLoaded(audio) {
-		return Promise((resolve) => {
+    	return new Promise((resolve) => {
 			if (audio.readyState >= 1) {
 				resolve();
 			} else {
