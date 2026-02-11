@@ -43,7 +43,7 @@ function initServer() {
 	const mentions = new Mentions({ user_id, channels, server_id, users_list: [] });
 	const commandsManager = new CommandsManager({ user_id, channel_id, server_id, access_token, socket });
 
-	const messageHandler = new MessageHandler({ user_id, channel_id: channel_id, server_id: server_id, access_token, socket, messageContainer });
+	const messageHandler = new MessageHandler({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket, messageContainer: messageContainer });
 
 	const userPopupManager = new UserPopupManager({ user_id, access_token });
 
