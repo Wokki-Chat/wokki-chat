@@ -533,6 +533,7 @@ export class UserPopupManager {
 
 export class StaticProfileManager extends UserPopupManager {
     constructor(access_token, user_id) {
+        super({ user_id: user_id, access_token: access_token });
         this.access_token = access_token;
         this.sanitizer = new Sanitizer(user_id);
     }
