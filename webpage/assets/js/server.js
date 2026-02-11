@@ -46,7 +46,9 @@ function initServer() {
 	const mentions = new Mentions({ user_id, channels, server_id, users_list: [] });
 	const commandsManager = new CommandsManager({ user_id, channel_id, server_id, access_token, socket });
 
-	const messageHandler = new MessageHandler({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket, messageContainer: messageContainer, textarea: textarea, channels: channels });
+	const uploadContainer = document.querySelector(".input-container-2 .file-upload-container");
+
+	const messageHandler = new MessageHandler({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket, messageContainer: messageContainer, textarea: textarea, channels: channels, uploadContainer: uploadContainer });
 
 	const userRenderer = new UserRenderer({ user_id, access_token, userListContainer: document.querySelector(".users") });
 
@@ -64,8 +66,6 @@ function initServer() {
 			el.classList.add('active');
 		}
 	});
-
-	const uploadContainer = document.querySelector(".input-container-2 .file-upload-container");
 
 	let usersList = [];
 	let replyingTo = null;

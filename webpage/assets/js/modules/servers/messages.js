@@ -469,7 +469,7 @@ export class MessageCache {
 }
 
 export class MessageHandler {
-	constructor({ user_id, channel_id = null, server_id = null, access_token, socket, messageContainer, contact_id = null, textarea, channels = null}) {
+	constructor({ user_id, channel_id = null, server_id = null, access_token, socket, messageContainer, contact_id = null, textarea, channels = null, uploadContainer}) {
 		this.user_id = user_id;
 		this.channel_id = channel_id;
 		this.server_id = server_id;
@@ -487,6 +487,7 @@ export class MessageHandler {
 		this.sanitizer = new Sanitizer(this.user_id, null, null);
 		this.textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
 		this.textarea = textarea;
+		this.uploadContainer = uploadContainer
 	}
 
 	initU(usersList) {
