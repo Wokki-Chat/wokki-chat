@@ -25,7 +25,7 @@ function initDm() {
     const textarea = document.getElementById("message-input");
     const preview = document.getElementById("message-input-bg");
 
-	const dm_type = document.getElementById("dm-type").getAttribute("value");
+	const contact_type = document.getElementById("contact-type").getAttribute("value");
 
 	const usersContainer = document.querySelector(".users");
 
@@ -292,7 +292,7 @@ function initDm() {
 		}
 	});
 
-	if (dm_type == "individual") {
+	if (contact_type == "individual") {
 		staticProfileManager.openStaticProfile(contact_id, usersContainer);
 	}
 }
