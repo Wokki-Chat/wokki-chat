@@ -490,24 +490,6 @@ function initServer() {
 				return;
 			}
 
-			if (e.key === "Enter" && e.shiftKey) {
-				e.preventDefault();
-				const selection = window.getSelection();
-				const range = selection.getRangeAt(0);
-				
-				const br = document.createElement('br');
-				range.deleteContents();
-				range.insertNode(br);
-				
-				range.setStartAfter(br);
-				range.collapse(true);
-				selection.removeAllRanges();
-				selection.addRange(range);
-				
-				textarea.dispatchEvent(new Event('input'));
-				return;
-			}
-
 			if (e.key === ' ' && text.startsWith('/')) {
 				const matches = commandsManager.show.lastMatches;
 				if (matches?.length === 1) {

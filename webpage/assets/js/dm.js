@@ -217,24 +217,6 @@ function initDm() {
                 stopTyping();
                 return;
             }
-
-			if (e.key === "Enter" && e.shiftKey) {
-				e.preventDefault();
-				const selection = window.getSelection();
-				const range = selection.getRangeAt(0);
-				
-				const br = document.createElement('br');
-				range.deleteContents();
-				range.insertNode(br);
-				
-				range.setStartAfter(br);
-				range.collapse(true);
-				selection.removeAllRanges();
-				selection.addRange(range);
-				
-				textarea.dispatchEvent(new Event('input'));
-				return;
-			}
         });
 
         textarea.addEventListener('blur', () => {
@@ -294,13 +276,7 @@ function initDm() {
     });
 
 	socket.on("new_message", async (msg) => {
-
-		if (msg.channel_id !== channel_id) return;
-
-		if (channel_type === "voice") {
-			return;
-		}
-
+		if (msg.contact_id !== contact_id) return;
 		const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
 
 		await messageHandler.handleMessage(msg);
