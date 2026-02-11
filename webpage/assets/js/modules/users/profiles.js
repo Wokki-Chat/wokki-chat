@@ -238,12 +238,12 @@ export class UserPopupManager {
                 </div>
             </div>
             <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
-                <div class="dm-info-item">
+                <div class="dm-info-item horizontal-spacebetween">
                     <p class="dm-info-item-value dm-info-item-username-original">${this.sanitizer.sanitize(user.username)}</p>
+                    <div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
+                        ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
+                    </div>	
                 </div>
-                <div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
-                    ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
-                </div>	
                 <div class="dm-info-item">
                     <p class="dm-info-item-key">Bio</p>
                     <div class="dm-info-item-value">${user.bio ? userBio : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</div>
@@ -382,12 +382,12 @@ export class UserPopupManager {
                     </div>
                 </div>
                 <div class="dm-info-container" ${user.profile_color_primary && user.profile_color_accent ? `style="background-color: rgba(255, 255, 255, 0.1); border: none;"` : ''}>
-                    <div class="dm-info-item">
+                    <div class="dm-info-item horizontal-spacebetween">
                         <p class="dm-info-item-value dm-info-item-username-original">${this.sanitizer.sanitize(user.username)}</p>
+                        <div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
+                            ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
+                        </div>	
                     </div>
-                    <div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
-                        ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
-                    </div>	
                     <div class="dm-info-item">
                         <p class="dm-info-item-key">Bio</p>
                         <div class="dm-info-item-value">${user.bio ? userBio : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</div>
@@ -604,12 +604,12 @@ export class StaticProfileManager extends UserPopupManager {
                 </div>
             </div>
             <div class="dm-info-container" ${customStyleData ? 'style="background-color: rgba(255, 255, 255, 0.1); border: none;"' : ''}>
-                <div class="dm-info-item">
+                <div class="dm-info-item horizontal-spacebetween">
                     <p class="dm-info-item-value dm-info-item-username-original">${this.sanitizer.sanitize(user.username)}</p>
+                    <div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
+                        ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
+                    </div>
                 </div>
-                <div class="dm-info-tags" ${!user.premium && (!user.tags || user.tags.length === 0 ) ? 'style="display: none;"' : ''}>
-                    ${user.premium ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''}
-                </div>	
                 <div class="dm-info-item">
                     <p class="dm-info-item-key">Bio</p>
                     <div class="dm-info-item-value">${user.bio ? userBio : user.bot ? 'This bot has no bio yet' : 'This user has no bio yet'}</div>
@@ -626,6 +626,30 @@ export class StaticProfileManager extends UserPopupManager {
                 </div>
             </div>
         `;
+
+        if (!user.bot) {
+            const profileLink = document.createElement("a");
+            profileLink.className = "button-primary-filled no-underline dm-info-profile-link";
+            profileLink.href = `/profile/@${encodeURIComponent(user.username)}`;
+            profileLink.textContent = "View full profile";
+
+            if (user.profile_color_primary && user.profile_color_accent) {
+                profileLink.dataset.customStyle = "true";
+                profileLink.style.color = `rgb(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0})`;
+                profileLink.style.backgroundColor = `rgba(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}, 0.1)`;
+                profileLink.style.border = `1px solid rgba(${lightText ? 255 : 0}, ${lightText ? 255 : 0}, ${lightText ? 255 : 0}, 0.3)`;
+            }
+
+            profileLink.addEventListener("click", e => {
+                const isNewTab = e.ctrlKey || e.metaKey || e.button === 1;
+                if (isNewTab) return;
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                this.openExtendedPopup(user.id);
+            });
+
+            container.querySelector(".dm-info-container").appendChild(profileLink);
+        }
 
         return { html: container, custom_style_data: customStyleData};
     }

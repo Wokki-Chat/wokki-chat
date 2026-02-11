@@ -273,7 +273,7 @@ function getMembersCount($mysqli, $contact_id) {
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
     $stmt->close();
-    return $row['members_count'];
+    return $row['members_count'] - 2;
 }
 
 if ($is_group) {
@@ -472,8 +472,8 @@ setcookie(
 
         <div class="users">
             <?php if ($dm_info['is_group']): ?>
-            <p class="users-title">Members - <?php echo $dm_info['members_count']; ?></p>
             <div class="group-users">
+                <p class="users-title">Members - <?php echo $dm_info['members_count']; ?></p>
 
             </div>
             <?php endif; ?>

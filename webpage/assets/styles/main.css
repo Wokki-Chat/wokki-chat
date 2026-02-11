@@ -3313,7 +3313,6 @@ ul {
     display: flex;
     flex-direction: row;
     gap: 5px;
-    margin-bottom: 5px;
 }
 
 .dm-info-tag,
@@ -3349,7 +3348,6 @@ ul {
     display: none;  
     position: absolute;
     top: 5px;
-    left: 50%;
     transform: translate(-50%);
     background-color: var(--clr-popup-a20);
     color: var(--clr-text-a0);
@@ -4929,4 +4927,15 @@ hr {
 
 .users .user-info-profile-static .user-info-profile-popup-banner {
     border-radius: 0px !important;
+}
+
+.group-users {
+    padding: 10px;
+}
+
+.dm-info-item .horizontal-spacebetween {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
 }
