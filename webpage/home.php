@@ -87,7 +87,7 @@ $friendsStmt->close();
 
 $groupsStmt = $mysqli->prepare("
     SELECT c.contact_id as contact_id, c.contact_name, c.contact_picture,
-           'group' as contact_type
+           'group' as contact_type, (SELECT COUNT(*) FROM contact_users WHERE contact_id = c.contact_id) as members_count
     FROM contact_users cu
     JOIN contacts c ON cu.contact_id = c.contact_id
     LEFT JOIN contact_requests cr ON c.contact_id = cr.contact_id
@@ -101,19 +101,6 @@ $groupsStmt->bind_param("i", $user_id);
 $groupsStmt->execute();
 $groupsResult = $groupsStmt->get_result();
 
-function getMembersCount($mysqli, $contact_id) {
-    $stmt = $mysqli->prepare("
-        SELECT COUNT(*) as members_count
-        FROM contact_users
-        WHERE contact_id = ?
-    ");
-    $stmt->bind_param("i", $contact_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    return $row['members_count'];
-}
-
 while ($row = $groupsResult->fetch_assoc()) {
     $friendsList[] = [
         'id' => $row['contact_id'],
@@ -121,10 +108,11 @@ while ($row = $groupsResult->fetch_assoc()) {
         'profile_picture' => $row['contact_picture'],
         'status' => null,
         'premium' => false,
+        'bio' => null,
         'contact_type' => 'group',
         'contact_id' => $row['contact_id'],
         'is_group' => true,
-        'members_count' => getMembersCount($mysqli, $row['contact_id'])
+        'members_count' => $row['members_count']
     ];
 }
 $groupsStmt->close();
