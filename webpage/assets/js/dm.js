@@ -1,95 +1,285 @@
 import emojis from "./emojis.js";
 import { MessageHandler } from "./modules/servers/messages.js";
+import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
+import { Mentions } from "./modules/users/mentions.js";
 
 function initDm() {
     const el = document.querySelector('wchat-allowed-scripts');
     const scripts = el.getAttribute('value').split(';');
     if (!scripts.includes('dm.js')) return;
 
-      const serverBar = document.querySelector(".server-bar");
-      if (serverBar && window.matchMedia("(min-width: 768px)").matches) {
-          serverBar.classList.remove("hidden");
-      } else {
-      serverBar.classList.add("hidden");
+    const serverBar = document.querySelector(".server-bar");
+    if (serverBar && window.matchMedia("(min-width: 768px)").matches) {
+        serverBar.classList.remove("hidden");
+    } else {
+        serverBar.classList.add("hidden");
     }
     
     const access_token = document.getElementById("access-token").getAttribute("value");
-	const contact_id = document.getElementById("contact-id").getAttribute("value");
-	const user_id = document.getElementById("user-id").getAttribute("value");
+    const contact_id = document.getElementById("contact-id").getAttribute("value");
+    const user_id = document.getElementById("user-id").getAttribute("value");
+    const premium = JSON.parse(document.getElementById("premium")?.getAttribute("value") || "false");
 
-	const messageContainer = document.querySelector("#message-container");
+    const messageContainer = document.querySelector("#message-container");
+    const textarea = document.getElementById("message-input");
+    const preview = document.getElementById("message-input-bg");
 
-	const textarea = document.getElementById("message-input");
-	const preview = document.getElementById("message-input-bg");
+    const sanitizer = new Sanitizer(user_id, [], null);
+    const textareaFormatter = new TextareaFormatter(user_id, [], null, textarea);
+    const mentions = new Mentions({ user_id, channels: [], server_id: null, users_list: [] });
+    
+    const messageHandler = new MessageHandler({ 
+        user_id, 
+        access_token, 
+        socket, 
+        messageContainer, 
+        contact_id, 
+        textarea 
+    });
 
-	const messageHandler = new MessageHandler({ user_id, access_token, socket, messageContainer, contact_id: contact_id, textarea: textarea });
+    let typing = false;
+    let typingInterval;
+    let offset = 0;
+    const limit = 25;
+    let selectedFiles = [];
 
-	let offset = 0;
-	const limit = 25;
+    async function loadMessages(offsetValue = 0) {
+        socket.emit("get_messages", {
+            access_token,
+            contact_id,
+            offset: offsetValue
+        });
+        socket.emit("change_room", {
+            access_token,
+            contact_id
+        });
+    }
 
-	async function loadMessages(offsetValue = 0) {
-		socket.emit("get_messages", {
-			access_token,
-			contact_id: contact_id,
-			offset: offsetValue
-		});
-		socket.emit("change_room", {
-			access_token,
-			contact_id: contact_id
-		});
-	}
+    (async () => {
+        await emojis.load();
+    })();
 
-	(async () => {
-		await emojis.load();
-	})();
+    loadMessages();
 
-	loadMessages();
+    messageContainer.addEventListener("scroll", () => {
+        if (messageContainer.scrollTop === 0) {
+            offset += limit;
+            socket.emit("get_messages", {
+                access_token,
+                contact_id,
+                offset
+            });
+        }
+    });
 
-	messageContainer.addEventListener("scroll", () => {
-		if (messageContainer.scrollTop === 0) {
-			offset += limit;
-			socket.emit("get_messages", {
-				access_token,
-				contact_id: contact_id,
-				offset
-			});
-		}
-	});
+    socket.on("all_messages", async (messages) => {
+        await handleAllMessages(messages);
+    });
 
-	socket.on("all_messages", async (messages) => {
-		await handleAllMessages(messages);
-	});
+    socket.on("all_messages_nocache", async (messages) => {
+        await handleAllMessages(messages);
+    });
 
-	socket.on("all_messages_nocache", async (messages) => {
-		await handleAllMessages(messages);
-	});
+    async function handleAllMessages(messages) {
+        if (!Array.isArray(messages)) {
+            return;
+        }
 
-	async function handleAllMessages(messages) {
+        for (const msg of messages) {
+            await messageHandler.handleMessage(msg);
+        }
+    }
 
-		if (!Array.isArray(messages)) {
-			return;
-		}
+    if (textarea) {
+        const maxHeight = 250;
+        const warningThreshold = 1000;
+        const maxChars = premium ? 10000 : 3000;
 
-		for (const msg of messages) {
-			await messageHandler.handleMessage(msg);
-		}
-	}
+        const messageInputWrapper = document.querySelector('.message-input-wrapper');
+        const maxMessageLengthEl = document.querySelector('.max-message-length');
+        const maxCharactersLeftEl = document.querySelector('.max-characters-left');
 
-	textarea.addEventListener('keydown', async (e) => {
-		if (e.key === "Enter" && !e.shiftKey) {
-			e.preventDefault();
+        document.querySelector(".input-container-2")?.addEventListener("click", () => textarea.focus());
+        
+        const inputContainer = document.querySelector(".input-container-2");
 
-			messageHandler.send();
-			
-			preview.innerHTML = "";
-			textarea.innerText = "";
-			return;
-		}
-	});
+        const updateHeight = () => {
+            let newHeight = Math.min(textarea.scrollHeight, maxHeight);
+            if (messageInputWrapper) {
+                messageInputWrapper.style.height = newHeight + 20 + 'px';
+            }
+            if (inputContainer) {
+                inputContainer.style.minHeight = newHeight + 20 + 'px';
+            }
+        };
+
+        const updateTypingStatus = () => {
+            const value = textarea.innerText.trim();
+            if (value.length && !typing) {
+                typing = true;
+                socket.emit('typing', { access_token, typing: true, contact_id });
+                typingInterval = setInterval(() => {
+                    if (typing) {
+                        socket.emit('typing', { access_token, typing: true, contact_id });
+                    } else {
+                        clearInterval(typingInterval);
+                    }
+                }, 10000);
+            } else if (!value.length && typing) {
+                typing = false;
+                socket.emit('typing', { access_token, typing: false, contact_id });
+                clearInterval(typingInterval);
+            }
+        };
+
+        const stopTyping = () => {
+            if (typing) {
+                typing = false;
+                socket.emit('typing', { access_token, typing: false, contact_id });
+                clearInterval(typingInterval);
+            }
+        };
+
+        const updateCharsLeft = () => {
+            const charsLeft = maxChars - textarea.innerText.length;
+            if (maxMessageLengthEl && maxCharactersLeftEl) {
+                if (charsLeft <= warningThreshold) {
+                    maxMessageLengthEl.style.display = 'flex';
+                    maxCharactersLeftEl.textContent = charsLeft;
+                    maxCharactersLeftEl.classList.toggle('debt', charsLeft < 0);
+                } else {
+                    maxMessageLengthEl.style.display = 'none';
+                    maxCharactersLeftEl.classList.remove('debt');
+                }
+            }
+        };
+
+        const handleMentions = () => {
+            const text = textarea.innerHTML.trim();
+            if (text.includes('@')) {
+                const lastAtIndex = text.lastIndexOf("@");
+                textareaFormatter.caret_end(textarea);
+                const afterAt = text.slice(lastAtIndex + 1);
+                const query = afterAt.split(/\s|\n/)[0];
+                textarea.style.color = "var(--clr-text-a0)";
+                preview.style.display = "none";
+                mentions.show(query, [], sanitizer);
+            } else {
+                mentions.hide();
+                textarea.style.color = "transparent";
+                if (preview) {
+                    preview.style.display = "block";
+                }
+            }
+        };
+
+        const renderPreviews = () => {
+            selectedFiles = [];
+        };
+
+        textarea.addEventListener('input', (e) => {
+            if (e.target !== textarea) return;
+
+            if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
+                textarea.innerHTML = '';
+                mentions.hide();
+            }
+
+            updateHeight();
+            updateTypingStatus();
+            updateCharsLeft();
+            handleMentions();
+
+            if (preview) {
+                preview.innerHTML = textareaFormatter.format(textarea.innerText);
+            }
+        });
+
+        textarea.addEventListener('keydown', async (e) => {
+            const text = textarea.innerText.trim();
+
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+
+                const uploadedNames = selectedFiles
+                    .filter(f => f.savedName)
+                    .map(f => ({ savedName: f.savedName, originalName: f.originalName }));
+
+                messageHandler.send(uploadedNames.length ? uploadedNames : undefined);
+                mentions.hide();
+                
+                if (preview) {
+                    preview.innerHTML = "";
+                }
+                textarea.innerText = "";
+                updateHeight();
+                renderPreviews();
+                stopTyping();
+                return;
+            }
+        });
+
+        textarea.addEventListener('blur', () => {
+            stopTyping();
+        });
+
+        textarea.addEventListener('paste', (e) => {
+            e.preventDefault();
+
+            const text = e.clipboardData.getData('text/plain');
+
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            selection.deleteFromDocument();
+            selection.getRangeAt(0).insertNode(document.createTextNode(text));
+
+            selection.collapseToEnd();
+
+            textarea.dispatchEvent(new Event('input'));
+        });
+
+        const observer = new MutationObserver(() => {
+            updateHeight();
+            updateCharsLeft();
+            if (preview) {
+                preview.innerHTML = textareaFormatter.format(textarea.innerText);
+            }
+        });
+
+        observer.observe(textarea, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
+    }
+
+    socket.on("send_message_response", (resp) => {
+        if (!resp.success) {
+            console.error("Failed to send message:", resp.error);
+
+            if (resp.error?.includes("Rate limit exceeded")) {
+                Toastify({
+                    text: "Please wait before sending your next message",
+                    duration: 3000,
+                    gravity: "bottom",
+                    position: "right",
+                    close: true,
+                    stopOnFocus: true,
+                    style: {
+                        background: "var(--clr-popup-a20)",
+                        borderRadius: "12px",
+                        boxShadow: "none"
+                    }
+                }).showToast();
+            }
+        }
+    });
 }
+
 if (typeof window.swup !== "undefined") {
-	window.swup.hooks.on('page:view', (visit) => {
-		initDm();
-	});
+    window.swup.hooks.on('page:view', (visit) => {
+        initDm();
+    });
 }
+
 initDm();

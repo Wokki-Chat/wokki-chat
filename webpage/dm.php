@@ -123,7 +123,6 @@ $friendsList[] = [
     'username' => $username,
     'profile_picture' => $profile_picture,
     'status' => $status, 
-    'premium' => $premium_active,
     'bio' => $bio
 ];
 
@@ -390,6 +389,7 @@ setcookie(
         <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
         <wchat-data id="users-list" value="<?php echo htmlspecialchars(json_encode($friendsList)); ?>"></wchat-data>
         <wchat-data id="contact-id" value="<?php echo htmlspecialchars($contact_id); ?>"></wchat-data>
+        <wchat-data id="premium" value="<?php echo htmlspecialchars(json_encode($premium_active)); ?>"></wchat-data>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
