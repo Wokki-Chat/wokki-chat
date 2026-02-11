@@ -118,7 +118,8 @@ while ($row = $friendsResult->fetch_assoc()) {
         'status' => $row['status'], 
         'premium' => $row['premium'] && ($row['premium_expires_at'] > time() || $row['premium_expires_at'] === null),
         'bio' => $row['bio'],
-        'contact_type' => 'individual'
+        'contact_type' => 'individual',
+        'is_group' => false
     ];
 }
 $friendsStmt->close();
@@ -148,7 +149,9 @@ while ($row = $groupsResult->fetch_assoc()) {
         'premium' => false,
         'bio' => null,
         'contact_type' => 'group',
-        'contact_id' => $row['contact_id']
+        'contact_id' => $row['contact_id'],
+        'is_group' => true,
+        'members_count' => getMembersCount($mysqli, $row['contact_id'])
     ];
 }
 $groupsStmt->close();
