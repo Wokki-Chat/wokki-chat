@@ -94,12 +94,15 @@ $serverResult = $serverStmt->get_result();
 $serverStmt->close();
 
 $friendsStmt = $mysqli->prepare("
-    SELECT u.id, u.username, u.profile_picture, u.status, u.premium, u.premium_expires_at, u.bio
+    SELECT u.id, u.username, u.profile_picture, u.status, u.premium, u.premium_expires_at, u.bio,
+           'individual' as contact_type, NULL as contact_id, NULL as contact_name
     FROM contact_users cu1
     JOIN contact_users cu2 ON cu1.contact_id = cu2.contact_id AND cu2.user_id != cu1.user_id
     JOIN users u ON cu2.user_id = u.id
     LEFT JOIN contact_requests cr ON cu1.contact_id = cr.contact_id
-    WHERE cu1.user_id = ? AND cr.contact_id IS NULL
+    WHERE cu1.user_id = ? 
+      AND cr.contact_id IS NULL
+      AND (SELECT COUNT(*) FROM contact_users WHERE contact_id = cu1.contact_id) = 2
 ");
 $friendsStmt->bind_param("i", $user_id);
 $friendsStmt->execute();
@@ -113,17 +116,49 @@ while ($row = $friendsResult->fetch_assoc()) {
         'profile_picture' => $row['profile_picture'],
         'status' => $row['status'], 
         'premium' => $row['premium'] && ($row['premium_expires_at'] > time() || $row['premium_expires_at'] === null),
-        'bio' => $row['bio']
+        'bio' => $row['bio'],
+        'contact_type' => 'individual'
     ];
 }
 $friendsStmt->close();
+
+$groupsStmt = $mysqli->prepare("
+    SELECT c.id as contact_id, c.contact_name, c.contact_picture,
+           'group' as contact_type
+    FROM contact_users cu
+    JOIN contacts c ON cu.contact_id = c.id
+    LEFT JOIN contact_requests cr ON c.id = cr.contact_id
+    WHERE cu.user_id = ? 
+      AND cr.contact_id IS NULL
+      AND c.contact_name IS NOT NULL
+      AND (SELECT COUNT(*) FROM contact_users WHERE contact_id = c.id) > 2
+    GROUP BY c.id
+");
+$groupsStmt->bind_param("i", $user_id);
+$groupsStmt->execute();
+$groupsResult = $groupsStmt->get_result();
+
+while ($row = $groupsResult->fetch_assoc()) {
+    $friendsList[] = [
+        'id' => $row['contact_id'],
+        'username' => $row['contact_name'],
+        'profile_picture' => $row['contact_picture'],
+        'status' => null,
+        'premium' => false,
+        'bio' => null,
+        'contact_type' => 'group',
+        'contact_id' => $row['contact_id']
+    ];
+}
+$groupsStmt->close();
 
 $friendsList[] = [
     'id' => $user_id,
     'username' => $username,
     'profile_picture' => $profile_picture,
     'status' => $status, 
-    'bio' => $bio
+    'bio' => $bio,
+    'contact_type' => 'self'
 ];
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -139,76 +174,138 @@ if (!$dm_name) {
     exit;
 }
 
-$dmStmt = $mysqli->prepare("SELECT id FROM users WHERE username = ?");
-$dmStmt->bind_param("s", $dm_name);
-$dmStmt->execute();
-$dmResult = $dmStmt->get_result();
+$is_group = false;
+$dm_id = null;
+$contact_id = null;
 
-if ($dmResult->num_rows > 0) {
-    $dmRow = $dmResult->fetch_assoc();
-    $dm_id = $dmRow['id'];
+$userLookupStmt = $mysqli->prepare("SELECT id FROM users WHERE username = ?");
+$userLookupStmt->bind_param("s", $dm_name);
+$userLookupStmt->execute();
+$userLookupResult = $userLookupStmt->get_result();
+
+if ($userLookupResult->num_rows > 0) {
+    $userLookupRow = $userLookupResult->fetch_assoc();
+    $dm_id = $userLookupRow['id'];
+    $is_group = false;
 } else {
+    $groupLookupStmt = $mysqli->prepare("
+        SELECT c.id
+        FROM contacts c
+        JOIN contact_users cu ON cu.contact_id = c.id
+        WHERE c.contact_name = ? AND cu.user_id = ?
+    ");
+    $groupLookupStmt->bind_param("si", $dm_name, $user_id);
+    $groupLookupStmt->execute();
+    $groupLookupResult = $groupLookupStmt->get_result();
+    
+    if ($groupLookupResult->num_rows > 0) {
+        $groupLookupRow = $groupLookupResult->fetch_assoc();
+        $contact_id = $groupLookupRow['id'];
+        $is_group = true;
+    }
+    
+    $groupLookupStmt->close();
+}
+
+$userLookupStmt->close();
+
+if (!$is_group && !$dm_id) {
     header('Location: /home');
     exit;
 }
 
-$dmStmt->close();
+if (!$is_group) {
+    if ($dm_id === $user_id) {
+        header('Location: /home');
+        exit;
+    }
 
-if ($dm_id === $user_id) {
-    header('Location: /home');
-    exit;
-}
-
-if (!in_array($dm_id, array_column($friendsList, 'id'))) {
-    header('Location: /home');
-    exit;
-}
-
-$contactStmt = $mysqli->prepare("
-    SELECT cu1.contact_id
-    FROM contact_users cu1
-    JOIN contact_users cu2 ON cu1.contact_id = cu2.contact_id
-    LEFT JOIN contact_requests cr ON cu1.contact_id = cr.contact_id
-    WHERE cu1.user_id = ? AND cu2.user_id = ? AND cr.contact_id IS NULL
-");
-$contactStmt->bind_param("ii", $user_id, $dm_id);
-$contactStmt->execute();
-$contactResult = $contactStmt->get_result();
-
-if ($contactResult->num_rows > 0) {
-    $contactRow = $contactResult->fetch_assoc();
-    $contact_id = $contactRow['contact_id'];
-} else {
-    header('Location: /home');
-    exit;
-}
-$contactStmt->close();
-
-$dm_info_stmt = $mysqli->prepare("SELECT u.username, u.profile_picture, u.status, u.premium, u.premium_expires_at, u.bio, u.created_at, t.tag_name, t.tag_icon
-    FROM users u
-    LEFT JOIN tags t ON t.user_id = u.id
-    WHERE u.id = ?");
-$dm_info_stmt->bind_param("i", $dm_id);
-$dm_info_stmt->execute();
-$dm_info_result = $dm_info_stmt->get_result();
-
-$dm_info = $dm_info_result->fetch_assoc();
-$dm_tags = [];
-
-if ($dm_info) {
-    $dm_info_result->data_seek(0);
-    while ($row = $dm_info_result->fetch_assoc()) {
-        if ($row['tag_name']) {
-            $dm_tags[] = [
-                'tag_name' => $row['tag_name'],
-                'tag_icon' => $row['tag_icon']
-            ];
+    $found = false;
+    foreach ($friendsList as $friend) {
+        if ($friend['contact_type'] === 'individual' && $friend['id'] === $dm_id) {
+            $found = true;
+            break;
         }
     }
+
+    if (!$found) {
+        header('Location: /home');
+        exit;
+    }
+
+    $contactStmt = $mysqli->prepare("
+        SELECT cu1.contact_id
+        FROM contact_users cu1
+        JOIN contact_users cu2 ON cu1.contact_id = cu2.contact_id
+        LEFT JOIN contact_requests cr ON cu1.contact_id = cr.contact_id
+        WHERE cu1.user_id = ? AND cu2.user_id = ? AND cr.contact_id IS NULL
+    ");
+    $contactStmt->bind_param("ii", $user_id, $dm_id);
+    $contactStmt->execute();
+    $contactResult = $contactStmt->get_result();
+
+    if ($contactResult->num_rows > 0) {
+        $contactRow = $contactResult->fetch_assoc();
+        $contact_id = $contactRow['contact_id'];
+    } else {
+        header('Location: /home');
+        exit;
+    }
+    $contactStmt->close();
 }
 
-$dm_info_result->free();
-$dm_info_stmt->close();
+if ($is_group) {
+    $groupInfoStmt = $mysqli->prepare("SELECT contact_name, contact_picture FROM contacts WHERE id = ?");
+    $groupInfoStmt->bind_param("i", $contact_id);
+    $groupInfoStmt->execute();
+    $groupInfoResult = $groupInfoStmt->get_result();
+    
+    $dm_info = null;
+    $dm_tags = [];
+    
+    if ($groupInfoResult->num_rows > 0) {
+        $groupRow = $groupInfoResult->fetch_assoc();
+        $dm_info = [
+            'username' => $groupRow['contact_name'],
+            'profile_picture' => $groupRow['contact_picture'],
+            'status' => null,
+            'premium' => false,
+            'premium_expires_at' => null,
+            'bio' => null,
+            'created_at' => null,
+            'is_group' => true
+        ];
+    }
+    
+    $groupInfoStmt->close();
+} else {
+    $dm_info_stmt = $mysqli->prepare("SELECT u.username, u.profile_picture, u.status, u.premium, u.premium_expires_at, u.bio, u.created_at, t.tag_name, t.tag_icon
+        FROM users u
+        LEFT JOIN tags t ON t.user_id = u.id
+        WHERE u.id = ?");
+    $dm_info_stmt->bind_param("i", $dm_id);
+    $dm_info_stmt->execute();
+    $dm_info_result = $dm_info_stmt->get_result();
+
+    $dm_info = $dm_info_result->fetch_assoc();
+    $dm_tags = [];
+
+    if ($dm_info) {
+        $dm_info['is_group'] = false;
+        $dm_info_result->data_seek(0);
+        while ($row = $dm_info_result->fetch_assoc()) {
+            if ($row['tag_name']) {
+                $dm_tags[] = [
+                    'tag_name' => $row['tag_name'],
+                    'tag_icon' => $row['tag_icon']
+                ];
+            }
+        }
+    }
+
+    $dm_info_result->free();
+    $dm_info_stmt->close();
+}
 
 setcookie(
     'dm_active_user',
@@ -287,7 +384,7 @@ setcookie(
                     $encodedUsername = urlencode($friend['username']);
 
                     echo '
-                    <a class="info-profile '.($friend['id'] == $dm_id ? 'active' : '').'" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
+                    <a class="info-profile '.($friend['username'] == $dm_name ? 'active' : '').'" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
                         <div class="self-info-profile-status" data-user-id="'.$friend['id'].'">
                             <img class="self-info-profile-picture" src="'.$friend['profile_picture'].'" />
                             <div class="self-info-status-circle-outer">

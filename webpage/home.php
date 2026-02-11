@@ -56,12 +56,15 @@ $serverResult = $serverStmt->get_result();
 $serverStmt->close();
 
 $friendsStmt = $mysqli->prepare("
-    SELECT u.id, u.username, u.profile_picture, u.status, u.premium
+    SELECT u.id, u.username, u.profile_picture, u.status, u.premium,
+           'individual' as contact_type, NULL as contact_id
     FROM contact_users cu1
     JOIN contact_users cu2 ON cu1.contact_id = cu2.contact_id AND cu2.user_id != cu1.user_id
     JOIN users u ON cu2.user_id = u.id
     LEFT JOIN contact_requests cr ON cu1.contact_id = cr.contact_id
-    WHERE cu1.user_id = ? AND cr.contact_id IS NULL
+    WHERE cu1.user_id = ? 
+      AND cr.contact_id IS NULL
+      AND (SELECT COUNT(*) FROM contact_users WHERE contact_id = cu1.contact_id) = 2
 ");
 $friendsStmt->bind_param("i", $user_id);
 $friendsStmt->execute();
@@ -74,10 +77,40 @@ while ($row = $friendsResult->fetch_assoc()) {
         'username' => $row['username'],
         'profile_picture' => $row['profile_picture'],
         'status' => $row['status'], 
-        'premium' => $row['premium']
+        'premium' => $row['premium'],
+        'contact_type' => 'individual'
     ];
 }
 $friendsStmt->close();
+
+$groupsStmt = $mysqli->prepare("
+    SELECT c.id as contact_id, c.contact_name, c.contact_picture,
+           'group' as contact_type
+    FROM contact_users cu
+    JOIN contacts c ON cu.contact_id = c.id
+    LEFT JOIN contact_requests cr ON c.id = cr.contact_id
+    WHERE cu.user_id = ? 
+      AND cr.contact_id IS NULL
+      AND c.contact_name IS NOT NULL
+      AND (SELECT COUNT(*) FROM contact_users WHERE contact_id = c.id) > 2
+    GROUP BY c.id
+");
+$groupsStmt->bind_param("i", $user_id);
+$groupsStmt->execute();
+$groupsResult = $groupsStmt->get_result();
+
+while ($row = $groupsResult->fetch_assoc()) {
+    $friendsList[] = [
+        'id' => $row['contact_id'],
+        'username' => $row['contact_name'],
+        'profile_picture' => $row['contact_picture'],
+        'status' => null,
+        'premium' => false,
+        'contact_type' => 'group',
+        'contact_id' => $row['contact_id']
+    ];
+}
+$groupsStmt->close();
 
 $premium_popup = false;
 
