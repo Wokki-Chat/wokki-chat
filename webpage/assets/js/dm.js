@@ -292,6 +292,23 @@ function initDm() {
             }
         }
     });
+
+	socket.on("new_message", async (msg) => {
+
+		if (msg.channel_id !== channel_id) return;
+
+		if (channel_type === "voice") {
+			return;
+		}
+
+		const isAtBottom = (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight) < 5;
+
+		await messageHandler.handleMessage(msg);
+
+		if (isAtBottom) {
+			messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
+		}
+	});
 }
 
 if (typeof window.swup !== "undefined") {
