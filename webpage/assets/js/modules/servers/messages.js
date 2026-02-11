@@ -487,7 +487,7 @@ export class MessageHandler {
 		this.sanitizer = new Sanitizer(this.user_id, null, null);
 		this.textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
 		this.textarea = textarea;
-		this.uploadContainer = uploadContainer
+		this.uploadContainer = uploadContainer;
 	}
 
 	initU(usersList) {
