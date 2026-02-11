@@ -214,13 +214,16 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
                     $isPremium = $friend['premium'] == 1;   
                     $encodedUsername = urlencode($friend['username']);
 
+                    $statusIcon = '';
+                    if (!$friend['is_group']) {
+                        $statusIcon = '<div class="self-info-status-circle-outer"><div class="self-info-status-circle-inner '.$friend['status'].'"></div></div>';                        
+                    }
+
                     echo '
                     <a class="info-profile" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
                         <div class="self-info-profile-status" data-user-id="'.$friend['id'].'">
                             <img class="self-info-profile-picture" src="'.$friend['profile_picture'].'" />
-                            <div class="self-info-status-circle-outer">
-                                <div class="self-info-status-circle-inner '.$friend['status'].'"></div>
-                            </div>
+                            '.$statusIcon.'
                         </div>
                         <div class="self-info-status-username">
                             <div class="self-info-profile-username-container">
