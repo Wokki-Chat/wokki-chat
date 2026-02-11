@@ -3,6 +3,7 @@ import { MessageHandler } from "./modules/servers/messages.js";
 import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
 import { Mentions } from "./modules/users/mentions.js";
 import { StaticProfileManager } from "./modules/users/profiles.js";
+import { UserRenderer } from "./modules/users/profiles.js";
 
 function initDm() {
     const el = document.querySelector('wchat-allowed-scripts');
@@ -37,6 +38,8 @@ function initDm() {
     const textareaFormatter = new TextareaFormatter(user_id, [], null, textarea);
     const mentions = new Mentions({ user_id, channels: [], server_id: null, users_list: [] });
 	const staticProfileManager = new StaticProfileManager(access_token, user_id);
+
+	const userRenderer = new UserRenderer({ user_id, access_token, userListContainer: groupUsersContainer });
     
     const messageHandler = new MessageHandler({ 
         user_id, 
