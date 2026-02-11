@@ -621,40 +621,48 @@ async def get_message_by_id(sid, metadata, data):
 @auth_required(server_required=True, allow_bots=True)
 async def delete_message(sid, metadata, data):
     message_id = data.get('message_id')
+    contact_id = data.get('contact_id')
     req_id = data.get('req_id')
     is_bot = metadata.get('is_bot')
     account_id = metadata.get('account_id')
+
     if message_id is None:
         await sio_instance.sio.emit(
             'message_deleted',
             {'success': False, 'error': 'Missing required fields', 'req_id': req_id},
             to=sid
         )
-        await addMessageToLogs(f"Missing required fields for delete_message", "INFO")
+        await addMessageToLogs("Missing required fields for delete_message", "INFO")
         return
+
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            if is_bot:
-                await cur.execute(
-                    "SELECT server_id, channel_id FROM messages WHERE id = %s AND sent_by_bot = %s",
-                    (message_id, account_id)
-                )
-            else:
-                await cur.execute(
-                    "SELECT server_id, channel_id FROM messages WHERE id = %s AND sent_by = %s",
-                    (message_id, account_id)
-                )
-            message = await cur.fetchone()
-            if not message:
-                await sio_instance.sio.emit(
-                    'message_deleted',
-                    {'success': False, 'error': 'Message not found', 'req_id': req_id},
-                    to=sid
-                )
-                await addMessageToLogs(f"Message not found for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
-                return
-            server_id = message['server_id']
-            channel_id = message['channel_id']
+            server_id = None
+            channel_id = None
+
+            if not contact_id:
+                if is_bot:
+                    await cur.execute(
+                        "SELECT server_id, channel_id FROM messages WHERE id = %s AND sent_by_bot = %s",
+                        (message_id, account_id)
+                    )
+                else:
+                    await cur.execute(
+                        "SELECT server_id, channel_id FROM messages WHERE id = %s AND sent_by = %s",
+                        (message_id, account_id)
+                    )
+                message = await cur.fetchone()
+                if not message:
+                    await sio_instance.sio.emit(
+                        'message_deleted',
+                        {'success': False, 'error': 'Message not found', 'req_id': req_id},
+                        to=sid
+                    )
+                    await addMessageToLogs(f"Message not found for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
+                    return
+                server_id = message['server_id']
+                channel_id = message['channel_id']
+
             if is_bot:
                 result = await cur.execute(
                     "DELETE FROM messages WHERE id = %s AND sent_by_bot = %s",
@@ -665,6 +673,7 @@ async def delete_message(sid, metadata, data):
                     "DELETE FROM messages WHERE id = %s AND sent_by = %s",
                     (message_id, account_id)
                 )
+
             if result == 0:
                 await sio_instance.sio.emit(
                     'message_deleted',
@@ -673,14 +682,21 @@ async def delete_message(sid, metadata, data):
                 )
                 await addMessageToLogs(f"Message couldn't be deleted for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
                 return
-            await delete_cached_message(server_id=server_id, channel_id=channel_id, message_id=message_id)
-            await conn.commit()
+
+            await delete_cached_message(
+                contact_id=contact_id,
+                server_id=server_id,
+                channel_id=channel_id,
+                message_id=message_id
+            )
+
+            room = f'contact:{contact_id}' if contact_id else f'server:{server_id}:channel:{channel_id}'
             await sio_instance.sio.emit(
                 'message_deleted',
                 {'success': True, 'message_id': message_id, 'req_id': req_id},
-                room=f'server:{server_id}:channel:{channel_id}'
+                room=room
             )
-            await addMessageToLogs(f"Emitted message_deleted to {server_id}", "INFO")
+            await addMessageToLogs(f"Emitted message_deleted to {room}", "INFO")
 
 @auth_required(server_required=True, allow_bots=True)
 async def add_reaction(sid, metadata, data):
