@@ -306,56 +306,56 @@ function initServer() {
 		const textIcon = `<span class="material-symbols-rounded text-icon-upload">description</span>`;
 
 		selectedFiles.forEach(({ file, savedName, originalName }, index) => {
-		const fileType = file.type || '';
-		let previewHTML = '';
+			const fileType = file.type || '';
+			let previewHTML = '';
 
-		if (fileType.startsWith('image/')) {
-			const url = URL.createObjectURL(file);
-			previewHTML = `<div class="upload-preview"><img src="${url}" alt="preview" class="image-preview" /></div>`;
-		} else if (fileType.startsWith('video/')) {
-			const url = URL.createObjectURL(file);
-			previewHTML = `<div class="upload-preview"><video src="${url}" class="video-preview" muted pause loop></video></div>`;
-		} else if (fileType.startsWith('audio/')) {
-			previewHTML = `<div class="upload-preview">${audioIcon}</div>`;
-		} else if (fileType === 'text/plain') {
-			previewHTML = `<div class="upload-preview">${textIcon}</div>`;
-		} else {
-			previewHTML = `<div class="upload-preview">${textIcon}</div>`;
-		}
-
-		const fileBlock = document.createElement('div');
-		fileBlock.classList.add('file-preview');
-
-		fileBlock.innerHTML = `
-			${previewHTML}
-			<div class="file-name">${file.name}</div>
-			<div class="file-options">
-			<span class="material-symbols-rounded file-remove-icon" style="cursor:pointer;">delete</span>
-			</div>
-		`;
-
-		fileBlock.querySelector('.file-remove-icon').addEventListener('click', async () => {
-			const removed = selectedFiles.splice(index, 1)[0];
-			if (removed.savedName) {
-			try {
-				const formData = new FormData();
-				formData.append('savedName', removed.savedName);
-
-				await fetch('https://chat.wokki20.nl/app/delete_file', {
-				method: 'POST',
-				headers: {
-					"Authorization": `Bearer ${access_token}`
-				},
-				body: formData
-				});
-			} catch (err) {
-				console.error("Failed to delete file from server", err);
+			if (fileType.startsWith('image/')) {
+				const url = URL.createObjectURL(file);
+				previewHTML = `<div class="upload-preview"><img src="${url}" alt="preview" class="image-preview" /></div>`;
+			} else if (fileType.startsWith('video/')) {
+				const url = URL.createObjectURL(file);
+				previewHTML = `<div class="upload-preview"><video src="${url}" class="video-preview" muted pause loop></video></div>`;
+			} else if (fileType.startsWith('audio/')) {
+				previewHTML = `<div class="upload-preview">${audioIcon}</div>`;
+			} else if (fileType === 'text/plain') {
+				previewHTML = `<div class="upload-preview">${textIcon}</div>`;
+			} else {
+				previewHTML = `<div class="upload-preview">${textIcon}</div>`;
 			}
-			}
-			renderPreviews();
-		});
 
-		uploadContainer.appendChild(fileBlock);
+			const fileBlock = document.createElement('div');
+			fileBlock.classList.add('file-preview');
+
+			fileBlock.innerHTML = `
+				${previewHTML}
+				<div class="file-name">${file.name}</div>
+				<div class="file-options">
+				<span class="material-symbols-rounded file-remove-icon" style="cursor:pointer;">delete</span>
+				</div>
+			`;
+
+			fileBlock.querySelector('.file-remove-icon').addEventListener('click', async () => {
+				const removed = selectedFiles.splice(index, 1)[0];
+				if (removed.savedName) {
+					try {
+						const formData = new FormData();
+						formData.append('savedName', removed.savedName);
+
+						await fetch('https://chat.wokki20.nl/app/delete_file', {
+							method: 'POST',
+							headers: {
+								"Authorization": `Bearer ${access_token}`
+							},
+							body: formData
+						});
+					} catch (err) {
+						console.error("Failed to delete file from server", err);
+					}
+				}
+				renderPreviews();
+			});
+
+			uploadContainer.appendChild(fileBlock);
 		});
 	}
 
@@ -487,6 +487,24 @@ function initServer() {
 				updateHeight();
 				renderPreviews();
 				stopTyping();
+				return;
+			}
+
+			if (e.key === "Enter" && e.shiftKey) {
+				e.preventDefault();
+				const selection = window.getSelection();
+				const range = selection.getRangeAt(0);
+				
+				const br = document.createElement('br');
+				range.deleteContents();
+				range.insertNode(br);
+				
+				range.setStartAfter(br);
+				range.collapse(true);
+				selection.removeAllRanges();
+				selection.addRange(range);
+				
+				textarea.dispatchEvent(new Event('input'));
 				return;
 			}
 
