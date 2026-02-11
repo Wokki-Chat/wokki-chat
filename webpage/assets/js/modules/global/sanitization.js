@@ -409,11 +409,6 @@ export class TextareaFormatter extends Sanitizer {
             a.replaceWith(textNode);
         });
 
-        clone.querySelectorAll("br").forEach(br => {
-            const textNode = document.createTextNode("\n");
-            br.replaceWith(textNode);
-        });
-
         return clone.innerText.trim();
     }
 
