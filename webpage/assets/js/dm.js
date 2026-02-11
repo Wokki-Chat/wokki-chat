@@ -349,6 +349,10 @@ function initDm() {
 			messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
 		}
 	});
+	
+	socket.on("message_deleted", (message_id) => {
+		messageHandler.deleteMsg(message_id.message_id);
+	});
 }
 
 if (typeof window.swup !== "undefined") {
