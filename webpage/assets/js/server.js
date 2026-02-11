@@ -46,7 +46,7 @@ function initServer() {
 	const mentions = new Mentions({ user_id, channels, server_id, users_list: [] });
 	const commandsManager = new CommandsManager({ user_id, channel_id, server_id, access_token, socket });
 
-	const messageHandler = new MessageHandler({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket, messageContainer: messageContainer, textarea: textarea });
+	const messageHandler = new MessageHandler({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket, messageContainer: messageContainer, textarea: textarea, channels: channels });
 
 	const userPopupManager = new UserPopupManager({ user_id, access_token });
 
@@ -75,7 +75,7 @@ function initServer() {
 	let selectedFiles = [];
 
 	const sanitizer = new Sanitizer(user_id, channels, server_id);
-	const textareaFormatter = new TextareaFormatter(textarea);
+	const textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
 
 	const textareaEmojiOptions = document.getElementById("emoji-option");
 	textareaEmojiOptions.addEventListener("click", async () => {
@@ -479,7 +479,7 @@ function initServer() {
 					.filter(f => f.savedName)
 					.map(f => ({ savedName: f.savedName, originalName: f.originalName }));
 
-				textareaFormatter.send(uploadedNames.length ? uploadedNames : undefined);
+				messageHandler.send(uploadedNames.length ? uploadedNames : undefined);
 				mentions.hide();
 				
 				preview.innerHTML = "";

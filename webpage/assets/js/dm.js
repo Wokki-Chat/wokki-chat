@@ -79,7 +79,7 @@ function initDm() {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
 
-			textareaFormatter.send();
+			messageHandler.send();
 			
 			preview.innerHTML = "";
 			textarea.innerText = "";
