@@ -403,12 +403,12 @@ setcookie(
                     $encodedUsername = urlencode($friend['username']);
 
                     echo '
-                    <a class="info-profile '.($friend['username'] == $dm_name ? 'active' : '').'" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'>
+                    <a class="info-profile '.($friend['username'] == $dm_name ? 'active' : '').'" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
                         <div class="self-info-profile-status" data-user-id="'.$friend['id'].'">
                             <img class="self-info-profile-picture" src="'.$friend['profile_picture'].'" />
-                            '.($friend['is_group'] ? '<div class="self-info-status-circle-outer">
+                            <div class="self-info-status-circle-outer">
                                 <div class="self-info-status-circle-inner '.$friend['status'].'"></div>
-                            </div>' : '').'
+                            </div>
                         </div>
                         <div class="self-info-status-username">
                             <div class="self-info-profile-username-container">
@@ -419,6 +419,7 @@ setcookie(
                     </a>';
                 }
                 ?>
+
             </div>
         </div>
 
