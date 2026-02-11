@@ -19,7 +19,10 @@ function initDm() {
 
 	const messageContainer = document.querySelector("#message-container");
 
-	const messageHandler = new MessageHandler({ user_id, access_token, socket, messageContainer, contact_id: contact_id });
+	const textarea = document.getElementById("message-input");
+	const preview = document.getElementById("message-input-bg");
+
+	const messageHandler = new MessageHandler({ user_id, access_token, socket, messageContainer, contact_id: contact_id, textarea: textarea });
 
 	let offset = 0;
 	const limit = 25;
@@ -71,6 +74,18 @@ function initDm() {
 			await messageHandler.handleMessage(msg);
 		}
 	}
+
+	textarea.addEventListener('keydown', async (e) => {
+		if (e.key === "Enter" && !e.shiftKey) {
+			e.preventDefault();
+
+			textareaFormatter.send();
+			
+			preview.innerHTML = "";
+			textarea.innerText = "";
+			return;
+		}
+	});
 }
 if (typeof window.swup !== "undefined") {
 	window.swup.hooks.on('page:view', (visit) => {

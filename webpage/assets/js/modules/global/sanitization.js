@@ -395,7 +395,7 @@ export class Sanitizer {
 }
 
 export class TextareaFormatter extends Sanitizer {
-    constructor(user_id, channels, server_id, textarea) {
+    constructor(textarea) {
         super(user_id, channels, server_id);
         this.textarea = textarea;
     }

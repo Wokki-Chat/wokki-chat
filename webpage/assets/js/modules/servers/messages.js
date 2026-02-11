@@ -1,7 +1,7 @@
 // modules/servers/messages.js
 // Module description: This module helps with managing messages in a server.
 import ReactionsRender from "./reactions.js";
-import { Sanitizer } from "../global/sanitization.js";
+import { Sanitizer, TextareaFormatter } from "../global/sanitization.js";
 import { UserPopupManager } from "../users/popups.js";
 import emojis from "../../emojis.js";
 
@@ -469,7 +469,7 @@ export class MessageCache {
 }
 
 export class MessageHandler {
-	constructor({ user_id, channel_id = null, server_id = null, access_token, socket, messageContainer, contact_id = null}) {
+	constructor({ user_id, channel_id = null, server_id = null, access_token, socket, messageContainer, contact_id = null, textarea }) {
 		this.user_id = user_id;
 		this.channel_id = channel_id;
 		this.server_id = server_id;
@@ -484,6 +484,8 @@ export class MessageHandler {
 		this.contact_id = contact_id;
 		this.usersList = [];
 		this.replyingTo = null;
+		this.sanitizer = new Sanitizer(this.user_id, null, null);
+		this.textareaFormatter = new TextareaFormatter(textarea);
 	}
 
 	initU(usersList) {
@@ -737,5 +739,61 @@ export class MessageHandler {
 				reject(new Error("Timeout getting message_by_id"));
 			}, 5000);
 		});
+	}
+
+	send(uploadedFileNames = null) {
+		const message = this.textareaFormatter.cleanMsg(this.textarea);
+
+		if (!message) return;
+
+		if (this.channel_type === "voice") {
+			return;
+		}
+
+		const payload = {
+			access_token: this.access_token,
+			message,
+			server_id: this.server_id,
+			channel_id: this.channel_id,
+		};
+
+		if (this.contact_id) {
+			payload.contact_id = this.contact_id;
+		}
+
+		if (this.replyingTo !== null && this.replyingTo !== undefined) {
+			payload.parent_message_id = this.replyingTo;
+		}
+
+		if (uploadedFileNames !== null && uploadedFileNames !== undefined) {
+			payload.file_names = uploadedFileNames;
+		}
+
+		if (message !== '\u200B') {
+			this.socket.emit("send_message", payload);
+		}
+
+		this.textarea.style.minHeight = this.minHeight + 'px';
+		this.textarea.innerText = "";
+		this.replyingTo = null;
+		
+		if (document.querySelector(".replying-to")) {
+			document.querySelector(".replying-to").remove();
+		}
+
+		if (this.typing) {
+			this.typing = false;
+			this.socket.emit('typing', { 
+				access_token: this.access_token, 
+				typing: false, 
+				channel_id: this.channel_id, 
+				server_id: this.server_id 
+			});
+		}
+
+		if (this.uploadContainer) {
+			this.uploadContainer.innerHTML = '';
+		}
+		this.selectedFiles = [];
 	}
 }

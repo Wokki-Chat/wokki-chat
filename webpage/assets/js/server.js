@@ -37,13 +37,16 @@ function initServer() {
 	const profile_picture_url = document.getElementById("profile-picture-url").getAttribute("value");
 
 	const messageContainer = document.querySelector("#message-container");
+
+	const textarea = document.getElementById("message-input");
+	const preview = document.getElementById("message-input-bg");
 	
 	const reactionRenderer = new ReactionRenderer({ user_id, channel_id, server_id, access_token, socket });
 	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
 	const mentions = new Mentions({ user_id, channels, server_id, users_list: [] });
 	const commandsManager = new CommandsManager({ user_id, channel_id, server_id, access_token, socket });
 
-	const messageHandler = new MessageHandler({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket, messageContainer: messageContainer });
+	const messageHandler = new MessageHandler({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket, messageContainer: messageContainer, textarea: textarea });
 
 	const userPopupManager = new UserPopupManager({ user_id, access_token });
 
@@ -71,11 +74,8 @@ function initServer() {
 
 	let selectedFiles = [];
 
-	const textarea = document.getElementById("message-input");
-	const preview = document.getElementById("message-input-bg");
-
 	const sanitizer = new Sanitizer(user_id, channels, server_id);
-	const textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
+	const textareaFormatter = new TextareaFormatter(textarea);
 
 	const textareaEmojiOptions = document.getElementById("emoji-option");
 	textareaEmojiOptions.addEventListener("click", async () => {
@@ -479,7 +479,7 @@ function initServer() {
 					.filter(f => f.savedName)
 					.map(f => ({ savedName: f.savedName, originalName: f.originalName }));
 
-				send_message(textarea, uploadedNames.length ? uploadedNames : undefined);
+				textareaFormatter.send(uploadedNames.length ? uploadedNames : undefined);
 				mentions.hide();
 				
 				preview.innerHTML = "";
@@ -567,48 +567,6 @@ function initServer() {
 			subtree: true,
 			characterData: true
 		});
-	}
-
-	function send_message(textareaEl, uploadedFileNames = null) {
-		const message = textareaFormatter.cleanMsg(textareaEl);
-
-		if (!message) return;
-
-		if (channel_type === "voice") {
-			return;
-		}
-
-		const payload = {
-			access_token,
-			message,
-			server_id,
-			channel_id,
-		};
-
-		if (replyingTo !== null && replyingTo !== undefined) {
-			payload.parent_message_id = replyingTo;
-			
-		}
-
-		if (uploadedFileNames !== null && uploadedFileNames !== undefined) {
-			payload.file_names = uploadedFileNames;
-		}
-
-		if (message !== '\u200B') socket.emit("send_message", payload);
-		textareaEl.style.minHeight = minHeight + 'px';
-		textareaEl.innerText = "";
-		replyingTo = null;
-		if (document.querySelector(".replying-to")) {
-			document.querySelector(".replying-to").remove();
-
-		}
-		if (typing) {
-			typing = false;
-			socket.emit('typing', { access_token: access_token, typing: false, channel_id: channel_id, server_id: server_id });
-		}
-
-		uploadContainer.innerHTML = '';
-		selectedFiles = [];
 	}
 
 	socket.on("send_message_response", (resp) => {
