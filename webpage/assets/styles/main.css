@@ -4916,3 +4916,21 @@ hr {
 .home-content {
     padding: 15px;
 }
+
+.users .user-info-profile-static {
+    width: calc(100% - 20px - 8px) !important;
+    height: calc(100% - 20px) !important;
+    border-radius: 0px !important;
+}
+
+.users .user-info-profile-static .user-info-profile-popup-profile-picture-username-status {
+    height: max-content !important;
+}
+
+.users .user-info-profile-static .user-info-profile-popup-banner {
+    border-radius: 0px !important;
+}
+
+.users .user-info-profile-static .dm-info-container {
+    height: 100% !important;
+}
