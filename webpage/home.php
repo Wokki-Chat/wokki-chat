@@ -79,7 +79,8 @@ while ($row = $friendsResult->fetch_assoc()) {
         'profile_picture' => $row['profile_picture'],
         'status' => $row['status'], 
         'premium' => $row['premium'],
-        'contact_type' => 'individual'
+        'contact_type' => 'individual',
+        'is_group' => false
     ];
 }
 $friendsStmt->close();
@@ -100,6 +101,19 @@ $groupsStmt->bind_param("i", $user_id);
 $groupsStmt->execute();
 $groupsResult = $groupsStmt->get_result();
 
+function getMembersCount($mysqli, $contact_id) {
+    $stmt = $mysqli->prepare("
+        SELECT COUNT(*) as members_count
+        FROM contact_users
+        WHERE contact_id = ?
+    ");
+    $stmt->bind_param("i", $contact_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    return $row['members_count'];
+}
+
 while ($row = $groupsResult->fetch_assoc()) {
     $friendsList[] = [
         'id' => $row['contact_id'],
@@ -108,7 +122,9 @@ while ($row = $groupsResult->fetch_assoc()) {
         'status' => null,
         'premium' => false,
         'contact_type' => 'group',
-        'contact_id' => $row['contact_id']
+        'contact_id' => $row['contact_id'],
+        'is_group' => true,
+        'members_count' => getMembersCount($mysqli, $row['contact_id'])
     ];
 }
 $groupsStmt->close();
@@ -206,17 +222,17 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
                         continue;
                     }
                     $safeUsername = htmlspecialchars($friend['username'], ENT_QUOTES, 'UTF-8');
-                    $capitalizedStatus = ucfirst($friend['status']);
+                    $capitalizedStatus = $friend['is_group'] ? $friend['members_count'] . ' Members' : ucfirst($friend['status']);
                     $isPremium = $friend['premium'] == 1;   
                     $encodedUsername = urlencode($friend['username']);
 
                     echo '
-                    <a class="info-profile" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
+                    <a class="info-profile" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'>
                         <div class="self-info-profile-status" data-user-id="'.$friend['id'].'">
                             <img class="self-info-profile-picture" src="'.$friend['profile_picture'].'" />
-                            <div class="self-info-status-circle-outer">
+                            '.($friend['is_group'] ? '<div class="self-info-status-circle-outer">
                                 <div class="self-info-status-circle-inner '.$friend['status'].'"></div>
-                            </div>
+                            </div>' : '').'
                         </div>
                         <div class="self-info-status-username">
                             <div class="self-info-profile-username-container">
@@ -227,7 +243,6 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
                     </a>';
                 }
                 ?>
-
             </div>
         </div>
 

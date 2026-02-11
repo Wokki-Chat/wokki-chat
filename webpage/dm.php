@@ -259,6 +259,19 @@ if (!$is_group) {
     $contactStmt->close();
 }
 
+function getMembersCount($mysqli, $contact_id) {
+    $stmt = $mysqli->prepare("
+        SELECT COUNT(*) as members_count
+        FROM contact_users
+        WHERE contact_id = ?
+    ");
+    $stmt->bind_param("i", $contact_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    return $row['members_count'];
+}
+
 if ($is_group) {
     $groupInfoStmt = $mysqli->prepare("SELECT contact_name, contact_picture FROM contacts WHERE contact_id = ?");
     $groupInfoStmt->bind_param("i", $contact_id);
@@ -278,7 +291,8 @@ if ($is_group) {
             'premium_expires_at' => null,
             'bio' => null,
             'created_at' => null,
-            'is_group' => true
+            'is_group' => true,
+            'members_count' => getMembersCount($mysqli, $contact_id),
         ];
     }
     
@@ -384,17 +398,17 @@ setcookie(
                         continue;
                     }
                     $safeUsername = htmlspecialchars($friend['username'], ENT_QUOTES, 'UTF-8');
-                    $capitalizedStatus = ucfirst($friend['status']);
+                    $capitalizedStatus = $friend['is_group'] ? $friend['members_count'] . ' Members' : ucfirst($friend['status']);
                     $isPremium = $friend['premium'] == 1;   
                     $encodedUsername = urlencode($friend['username']);
 
                     echo '
-                    <a class="info-profile '.($friend['username'] == $dm_name ? 'active' : '').'" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
+                    <a class="info-profile '.($friend['username'] == $dm_name ? 'active' : '').'" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'>
                         <div class="self-info-profile-status" data-user-id="'.$friend['id'].'">
                             <img class="self-info-profile-picture" src="'.$friend['profile_picture'].'" />
-                            <div class="self-info-status-circle-outer">
+                            '.($friend['is_group'] ? '<div class="self-info-status-circle-outer">
                                 <div class="self-info-status-circle-inner '.$friend['status'].'"></div>
-                            </div>
+                            </div>' : '').'
                         </div>
                         <div class="self-info-status-username">
                             <div class="self-info-profile-username-container">
@@ -405,7 +419,6 @@ setcookie(
                     </a>';
                 }
                 ?>
-
             </div>
         </div>
 
