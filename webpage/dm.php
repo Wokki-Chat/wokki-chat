@@ -200,7 +200,7 @@ if ($userLookupResult->num_rows > 0) {
     
     if ($groupLookupResult->num_rows > 0) {
         $groupLookupRow = $groupLookupResult->fetch_assoc();
-        $contact_id = $groupLookupRow['id'];
+        $contact_id = $groupLookupRow['contact_id'];
         $is_group = true;
     }
     
@@ -255,7 +255,7 @@ if (!$is_group) {
 }
 
 if ($is_group) {
-    $groupInfoStmt = $mysqli->prepare("SELECT contact_name, contact_picture FROM contacts WHERE id = ?");
+    $groupInfoStmt = $mysqli->prepare("SELECT contact_name, contact_picture FROM contacts WHERE contact_id = ?");
     $groupInfoStmt->bind_param("i", $contact_id);
     $groupInfoStmt->execute();
     $groupInfoResult = $groupInfoStmt->get_result();
