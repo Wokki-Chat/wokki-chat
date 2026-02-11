@@ -487,6 +487,7 @@ export class MessageHandler {
 		this.sanitizer = new Sanitizer(this.user_id, null, null);
 		this.textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
 		this.textarea = textarea;
+		this.playerOriginalState = new Map();
 	}
 
 	initU(usersList) {
@@ -550,7 +551,7 @@ export class MessageHandler {
 		}
 	}
 	audioLoaded(audio) {
-		return new Promise((resolve) => {
+		return Promise((resolve) => {
 			if (audio.readyState >= 1) {
 				resolve();
 			} else {
@@ -558,6 +559,184 @@ export class MessageHandler {
 			}
 		});
 	}
+
+	getSnapPositions() {
+		const padding = 20;
+		const playerWidth = 320;
+		const playerHeight = 80;
+		
+		const viewportWidth = window.innerWidth;
+		const viewportHeight = window.innerHeight;
+		
+		return {
+			'top-left': { x: padding, y: padding },
+			'top-center': { x: (viewportWidth - playerWidth) / 2, y: padding },
+			'top-right': { x: viewportWidth - playerWidth - padding, y: padding },
+			'center-left': { x: padding, y: (viewportHeight - playerHeight) / 2 },
+			'center-right': { x: viewportWidth - playerWidth - padding, y: (viewportHeight - playerHeight) / 2 },
+			'bottom-left': { x: padding, y: viewportHeight - playerHeight - padding },
+			'bottom-center': { x: (viewportWidth - playerWidth) / 2, y: viewportHeight - playerHeight - padding },
+			'bottom-right': { x: viewportWidth - playerWidth - padding, y: viewportHeight - playerHeight - padding }
+		};
+	}
+
+	findClosestSnapPosition(x, y) {
+		const positions = this.getSnapPositions();
+		let closest = null;
+		let minDistance = Infinity;
+		
+		for (const [name, pos] of Object.entries(positions)) {
+			const distance = Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2));
+			if (distance < minDistance) {
+				minDistance = distance;
+				closest = { name, ...pos };
+			}
+		}
+		
+		return closest;
+	}
+
+	makePlayerFloating(el, audioSrc) {
+		if (el.classList.contains('floating-player')) return;
+		
+		const originalParent = el.parentElement;
+		const originalIndex = Array.from(originalParent.children).indexOf(el);
+		const pageUrl = window.location.pathname;
+		
+		this.playerOriginalState.set(audioSrc, {
+			originalParent,
+			originalIndex,
+			pageUrl
+		});
+		
+		el.classList.add('floating-player');
+		el.style.position = 'fixed';
+		el.style.zIndex = '9999';
+		el.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
+		el.style.borderRadius = '12px';
+		el.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+		el.style.cursor = 'move';
+		
+		const snapPos = this.getSnapPositions()['bottom-right'];
+		el.style.left = `${snapPos.x}px`;
+		el.style.top = `${snapPos.y}px`;
+		
+		this.attachDragBehavior(el);
+		
+		document.body.appendChild(el);
+	}
+
+	restorePlayerToOriginal(el, audioSrc) {
+		const originalState = this.playerOriginalState.get(audioSrc);
+		if (!originalState) return;
+		
+		el.classList.remove('floating-player');
+		el.style.position = '';
+		el.style.zIndex = '';
+		el.style.boxShadow = '';
+		el.style.borderRadius = '';
+		el.style.transition = '';
+		el.style.cursor = '';
+		el.style.left = '';
+		el.style.top = '';
+		
+		const newParentSelector = originalState.originalParent.className 
+			? `.${originalState.originalParent.className.split(' ').join('.')}`
+			: originalState.originalParent.tagName;
+		
+		const potentialParents = document.querySelectorAll(newParentSelector);
+		
+		let targetParent = potentialParents[0];
+		
+		if (targetParent) {
+			const children = Array.from(targetParent.children);
+			if (originalState.originalIndex >= children.length) {
+				targetParent.appendChild(el);
+			} else {
+				targetParent.insertBefore(el, children[originalState.originalIndex]);
+			}
+		}
+		
+		this.playerOriginalState.delete(audioSrc);
+	}
+
+	attachDragBehavior(el) {
+		let isDragging = false;
+		let startX, startY, initialLeft, initialTop;
+		
+		const onMouseDown = (e) => {
+			if (e.target.closest('button, input[type="range"]')) return;
+			
+			isDragging = true;
+			startX = e.clientX;
+			startY = e.clientY;
+			initialLeft = el.offsetLeft;
+			initialTop = el.offsetTop;
+			
+			el.style.transition = 'none';
+			el.style.cursor = 'grabbing';
+			
+			e.preventDefault();
+		};
+		
+		const onMouseMove = (e) => {
+			if (!isDragging) return;
+			
+			const deltaX = e.clientX - startX;
+			const deltaY = e.clientY - startY;
+			
+			const newLeft = initialLeft + deltaX;
+			const newTop = initialTop + deltaY;
+			
+			const maxLeft = window.innerWidth - el.offsetWidth;
+			const maxTop = window.innerHeight - el.offsetHeight;
+			
+			el.style.left = `${Math.max(0, Math.min(newLeft, maxLeft))}px`;
+			el.style.top = `${Math.max(0, Math.min(newTop, maxTop))}px`;
+		};
+		
+		const onMouseUp = () => {
+			if (!isDragging) return;
+			
+			isDragging = false;
+			el.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+			el.style.cursor = 'move';
+			
+			const currentLeft = el.offsetLeft;
+			const currentTop = el.offsetTop;
+			const snapPos = this.findClosestSnapPosition(currentLeft, currentTop);
+			
+			el.style.left = `${snapPos.x}px`;
+			el.style.top = `${snapPos.y}px`;
+			
+			localStorage.setItem('floatingPlayerPosition', snapPos.name);
+		};
+		
+		el.addEventListener('mousedown', onMouseDown);
+		document.addEventListener('mousemove', onMouseMove);
+		document.addEventListener('mouseup', onMouseUp);
+		
+		el.addEventListener('touchstart', (e) => {
+			const touch = e.touches[0];
+			onMouseDown({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => e.preventDefault(), target: e.target });
+		});
+		
+		document.addEventListener('touchmove', (e) => {
+			if (!isDragging) return;
+			const touch = e.touches[0];
+			onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+		});
+		
+		document.addEventListener('touchend', onMouseUp);
+		
+		const savedPosition = localStorage.getItem('floatingPlayerPosition');
+		if (savedPosition && this.getSnapPositions()[savedPosition]) {
+			const pos = this.getSnapPositions()[savedPosition];
+			el.style.left = `${pos.x}px`;
+			el.style.top = `${pos.y}px`;
+		}
+	}
+
 	async initCustomPlayer(el) {
 		const audioSrc = el.dataset.audioSrc;
 		const originalName = el.dataset.originalname;
@@ -645,6 +824,20 @@ export class MessageHandler {
 			const width = timeBox.offsetWidth;
 			timeBox.style.minWidth = `${width}px`;
 		});
+
+		if (window.swup) {
+			window.swup.hooks.on('page:view', () => {
+				const currentPageUrl = window.location.pathname;
+				const originalState = this.playerOriginalState.get(audioSrc);
+				if (originalState && originalState.pageUrl === currentPageUrl) {
+					this.restorePlayerToOriginal(el, audioSrc);
+				} else {
+					if (!audio.paused && !el.classList.contains('floating-player')) {
+						this.makePlayerFloating(el, audioSrc);
+					}
+				}
+			});
+		}
 	}
 	deleteMsg(id) {
 		const indexInCache = this.messageCache.delete(id);
