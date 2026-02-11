@@ -65,6 +65,7 @@ $friendsStmt = $mysqli->prepare("
     WHERE cu1.user_id = ? 
       AND cr.contact_id IS NULL
       AND (SELECT COUNT(*) FROM contact_users WHERE contact_id = cu1.contact_id) = 2
+    GROUP BY u.id
 ");
 $friendsStmt->bind_param("i", $user_id);
 $friendsStmt->execute();
