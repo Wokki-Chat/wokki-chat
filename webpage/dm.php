@@ -262,6 +262,20 @@ if (!$is_group) {
     $contactStmt->close();
 }
 
+function getMembersCount($mysqli, $contact_id) {
+    $stmt = $mysqli->prepare("
+        SELECT COUNT(*) as members_count
+        FROM contact_users
+        WHERE contact_id = ?
+    ");
+    $stmt->bind_param("i", $contact_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $stmt->close();
+    return $row['members_count'];
+}
+
 if ($is_group) {
     $groupInfoStmt = $mysqli->prepare("SELECT contact_name, contact_picture FROM contacts WHERE contact_id = ?");
     $groupInfoStmt->bind_param("i", $contact_id);
@@ -283,7 +297,8 @@ if ($is_group) {
             'created_at' => null,
             'is_group' => true,
             'type' => 'group',
-            'id' => null
+            'id' => null,
+            'members_count' => getMembersCount($mysqli, $contact_id)
         ];
     }
     
@@ -303,6 +318,7 @@ if ($is_group) {
     if ($dm_info) {
         $dm_info['is_group'] = false;
         $dm_info['type'] = 'individual';
+        $dm_info['members_count'] = null;
         $dm_info_result->data_seek(0);
         while ($row = $dm_info_result->fetch_assoc()) {
             if ($row['tag_name']) {
