@@ -162,13 +162,26 @@ async def delete_cached_message(server_id: str = None, channel_id: str = None, c
             await redis_client.lrem(key, 0, msg)
             break
         
-async def get_cached_users(server_id: str):
-    key = f"server_users:{server_id}"
+async def get_cached_users(server_id: str = None, contact_id: str = None):
+    if contact_id:
+        key = f"contact_users:{contact_id}"
+    elif server_id:
+        key = f"server_users:{server_id}"
+    else:
+        raise ValueError("Must provide either contact_id or server_id")
+    
     cached = await redis_client.lrange(key, 0, -1)
     return [json.loads(msg) for msg in cached]
 
-async def cache_users(server_id: str, users: list):
-    key = f"server_users:{server_id}"
+async def cache_users(server_id: str = None, users: list = [], contact_id: str = None):
+    """Cache a list of users for either a server or contact"""
+    if contact_id:
+        key = f"contact_users:{contact_id}"
+    elif server_id:
+        key = f"server_users:{server_id}"
+    else:
+        raise ValueError("Must provide either contact_id or server_id")
+    
     await redis_client.delete(key)
     for user in users:
         await redis_client.rpush(key, json.dumps(user))

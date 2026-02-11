@@ -227,7 +227,7 @@ async def get_server_users(sid, metadata, data):
         await sio_instance.sio.emit('get_server_users_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
         
-    cached_users = await get_cached_users(server_id)
+    cached_users = await get_cached_users(server_id = server_id)
     if cached_users:
         await sio_instance.sio.emit('server_users', cached_users, to=sid)
         
@@ -235,7 +235,7 @@ async def get_server_users(sid, metadata, data):
         async with config.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 users = await get_server_users_info(cur, server_id)
-                await cache_users(server_id, users)
+                await cache_users(server_id = server_id, users = users)
                 await sio_instance.sio.emit("server_users", users, to=sid)
                 await addMessageToLogs(f"Emitted server_users to {user_id}, Sent {len(users)} users to {user_id}", "INFO")
         

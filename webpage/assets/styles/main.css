@@ -4931,6 +4931,19 @@ hr {
 
 .group-users {
     padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.group-users-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.group-users .users-title {
+    margin: 0px;
 }
 
 .dm-info-item.horizontal-spacebetween {

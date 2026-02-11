@@ -737,3 +737,138 @@ export class StaticProfileManager extends UserPopupManager {
         }
     }
 }
+
+export class UserRenderer extends UserPopupManager {
+
+    constructor({ user_id, access_token, userListContainer }) {
+        super({ user_id, access_token });
+        this.user_id = user_id;
+        this.sanitizer = new Sanitizer(user_id);
+        this.userListContainer = userListContainer;
+    }
+
+	async render(user, insertEl) {
+		this.userListContainer.querySelectorAll(`[data-user-id="${user.id}"]`).forEach(el => el.remove());
+
+		const userEl = document.createElement("div");
+		userEl.classList.add("info-profile");
+		userEl.setAttribute("data-user-id", user.id);
+		userEl.innerHTML = `
+			<div class="self-info-profile-status" data-user-id="${user.id}">
+				<img class="self-info-profile-picture" src="${user.profile_picture}" />
+				<div class="self-info-status-circle-outer">
+					<div class="self-info-status-circle-inner ${user.status}"></div>
+				</div>
+			</div>
+			<div class="self-info-status-username">
+				<div class="self-info-profile-username-container"><p class="self-info-username">${user.display_name ? sanitizer.sanitize(user.display_name) : sanitizer.sanitize(user.username)}</p>
+					${user.bot ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
+					</div>
+				<p class="self-info-status">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</p>
+			</div>
+		`;
+
+		insertEl.appendChild(userEl);
+
+		userEl.onclick = async(event) => {
+			event.stopPropagation();
+			const allUserEls = document.querySelectorAll(".info-profile");
+			allUserEls.forEach(el => el.classList.remove("active"));
+			
+			userEl.classList.add("active");
+
+			const existingPopup = document.querySelector(`.user-info-profile-popup[data-user-id='${user.id}']`);
+			if (existingPopup) {
+				existingPopup.remove();
+				userEl.classList.remove("active");
+				return;
+			}
+
+			document.querySelector(".user-info-profile-popup")?.remove();
+
+			const popup = await this.openUserPopup(user);
+
+			document.body.appendChild(popup);
+
+			let rect = userEl.getBoundingClientRect();
+			let popupHeight = popup.offsetHeight;
+			let viewportHeight = window.innerHeight;
+
+			let top = rect.top + window.scrollY;
+
+			popup.style.top = "";
+			popup.style.bottom = "";
+
+			if (top + popupHeight > window.scrollY + viewportHeight - 15) {
+				popup.style.bottom = "15px";
+				popup.style.top = "";
+			} else {
+				popup.style.top = top + "px";
+			}
+
+			if (user.widgets?.Spotify?.item) {
+				this.updateSpotifyPopup(popup, user.widgets.Spotify);
+			}
+
+			if (!document.body.hasAttribute("data-popup-listener")) {
+				document.addEventListener("click", (e) => {
+					const popupEl = document.querySelector(".user-info-profile-popup");
+					if (popupEl && !popupEl.contains(e.target)) {
+						document.querySelectorAll(".info-profile.active").forEach(el => {
+							el.classList.remove("active");
+						});
+						popupEl.remove();
+					}
+				});
+				document.body.setAttribute("data-popup-listener", "true");
+			}
+		};
+	}
+
+	updateSpotifyPopup(popup, spotify) {
+		const progressBar = popup.querySelector(".spotify-progress-bar");
+		const timeLeftEl = popup.querySelector(".spotify-time-left");
+		const timeRightEl = popup.querySelector(".spotify-time-right");
+		const trackNameEl = popup.querySelector(".spotify-track-name");
+		const artistsEl = popup.querySelector(".spotify-artists");
+		const albumCoverEl = popup.querySelector(".spotify-info-cover img");
+
+		const duration = spotify.item.duration_ms;
+		const startTime = Date.now() - spotify.progress_ms;
+
+		timeRightEl.textContent = msToTime(duration);
+
+		if (popup.spotifyInterval) clearInterval(popup.spotifyInterval);
+
+		function tick() {
+			let progress = Math.min(Date.now() - startTime, duration);
+			timeLeftEl.textContent = this.msToTime(progress);
+			progressBar.style.width = (progress / duration) * 100 + "%";
+		}
+
+		tick();
+		popup.spotifyInterval = setInterval(tick, 1000);
+
+		if (trackNameEl && spotify.item.name !== trackNameEl.title) {
+			trackNameEl.textContent = spotify.item.name.length > 23 ? spotify.item.name.slice(0, 20) + '…' : spotify.item.name;
+			trackNameEl.title = spotify.item.name;
+			trackNameEl.href = spotify.item.external_urls.spotify;
+		}
+
+		if (artistsEl) {
+			artistsEl.innerHTML = spotify.item.artists.map(artist => {
+				const name = artist.name.length > 18 ? artist.name.slice(0, 15) + '…' : artist.name;
+				return `<a href="${artist.external_urls.spotify}" target="_blank" title="${artist.name}">${name}</a>`;
+			}).join(', ');
+		}
+
+		if (albumCoverEl) albumCoverEl.src = spotify.item.album.images[0]?.url;
+	}
+
+	msToTime(ms) {
+		const totalSeconds = Math.floor(ms / 1000);
+		const minutes = Math.floor(totalSeconds / 60);
+		const seconds = totalSeconds % 60;
+		return minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+	}
+}

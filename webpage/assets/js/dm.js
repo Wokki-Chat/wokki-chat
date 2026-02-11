@@ -31,6 +31,8 @@ function initDm() {
 
 	const usersContainer = document.querySelector(".users");
 
+	const groupUsersContainer = document.querySelector(".group-users-content");
+
     const sanitizer = new Sanitizer(user_id, [], null);
     const textareaFormatter = new TextareaFormatter(user_id, [], null, textarea);
     const mentions = new Mentions({ user_id, channels: [], server_id: null, users_list: [] });
@@ -296,6 +298,51 @@ function initDm() {
 
 	if (contact_type == "individual") {
 		staticProfileManager.openStaticProfile(contact_user_id, usersContainer);
+	} else {
+		socket.emit("get_contact_users", { access_token, contact_id });
+
+		socket.on("user_widget_updated", (data) => {
+			if (!groupUsersContainer) return;
+			const userIndex = usersList.findIndex(u => u.id === data.id);
+			if (userIndex !== -1) {
+				usersList[userIndex] = { ...usersList[userIndex], ...data };
+				userRenderer.render(usersList[userIndex], groupUsersContainer);
+			}
+
+			const popup = document.querySelector(".user-info-profile-popup");
+			if (popup && popup.dataset.userId === data.id) {
+				const spotify = data.Spotify;
+				if (spotify && spotify.item) userRenderer.updateSpotifyPopup(popup, spotify);
+				else {
+					const spotifyContainer = popup.querySelector(".dm-info-container .spotify-info")?.parentElement;
+					if (spotifyContainer) spotifyContainer.remove();
+					if (popup.spotifyInterval) clearInterval(popup.spotifyInterval);
+				}
+			}
+		});
+
+		socket.on("contact_users", async (users) => {
+			if (!groupUsersContainer) return;
+			groupUsersContainer.innerHTML = "";
+
+			usersList = users;
+
+			sanitizer.init(users);
+			mentions.init(users);
+			messageHandler.initU(users);
+
+			await Promise.all(users.map(user => {
+				userRenderer.render(user, groupUsersContainer);
+			}));
+		});
+
+		socket.on("user_updated", async (user) => {
+			if (!groupUsersContainer) return;
+			const userIndex = usersList.findIndex(u => String(u.id) === user.id);
+			if (userIndex === -1) return;
+			
+			userRenderer.render(usersList[userIndex], groupUsersContainer);
+		});
 	}
 }
 

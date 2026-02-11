@@ -474,7 +474,9 @@ setcookie(
             <?php if ($dm_info['is_group']): ?>
             <div class="group-users">
                 <p class="users-title">Members - <?php echo $dm_info['members_count']; ?></p>
+                <div class="group-users-content">
 
+                </div>
             </div>
             <?php endif; ?>
         </div>
