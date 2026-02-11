@@ -488,6 +488,7 @@ export class MessageHandler {
 		this.textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
 		this.textarea = textarea;
 		this.uploadContainer = uploadContainer;
+		console.log(uploadContainer);
 	}
 
 	initU(usersList) {
@@ -792,6 +793,7 @@ export class MessageHandler {
 				server_id: this.server_id 
 			});
 		}
+		console.log(this.uploadContainer);
 
 		if (this.uploadContainer) {
 			this.uploadContainer.innerHTML = '';
