@@ -793,12 +793,16 @@ export class MessageHandler {
 				server_id: this.server_id 
 			});
 		}
-		console.log(this.uploadContainer);
 
 		if (this.uploadContainer) {
-			console.log(this.uploadContainer);
+			console.log('Before:', this.uploadContainer.innerHTML);
+			console.log('Parent:', this.uploadContainer.parentNode);
 			this.uploadContainer.innerHTML = '';
-			console.log(this.uploadContainer);
+			console.log('After:', this.uploadContainer.innerHTML);
+			
+			setTimeout(() => {
+				console.log('1 second later:', this.uploadContainer.innerHTML);
+			}, 1000);
 		}
 		this.selectedFiles = [];
 	}
