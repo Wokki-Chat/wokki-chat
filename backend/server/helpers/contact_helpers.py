@@ -36,5 +36,11 @@ async def get_contact_users_info(cur, contact_id):
     """, (contact_id,))
     
     user_ids = [row['user_id'] async for row in cur]
-    users = await asyncio.gather(*[get_user_info_from_id(cur, user_id) for user_id in user_ids])
-    return [user for user in users if user is not None]
+    users = []
+
+    for user_id in user_ids:
+        user = await get_user_info_from_id(cur, user_id)
+        if user is not None:
+            users.append(user)
+    
+    return users
