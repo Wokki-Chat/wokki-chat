@@ -123,16 +123,16 @@ while ($row = $friendsResult->fetch_assoc()) {
 $friendsStmt->close();
 
 $groupsStmt = $mysqli->prepare("
-    SELECT c.id as contact_id, c.contact_name, c.contact_picture,
+    SELECT c.contact_id as contact_id, c.contact_name, c.contact_picture,
            'group' as contact_type
     FROM contact_users cu
-    JOIN contacts c ON cu.contact_id = c.id
-    LEFT JOIN contact_requests cr ON c.id = cr.contact_id
+    JOIN contacts c ON cu.contact_id = c.contact_id
+    LEFT JOIN contact_requests cr ON c.contact_id = cr.contact_id
     WHERE cu.user_id = ? 
       AND cr.contact_id IS NULL
       AND c.contact_name IS NOT NULL
-      AND (SELECT COUNT(*) FROM contact_users WHERE contact_id = c.id) > 2
-    GROUP BY c.id
+      AND (SELECT COUNT(*) FROM contact_users WHERE contact_id = c.contact_id) > 2
+    GROUP BY c.contact_id
 ");
 $groupsStmt->bind_param("i", $user_id);
 $groupsStmt->execute();
