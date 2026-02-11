@@ -34,7 +34,7 @@ function initDm() {
     const sanitizer = new Sanitizer(user_id, [], null);
     const textareaFormatter = new TextareaFormatter(user_id, [], null, textarea);
     const mentions = new Mentions({ user_id, channels: [], server_id: null, users_list: [] });
-	const staticProfileManager = new StaticProfileManager(access_token);
+	const staticProfileManager = new StaticProfileManager(access_token, user_id);
     
     const messageHandler = new MessageHandler({ 
         user_id, 

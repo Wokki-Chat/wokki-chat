@@ -533,8 +533,9 @@ export class UserPopupManager {
 }
 
 export class StaticProfileManager {
-    constructor(access_token) {
+    constructor(access_token, user_id) {
         this.access_token = access_token;
+        this.sanitizer = new Sanitizer(user_id);
     }
 
     async loadStaticProfile(user_id) {
