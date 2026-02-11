@@ -27,7 +27,7 @@ export class UserPopupManager {
         return connections;
     }
 
-    async getGithubWidget(github, user) {
+    async getGithubWidget(github, customStyle) {
         if (!github?.data?.user?.contributionsCollection?.contributionCalendar?.weeks) {
             return '';
         }
@@ -156,7 +156,7 @@ export class UserPopupManager {
                 style="background: ${day.color}; grid-column: ${col}; grid-row: ${row};"></div>`;
         }).join('');
 
-        const containerStyle = user.profile_color_primary && user.profile_color_accent 
+        const containerStyle = customStyle 
             ? 'style="background-color: rgba(255, 255, 255, 0.1); border: none;"' 
             : '';
 
@@ -198,6 +198,7 @@ export class UserPopupManager {
         popup.className = "user-info-profile-popup";
         popup.setAttribute("data-user-id", user.id);
         let lightText = false;
+        let customStyle = false;
         if (user.profile_color_primary && user.profile_color_accent) {
             let color = user.profile_color_primary;
             let r = parseInt(color.slice(1,3),16);
@@ -214,6 +215,8 @@ export class UserPopupManager {
             lightText = brightness <= 150;
             popup.dataset.lightText = lightText.toString();
             popup.dataset.customStyle = 'true';
+
+            customStyle = true;
         }
         let userBio = await this.sanitizer.sanitizeMrk(user.bio);
         if (userBio.length > 55) {
@@ -283,7 +286,7 @@ export class UserPopupManager {
                     </div>
                 `
                 : user.widgets?.GitHub
-                    ? await this.getGithubWidget(user.widgets.GitHub, user)
+                    ? await this.getGithubWidget(user.widgets.GitHub, customStyle)
                     : ''
             }
         `;
@@ -468,7 +471,7 @@ export class UserPopupManager {
                                 if (githubWidget.error) {
                                     widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
                                 } else {
-                                    widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, profileData);
+                                    widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, custom_style_data);
                                 }
                             } else {
                                 widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
@@ -493,7 +496,7 @@ export class UserPopupManager {
                             if (githubWidget.error) {
                                 widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
                             } else {
-                                widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, profileData);
+                                widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, custom_style_data);
                             }
                         } else {
                             widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
@@ -621,7 +624,7 @@ export class StaticProfileManager extends UserPopupManager {
             </div>
         `;
 
-        return container;
+        return { html: container, custom_style_data: customStyleData};
     }
 
     async openStaticProfile(user_id, appendToDiv) {
@@ -649,7 +652,7 @@ export class StaticProfileManager extends UserPopupManager {
                 try {
                     const data = JSON.parse(line);
                     if (data.user && !profileDiv) {
-                        profileDiv = await this.makeStaticProfile(data.user);
+                        const { html: profileDiv, custom_style_data } = await this.makeStaticProfile(data.user);
                         appendToDiv.appendChild(profileDiv);
                     }
 
@@ -662,7 +665,7 @@ export class StaticProfileManager extends UserPopupManager {
                                 if (githubWidget.error) {
                                     widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
                                 } else {
-                                    widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, data.user);
+                                    widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, custom_style_data);
                                 }
                             } else if (data.widgets.Spotify) {
                                 widgetsDiv.innerHTML = '';
@@ -688,10 +691,10 @@ export class StaticProfileManager extends UserPopupManager {
                         if (githubWidget.error) {
                             widgetsDiv.innerHTML = `<p class="dm-info-item-value">GitHub widget error: ${githubWidget.error}</p>`;
                         } else {
-                            widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, data.user);
+                            widgetsDiv.innerHTML = await this.getGithubWidget(githubWidget, custom_style_data);
                         }
                     } else {
-                        widgetsDiv.innerHTML = '<p class="dm-info-item-value">This user has no widgets</p>';
+                        widgetsDiv.innerHTML = '<p class="dm-info-item-value"></p>';
                     }
                 }
             } catch(e) {
