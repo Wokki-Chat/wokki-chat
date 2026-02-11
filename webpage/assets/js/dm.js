@@ -40,6 +40,11 @@ function initDm() {
 	const staticProfileManager = new StaticProfileManager(access_token, user_id);
 
 	const userRenderer = new UserRenderer({ user_id, access_token, userListContainer: groupUsersContainer });
+
+	const textareaEmojiOptions = document.getElementById("emoji-option");
+	textareaEmojiOptions.addEventListener("click", async () => {
+		await emojis.picker(textarea, textareaEmojiOptions, true);
+	})
     
     const messageHandler = new MessageHandler({ 
         user_id, 
