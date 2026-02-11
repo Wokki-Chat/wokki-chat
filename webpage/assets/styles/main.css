@@ -4930,7 +4930,3 @@ hr {
 .users .user-info-profile-static .user-info-profile-popup-banner {
     border-radius: 0px !important;
 }
-
-.users .user-info-profile-static .dm-info-container {
-    height: 100% !important;
-}
