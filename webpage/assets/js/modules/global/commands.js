@@ -421,5 +421,20 @@ export class CommandsManager {
             content: updateHTML ? updateHTML : 'No update info found',
             custom_id: 'update_popup'
         });
+
+        const popupEl = document.getElementById("update_popup");
+        
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                const popup = document.getElementById("update_popup");
+                if (popup) jspt.closePopup("update_popup");
+            }
+        });
+
+        popupEl.addEventListener("click", (e) => {
+            if (!e.target.closest(".popup")) {
+                jspt.closePopup("update_popup");
+            }
+        });
     }
 }
