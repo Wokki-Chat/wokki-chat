@@ -487,7 +487,7 @@ export class MessageHandler {
 		this.sanitizer = new Sanitizer(this.user_id, null, null);
 		this.textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
 		this.textarea = textarea;
-		this.playerOriginalState = new Map();
+		this.currentFloatingPlayer = null;
 	}
 
 	initU(usersList) {
@@ -551,7 +551,7 @@ export class MessageHandler {
 		}
 	}
 	audioLoaded(audio) {
-    	return new Promise((resolve) => {
+		return new Promise((resolve) => {
 			if (audio.readyState >= 1) {
 				resolve();
 			} else {
@@ -596,18 +596,33 @@ export class MessageHandler {
 		return closest;
 	}
 
+	stopAndRemoveFloatingPlayer() {
+		if (!this.currentFloatingPlayer) return;
+		
+		const audioSrc = this.currentFloatingPlayer.dataset.audioSrc;
+		const audio = this.customPlayers.get(audioSrc);
+		
+		if (audio) {
+			audio.pause();
+			audio.currentTime = 0;
+		}
+		
+		this.currentFloatingPlayer.remove();
+		this.currentFloatingPlayer = null;
+	}
+
 	makePlayerFloating(el, audioSrc) {
 		if (el.classList.contains('floating-player')) return;
 		
+		this.stopAndRemoveFloatingPlayer();
+		
+		el.dataset.originalPage = window.location.pathname;
+		
 		const originalParent = el.parentElement;
 		const originalIndex = Array.from(originalParent.children).indexOf(el);
-		const pageUrl = window.location.pathname;
-		
-		this.playerOriginalState.set(audioSrc, {
-			originalParent,
-			originalIndex,
-			pageUrl
-		});
+		el.dataset.originalParentClass = originalParent.className;
+		el.dataset.originalParentTag = originalParent.tagName;
+		el.dataset.originalIndex = originalIndex;
 		
 		el.classList.add('floating-player');
 		el.style.position = 'fixed';
@@ -624,11 +639,12 @@ export class MessageHandler {
 		this.attachDragBehavior(el);
 		
 		document.body.appendChild(el);
+		
+		this.currentFloatingPlayer = el;
 	}
 
-	restorePlayerToOriginal(el, audioSrc) {
-		const originalState = this.playerOriginalState.get(audioSrc);
-		if (!originalState) return;
+	restorePlayerToOriginal(el) {
+		if (!el) return;
 		
 		el.classList.remove('floating-player');
 		el.style.position = '';
@@ -640,24 +656,34 @@ export class MessageHandler {
 		el.style.left = '';
 		el.style.top = '';
 		
-		const newParentSelector = originalState.originalParent.className 
-			? `.${originalState.originalParent.className.split(' ').join('.')}`
-			: originalState.originalParent.tagName;
+		const originalParentClass = el.dataset.originalParentClass;
+		const originalParentTag = el.dataset.originalParentTag;
+		const originalIndex = parseInt(el.dataset.originalIndex);
+		
+		const newParentSelector = originalParentClass 
+			? `.${originalParentClass.split(' ').join('.')}`
+			: originalParentTag;
 		
 		const potentialParents = document.querySelectorAll(newParentSelector);
-		
 		let targetParent = potentialParents[0];
 		
 		if (targetParent) {
 			const children = Array.from(targetParent.children);
-			if (originalState.originalIndex >= children.length) {
+			if (originalIndex >= children.length) {
 				targetParent.appendChild(el);
 			} else {
-				targetParent.insertBefore(el, children[originalState.originalIndex]);
+				targetParent.insertBefore(el, children[originalIndex]);
 			}
 		}
 		
-		this.playerOriginalState.delete(audioSrc);
+		delete el.dataset.originalPage;
+		delete el.dataset.originalParentClass;
+		delete el.dataset.originalParentTag;
+		delete el.dataset.originalIndex;
+		
+		if (this.currentFloatingPlayer === el) {
+			this.currentFloatingPlayer = null;
+		}
 	}
 
 	attachDragBehavior(el) {
@@ -790,6 +816,10 @@ export class MessageHandler {
 
 		playPauseBtn.addEventListener('click', () => {
 			if (audio.paused) {
+				if (this.currentFloatingPlayer && this.currentFloatingPlayer !== el) {
+					this.stopAndRemoveFloatingPlayer();
+				}
+				
 				audio.play();
 				playPauseBtn.textContent = 'pause';
 
@@ -828,13 +858,17 @@ export class MessageHandler {
 		if (window.swup) {
 			window.swup.hooks.on('page:view', () => {
 				const currentPageUrl = window.location.pathname;
-				const originalState = this.playerOriginalState.get(audioSrc);
-				if (originalState && originalState.pageUrl === currentPageUrl) {
-					this.restorePlayerToOriginal(el, audioSrc);
-				} else {
-					if (!audio.paused && !el.classList.contains('floating-player')) {
-						this.makePlayerFloating(el, audioSrc);
+				
+				if (this.currentFloatingPlayer) {
+					const originalPage = this.currentFloatingPlayer.dataset.originalPage;
+					
+					if (originalPage === currentPageUrl) {
+						this.restorePlayerToOriginal(this.currentFloatingPlayer);
 					}
+				}
+				
+				if (!audio.paused && !el.classList.contains('floating-player')) {
+					this.makePlayerFloating(el, audioSrc);
 				}
 			});
 		}
