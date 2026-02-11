@@ -722,23 +722,15 @@ export class MessageHandler {
 	getMessageById(id) {
 		return new Promise((resolve, reject) => {
 			if (!id) return resolve(null);
-			console.log(this.socket);
 
 			this.socket.emit("get_message_by_id", { access_token: this.access_token, message_id: id, server_id: this.server_id, channel_id: this.channel_id, contact_id: this.contact_id });
 
-			function handler(message) {
-				if (message === null || message === undefined) {
-					console.log(this.socket);
-					this.socket.off("message_by_id", handler);
-					resolve(null);
-					return;
-				}
-
+			const handler = (message) => {
 				this.socket.off("message_by_id", handler);
-				resolve(message);
-			}
+				resolve(message ?? null);
+			};
 
-			this.socket.off("message_by_id", handler);
+			this.socket.on("message_by_id", handler);
 
 			setTimeout(() => {
 				this.socket.off("message_by_id", handler);
