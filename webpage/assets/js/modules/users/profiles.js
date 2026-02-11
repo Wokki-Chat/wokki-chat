@@ -657,10 +657,11 @@ export class StaticProfileManager extends UserPopupManager {
                 try {
                     const data = JSON.parse(line);
                     if (data.user && !profileDiv) {
-                        const { html: profileDiv, custom_style_data } = await this.makeStaticProfile(data.user);
+                        const result = await this.makeStaticProfile(data.user);
+                        profileDiv = result.html;
                         appendToDiv.appendChild(profileDiv);
 
-                        if (custom_style_data) {
+                        if (result.custom_style_data) {
                             customStyleData = true;
                         }
                     }
