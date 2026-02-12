@@ -534,7 +534,6 @@ export class MessageHandler {
 		const nearBottom = scrollHeightBefore - scrollTopBefore - this.messageContainer.clientHeight <= 10;
 
 		const insertIndex = this.messageCache.insertIntoCache(msg, el);
-		
 		this.insertMessageEl(el, insertIndex);
 		
 		const prevMsg = this.messageCache.cache[insertIndex - 1];
@@ -542,16 +541,15 @@ export class MessageHandler {
 			const prevDate = new Date(prevMsg.timestamp);
 			const currDate = new Date(msg.created_at);
 			
-			const prevDay = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate());
-			const currDay = new Date(currDate.getFullYear(), currDate.getMonth(), currDate.getDate());
+			prevDate.setHours(0, 0, 0, 0);
+			currDate.setHours(0, 0, 0, 0);
 			
-			if (prevDay.getTime() !== currDay.getTime()) {
+			const daysDiff = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
+			
+			if (daysDiff >= 1) {
 				const separator = this.createDateSeparator(msg.created_at);
-				this.messageContainer.insertBefore(separator, el);
+				el.insertAdjacentElement('beforebegin', separator);
 			}
-		} else if (insertIndex === 0) {
-			const separator = this.createDateSeparator(msg.created_at);
-			this.messageContainer.insertBefore(separator, el);
 		}
 		
 		this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
@@ -590,6 +588,7 @@ export class MessageHandler {
 			});
 		}
 	}
+
 	audioLoaded(audio) {
 		return new Promise((resolve) => {
 			if (audio.readyState >= 1) {
