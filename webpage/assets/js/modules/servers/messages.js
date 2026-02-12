@@ -488,7 +488,7 @@ export class MessageHandler {
 		this.textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
 		this.textarea = textarea;
 		this.uploadContainer = uploadContainer;
-		console.log(uploadContainer);
+    	this.selectedFiles = [];
 	}
 
 	initU(usersList) {
@@ -767,7 +767,7 @@ export class MessageHandler {
 		if (this.replyingTo !== null && this.replyingTo !== undefined) {
 			payload.parent_message_id = this.replyingTo;
 		}
-		
+
 		const uploadedNames = this.selectedFiles
 			.filter(f => f.savedName)
 			.map(f => ({ savedName: f.savedName, originalName: f.originalName }));
