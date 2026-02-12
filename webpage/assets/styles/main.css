@@ -1192,7 +1192,6 @@ input:checked + .slider:before {
 
 .message:hover {
     background-color: var(--clr-input-bg-darkest);
-    outline: 1px solid var(--clr-input-border-bg-darkest);
 }
 
 .mentioned {
