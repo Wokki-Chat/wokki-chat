@@ -348,6 +348,10 @@ input:checked + .slider:before {
     border-left: 2px solid transparent;
 }
 
+.server-bar-item {
+    width: calc(100% - 3px) !important;
+}
+
 .server-bar-item.server-position-line::after {
     content: '';
     position: absolute;
@@ -385,6 +389,7 @@ input:checked + .slider:before {
 
 .server-bar-item.active {
     background-color: var(--clr-popup-a20);
+    border: 1px solid var(--clr-popup-a30);
     border-left: 2px solid var(--clr-primary-a0);
 }
 .server-bar-item.active::before {
@@ -825,6 +830,7 @@ input:checked + .slider:before {
     border-radius: 9px;
     cursor: pointer;
     position: relative;
+    border: 1px solid transparent;
 }
 
 .channel-bar-channel.channel-position-line::after {
@@ -888,6 +894,7 @@ input:checked + .slider:before {
 .channel-bar-channel.active {
     color: var(--clr-text-a0);
     background-color: var(--clr-popup-a10);
+    border: 1px solid var(--clr-popup-a20);
 }
 
 .channel-bar-channel-name {
@@ -1459,6 +1466,7 @@ input:checked + .slider:before {
     transition: background-color 0.1s ease;
     text-decoration: none;
     color: var(--clr-text-a20);
+    border: 1px solid transparent;
 }
 
 .available-command {
@@ -1471,17 +1479,20 @@ input:checked + .slider:before {
 }
 .info-profile:hover {
     background-color: var(--clr-popup-a10);
+    border: 1px solid var(--clr-popup-a20);
 }
 
 .info-profile.active {
     background-color: var(--clr-popup-a10);
     color: var(--clr-text-a0);
+    border: 1px solid var(--clr-popup-a20);
 }
 
 .available-command:hover,
 .mention-item:hover,
 .request-item:hover {
     background-color: var(--clr-popup-a0);
+    border: 1px solid var(--clr-popup-a20);
 }
 
 .availible-command-bot-profile-picture,
@@ -2232,6 +2243,7 @@ code {
   align-items: center;
   gap: 10px;
   background: var(--clr-input-border-bg-darkest);
+  border: 1px solid var(--clr-input-border-bg-darkest);
   padding: 10px;
   border-radius: 12px;
   font-size: 14px;
@@ -3443,6 +3455,7 @@ ul {
     gap: 10px;
     position: relative;
     z-index: 10;
+    border: 1px solid var(--clr-popup-a10);
 }
 
 .user-info-profile-popup,
@@ -3451,7 +3464,6 @@ ul {
     right: calc(356px + 15px + 10px);
     z-index: 10;
     animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border: 3px solid var(--clr-popup-a0);
 }
 
 .user-info-profile-popup-static {
