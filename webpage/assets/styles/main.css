@@ -4878,7 +4878,7 @@ hr {
 }
 
 .separator-date {
-    color: var(--clr-text-a10);
+    color: var(--clr-text-a40);
     font-size: 14px;
     font-weight: var(--font-weight-semibold);
     white-space: nowrap;

@@ -534,6 +534,9 @@ export class MessageHandler {
 		const nearBottom = scrollHeightBefore - scrollTopBefore - this.messageContainer.clientHeight <= 10;
 
 		const insertIndex = this.messageCache.insertIntoCache(msg, el);
+		
+		this.insertMessageEl(el, insertIndex);
+		
 		const prevMsg = this.messageCache.cache[insertIndex - 1];
 		if (prevMsg) {
 			const prevDate = new Date(prevMsg.timestamp);
@@ -545,14 +548,13 @@ export class MessageHandler {
 			
 			if (daysDiff >= 1) {
 				const separator = this.createDateSeparator(msg.created_at);
-				this.messageContainer.insertBefore(separator, this.messageContainer.children[insertIndex]);
+				this.messageContainer.insertBefore(separator, el);
 			}
 		} else if (insertIndex === 0) {
 			const separator = this.createDateSeparator(msg.created_at);
-			this.messageContainer.insertBefore(separator, this.messageContainer.children[0]);
+			this.messageContainer.insertBefore(separator, el);
 		}
 		
-		this.insertMessageEl(el, insertIndex);
 		this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
 		this.messageBehaviour.attach(el, msg);
 		
