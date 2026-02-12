@@ -615,6 +615,38 @@ export class MessageHandler {
 				this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
 			});
 		}
+		this.cleanupDateSeparators();
+	}
+
+	cleanupDateSeparators() {
+		const children = Array.from(this.messageContainer.children);
+
+		for (let i = 0; i < children.length; i++) {
+			const el = children[i];
+
+			if (!el.classList.contains('message-date-separator')) continue;
+
+			const next = children[i + 1];
+			if (!next || !next.classList.contains('message')) {
+				el.remove();
+				continue;
+			}
+
+			const prevMessage = [...children.slice(0, i)]
+				.reverse()
+				.find(c => c.classList.contains('message'));
+
+			const currKey = el.dataset.dateKey;
+			const nextKey = this.getDateKey(next.dataset.timestamp);
+
+			const prevKey = prevMessage
+				? this.getDateKey(prevMessage.dataset.timestamp)
+				: null;
+
+			if (currKey !== nextKey || currKey === prevKey) {
+				el.remove();
+			}
+		}
 	}
 
 	audioLoaded(audio) {
