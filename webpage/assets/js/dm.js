@@ -34,6 +34,8 @@ function initDm() {
 
 	const groupUsersContainer = document.querySelector(".group-users-content");
 
+	const uploadContainer = document.querySelector(".input-container-2 .file-upload-container");
+
     const sanitizer = new Sanitizer(user_id, [], null);
     const textareaFormatter = new TextareaFormatter(user_id, [], null, textarea);
     const mentions = new Mentions({ user_id, channels: [], server_id: null, users_list: [] });
@@ -47,12 +49,13 @@ function initDm() {
 	})
     
     const messageHandler = new MessageHandler({ 
-        user_id, 
-        access_token, 
-        socket, 
-        messageContainer, 
-        contact_id, 
-        textarea 
+        user_id: user_id, 
+        access_token: access_token, 
+        socket: socket, 
+        messageContainer: messageContainer, 
+        contact_id: contact_id, 
+        textarea: textarea,
+        uploadContainer: uploadContainer
     });
 
     let typing = false;
