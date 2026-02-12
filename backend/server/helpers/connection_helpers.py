@@ -1,6 +1,6 @@
 import uuid
 from server.config import typing_lock, user_current_room, add_user_to_sid, get_sids_for_user, remove_user_sid, get_user_from_sid, get_bot_sid_from_id, add_sid_to_bot, get_bot_id_from_sid, remove_sid, get_typing_users, remove_typing_user, redis_client, server_name, acquire_user_lock, release_user_lock, DISCONNECT_TIMEOUT
-from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status, broadcast_user_widget_update, auth_required
+from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status, broadcast_widget_update, auth_required
 from server.helpers.server_helpers import is_user_in_server, get_member_ids_from_server
 from server.helpers.bot_helpers import is_bot_in_server, verify_bot_token
 import server.sio_instance as sio_instance
@@ -25,13 +25,13 @@ async def poll_spotify(user_id, access_token=None, refresh_token=None):
                     async with session.get("https://api.spotify.com/v1/me/player", headers=headers) as resp:
                         if resp.status == 200:
                             data = await resp.json()
-                            await broadcast_user_widget_update(user_id, "Spotify")
+                            await broadcast_widget_update(user_id, widget_name="Spotify")
                         elif resp.status == 204:
-                            await broadcast_user_widget_update(user_id, "Spotify")
+                            await broadcast_widget_update(user_id, widget_name="Spotify")
                         else:
                             await addMessageToLogs(f"Spotify API returned {resp.status} for user {user_id}", "INFO")
             else:
-                await broadcast_user_widget_update(user_id, "Spotify")
+                await broadcast_widget_update(user_id,  widget_name="Spotify")
 
             await asyncio.sleep(interval)
     except asyncio.CancelledError:

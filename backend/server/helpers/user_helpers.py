@@ -173,21 +173,46 @@ async def broadcast_user_update(user_id, is_bot=False):
                 for room in rooms
             ])
 
-async def broadcast_user_widget_update(user_id, widget_name):
-    async with config.pool.acquire() as conn:
-        async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_info = await get_user_widgets(cur, user_id, widget_name)
-            if not user_info:
-                return
-            
-            user_info["user_id"] = user_id
-            
-            user_rooms = await get_user_rooms(cur, user_id)
-            
-            for u_room in user_rooms:
-                await sio_instance.sio.emit('user_widget_updated', user_info, room=u_room)
+async def broadcast_widgets(user_id):
+    try:
+        async with config.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                widgets = await get_user_widgets(cur, user_id)
+                if widgets:
+                    await broadcast_widget_update(user_id, widgets=widgets)
+    except Exception as e:
+        await addMessageToLogs(f"Error broadcasting widgets for user {user_id}: {e}")
+
+
+async def broadcast_widget_update(user_id, widget_name=None, widgets=None):
+    try:
+        async with config.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                if widgets is None:
+                    widgets = await get_user_widgets(cur, user_id, widget_name)
+                    if not widgets:
+                        return
                 
-            return
+                user_rooms = await get_user_rooms(cur, user_id)
+                
+                update_data = {
+                    "user_id": user_id,
+                    **widgets
+                }
+                
+                for u_room in user_rooms:
+                    await sio_instance.sio.emit('user_widget_updated', update_data, room=u_room)
+                    
+    except Exception as e:
+        await addMessageToLogs(f"Error broadcasting widgets for user {user_id}: {e}")
+
+async def is_user_online(cur, user_id):
+    """Check if user is currently online"""
+    query = "SELECT COUNT(*) as count FROM user_sessions WHERE user_id = %s AND is_active = 1"
+    await cur.execute(query, (user_id,))
+    result = await cur.fetchone()
+    return result and result["count"] > 0
+
 
 async def get_user_widgets(cur, user_id, widget_name=None):
     query = """
@@ -214,6 +239,10 @@ async def get_user_widgets(cur, user_id, widget_name=None):
             continue
 
         if widget["widget_name"] == "Spotify" and widget["show_on_profile"] == 1:
+            is_online = await is_user_online(cur, user_id)
+            if not is_online:
+                continue
+                
             try:
                 now = datetime.now(timezone.utc)
                 token_valid_until = widget.get("widget_access_token_valid_until")
@@ -306,7 +335,7 @@ async def get_user_connections(cur, user_id):
         connections.append(connection)
     return connections
 
-async def get_user_info_from_id(cur, user_id):
+async def get_user_info_from_id(cur, user_id, load_widgets=True):
     query = """
         SELECT u.id, u.username, u.status, u.profile_picture, u.created_at, u.bio, u.profile_color_primary, u.profile_color_accent, u.nickname, u.profile_banner,
                t.tag_name, t.tag_icon, t.created_at
@@ -350,9 +379,9 @@ async def get_user_info_from_id(cur, user_id):
                 "tag_icon": row["tag_icon"],
                 "created_at": row["created_at"].isoformat() if row["created_at"] else None
             })
-
-    if user["status"] == "online":
-        user["widgets"] = await get_user_widgets(cur, resolved_user_id)
+    
+    if load_widgets:
+        asyncio.create_task(broadcast_widgets(resolved_user_id))
 
     return user
 
