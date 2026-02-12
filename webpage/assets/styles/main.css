@@ -3010,6 +3010,11 @@ ul {
     font-weight: var(--font-weight-semibold);
 }
 
+.pending-friend-requests,
+.outgoing-friend-requests {
+    max-width: calc(100% - 30px);
+}
+
 .pending-friend-requests-list,
 .outgoing-friend-requests-list {
     display: flex;
