@@ -4862,3 +4862,24 @@ hr {
     align-items: center !important;
     justify-content: space-between !important;
 }
+
+.message-date-separator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+    padding: 0 16px;
+}
+
+.separator-line {
+    flex: 1;
+    height: 1px;
+    background: var(--clr-popup-a10);
+}
+
+.separator-date {
+    color: var(--clr-text-a10);
+    font-size: 14px;
+    font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
+}

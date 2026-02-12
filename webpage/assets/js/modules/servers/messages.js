@@ -503,6 +503,26 @@ export class MessageHandler {
 		}
 	}
 
+	createDateSeparator(date) {
+		const separator = document.createElement('div');
+		separator.classList.add('message-date-separator');
+		
+		const dateObj = new Date(date);
+		const formattedDate = dateObj.toLocaleDateString('en-US', { 
+			month: 'long', 
+			day: 'numeric', 
+			year: 'numeric' 
+		});
+		
+		separator.innerHTML = `
+			<div class="separator-line"></div>
+			<div class="separator-date">${formattedDate}</div>
+			<div class="separator-line"></div>
+		`;
+		
+		return separator;
+	}
+
 	async handleMessage(msg) {
 		this.messageCache.removeExisting(msg.id);
 
@@ -514,6 +534,24 @@ export class MessageHandler {
 		const nearBottom = scrollHeightBefore - scrollTopBefore - this.messageContainer.clientHeight <= 10;
 
 		const insertIndex = this.messageCache.insertIntoCache(msg, el);
+		const prevMsg = this.messageCache.cache[insertIndex - 1];
+		if (prevMsg) {
+			const prevDate = new Date(prevMsg.timestamp);
+			const currDate = new Date(msg.created_at);
+			prevDate.setHours(0, 0, 0, 0);
+			currDate.setHours(0, 0, 0, 0);
+			
+			const daysDiff = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
+			
+			if (daysDiff >= 1) {
+				const separator = this.createDateSeparator(msg.created_at);
+				this.messageContainer.insertBefore(separator, this.messageContainer.children[insertIndex]);
+			}
+		} else if (insertIndex === 0) {
+			const separator = this.createDateSeparator(msg.created_at);
+			this.messageContainer.insertBefore(separator, this.messageContainer.children[0]);
+		}
+		
 		this.insertMessageEl(el, insertIndex);
 		this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
 		this.messageBehaviour.attach(el, msg);
