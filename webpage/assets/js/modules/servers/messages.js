@@ -489,6 +489,7 @@ export class MessageHandler {
 		this.textarea = textarea;
 		this.uploadContainer = uploadContainer;
     	this.selectedFiles = [];
+    	this.dateSeparators = new Set();
 	}
 
 	initU(usersList) {
@@ -496,11 +497,33 @@ export class MessageHandler {
 	}
 
 	insertMessageEl(el, insertIndex) {
-		if (insertIndex === this.messageContainer.children.length) {
-			this.messageContainer.appendChild(el)
-		} else {
-			this.messageContainer.insertBefore(el, this.messageContainer.children[insertIndex])
+		let separatorsBefore = 0;
+		const children = Array.from(this.messageContainer.children);
+		
+		let messageCount = 0;
+		for (const child of children) {
+			if (messageCount >= insertIndex) break;
+			
+			if (child.classList.contains('message-date-separator')) {
+				separatorsBefore++;
+			} else if (child.classList.contains('message')) {
+				messageCount++;
+			}
 		}
+		
+		const domIndex = insertIndex + separatorsBefore;
+		
+		if (domIndex >= this.messageContainer.children.length) {
+			this.messageContainer.appendChild(el);
+		} else {
+			this.messageContainer.insertBefore(el, this.messageContainer.children[domIndex]);
+		}
+	}
+
+	getDateKey(timestamp) {
+		const date = new Date(timestamp);
+		date.setHours(0, 0, 0, 0);
+		return date.toISOString().split('T')[0];
 	}
 
 	createDateSeparator(date) {
@@ -513,6 +536,9 @@ export class MessageHandler {
 			day: 'numeric', 
 			year: 'numeric' 
 		});
+		
+		const dateKey = this.getDateKey(date);
+		separator.dataset.dateKey = dateKey;
 		
 		separator.innerHTML = `
 			<div class="separator-line"></div>
@@ -534,9 +560,10 @@ export class MessageHandler {
 		const nearBottom = scrollHeightBefore - scrollTopBefore - this.messageContainer.clientHeight <= 10;
 
 		const insertIndex = this.messageCache.insertIntoCache(msg, el);
-		this.insertMessageEl(el, insertIndex);
 		
 		const prevMsg = this.messageCache.cache[insertIndex - 1];
+		let separator = null;
+		
 		if (prevMsg) {
 			const prevDate = new Date(prevMsg.timestamp);
 			const currDate = new Date(msg.created_at);
@@ -547,10 +574,33 @@ export class MessageHandler {
 			const daysDiff = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
 			
 			if (daysDiff >= 1) {
-				const separator = this.createDateSeparator(msg.created_at);
-				el.insertAdjacentElement('beforebegin', separator);
+				const currentDateKey = this.getDateKey(msg.created_at);
+				
+				if (!this.dateSeparators.has(currentDateKey)) {
+					separator = this.createDateSeparator(msg.created_at);
+					this.dateSeparators.add(currentDateKey);
+				}
 			}
 		}
+		
+		if (separator) {
+			let separatorsBefore = 0;
+			for (let i = 0; i < insertIndex; i++) {
+				const cachedMsg = this.messageCache.cache[i];
+				if (cachedMsg && cachedMsg.el && cachedMsg.el.previousElementSibling?.classList.contains('message-date-separator')) {
+					separatorsBefore++;
+				}
+			}
+			
+			const domIndex = insertIndex + separatorsBefore;
+			if (domIndex >= this.messageContainer.children.length) {
+				this.messageContainer.appendChild(separator);
+			} else {
+				this.messageContainer.insertBefore(separator, this.messageContainer.children[domIndex]);
+			}
+		}
+		
+		this.insertMessageEl(el, insertIndex);
 		
 		this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
 		this.messageBehaviour.attach(el, msg);
@@ -588,6 +638,7 @@ export class MessageHandler {
 			});
 		}
 	}
+
 
 	audioLoaded(audio) {
 		return new Promise((resolve) => {
