@@ -1155,7 +1155,7 @@ input:checked + .slider:before {
     white-space: pre-wrap;
 }
 
-.message-text span {
+.message-text span:not(code span) {
     display: block;
 }
 
