@@ -1155,7 +1155,7 @@ input:checked + .slider:before {
     white-space: pre-wrap;
 }
 
-.message-text span {
+.message-text span:not(code span) {
     display: block;
 }
 
@@ -1564,6 +1564,7 @@ input:checked + .slider:before {
     border-radius: 50%;
     user-select: none;
     object-fit: cover;
+	min-width: 30px;
 }
 
 .profile-picture-large {
