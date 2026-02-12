@@ -268,17 +268,17 @@ function getMembersCount($mysqli, $contact_id) {
         FROM contact_users
         WHERE contact_id = ?
     ");
-    $stmt->bind_param("i", $contact_id);
+    $stmt->bind_param("s", $contact_id);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
     $stmt->close();
-    return $row['members_count'] - 2;
+    return $row['members_count'];
 }
 
 if ($is_group) {
     $groupInfoStmt = $mysqli->prepare("SELECT contact_name, contact_picture FROM contacts WHERE contact_id = ?");
-    $groupInfoStmt->bind_param("i", $contact_id);
+    $groupInfoStmt->bind_param("s", $contact_id);
     $groupInfoStmt->execute();
     $groupInfoResult = $groupInfoStmt->get_result();
     
