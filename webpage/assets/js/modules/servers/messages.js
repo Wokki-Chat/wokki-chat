@@ -497,13 +497,24 @@ export class MessageHandler {
 	}
 
 	insertMessageEl(el, insertIndex) {
-		if (insertIndex === this.messageContainer.children.length) {
+		let domIndex = 0;
+		let messageCount = 0;
+		for (const child of this.messageContainer.children) {
+			if (messageCount >= insertIndex) break;
+			
+			if (child.classList.contains('message')) {
+				messageCount++;
+			}
+			domIndex++;
+		}
+		
+		if (domIndex >= this.messageContainer.children.length) {
 			this.messageContainer.appendChild(el);
 		} else {
-			this.messageContainer.insertBefore(el, this.messageContainer.children[insertIndex]);
+			this.messageContainer.insertBefore(el, this.messageContainer.children[domIndex]);
 		}
 	}
-	
+
 	getDateKey(timestamp) {
 		const date = new Date(timestamp);
 		date.setHours(0, 0, 0, 0);
