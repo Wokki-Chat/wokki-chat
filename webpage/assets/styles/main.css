@@ -4818,7 +4818,7 @@ input#clr-hue-slider {
 
 hr {
     border: none;
-    border-top: 1px solid var(--clr-input-border-bg-darkest);
+    border-top: 1px solid var(--clr-popup-a10);
 }
 
 .home-content {
