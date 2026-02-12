@@ -516,6 +516,7 @@ export class MessageHandler {
 
 	getDateKey(timestamp) {
 		const date = new Date(timestamp);
+		if (isNaN(date.getTime())) return null;
 		date.setHours(0, 0, 0, 0);
 		return date.toISOString().split('T')[0];
 	}
@@ -561,13 +562,18 @@ export class MessageHandler {
 		if (prevMsg) {
 			const prevMsg = this.messageCache.cache[insertIndex - 1];
 			const currDateKey = this.getDateKey(msg.created_at);
+			if (!currDateKey) return;
 
-			if (!prevMsg || this.getDateKey(prevMsg.created_at) !== currDateKey) {
-				const existingSeparator = this.messageContainer.querySelector(
-					`.message-date-separator[data-date-key="${currDateKey}"]`
-				);
+			const prevDateKey = prevMsg ? this.getDateKey(prevMsg.timestamp) : null;
 
-				if (!existingSeparator) {
+			if (prevDateKey !== currDateKey) {
+				const prevEl = el.previousElementSibling;
+				const hasCorrectSeparator =
+					prevEl &&
+					prevEl.classList.contains('message-date-separator') &&
+					prevEl.dataset.dateKey === currDateKey;
+
+				if (!hasCorrectSeparator) {
 					const separator = this.createDateSeparator(msg.created_at);
 					el.insertAdjacentElement('beforebegin', separator);
 				}
