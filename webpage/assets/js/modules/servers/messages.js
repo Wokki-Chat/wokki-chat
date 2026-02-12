@@ -497,29 +497,13 @@ export class MessageHandler {
 	}
 
 	insertMessageEl(el, insertIndex) {
-		let separatorsBefore = 0;
-		const children = Array.from(this.messageContainer.children);
-		
-		let messageCount = 0;
-		for (const child of children) {
-			if (messageCount >= insertIndex) break;
-			
-			if (child.classList.contains('message-date-separator')) {
-				separatorsBefore++;
-			} else if (child.classList.contains('message')) {
-				messageCount++;
-			}
-		}
-		
-		const domIndex = insertIndex + separatorsBefore;
-		
-		if (domIndex >= this.messageContainer.children.length) {
+		if (insertIndex === this.messageContainer.children.length) {
 			this.messageContainer.appendChild(el);
 		} else {
-			this.messageContainer.insertBefore(el, this.messageContainer.children[domIndex]);
+			this.messageContainer.insertBefore(el, this.messageContainer.children[insertIndex]);
 		}
 	}
-
+	
 	getDateKey(timestamp) {
 		const date = new Date(timestamp);
 		date.setHours(0, 0, 0, 0);
@@ -561,9 +545,9 @@ export class MessageHandler {
 
 		const insertIndex = this.messageCache.insertIntoCache(msg, el);
 		
-		const prevMsg = this.messageCache.cache[insertIndex - 1];
-		let separator = null;
+		this.insertMessageEl(el, insertIndex);
 		
+		const prevMsg = this.messageCache.cache[insertIndex - 1];
 		if (prevMsg) {
 			const prevDate = new Date(prevMsg.timestamp);
 			const currDate = new Date(msg.created_at);
@@ -577,30 +561,12 @@ export class MessageHandler {
 				const currentDateKey = this.getDateKey(msg.created_at);
 				
 				if (!this.dateSeparators.has(currentDateKey)) {
-					separator = this.createDateSeparator(msg.created_at);
+					const separator = this.createDateSeparator(msg.created_at);
 					this.dateSeparators.add(currentDateKey);
+					el.insertAdjacentElement('beforebegin', separator);
 				}
 			}
 		}
-		
-		if (separator) {
-			let separatorsBefore = 0;
-			for (let i = 0; i < insertIndex; i++) {
-				const cachedMsg = this.messageCache.cache[i];
-				if (cachedMsg && cachedMsg.el && cachedMsg.el.previousElementSibling?.classList.contains('message-date-separator')) {
-					separatorsBefore++;
-				}
-			}
-			
-			const domIndex = insertIndex + separatorsBefore;
-			if (domIndex >= this.messageContainer.children.length) {
-				this.messageContainer.appendChild(separator);
-			} else {
-				this.messageContainer.insertBefore(separator, this.messageContainer.children[domIndex]);
-			}
-		}
-		
-		this.insertMessageEl(el, insertIndex);
 		
 		this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
 		this.messageBehaviour.attach(el, msg);
@@ -638,7 +604,6 @@ export class MessageHandler {
 			});
 		}
 	}
-
 
 	audioLoaded(audio) {
 		return new Promise((resolve) => {
