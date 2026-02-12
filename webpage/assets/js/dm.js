@@ -64,6 +64,7 @@ function initDm() {
 	let usersList = [];
 
     async function loadMessages(offsetValue = 0) {
+		messageHandler.initFileUpload();
         socket.emit("get_messages", {
             access_token,
             contact_id,
@@ -242,10 +243,6 @@ function initDm() {
             }
         };
 
-        const renderPreviews = () => {
-            selectedFiles = [];
-        };
-
         textarea.addEventListener('input', (e) => {
             if (e.target !== textarea) return;
 
@@ -282,7 +279,7 @@ function initDm() {
                 }
                 textarea.innerText = "";
                 updateHeight();
-                renderPreviews();
+				messageHandler.renderPreviews();
                 stopTyping();
                 return;
             }
