@@ -73,8 +73,6 @@ function initServer() {
 
 	let available_commands = [];
 
-	let selectedFiles = [];
-
 	const sanitizer = new Sanitizer(user_id, channels, server_id);
 	const textareaFormatter = new TextareaFormatter(user_id, channels, server_id, textarea);
 
@@ -89,14 +87,7 @@ function initServer() {
 	const limit = 25;
 
 	async function loadMessages(offsetValue = 0) {
-		if (channel_type === "voice") {
-			socket.emit("connect_to_voice_channel", {
-				access_token,
-				server_id,
-				channel_id
-			});
-			return;
-		}
+		messageHandler.initFileUpload();
 		socket.emit("get_messages", {
 			access_token,
 			server_id,
@@ -300,65 +291,6 @@ function initServer() {
 
 	const minHeight = 18;
 
-	function renderPreviews() {
-		uploadContainer.innerHTML = '';
-
-		const audioIcon = `<span class="material-symbols-rounded audio-icon-upload">music_note</span>`;
-		const textIcon = `<span class="material-symbols-rounded text-icon-upload">description</span>`;
-
-		selectedFiles.forEach(({ file, savedName, originalName }, index) => {
-			const fileType = file.type || '';
-			let previewHTML = '';
-
-			if (fileType.startsWith('image/')) {
-				const url = URL.createObjectURL(file);
-				previewHTML = `<div class="upload-preview"><img src="${url}" alt="preview" class="image-preview" /></div>`;
-			} else if (fileType.startsWith('video/')) {
-				const url = URL.createObjectURL(file);
-				previewHTML = `<div class="upload-preview"><video src="${url}" class="video-preview" muted pause loop></video></div>`;
-			} else if (fileType.startsWith('audio/')) {
-				previewHTML = `<div class="upload-preview">${audioIcon}</div>`;
-			} else if (fileType === 'text/plain') {
-				previewHTML = `<div class="upload-preview">${textIcon}</div>`;
-			} else {
-				previewHTML = `<div class="upload-preview">${textIcon}</div>`;
-			}
-
-			const fileBlock = document.createElement('div');
-			fileBlock.classList.add('file-preview');
-
-			fileBlock.innerHTML = `
-				${previewHTML}
-				<div class="file-name">${file.name}</div>
-				<div class="file-options">
-				<span class="material-symbols-rounded file-remove-icon" style="cursor:pointer;">delete</span>
-				</div>
-			`;
-
-			fileBlock.querySelector('.file-remove-icon').addEventListener('click', async () => {
-				const removed = selectedFiles.splice(index, 1)[0];
-				if (removed.savedName) {
-					try {
-						const formData = new FormData();
-						formData.append('savedName', removed.savedName);
-
-						await fetch('https://chat.wokki20.nl/app/delete_file', {
-							method: 'POST',
-							headers: {
-								"Authorization": `Bearer ${access_token}`
-							},
-							body: formData
-						});
-					} catch (err) {
-						console.error("Failed to delete file from server", err);
-					}
-				}
-				renderPreviews();
-			});
-
-			uploadContainer.appendChild(fileBlock);
-		});
-	}
 
 	let typingInterval;
 
@@ -476,17 +408,13 @@ function initServer() {
 
 				if (text.startsWith("/")) return;
 
-				const uploadedNames = selectedFiles
-					.filter(f => f.savedName)
-					.map(f => ({ savedName: f.savedName, originalName: f.originalName }));
-
-				messageHandler.send(uploadedNames.length ? uploadedNames : undefined);
+				messageHandler.send();
 				mentions.hide();
 				
 				preview.innerHTML = "";
 				textarea.innerText = "";
 				updateHeight();
-				renderPreviews();
+				messageHandler.renderPreviews();
 				stopTyping();
 				return;
 			}
@@ -1255,292 +1183,6 @@ function initServer() {
 		console.error("Error creating invite:", error);
 	});
 	}
-
-	const MAX_FILES = 10;
-	const MAX_SIZE = 25 * 1024 * 1024;
-	const fileInput = document.getElementById('file-input');
-
-	const ALLOWED_TYPES = [
-	"image/png",
-	"image/jpeg",
-	"image/gif",
-	"image/webp",
-	"image/bmp",
-	"video/mp4",
-	"video/webm",
-	"video/ogg",
-	"audio/mpeg",
-	"audio/wav",
-	"audio/ogg",
-	"application/pdf",
-	"text/plain"
-	];
-
-	if (fileInput) {
-	
-	fileInput.addEventListener('change', async (e) => {
-		const files = Array.from(e.target.files);
-
-		const dotFrames = ["", ".", "..", "...", "..", "."];
-		let dotIndex = 0;
-
-		const uploadingToast = Toastify({
-		text: `Uploading ${files.length} file${files.length > 1 ? 's' : ''}${dotFrames[dotIndex]}`,
-		duration: -1,
-		gravity: "bottom",
-		position: "right",
-		close: true,
-		stopOnFocus: true,
-		style: {
-			background: "var(--clr-popup-a20)",
-			borderRadius: "12px",
-			boxShadow: "none"
-		}
-		});
-		uploadingToast.showToast();
-
-		const intervalId = setInterval(() => {
-		dotIndex = (dotIndex + 1) % dotFrames.length;
-		uploadingToast.text = `Uploading ${files.length} file${files.length > 1 ? 's' : ''}${dotFrames[dotIndex]}`;
-
-		const toastElem = document.querySelector(".toastify");
-		if (toastElem) {
-			for (const node of toastElem.childNodes) {
-			if (node.nodeType === Node.TEXT_NODE) {
-				node.textContent = uploadingToast.text + ' ';
-				break;
-			}
-			}
-		}
-		}, 500);
-
-		if ((selectedFiles.length + files.length) > MAX_FILES) {
-		clearInterval(intervalId);
-		uploadingToast.hideToast();
-		Toastify({
-			text: `You can only upload up to ${MAX_FILES} files at once.`,
-			duration: 5000,
-			gravity: "bottom",
-			position: "right",
-			close: true,
-			stopOnFocus: true,
-			style: {
-			background: "var(--clr-popup-a20)",
-			borderRadius: "12px",
-			boxShadow: "none"
-			}
-		}).showToast();
-		fileInput.value = '';
-		return;
-		}
-
-		for (const file of files) {
-		if (file.size > MAX_SIZE) {
-			clearInterval(intervalId);
-			uploadingToast.hideToast();
-			Toastify({
-			text: `File size exceeds the 25MB upload limit.`,
-			duration: 5000,
-			gravity: "bottom",
-			position: "right",
-			close: true,
-			stopOnFocus: true,
-			style: {
-				background: "var(--clr-popup-a20)",
-				borderRadius: "12px",
-				boxShadow: "none"
-			}
-			}).showToast();
-			fileInput.value = '';
-			return;
-		}
-		}
-
-		fileInput.value = '';
-
-		for (const file of files) {
-		try {
-			const savedName = await upload_single_file(file);
-			selectedFiles.push({ file, savedName, originalName: file.name });
-		} catch (err) {
-			clearInterval(intervalId);
-			uploadingToast.hideToast();
-			Toastify({
-			text: `Failed to upload ${file.name}`,
-			duration: 5000,
-			gravity: "bottom",
-			position: "right",
-			close: true,
-			stopOnFocus: true,
-			style: {
-				background: "#ff3b3b",
-				borderRadius: "12px",
-				boxShadow: "none"
-			}
-			}).showToast();
-		}
-		}
-
-		clearInterval(intervalId);
-		uploadingToast.hideToast();
-
-		if (selectedFiles.length > 0) {
-		Toastify({
-			text: `Successfully uploaded ${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''}.`,
-			duration: 5000,
-			gravity: "bottom",
-			position: "right",
-			close: true,
-			stopOnFocus: true,
-			style: {
-			background: "var(--clr-popup-a20)",
-			borderRadius: "12px",
-			boxShadow: "none"
-			}
-		}).showToast();
-		}
-
-		renderPreviews();
-	});
-
-	document.addEventListener('paste', async (event) => {
-		const items = event.clipboardData?.items;
-		if (!items) return;
-
-		for (const item of items) {
-		if (item.kind !== 'file') continue;
-
-		const file = item.getAsFile();
-		if (!file) continue;
-
-		if (!ALLOWED_TYPES.includes(file.type)) {
-			Toastify({
-			text: `File type not allowed: ${file.type}`,
-			duration: 5000,
-			gravity: "bottom",
-			position: "right",
-			close: true,
-			stopOnFocus: true,
-			style: {
-				background: "#ff3b3b",
-				borderRadius: "12px",
-				boxShadow: "none"
-			}
-			}).showToast();
-			continue;
-		}
-
-		if (selectedFiles.length >= MAX_FILES) {
-			Toastify({
-			text: `You can only upload up to ${MAX_FILES} files.`,
-			duration: 5000,
-			gravity: "bottom",
-			position: "right",
-			close: true,
-			stopOnFocus: true,
-			style: {
-				background: "var(--clr-popup-a20)",
-				borderRadius: "12px",
-				boxShadow: "none"
-			}
-			}).showToast();
-			return;
-		}
-
-		if (file.size > MAX_SIZE) {
-			Toastify({
-			text: `Pasted file is too big (limit: 25MB).`,
-			duration: 5000,
-			gravity: "bottom",
-			position: "right",
-			close: true,
-			stopOnFocus: true,
-			style: {
-				background: "#ff3b3b",
-				borderRadius: "12px",
-				boxShadow: "none"
-			}
-			}).showToast();
-			return;
-		}
-
-		const toast = Toastify({
-			text: `Uploading pasted file...`,
-			duration: -1,
-			gravity: "bottom",
-			position: "right",
-			close: true,
-			stopOnFocus: true,
-			style: {
-			background: "var(--clr-popup-a20)",
-			borderRadius: "12px",
-			boxShadow: "none"
-			}
-		});
-		toast.showToast();
-
-		try {
-			const savedName = await upload_single_file(file);
-			selectedFiles.push({ file, savedName, originalName: file.name });
-
-			renderPreviews();
-
-			toast.hideToast();
-			Toastify({
-			text: `Pasted file uploaded successfully!`,
-			duration: 5000,
-			gravity: "bottom",
-			position: "right",
-			close: true,
-			stopOnFocus: true,
-			style: {
-				background: "var(--clr-popup-a20)",
-				borderRadius: "12px",
-				boxShadow: "none"
-			}
-			}).showToast();
-		} catch (err) {
-			console.error("Upload failed:", err);
-			toast.hideToast();
-			Toastify({
-			text: `Failed to upload pasted file.`,
-			duration: 5000,
-			gravity: "bottom",
-			position: "right",
-			close: true,
-			stopOnFocus: true,
-			style: {
-				background: "#ff3b3b",
-				borderRadius: "12px",
-				boxShadow: "none"
-			}
-			}).showToast();
-		}
-		}
-	});
-
-
-	async function upload_single_file(file) {
-		const formData = new FormData();
-		formData.append("files[]", file);
-
-		const response = await fetch("https://chat.wokki20.nl/app/upload_file", {
-		method: "POST",
-		body: formData,
-		headers: {
-			"Authorization": `Bearer ${access_token}`
-		}
-		});
-
-		const result = await response.json();
-
-		if (result.status === 'success' && Array.isArray(result.files) && result.files[0]) {
-		return result.files[0].saved_name;
-		} else {
-		throw new Error("Upload failed");
-		}
-	}
-	};
 
 	let draggedClone = null;
 	let originalElement = null;
