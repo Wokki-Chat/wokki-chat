@@ -160,7 +160,6 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/dark.min.css" />
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script src="/assets/js/call_reconnect.js"></script>
     <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
     <script src="https://cdn.wokki20.nl/dynamic/jspt/jspt.js"></script>
 </head>
