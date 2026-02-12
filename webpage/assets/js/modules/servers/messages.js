@@ -489,7 +489,6 @@ export class MessageHandler {
 		this.textarea = textarea;
 		this.uploadContainer = uploadContainer;
     	this.selectedFiles = [];
-    	this.dateSeparators = new Set();
 	}
 
 	initU(usersList) {
@@ -560,20 +559,16 @@ export class MessageHandler {
 		
 		const prevMsg = this.messageCache.cache[insertIndex - 1];
 		if (prevMsg) {
-			const prevDate = new Date(prevMsg.timestamp);
-			const currDate = new Date(msg.created_at);
-			
-			prevDate.setHours(0, 0, 0, 0);
-			currDate.setHours(0, 0, 0, 0);
-			
-			const daysDiff = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
-			
-			if (daysDiff >= 1) {
-				const currentDateKey = this.getDateKey(msg.created_at);
-				
-				if (!this.dateSeparators.has(currentDateKey)) {
+			const prevMsg = this.messageCache.cache[insertIndex - 1];
+			const currDateKey = this.getDateKey(msg.created_at);
+
+			if (!prevMsg || this.getDateKey(prevMsg.created_at) !== currDateKey) {
+				const existingSeparator = this.messageContainer.querySelector(
+					`.message-date-separator[data-date-key="${currDateKey}"]`
+				);
+
+				if (!existingSeparator) {
 					const separator = this.createDateSeparator(msg.created_at);
-					this.dateSeparators.add(currentDateKey);
 					el.insertAdjacentElement('beforebegin', separator);
 				}
 			}
