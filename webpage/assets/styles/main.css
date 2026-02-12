@@ -1564,6 +1564,7 @@ input:checked + .slider:before {
     border-radius: 50%;
     user-select: none;
     object-fit: cover;
+	min-width: 30px;
 }
 
 .profile-picture-large {
