@@ -541,12 +541,11 @@ export class MessageHandler {
 		if (prevMsg) {
 			const prevDate = new Date(prevMsg.timestamp);
 			const currDate = new Date(msg.created_at);
-			prevDate.setHours(0, 0, 0, 0);
-			currDate.setHours(0, 0, 0, 0);
 			
-			const daysDiff = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
+			const prevDay = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate());
+			const currDay = new Date(currDate.getFullYear(), currDate.getMonth(), currDate.getDate());
 			
-			if (daysDiff >= 1) {
+			if (prevDay.getTime() !== currDay.getTime()) {
 				const separator = this.createDateSeparator(msg.created_at);
 				this.messageContainer.insertBefore(separator, el);
 			}
