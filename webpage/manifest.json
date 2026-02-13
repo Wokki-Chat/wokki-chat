@@ -1,0 +1,16 @@
+{
+  "name": "Wokki Chat",
+  "short_name": "Wokki Chat",
+  "description": "Wokki Chat",
+  "icons": [
+    {
+      "src": "/assets/images/branding/logo-purple-hires.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/home",
+  "display": "standalone",
+  "theme_color": "#895bf5",
+  "background_color": "#ffffff"
+}

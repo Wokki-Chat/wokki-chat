@@ -1,4 +1,5 @@
 import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
+import { NotificationsManager } from "./modules/global/notifications.js";
 function initSettings() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -38,6 +39,9 @@ function initSettings() {
 
 	const sanitizer = new Sanitizer();
 	const textareaFormatter = new TextareaFormatter();
+		
+	const notificationsManager = new NotificationsManager({ user_id: user_id, access_token: access_token, socket: socket });
+	notificationsManager.listen();
 
 	if (active_tab === "account") {
 

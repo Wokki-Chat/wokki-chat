@@ -1,4 +1,5 @@
 import { Sanitizer } from "./modules/global/sanitization.js";
+import { NotificationsManager } from "./modules/global/notifications.js";
 function initHome() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -19,6 +20,9 @@ function initHome() {
         if (!usersList.some(u => String(u.id) === user.id)) return;
         renderUser(user);
     });
+    
+    const notificationsManager = new NotificationsManager({ user_id: user_id, access_token: access_token, socket: socket });
+    notificationsManager.listen();
 
 	const serverbar_servers = document.querySelectorAll('#server-bar-item-server');
 	serverbar_servers.forEach(el => el.classList.remove('active'));

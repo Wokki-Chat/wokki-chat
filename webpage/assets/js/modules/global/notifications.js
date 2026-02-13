@@ -11,6 +11,9 @@ export class NotificationsManager {
         this.contact_id = contact_id;
         this.permissionGranted = false;
         
+        this.notificationSound = new Audio('/assets/sounds/notification.mp3');
+        this.notificationSound.volume = 0.5;
+        
         this.requestPermission();
     }
 
@@ -32,13 +35,10 @@ export class NotificationsManager {
     }
 
     handleNewMessageNotification(data) {
-        console.log(data);
-        
         this.showNotification(data);
     }
 
     showNotification(data) {
-        console.log(this.permissionGranted);
         if (!this.permissionGranted) return;
 
         const { sender_info, message, server_id, channel_id, contact_id } = data;
@@ -51,25 +51,32 @@ export class NotificationsManager {
             body = message;
             tag = `contact-${contact_id}`;
         } else {
-            title = `${senderName} in channel`;
+            title = `${senderName}`;
             body = message;
             tag = `server-${server_id}-channel-${channel_id}`;
         }
 
         const options = {
             body: body,
-            icon: sender_info.profile_picture,
-            badge: sender_info.profile_picture,
+            icon: sender_info.profile_picture || '/uploads/profile-pictures/default-profile.png',
+            badge: '/assets/images/branding/logo-purple-hires.png',
             tag: tag,
             requireInteraction: false,
-            silent: false
+            silent: true
         };
 
         const notification = new Notification(title, options);
+
+        this.playNotificationSound();
 
         notification.onclick = () => {
             window.focus();
             notification.close();
         };
+    }
+
+    playNotificationSound() {
+        const sound = this.notificationSound.cloneNode();
+        sound.play()
     }
 }

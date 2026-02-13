@@ -4,6 +4,7 @@ import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
 import { Mentions } from "./modules/users/mentions.js";
 import { StaticProfileManager } from "./modules/users/profiles.js";
 import { UserRenderer } from "./modules/users/profiles.js";
+import { NotificationsManager } from "./modules/global/notifications.js";
 
 function initDm() {
     const el = document.querySelector('wchat-allowed-scripts');
@@ -43,6 +44,8 @@ function initDm() {
 
 	const userRenderer = new UserRenderer({ user_id, access_token, userListContainer: groupUsersContainer });
 
+    const notificationsManager = new NotificationsManager({ user_id: user_id, access_token: access_token, socket: socket, contact_id: contact_id });
+
 	const textareaEmojiOptions = document.getElementById("emoji-option");
 	textareaEmojiOptions.addEventListener("click", async () => {
 		await emojis.picker(textarea, textareaEmojiOptions, true);
@@ -68,6 +71,7 @@ function initDm() {
 
     async function loadMessages(offsetValue = 0) {
 		messageHandler.initFileUpload();
+        notificationsManager.listen();
         socket.emit("get_messages", {
             access_token,
             contact_id,
