@@ -27,18 +27,25 @@ async def addMessageToLogs(message, level="INFO"):
     log_line = f"[Worker Name: {server_name}] [{timestamp}] [{caller_file}:{caller_line}] [{level}] -> {message}\n"
     
     lines = []
-    if os.path.exists(logs_file):
-        async with aiofiles.open(logs_file, "r") as f:
-            lines = await f.readlines()
-    
+    try:
+        if os.path.exists(logs_file):
+            async with aiofiles.open(logs_file, "r") as f:
+                lines = await f.readlines()
+    except Exception as e:
+        print(f"[WARNING] Could not read logs file: {e}")
+
     if len(lines) >= MAX_LINES:
         lines = lines[-(MAX_LINES-1):]
-    
+
     lines.append(log_line)
-    
-    async with aiofiles.open(logs_file, "w") as f:
-        await f.writelines(lines)
-    
+
+    try:
+        async with aiofiles.open(logs_file, "w") as f:
+            await f.writelines(lines)
+    except Exception as e:
+        print(f"[WARNING] Could not write to logs file: {e}")
+        print(log_line)
+
     if BETTERSTACK_TOKEN:
         log_data = {
             'worker': server_name,
@@ -47,11 +54,14 @@ async def addMessageToLogs(message, level="INFO"):
             'log_type': level
         }
         
-        if level == "ERROR":
-            betterstack_logger.error(message, extra=log_data)
-        elif level == "WARNING" or level == "WARN":
-            betterstack_logger.warning(message, extra=log_data)
-        elif level == "DEBUG":
-            betterstack_logger.debug(message, extra=log_data)
-        else:
-            betterstack_logger.info(message, extra=log_data)
+        try:
+            if level == "ERROR":
+                betterstack_logger.error(message, extra=log_data)
+            elif level in ("WARNING", "WARN"):
+                betterstack_logger.warning(message, extra=log_data)
+            elif level == "DEBUG":
+                betterstack_logger.debug(message, extra=log_data)
+            else:
+                betterstack_logger.info(message, extra=log_data)
+        except Exception as e:
+            print(f"[WARNING] Could not log to BetterStack: {e}")

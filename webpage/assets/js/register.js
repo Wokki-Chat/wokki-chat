@@ -71,7 +71,7 @@ function create_account() {
     formData.append('email', email);
     formData.append('password', password);
 
-    fetch('https://chat.wokki20.nl/app/create_account', {
+    fetch('/app/create_account', {
         method: 'POST',
         body: formData
     })

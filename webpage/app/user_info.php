@@ -175,8 +175,6 @@ function getUserWidgets($mysqli, $user_id, $widget_name = null) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $allowedOrigin = 'https://chat.wokki20.nl';
-
     if (isset($_SERVER['HTTP_ORIGIN'])) {
         if ($_SERVER['HTTP_ORIGIN'] !== $allowedOrigin) {
             http_response_code(403);
@@ -189,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     } elseif (isset($_SERVER['HTTP_REFERER'])) {
         $referer = parse_url($_SERVER['HTTP_REFERER'], PHP_URL_HOST);
-        if ($referer !== 'chat.wokki20.nl') {
+        if ($referer !== $allowedReferer) {
             http_response_code(403);
             echo json_encode([
                 'status' => 'error',

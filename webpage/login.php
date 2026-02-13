@@ -183,13 +183,6 @@ if (isset($_POST['email']) && isset($_POST['password']) && $_SERVER['REQUEST_MET
                     'httponly' => true,
                     'samesite' => 'Strict'
                 ]);
-
-                echo '
-                <script>
-                    window.location.href = \'' . $redirect . '\
-                </script>
-                ';
-
                 header('Location: ' . $redirect);
                 exit;
             } else {

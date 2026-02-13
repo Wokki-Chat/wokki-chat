@@ -114,8 +114,6 @@ function resizeAndCompressImage($src, $dest, $mime, $maxW, $maxH) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $allowedOrigin = 'https://chat.wokki20.nl';
-
     if (isset($_SERVER['HTTP_ORIGIN'])) {
         if ($_SERVER['HTTP_ORIGIN'] !== $allowedOrigin) {
             http_response_code(403);
