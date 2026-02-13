@@ -93,12 +93,12 @@ function initDm() {
 
 	socket.on("add_reaction", ({ message_id, reaction, user_id: reactingUserId }) => {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
-		if (el) reactionRenderer.updateReactionUI(el, message_id, reaction, reactingUserId, false);
+		if (el) reactionRenderer.updateReactionUI(el, message_id, reaction, reactingUserId, false, messageContainer);
 	});
 
 	socket.on("remove_reaction", ({ message_id, reaction, user_id: reactingUserId }) => {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
-		if (el) reactionRenderer.updateReactionUI(el, message_id, reaction, reactingUserId, true);
+		if (el) reactionRenderer.updateReactionUI(el, message_id, reaction, reactingUserId, true, messageContainer);
 	});
 
 	if (contact_type == "individual") {

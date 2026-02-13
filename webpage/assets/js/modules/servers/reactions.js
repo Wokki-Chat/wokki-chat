@@ -82,7 +82,7 @@ export default class ReactionsRender {
 		this.socket.emit("add_reaction", { access_token: this.access_token, message_id: msg_id, reaction: emoji, server_id: this.server_id, channel_id: this.channel_id, contact_id: this.contact_id });
 	}
 
-	async updateReactionUI(el, msg_id, emoji, reactingUserId, removed = false) {
+	async updateReactionUI(el, msg_id, emoji, reactingUserId, removed = false, messageContainer) {
 		const scrollTopBefore = messageContainer.scrollTop;
 		const scrollHeightBefore = messageContainer.scrollHeight;
 		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
