@@ -39,6 +39,7 @@ export class NotificationsManager {
     }
 
     showNotification(data) {
+        console.log(this.permissionGranted);
         if (!this.permissionGranted) return;
 
         const { sender_info, message, server_id, channel_id, contact_id } = data;
