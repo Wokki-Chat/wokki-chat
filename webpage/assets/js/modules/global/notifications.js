@@ -32,8 +32,7 @@ export class NotificationsManager {
     }
 
     handleNewMessageNotification(data) {
-        if (data.contact_id && data.contact_id == this.contact_id) return;
-        if (data.server_id && data.channel_id && data.server_id != this.server_id && data.channel_id != this.channel_id) return;
+        console.log(data);
         
         this.showNotification(data);
     }
