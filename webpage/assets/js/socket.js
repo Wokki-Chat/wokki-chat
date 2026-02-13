@@ -4,7 +4,7 @@ console.log(
 	"font-size: 18px; font-weight: 500;"
 );
 
-const socket = io("https://chat.wokki20.nl", {
+const socket = io("/", {
     path: "/socket.io",
     transports: ["websocket"],
     query: {
