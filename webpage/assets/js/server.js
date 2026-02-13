@@ -33,10 +33,7 @@ function initServer() {
 	const premium = JSON.parse(document.getElementById("premium").getAttribute("value"));
 
 	const is_in_server = JSON.parse(document.getElementById("is-in-server").getAttribute("value"));
-
-	const username_text = document.getElementById("username-text").getAttribute("value");
-	const profile_picture_url = document.getElementById("profile-picture-url").getAttribute("value");
-
+	
 	const messageContainer = document.querySelector("#message-container");
 
 	const textarea = document.getElementById("message-input");

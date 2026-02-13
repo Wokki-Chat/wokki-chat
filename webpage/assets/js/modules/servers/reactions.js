@@ -57,11 +57,9 @@ export default class ReactionsRender {
 		const { reaction: emojiText, super_reaction } = reactionGroup[0];
 		const renderedEmoji = await emojis.replaceText(emojiText);
 		const isOwn = reactionGroup.some(r => String(r.user_id) === String(this.user_id));
-		const username = reactionGroup[0].reaction_user_info?.username || "";
 
 		const div = document.createElement("div");
 		div.className = "reaction" + (isOwn ? " own" : "");
-		div.title = username;
 		div.dataset.reactionName = emojiText;
 		div.dataset.messageId = msg_id;
 		div.innerHTML = `<span class="emoji">${renderedEmoji}</span>${count ? `<span class="count">${count}</span>` : ''}`;
@@ -133,7 +131,7 @@ export default class ReactionsRender {
 				reactionGroup: [{
 					reaction: emoji,
 					user_id: reactingUserId,
-					reaction_user_info: { username: username_text, profile_picture: profile_picture_url }
+					reaction_user_info: { profile_picture: profile_picture_url }
 				}],
 				count: 1
 			}, msg_id);
