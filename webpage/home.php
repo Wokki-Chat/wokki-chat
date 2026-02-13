@@ -1,4 +1,5 @@
 <?php
+session_start();
 include 'app/config.php';
 include 'global.php';
 include 'app/maintenance.php';
@@ -55,39 +56,75 @@ $serverResult = $serverStmt->get_result();
 $serverStmt->close();
 
 $friendsStmt = $mysqli->prepare("
-    SELECT f1.friend_id
-    FROM friends f1
-    JOIN friends f2 ON f1.friend_id = f2.user_id AND f2.friend_id = f1.user_id
-    WHERE f1.user_id = ?
+    SELECT u.id, u.username, u.profile_picture, u.status, u.premium,
+           'individual' as contact_type, NULL as contact_id,
+           c.last_message_sent
+    FROM contact_users cu1
+    JOIN contact_users cu2 ON cu1.contact_id = cu2.contact_id AND cu2.user_id != cu1.user_id
+    JOIN users u ON cu2.user_id = u.id
+    JOIN contacts c ON cu1.contact_id = c.contact_id
+    LEFT JOIN contact_requests cr ON cu1.contact_id = cr.contact_id
+    WHERE cu1.user_id = ? 
+      AND cr.contact_id IS NULL
+      AND (SELECT COUNT(*) FROM contact_users WHERE contact_id = cu1.contact_id) = 2
+    GROUP BY u.id
 ");
 $friendsStmt->bind_param("i", $user_id);
 $friendsStmt->execute();
 $friendsResult = $friendsStmt->get_result();
 
 $friendsList = [];
-
 while ($row = $friendsResult->fetch_assoc()) {
-    $friendId = $row['friend_id'];
-
-    $userStmt = $mysqli->prepare("SELECT username, profile_picture, status, premium FROM users WHERE id = ?");
-    $userStmt->bind_param("i", $friendId);
-    $userStmt->execute();
-    $userResult = $userStmt->get_result();
-
-    if ($userData = $userResult->fetch_assoc()) {
-        $friendsList[] = [
-            'id' => $friendId,
-            'username' => $userData['username'],
-            'profile_picture' => $userData['profile_picture'],
-            'status' => $userData['status'], 
-            'premium' => $userData['premium']
-        ];
-    }
-
-    $userStmt->close();
+    $friendsList[] = [
+        'id' => $row['id'],
+        'username' => $row['username'],
+        'profile_picture' => $row['profile_picture'],
+        'status' => $row['status'], 
+        'premium' => $row['premium'],
+        'contact_type' => 'individual',
+        'is_group' => false,
+        'last_message_sent' => $row['last_message_sent']
+    ];
 }
-
 $friendsStmt->close();
+
+$groupsStmt = $mysqli->prepare("
+    SELECT c.contact_id as contact_id, c.contact_name, c.contact_picture,
+           'group' as contact_type, (SELECT COUNT(*) FROM contact_users WHERE contact_id = c.contact_id) as members_count,
+           c.last_message_sent
+    FROM contact_users cu
+    JOIN contacts c ON cu.contact_id = c.contact_id
+    LEFT JOIN contact_requests cr ON c.contact_id = cr.contact_id
+    WHERE cu.user_id = ? 
+      AND cr.contact_id IS NULL
+      AND c.contact_name IS NOT NULL
+      AND (SELECT COUNT(*) FROM contact_users WHERE contact_id = c.contact_id) > 2
+    GROUP BY c.contact_id
+");
+$groupsStmt->bind_param("i", $user_id);
+$groupsStmt->execute();
+$groupsResult = $groupsStmt->get_result();
+
+while ($row = $groupsResult->fetch_assoc()) {
+    $friendsList[] = [
+        'id' => $row['contact_id'],
+        'username' => $row['contact_name'],
+        'profile_picture' => $row['contact_picture'],
+        'status' => null,
+        'premium' => false,
+        'bio' => null,
+        'contact_type' => 'group',
+        'contact_id' => $row['contact_id'],
+        'is_group' => true,
+        'members_count' => $row['members_count'],
+        'last_message_sent' => $row['last_message_sent']
+    ];
+}
+$groupsStmt->close();
+
+usort($friendsList, function($a, $b) {
+    return ($b['last_message_sent'] ?? 0) <=> ($a['last_message_sent'] ?? 0);
+});
 
 $premium_popup = false;
 
@@ -118,26 +155,27 @@ function formatPremiumExpiration($timestamp) {
     return $days . " days";
 }
 
+$_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>wokki chat</title>
+    <title>Wokki Chat - Home</title>
+    <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="assets/styles/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/dark.min.css" />
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script src="/assets/js/call_reconnect.js"></script>
     <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
     <script src="https://cdn.wokki20.nl/dynamic/jspt/jspt.js"></script>
 </head>
 <body>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css"/>
-    <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js" defer></script>
     <div class="server-bar">
         <div class="server-bar-dms">
             <a class="server-bar-item active" id="server-bar-item-home" href="/home">
@@ -161,7 +199,7 @@ function formatPremiumExpiration($timestamp) {
         </div>
         <div class="server-bar-options">    
             <div class="server-bar-option">
-                <div class="server-bar-option-icon" onclick="openCreateServerModal()">
+                <div class="server-bar-option-icon" id="open-create-server-modal">
                     <span class="material-symbols-rounded">add_circle</span>
                 </div>
                 <p class="tooltip">create server</p>
@@ -171,9 +209,9 @@ function formatPremiumExpiration($timestamp) {
     <main id="app">
         <div class="channel-bar">
             <div class="dm-users">
-                <a class="info-profile" href="/friends">
-                    <span class="material-symbols-rounded channel-bar-channel-icon">group</span>
-                    <p class="channel-bar-channel-name">friends</p>
+                <a class="contact-tab active" href="/home">
+                    <span class="material-symbols-rounded channel-bar-channel-icon">home</span>
+                    <p class="channel-bar-channel-name">Home</p>
                 </a>
                 <?php
                 foreach ($friendsList as $friend) {
@@ -181,17 +219,20 @@ function formatPremiumExpiration($timestamp) {
                         continue;
                     }
                     $safeUsername = htmlspecialchars($friend['username'], ENT_QUOTES, 'UTF-8');
-                    $capitalizedStatus = ucfirst($friend['status']);
+                    $capitalizedStatus = $friend['is_group'] ? $friend['members_count'] . ' Members' : ucfirst($friend['status']);
                     $isPremium = $friend['premium'] == 1;   
                     $encodedUsername = urlencode($friend['username']);
 
+                    $statusIcon = '';
+                    if (!$friend['is_group']) {
+                        $statusIcon = '<div class="self-info-status-circle-outer"><div class="self-info-status-circle-inner '.$friend['status'].'"></div></div>';                        
+                    }
+
                     echo '
-                    <div class="info-profile" data-user-id="'.$friend['id'].'" onclick="window.location.href = \'/dm/@'.$encodedUsername.'\'">
+                    <a class="contact-tab" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
                         <div class="self-info-profile-status" data-user-id="'.$friend['id'].'">
                             <img class="self-info-profile-picture" src="'.$friend['profile_picture'].'" />
-                            <div class="self-info-status-circle-outer">
-                                <div class="self-info-status-circle-inner '.$friend['status'].'"></div>
-                            </div>
+                            '.$statusIcon.'
                         </div>
                         <div class="self-info-status-username">
                             <div class="self-info-profile-username-container">
@@ -199,23 +240,39 @@ function formatPremiumExpiration($timestamp) {
                             </div>
                             <p class="self-info-status">'.$capitalizedStatus.'</p>
                         </div>
-                    </div>';
+                    </a>';
                 }
                 ?>
-
             </div>
         </div>
 
         <div class="top-bar">
             <div class="top-bar-left">
                 <span class="material-symbols-rounded top-bar-menu" id="top-bar-menu">menu</span>
-                
+            </div>
+            <div class="top-bar-item">
+                <button class="button-primary-filled" id="add-friend-btn">Add Friend</button>
             </div>
         </div>
 
-        <div class="main-content">
+        <div class="main-content home-content">
             <?php echo $maintenanceHtml; ?>
             <h1 class="main-content-title"><span id="main-content-daytime">Good afternoon</span><span id="main-content-username">, <?php echo htmlspecialchars($username, ENT_QUOTES, 'UTF-8'); ?></span></h1>
+            
+            <div class="pending-friend-requests">
+                <p class="pending-friend-requests-title">Pending Friend Requests</p>
+                <div class="pending-friend-requests-list" id="pending-friend-requests">
+                    <p>No pending friend requests</p>
+                </div>
+
+            </div>
+            <br>
+            <div class="outgoing-friend-requests">
+                <p class="outgoing-friend-requests-title">Outgoing Friend Requests</p>
+                <div class="outgoing-friend-requests-list" id="outgoing-friend-requests">
+                    <p>No outgoing friend requests</p>
+                </div>
+            </div>
         </div>
 
         <div class="users">
@@ -287,7 +344,7 @@ function formatPremiumExpiration($timestamp) {
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/assets/js/notifiers.js"></script>
     <script src="/assets/js/globalFunctions.js"></script>
-    <script src="/assets/js/home.js"></script>
+    <script src="/assets/js/home.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
 </body>
 </html>

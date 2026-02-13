@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import json
 import uuid
-from server.config import get_sids_for_user, get_bot_sid_from_id, get_cached_users, cache_users
+from server.config import get_sids_for_user, get_bot_sid_from_id, get_cached_users, cache_users, save_command_id, get_typing_users
 import server.sio_instance as sio_instance
 from server.helpers.user_helpers import auth_required, get_user_info_from_id
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server
@@ -10,7 +10,6 @@ import re
 import server.config as config
 from server.helpers.logs import addMessageToLogs
 import asyncio
-
 async def server_permissions(cur, user_id, server_id, permission_identifier):
     u_owns_server_query = """
         SELECT created_by
@@ -20,49 +19,42 @@ async def server_permissions(cur, user_id, server_id, permission_identifier):
     await cur.execute(u_owns_server_query, (server_id, user_id))
     if await cur.fetchone():
         return True
-    
+
     query = """
-        SELECT role_id, permissions
-        FROM server_roles
-        WHERE server_id = %s
+        SELECT usr.role_id, rp.*
+        FROM user_server_roles usr
+        JOIN role_permissions rp ON usr.role_id = rp.role_id
+        JOIN server_roles sr ON rp.role_id = sr.role_id
+        WHERE usr.server_id = %s AND usr.user_id = %s
     """
-    await cur.execute(query, (server_id,))
-    rows = await cur.fetchall()
-
-    permitted_role_ids = []
-    for row in rows:
-        permissions = row['permissions']
-
-        if isinstance(permissions, str):
-            permissions = json.loads(permissions)
-
-
-        has_permission = False
-        for perm in permissions:
-            if perm.get('permission_identifier') == permission_identifier and perm.get('permission_value') is True:
-                has_permission = True
-                break
-
-        if has_permission:
-            permitted_role_ids.append(row['role_id'])
-
-    if not permitted_role_ids:
-        return False
-
-    query = "SELECT role_id FROM user_server_roles WHERE server_id = %s AND user_id = %s"
     await cur.execute(query, (server_id, user_id))
-    results = await cur.fetchall()
-
-    if not results:
+    rows = await cur.fetchall()
+    if not rows:
         return False
 
-    user_roles = [
-        row['role_id'] if isinstance(row, dict) else row[0]
-        for row in results
-    ]
+    perm_column_map = {
+        "send_messages": "send_messages",
+        "view_channels": "view_channels",
+        "manage_channels": "manage_channels",
+        "manage_server": "manage_server",
+        "manage_roles": "manage_roles",
+        "kick_members": "kick_members",
+        "ban_members": "ban_members",
+        "mute_members": "mute_members",
+        "manage_groups": "manage_groups",
+        "read_message_history": "read_message_history"
+    }
 
-    await addMessageToLogs(f"User {user_id} has roles {user_roles} for server {server_id}", "INFO")
-    return bool(set(user_roles) & set(permitted_role_ids))
+    col = perm_column_map.get(permission_identifier)
+    if not col:
+        return False
+
+    for row in rows:
+        if row.get(col) or getattr(row, col, False):
+            await addMessageToLogs(f"User {user_id} has permission {permission_identifier} via role {row['role_id']}", "INFO")
+            return True
+
+    return False
 
 async def is_user_in_server(cur, user_id, server_id):
     await cur.execute(
@@ -72,34 +64,6 @@ async def is_user_in_server(cur, user_id, server_id):
     server = await cur.fetchone()
     await addMessageToLogs(f"User {user_id} in server {server_id}: {bool(server)}", "INFO")
     return bool(server)
-
-async def get_server_channel_sids(cur, server_id, channel_id):
-    query = """
-        SELECT user_id, bot_id FROM server_members WHERE server_id = %s
-    """
-    await cur.execute(query, (server_id,))
-    result = await cur.fetchall()
-
-    if not result:
-        return []
-
-    sids = []
-
-    for member in result:
-        user_id = member.get('user_id') if isinstance(member, dict) else member[0]
-        bot_id = member.get('bot_id') if isinstance(member, dict) else member[1]
-
-        if user_id:
-            user_sids = await get_sids_for_user(user_id)
-            if user_sids:
-                sids.extend(user_sids)
-
-        if bot_id:
-            bot_sid = await get_bot_sid_from_id(bot_id)
-            if bot_sid:
-                sids.append(bot_sid)
-
-    return sids
 
 async def send_server_notifications(cur, server_id, channel_id):
     query = """
@@ -238,7 +202,7 @@ async def server_commands(sid, metadata, data):
                 if not bot['id']:
                     continue
                 await cur.execute(
-                    'SELECT command, options FROM bot_commands WHERE bot_id = %s', 
+                    'SELECT command, options, description FROM bot_commands WHERE bot_id = %s', 
                     (bot['id'],)
                 )
                 commands = await cur.fetchall()
@@ -263,16 +227,15 @@ async def get_server_users(sid, metadata, data):
         await sio_instance.sio.emit('get_server_users_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
         
-    cached_users = await get_cached_users(server_id)
+    cached_users = await get_cached_users(server_id = server_id)
     if cached_users:
         await sio_instance.sio.emit('server_users', cached_users, to=sid)
-        
         
     async def get_users():
         async with config.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 users = await get_server_users_info(cur, server_id)
-                await cache_users(server_id, users)
+                await cache_users(server_id = server_id, users = users)
                 await sio_instance.sio.emit("server_users", users, to=sid)
                 await addMessageToLogs(f"Emitted server_users to {user_id}, Sent {len(users)} users to {user_id}", "INFO")
         
@@ -309,7 +272,6 @@ async def command(sid, metadata, data):
                 await addMessageToLogs(f"Command not found for command, command: {command}, bot id: {bot_id}", "INFO")
                 await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Command not found'}, to=sid)
                 return
-            
         
             try:
                 command_options = row['options']
@@ -386,12 +348,16 @@ async def command(sid, metadata, data):
                                 return
                         
             bot_sid = await get_bot_sid_from_id(bot_id)
-
+            
+            command_id = str(uuid.uuid4())
+            await save_command_id(user_id, command_id, command)
+            await addMessageToLogs(f"Saved command_id for command, command: {command}, command_id: {command_id}", "INFO")
             if bot_sid:
                 await sio_instance.sio.emit('bot_command_received', {
                     'command': command,
                     'options': options_input,
                     'sent_by_user_id': user_id,
+                    'command_id': command_id,
                     'server_id': server_id,
                     'channel_id': channel_id
                 }, to=bot_sid)

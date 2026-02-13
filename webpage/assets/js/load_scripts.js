@@ -7,6 +7,7 @@ function loadScripts() {
             if (document.querySelector(`script[src="${src}"]`)) return;
             const scriptTag = document.createElement("script");
             scriptTag.src = src;
+            scriptTag.type = "module";
             document.body.appendChild(scriptTag);
         });
 }

@@ -1,6 +1,6 @@
 import uuid
 from server.config import typing_lock, user_current_room, add_user_to_sid, get_sids_for_user, remove_user_sid, get_user_from_sid, get_bot_sid_from_id, add_sid_to_bot, get_bot_id_from_sid, remove_sid, get_typing_users, remove_typing_user, redis_client, server_name, acquire_user_lock, release_user_lock, DISCONNECT_TIMEOUT
-from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status, broadcast_user_widget_update
+from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status, broadcast_widget_update, auth_required, get_user_rooms
 from server.helpers.server_helpers import is_user_in_server, get_member_ids_from_server
 from server.helpers.bot_helpers import is_bot_in_server, verify_bot_token
 import server.sio_instance as sio_instance
@@ -25,13 +25,13 @@ async def poll_spotify(user_id, access_token=None, refresh_token=None):
                     async with session.get("https://api.spotify.com/v1/me/player", headers=headers) as resp:
                         if resp.status == 200:
                             data = await resp.json()
-                            await broadcast_user_widget_update(user_id, "Spotify")
+                            await broadcast_widget_update(user_id, widget_name="Spotify")
                         elif resp.status == 204:
-                            await broadcast_user_widget_update(user_id, "Spotify")
+                            await broadcast_widget_update(user_id, widget_name="Spotify")
                         else:
                             await addMessageToLogs(f"Spotify API returned {resp.status} for user {user_id}", "INFO")
             else:
-                await broadcast_user_widget_update(user_id, "Spotify")
+                await broadcast_widget_update(user_id,  widget_name="Spotify")
 
             await asyncio.sleep(interval)
     except asyncio.CancelledError:
@@ -65,7 +65,19 @@ async def handle_connect(sid, environ):
                 if await redis_client.get(disconnect_key):
                     await redis_client.delete(disconnect_key)
                     await addMessageToLogs(f"User {user_id} reconnected, canceled pending disconnect", "INFO")
-
+                    await cur.execute(
+                        "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = 0",
+                        (user_id,)
+                    )
+                    await conn.commit()
+                    await broadcast_user_update(user_id)
+                else:
+                    await cur.execute(
+                        "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = 0",
+                        (user_id,)
+                    )
+                    await conn.commit()
+                    
                 await cur.execute("""
                     SELECT widget_name, widget_access_token, widget_refresh_token, show_on_profile
                     FROM profile_widgets
@@ -78,21 +90,22 @@ async def handle_connect(sid, environ):
                     None
                 )
 
-                await cur.execute(
-                    "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = FALSE",
-                    (user_id,)
-                )
-                await conn.commit()
-                await broadcast_user_update(user_id)
-
                 if spotify_tokens:
                     asyncio.create_task(poll_spotify(user_id, *spotify_tokens))
                 else:
                     asyncio.create_task(poll_spotify(user_id))
+                    
+                await sio_instance.sio.enter_room(sid, f"user:{user_id}")
 
                 await addMessageToLogs(f"User {user_id} connected", "INFO")
-                await sio_instance.sio.emit('connected to server', {'server_name': server_name}, to=sid)
-                await sio_instance.sio.emit('user_connected', {'user_id': user_id, 'server_id': server_id}, to=sid)
+                await sio_instance.sio.emit('connected to server', {'server_name': server_name}, room=f"user:{user_id}")
+                await sio_instance.sio.emit('user_connected', {'user_id': user_id, 'server_id': server_id}, room=f"user:{user_id}")
+                await broadcast_user_update(user_id)
+                
+                user_notif_rooms = await get_user_rooms(cur, user_id, notification_only=True)
+                
+                for room in user_notif_rooms:
+                    await sio_instance.sio.enter_room(sid, room)
 
                 sids = await get_sids_for_user(user_id)
                 if sid not in sids:
@@ -165,6 +178,11 @@ async def handle_disconnect(sid):
     if user_id:
         await addMessageToLogs(f"User {user_id} disconnected", "INFO")
         await remove_user_sid(user_id, sid)
+        
+        remaining_sids = await get_sids_for_user(user_id)
+        if remaining_sids:
+            await addMessageToLogs(f"User {user_id} still has active connections: {remaining_sids}, skipping disconnect flow", "INFO")
+            return
 
         token = str(uuid.uuid4())
         disconnect_key = f"user_disconnect:{user_id}"
@@ -182,14 +200,17 @@ async def handle_disconnect(sid):
                     return
                 
                 await cur.execute(
-                    "UPDATE users SET status = 'idle' WHERE id = %s AND status_manually_set = FALSE",
+                    "UPDATE users SET status = 'idle' WHERE id = %s AND status_manually_set = 0",
                     (user_id,)
                 )
                 await conn.commit()
                 await addMessageToLogs(f"User {user_id} set to idle after disconnect", "INFO")
                 await broadcast_user_update(user_id)
 
-        asyncio.create_task(handle_delayed_disconnect(user_id, token))
+        current_token = await redis_client.get(disconnect_key)
+        if current_token == token:
+            asyncio.create_task(handle_delayed_disconnect(user_id, token))
+            return
         return
 
     if bot_id:
@@ -212,7 +233,7 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
         async with conn.cursor() as cur:
             if await redis_client.get(disconnect_key) != disconnect_token and set(await get_sids_for_user(user_id)) != set():
                 await cur.execute(
-                    "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = FALSE",
+                    "UPDATE users SET status = 'online' WHERE id = %s AND status_manually_set = 0",
                     (user_id,)
                 )
                 await conn.commit()
@@ -221,7 +242,7 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
                 return
             
             await cur.execute(
-                "UPDATE users SET status = 'offline' WHERE id = %s AND status_manually_set = FALSE",
+                "UPDATE users SET status = 'offline' WHERE id = %s AND status_manually_set = 0",
                 (user_id,)
             )
             await conn.commit()
@@ -229,3 +250,73 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
             await broadcast_user_update(user_id)
 
     await redis_client.delete(disconnect_key)
+
+@auth_required(server_required=True, allow_bots=False)
+async def change_room(sid, metadata, data):
+    user_id = metadata.get('account_id')
+    new_server_id = data.get('server_id')
+    new_channel_id = data.get('channel_id')
+    new_contact_id = data.get('contact_id')
+
+    if new_contact_id:
+        combined_room = f"contact:{new_contact_id}"
+        current_rooms = sio_instance.sio.rooms(sid)
+        for room in current_rooms:
+            if room.startswith("contact:") and room != combined_room:
+                await sio_instance.sio.leave_room(sid, room)
+            elif room.startswith("server:") or room.startswith("channel:"):
+                await sio_instance.sio.leave_room(sid, room)
+        if combined_room not in current_rooms:
+            await sio_instance.sio.enter_room(sid, combined_room)
+        
+        await sio_instance.sio.emit(
+            'switch_channel_response',
+            {"contact_id": new_contact_id},
+            to=sid
+        )
+        return
+
+    if not new_server_id or not new_channel_id:
+        await addMessageToLogs("Missing required fields for change_room", "INFO")
+        await sio_instance.sio.emit('switch_channel_response', None, to=sid)
+        return
+
+    combined_room = f"server:{new_server_id}:channel:{new_channel_id}"
+    server_room = f"server:{new_server_id}"
+    channel_room = f"channel:{new_channel_id}"
+
+    current_rooms = sio_instance.sio.rooms(sid)
+
+    for room in current_rooms:
+        if room.startswith("server:") and room != server_room and ":channel:" not in room:
+            await sio_instance.sio.leave_room(sid, room)
+
+    for room in current_rooms:
+        if room.startswith("channel:") and room != channel_room:
+            await sio_instance.sio.leave_room(sid, room)
+
+    for room in current_rooms:
+        if room.startswith("server:") and ":channel:" in room and room != combined_room:
+            await sio_instance.sio.leave_room(sid, room)
+
+    if server_room not in current_rooms:
+        await sio_instance.sio.enter_room(sid, server_room)
+
+    if channel_room not in current_rooms:
+        await sio_instance.sio.enter_room(sid, channel_room)
+
+    if combined_room not in current_rooms:
+        await sio_instance.sio.enter_room(sid, combined_room)
+        
+    await sio_instance.sio.emit(
+        'switch_channel_response',
+        {"server_id": new_server_id, "channel_id": new_channel_id},
+        to=sid
+    )
+    
+    typing_users = await get_typing_users(new_server_id, new_channel_id)
+    await sio_instance.sio.emit(
+        'users_typing',
+        {'user_ids': list(typing_users), 'channel_id': new_channel_id, 'server_id': new_server_id},
+        to=sid
+    )

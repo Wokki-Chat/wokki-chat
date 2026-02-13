@@ -1,4 +1,5 @@
 <?php
+session_start();
 include 'app/config.php';
 include 'global.php';
 include 'app/maintenance.php';
@@ -115,6 +116,9 @@ $onclickEventChat = "window.location.href = '/connections/chat'";
 $spotify_connected = "Not Connected";
 $onclickEventSpotify = "window.location.href = '/connections/spotify'";
 
+$github_connected = "Not Connected";
+$onclickEventGithub = "window.location.href = '/connections/github'";
+
 $connectionsStmt = $mysqli->prepare("SELECT connection_user_id, connection_user_name, connection_user_url, connected_at, connection_user_image, connection_name FROM user_connections WHERE user_id = ?");
 $connectionsStmt->bind_param("i", $user_id);
 $connectionsStmt->execute();
@@ -125,6 +129,18 @@ foreach ($connections as $index => &$connection) {
     if ($connection['connection_name'] === "Chat") {
         $chat_connected = "Connected";
         $onclickEventChat = "openConnectionModal('Chat')";
+    }
+    if ($connection['connection_name'] === "GitHub") {
+        $github_connected = "Connected";
+        $onclickEventGithub = "openConnectionModal('GitHub')";
+
+        $connection['show_on_profile'] = false;
+        foreach ($widgets as $widget) {
+            if ($widget['widget_name'] === 'GitHub') {
+                $connection['show_on_profile'] = $widget['show_on_profile'] == 1;
+                break;
+            }
+        }
     }
     if ($connection['connection_name'] === "Spotify") {
         $spotify_connected = "Connected";
@@ -171,13 +187,30 @@ $kudosJson = file_get_contents('app/assets/kudos/items.json');
 $kudosArray = json_decode($kudosJson, true);
 
 $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAsAAAAGMAQMAAADuk4YmAAAAA1BMVEX///+nxBvIAAAAAXRSTlMAQObYZgAAADlJREFUeF7twDEBAAAAwiD7p7bGDlgYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAGJrAABgPqdWQAAAABJRU5ErkJggg==';
+
+$_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
+
+$active_tab_formatted = "My Account";
+
+if ($active_tab === 'account') {
+    $active_tab_formatted = "My Account";
+} elseif ($active_tab === 'connections') {
+    $active_tab_formatted = "Connections";
+} elseif ($active_tab === 'appearance') {
+    $active_tab_formatted = "Appearance";
+} elseif ($active_tab === 'kudos') {
+    $active_tab_formatted = "Kudos";
+} elseif ($active_tab === 'logs') {
+    $active_tab_formatted = "Logs";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme; ?>">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>wokki chat | settings</title>
+    <title>Wokki Chat - Settings</title>
+    <link rel="manifest" href="/manifest.json">
     <link
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
       rel="stylesheet"
@@ -195,7 +228,7 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
 </head>
 <body>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css"/>
-    <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js" defer></script>
     <div class="server-bar">
         <div class="server-bar-dms">
             <a class="server-bar-item" id="server-bar-item-home" href="/home">
@@ -219,7 +252,7 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
         </div>
         <div class="server-bar-options">    
             <div class="server-bar-option">
-                <div class="server-bar-option-icon" onclick="openCreateServerModal()">
+                <div class="server-bar-option-icon" id="open-create-server-modal">
                     <span class="material-symbols-rounded">add_circle</span>
                 </div>
                 <p class="tooltip">create server</p>
@@ -255,7 +288,11 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
                 <?php endif; ?>
             </div>
             <div class="setting-page">
-                <a class="close-settings-container no-underline" href="https://chat.wokki20.nl<?php echo $from; ?>">
+                <div class="settings-sidebar-button">
+                    <span class="material-symbols-rounded top-bar-menu" id="settings-sidebar-button">menu</span>
+                    <h2 class="settings-page-title"><?php echo $active_tab_formatted; ?></h2>
+                </div>
+                <a class="close-settings-container no-underline" href="<?php echo $from; ?>">
                     <div class="close-settings">
                         <span class="material-symbols-rounded">close</span>
                     </div>
@@ -327,9 +364,9 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
                     $settingsHtml = str_replace("{{created_at}}", $createdAtFormatted, $settingsHtml);
                     $settingsHtml = str_replace("{{profile_link_style}}", $profileLinkStyle, $settingsHtml);
                     $settingsHtml = str_replace("{{tags_style}}", ($premium_active ? '' : 'display: none;'), $settingsHtml);
-                    $settingsHtml = str_replace("{{display_name}}", htmlspecialchars($display_name), $settingsHtml);
-                    $settingsHtml = str_replace("{{profile_color_primary}}", $profile_color_primary, $settingsHtml);
-                    $settingsHtml = str_replace("{{profile_color_accent}}", $profile_color_accent, $settingsHtml);
+                    $settingsHtml = str_replace("{{display_name}}", $display_name ? htmlspecialchars($display_name) : '', $settingsHtml);
+                    $settingsHtml = str_replace("{{profile_color_primary}}", $profile_color_primary ? $profile_color_primary : '', $settingsHtml);
+                    $settingsHtml = str_replace("{{profile_color_accent}}", $profile_color_accent ? $profile_color_accent : '', $settingsHtml);
                     $settingsHtml = str_replace("{{banner}}", $bannerHtml, $settingsHtml);
                     $settingsHtml = str_replace("{{banner_url}}", $bannerUrl, $settingsHtml);
                     $settingsHtml = str_replace("{{premium_badge}}", ($premium_active ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''), $settingsHtml);
@@ -339,6 +376,8 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
                 <?php 
                 if ($active_tab === "appearance") {
                     $appearanceHtml = file_get_contents('settings_html/settings_appearance.html');
+                    $layout = explode(' ', $theme)[1];
+                    $theme = explode(' ', $theme)[0];
                     $appearanceHtml = str_replace("{{light_active}}", ($theme === "light" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{dark_active}}", ($theme === "dark" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{night_active}}", ($theme === "night" ? "active" : ""), $appearanceHtml);
@@ -347,6 +386,8 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
                     $appearanceHtml = str_replace("{{hidden_2}}", ($chat_connected === "Connected" ? "chat_dark_blue" : "hidden_2_disabled"), $appearanceHtml);
                     $appearanceHtml = str_replace("{{hidden_2_active}}", ($theme === "chat_dark_blue" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{hidden_container_1}}", ($chat_connected === "Connected" ? "" : "chat-account-only"), $appearanceHtml);
+                    $appearanceHtml = str_replace("{{floaty_active_checked}}", ($layout === "floaty" ? "checked" : ""), $appearanceHtml);
+                    $appearanceHtml = str_replace("{{compact_active_checked}}", ($layout === "compact" ? "checked" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{connect_chat_account_text}}", ($chat_connected === "Connected" ? "Go even further with personalizing, and use one of the familiar Chat themes. Only available for users who have their Chat account connected." : "Please <a href='/settings/connections' class='link'>connect your Chat account</a> to unlock Chat themes!"), $appearanceHtml);
                     echo $appearanceHtml;   
                 }
@@ -358,6 +399,8 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
                     $connectionsHtml = str_replace("{{onclick_event.chat}}", $onclickEventChat, $connectionsHtml);
                     $connectionsHtml = str_replace("{{connection_status.spotify}}", $spotify_connected, $connectionsHtml);
                     $connectionsHtml = str_replace("{{onclick_event.spotify}}", $onclickEventSpotify, $connectionsHtml);
+                    $connectionsHtml = str_replace("{{connection_status.github}}", $github_connected, $connectionsHtml);
+                    $connectionsHtml = str_replace("{{onclick_event.github}}", $onclickEventGithub, $connectionsHtml);
                     echo $connectionsHtml;
                 }
                 ?>
@@ -453,7 +496,7 @@ $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
     <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
     <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
-    <script src="/assets/js/settings.js"></script>
+    <script src="/assets/js/settings.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
 </body>
 </html>

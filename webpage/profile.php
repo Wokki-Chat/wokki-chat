@@ -1,9 +1,10 @@
 <?php
+session_start();
 include 'app/config.php';
 include 'global.php';
 
 if (!isset($_COOKIE['access_token'])) {
-    header('Location: login');
+    header('Location: /login');
     exit;
 }
 $access_token = $_COOKIE['access_token'];
@@ -19,7 +20,7 @@ if ($result->num_rows > 0) {
 $stmt->close();
 
 if (!$user_id) {
-    header('Location: login');
+    header('Location: /login');
     exit;
 }
 
@@ -36,14 +37,27 @@ if (!$profile_user_name) {
     exit;
 }
 
+$stmt = $mysqli->prepare("SELECT id FROM users WHERE username = ?");
+$stmt->bind_param("s", $profile_user_name);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+    $profile_user_id = $row['id'];
+} else {
+    header('Location: /home');
+    exit;
+}
+$stmt->close();
+
 $stmt = $mysqli->prepare("SELECT username, profile_picture, premium, premium_expires_at, premium_know FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 if ($result->num_rows > 0) {
     $row = $result->fetch_assoc();
-    $my_username = $row['username'];
-    $my_profile_picture = $row['profile_picture'];
+    $username = $row['username'];
+    $profile_picture = $row['profile_picture'];
     $premium = $row['premium'];
     $premium_expires_at = $row['premium_expires_at'];
     $premium_know = $row['premium_know'];
@@ -61,67 +75,40 @@ $serverStmt->execute();
 $serverResult = $serverStmt->get_result();
 $serverStmt->close();
 
-
-$profileStmt = $mysqli->prepare("
-    SELECT 
-        u.id,
-        u.username,
-        u.profile_picture,
-        u.status,
-        u.premium,
-        u.created_at AS u_created_at,
-        u.bio,
-        u.is_developer,
-        u.is_staff,
-        t.tag_name,
-        t.tag_icon,
-        t.tag_description,
-        t.created_at
-    FROM users u
-    LEFT JOIN tags t ON u.id = t.user_id
-    WHERE u.username = ? 
-      AND u.email_verified = 1
+$friendsStmt = $mysqli->prepare("
+    SELECT f1.friend_id
+    FROM friends f1
+    JOIN friends f2 ON f1.friend_id = f2.user_id AND f2.friend_id = f1.user_id
+    WHERE f1.user_id = ?
 ");
-$profileStmt->bind_param("s", $profile_user_name);
-$profileStmt->execute();
-$profileResult = $profileStmt->get_result();
-$profileStmt->close();
+$friendsStmt->bind_param("i", $user_id);
+$friendsStmt->execute();
+$friendsResult = $friendsStmt->get_result();
 
-if ($profileResult->num_rows === 0) {
-    header('Location: /home');
-    exit;
-}
+$friendsList = [];
 
-$profile_tags = [];
-$profileRow = null;
+while ($row = $friendsResult->fetch_assoc()) {
+    $friendId = $row['friend_id'];
 
-while ($row = $profileResult->fetch_assoc()) {
-    if ($profileRow === null) {
-        $profileRow = [
-            'id' => $row['id'],
-            'username' => $row['username'],
-            'profile_picture' => $row['profile_picture'],
-            'status' => $row['status'],
-            'premium' => $row['premium'],
-            'p_created_at' => $row['u_created_at'],
-            'bio' => $row['bio'],
-            'is_developer' => $row['is_developer'],
-            'is_staff' => $row['is_staff'],
-            'tags' => []
+    $userStmt = $mysqli->prepare("SELECT username, profile_picture, status, premium FROM users WHERE id = ?");
+    $userStmt->bind_param("i", $friendId);
+    $userStmt->execute();
+    $userResult = $userStmt->get_result();
+
+    if ($userData = $userResult->fetch_assoc()) {
+        $friendsList[] = [
+            'id' => $friendId,
+            'username' => $userData['username'],
+            'profile_picture' => $userData['profile_picture'],
+            'status' => $userData['status'], 
+            'premium' => $userData['premium']
         ];
     }
 
-    if (!empty($row['tag_name'])) {
-        $profileRow['tags'][] = [
-            'tag_name' => $row['tag_name'],
-            'tag_icon' => $row['tag_icon'],
-            'tag_description' => $row['tag_description'],
-            'created_at' => $row['created_at']
-        ];
-    }
+    $userStmt->close();
 }
 
-$profile = $profileRow;
+$friendsStmt->close();
 
 $premium_popup = false;
 
@@ -131,9 +118,7 @@ if ($premium && !$premium_know && ($premium_expires_at > time() || $premium_expi
     $stmt->bind_param("ii", $premium_know, $user_id);
     $stmt->execute();
     $stmt->close();
-
     $premium_popup = true;
-
 }
 
 $premium_active = $premium && ($premium_expires_at > time() || $premium_expires_at === null);
@@ -142,208 +127,157 @@ function formatPremiumExpiration($timestamp) {
     if ($timestamp === null) {
         return "never";
     }
-
     if (!is_numeric($timestamp)) {
         $timestamp = strtotime($timestamp);
     }
-    
     $now = time();
     $diff = $timestamp - $now;
-    
     if ($diff <= 0) {
         return "0 days";
     }
-    
     $days = ceil($diff / 86400);
-    
     return $days . " days";
 }
-
-
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>wokki chat</title>
+    <title>Wokki Chat - Profile</title>
+    <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="/assets/styles/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script src="/assets/js/call_reconnect.js"></script>
+    <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
+    <script src="https://cdn.wokki20.nl/dynamic/jspt/jspt.js"></script>
 </head>
 <body>
-    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css"/>
+    <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js"></script>
     <div class="server-bar">
         <div class="server-bar-dms">
-            <div class="server-bar-item active">
+            <a class="server-bar-item active" id="server-bar-item-home" href="/home">
                 <img src="/assets/images/monochrome-logo-purple-background.png">
-            </div>
+            </a>
         </div>
         <div class="divider"></div>
         <div class="server-bar-channels">
             <?php
             if ($serverResult->num_rows > 0) {
                 while ($serverRow = $serverResult->fetch_assoc()) {
-                    echo '<a class="server-bar-item" href="/server/'.$serverRow['id'].'">
-                        <img src="' . $serverRow['image'] . '">
-                        <p class="tooltip">' . $serverRow['name'] . '</p>
+                    $lowImage = preg_replace('/\.(webp|gif)$/', '-low.$1', $serverRow['image']);
+
+                    echo '<a class="server-bar-item" id="server-bar-item-server" href="/server/'.$serverRow['id'].'" data-server-id="'.$serverRow['id'].'">
+                        <img src="'.$lowImage.'" loading="lazy" decoding="async" width="47" height="47" draggable="false"/>
+                        <p class="tooltip">'.$serverRow['name'].'</p>
                     </a>';
                 }
-            
             }
             ?>
         </div>
         <div class="server-bar-options">    
             <div class="server-bar-option">
-                <div class="server-bar-option-icon" onclick="openCreateServerModal()">
+                <div class="server-bar-option-icon" id="open-create-server-modal">
                     <span class="material-symbols-rounded">add_circle</span>
                 </div>
                 <p class="tooltip">create server</p>
             </div>
         </div>
     </div>
+    <main id="app">
+        <div class="channel-bar">
+        </div>
 
-    <div class="top-bar" style="left: calc(15px + 67px + 15px + 15px); width: calc(100% - 15px - 67px - 15px - 15px - 45px);">
-        <div class="top-bar-left">
-            <span class="material-symbols-rounded top-bar-menu" id="top-bar-menu">menu</span>
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <span class="material-symbols-rounded top-bar-menu" id="top-bar-menu">menu</span>
+                
+            </div>
+        </div>
+
+        <div class="users">
             
         </div>
-    </div>
 
-    <div class="main-content" style="left: calc(15px + 67px + 15px + 15px); width: calc(100% - 15px - 67px - 15px - 15px - 356px - 30px); z-index: -1;">
-        <div class="profile-item">
-            <div class="profile-item-left">
-                <div class="profile-item-status-profile">
-                    <img src="<?php echo $profile['profile_picture']; ?>" draggable="false" class="profile-picture-large">
-                    <div class="profile-item-status-circle-outer">
-                        <div class="profile-item-status-circle-inner" style="background-color: var(--clr-status-<?php echo strtolower($profile['status']); ?>);"></div>
+        <div class="self-info">
+            <div class="self-info-left">
+                <div class="self-info-profile-status">
+                    <img class="self-info-profile-picture" src="<?php echo $profile_picture; ?>">
+                    <div class="self-info-status-circle-outer">
+                        <div class="self-info-status-circle-inner"></div>
                     </div>
                 </div>
-            </div>
-            <div class="profile-item-right">
-                <p class="profile-item-username"><?php echo htmlspecialchars($profile['username']); ?></p>
-                <p class="profile-item-status"><?php echo ucfirst($profile['status']); ?></p>
-                <div class="profile-item-info">
-                    <div class="bio">
-                        <p class="profile-item-info-key">Bio:</p>
-                        <p class="profile-item-info-bio <?php if (empty($profile['bio'])) { echo 'no-bio'; } ?>"><?php echo htmlspecialchars($profile['bio'] ?? 'This user has no bio yet'); ?></p>
-                    </div>
-                    <div class="created-at">
-                        <p class="profile-item-info-key">Joined on:</p>
-                        <p class="profile-item-info-date"><?php echo (new DateTime($profile['p_created_at']))->format('M j, Y'); ?></p>
-                    </div>
-                    <div class="profile-item-info-tags" <?php if (!$profile['premium'] == 1 && empty($profile['tags']) && !$profile['is_staff'] == 1 && !$profile['is_developer'] == 1) { echo 'style="display: none;"'; } ?>>
-                        <p class="profile-item-info-key">Tags:</p>
-                        <?php if ($profile['is_staff'] == 1) { ?>
-                            <div class="profile-item-info-tag">
-                                <img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_staff.svg">
-                                <div class="profile-item-info-tag-info">
-                                    <p class="profile-item-info-tag-info-name">Staff</p>
-                                    <p class="profile-item-info-tag-info-description">This user is an official Wokki Chat staff member.</p>
-                                </div>
-                            </div>
-                        <?php } ?>
-                        <?php if ($profile['is_developer'] == 1) { ?>
-                            <div class="profile-item-info-tag">
-                                <img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_developer.svg">
-                                <div class="profile-item-info-tag-info">
-                                    <p class="profile-item-info-tag-info-name">Developer</p>
-                                    <p class="profile-item-info-tag-info-description">This user is an official Wokki Chat developer.</p>
-                                </div>
-                            </div>
-                        <?php } ?>
-                        <?php if ($profile['premium'] == 1) { ?>
-                            <div class="profile-item-info-tag">
-                                <img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_premium.svg">
-                                <div class="profile-item-info-tag-info">
-                                    <p class="profile-item-info-tag-info-name">Premium</p>
-                                    <p class="profile-item-info-tag-info-description"><?php echo htmlspecialchars($profile['username']); ?> is a premium user</p>
-                                </div>
-                            </div>
-                        <?php } ?>
-                        <?php if ($profile['tags']) {
-                            foreach ($profile['tags'] as $tag) {
-                                if ($tag['tag_name'] == 'staff') { continue; }
-                                echo '
-                                <div class="profile-item-info-tag">
-                                    <img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/'.$tag['tag_icon'].'.svg">
-                                    <div class="profile-item-info-tag-info">
-                                        <p class="profile-item-info-tag-info-name">'.ucfirst($tag['tag_name']).'</p>
-                                        <p class="profile-item-info-tag-info-description">'.htmlspecialchars($tag['tag_description']).'</p>
-                                    </div>
-                                </div>
-                                ';
-                            }   
-                        } ?>
-                    </div>
+                <div class="self-info-status-username">
+                    <p class="self-info-username"><?php echo htmlspecialchars($username, ENT_QUOTES, 'UTF-8'); ?></p>
+                    <p class="self-info-status">Online</p>
                 </div>
             </div>
 
-        </div>
-    </div>
-
-    <div class="self-info">
-        <div class="self-info-left">
-            <div class="self-info-profile-status">
-                <img class="self-info-profile-picture" src="<?php echo $my_profile_picture; ?>">
-                <div class="self-info-status-circle-outer">
-                    <div class="self-info-status-circle-inner"></div>
-                </div>
-            </div>
-            <div class="self-info-status-username">
-                <p class="self-info-username"><?php echo $my_username; ?></p>
-                <p class="self-info-status">Online</p>
+            <div class="self-info-right" >
+                <a class="material-symbols-rounded self-info-right-settings no-underline" href="/settings?from=/home">settings</a>
             </div>
         </div>
 
-        <div class="self-info-right">
-            <span class="material-symbols-rounded self-info-right-settings" onclick="window.location.href = '/settings?from=/profile/@<?php echo $profile['username']; ?>'">settings</span>
-        </div>
-    </div>
-
-    <?php if ($premium_popup): ?>
-        <div class="premium-popup">
-            <div class="premium-popup-content">
-                <div class="premium-popup-icon">
-                    <span class="material-symbols-rounded premium-popup-icon-icon">star</span>
-                </div>
-                <div class="premium-popup-text">
-                    <h3>You got upgraded to premium</h3>
-                    <p>You unlocked all premium features</p>
-                    <p>Premium expires in <?php echo formatPremiumExpiration($premium_expires_at); ?></p>
-                </div>
-                <div class="premium-popup-close">
-                    <button class="button-primary-filled" onclick="this.parentElement.parentElement.parentElement.remove();">Okay</button>
+        <?php if ($premium_popup): ?>
+            <div class="premium-popup">
+                <div class="premium-popup-content">
+                    <div class="premium-popup-icon">
+                        <span class="material-symbols-rounded premium-popup-icon-icon">star</span>
+                    </div>
+                    <div class="premium-popup-text">
+                        <h3>You got upgraded to premium</h3>
+                        <p>You unlocked all premium features</p>
+                        <p>Premium expires in <?php echo formatPremiumExpiration($premium_expires_at); ?></p>
+                    </div>
+                    <div class="premium-popup-close">
+                        <button class="button-primary-filled" onclick="this.parentElement.parentElement.parentElement.remove();">Okay</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    <?php endif; ?>
+        <?php endif; ?>
+
+        <wchat-allowed-scripts value="profile.js;"></wchat-allowed-scripts>
+        <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
+        <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
+        <wchat-data id="requested-user-id" value="<?php echo htmlspecialchars($profile_user_id); ?>"></wchat-data>
+        <wchat-data id="users-list" value="<?php echo htmlspecialchars(json_encode($friendsList)); ?>"></wchat-data>
+        <wchat-data id="last-page" value="<?php 
+            $lastPage = $_SESSION['last_page'];
+            if ($lastPage === null || $lastPage === '') {
+                echo htmlspecialchars('/home');
+            } else {
+                echo htmlspecialchars($lastPage);
+            }
+        ?>"></wchat-data>
+    </main>
+    <script src="/assets/js/socket.js" data-swup-ignore-script></script>
+    <script type="module" data-swup-ignore-script>
+        import Swup from "https://unpkg.com/swup@4?module";
+        import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
+        import SwupScriptsPlugin from "https://unpkg.com/@swup/scripts-plugin@2?module";
+
+        window.swup = new Swup({
+            containers: ["#app"],
+            cache: true,
+            plugins: [
+                new SwupPreloadPlugin(),
+                new SwupScriptsPlugin({
+                    body: true,
+                    head: false,
+                })
+            ]
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="/assets/js/create_server.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/assets/js/notifiers.js"></script>
-    <script>
-        // DO NOT TOUCH OR EDIT
-        const access_token = "<?php echo $access_token; ?>";
-        const user_id = "<?php echo $user_id; ?>";
-
-        const profile_user_id = "<?php echo $profile['id']; ?>";
-        
-        const socket = io("https://chat.wokki20.nl", {
-            path: "/socket.io",
-            transports: ["websocket"],
-            query: {
-                access_token: access_token
-            },
-        });
-
-        socket.on("user_updated", (user) => {
-            if (user.id !== profile_user_id) return;
-            document.querySelector(".profile-item-status-circle-inner").style.backgroundColor = `var(--clr-status-${user.status.toLowerCase()})`;
-            document.querySelector(".profile-item-status").textContent = user.status.charAt(0).toUpperCase() + user.status.slice(1);
-        });
-    </script>
+    <script src="/assets/js/globalFunctions.js"></script>
+    <script src="/assets/js/profile.js" type="module"></script>
+    <script src="/assets/js/load_scripts.js"></script>
 </body>
 </html>

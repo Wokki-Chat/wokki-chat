@@ -8,6 +8,10 @@ if (!$access_token) {
     exit;
 }
 
+header("Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 $stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?");
 $stmt->bind_param("s", $access_token);
 $stmt->execute();
@@ -47,41 +51,78 @@ $botsStmt->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>wokki chat</title>
-    <link rel="stylesheet" href="/assets/styles/main.css">
+    <title>Wokki Chat Developer Portal - Bots</title>
+    <link rel="stylesheet" href="../assets/styles/developer/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
 </head>
 <body>
-    <div class="bots-container">
-        <div class="developer-header">
-            <h1 class="developer-title">Bots</h1>
-            <p class="developer-description">You can develop bots to enhance your wokki chat server and elevate its functionality to the next level.</p>
+    <div class="header">
+        <div class="logo">
+            <img src="../assets/images/logo-purple.png" alt="Wokki Chat Logo">
+            <p>For Developers</p>
         </div>
-        <div class="developer-content">
-            <h3>Your Bots:</h3>
-            <div class="developer-bots">
-                <?php
-                foreach ($bots as $bot) {
-                    echo '
-                    <div class="developer-bot" onclick="window.location.href = \'/developer/bot/' . $bot['id'] . '\' ">
-                        <img class="developer-bot-profile-picture" src="' . $bot['profile_picture'] . '" alt="' . $bot['name'] . '">
-                        <p class="developer-bot-name">' . $bot['name'] . '</p>
-                    </div>';
-                }       
-                ?>
-                <div class="developer-bot" id="add-bot" onclick="openCreateBotModal()">
-                    <div class="add-bot-container"><span class="material-symbols-rounded add-bot">add</span></div>
-                    <p class="developer-bot-name">Create New Bot</p>
-                </div>
-            </div>
+        <div class="top-bar-profile" id="top-bar-profile">
+            <img draggable="false" class="top-bar-profile-picture" src="<?php echo $profile_picture; ?>">
+            <p class="top-bar-username"><?php echo htmlspecialchars($username); ?></p>
         </div>
     </div>
-    <script src="/assets/js/bots.js"></script>
-    <script>
-        // DO NOT TOUCH OR EDIT
-        const access_token = "<?php echo $access_token; ?>";
-        const user_id = "<?php echo $user_id; ?>";
+    <div class="content" id="app">
+        <div class="sidebar">
+            <a class="sidebar-item" href="/developer/portal">
+                <span class="material-symbols-rounded sidebar-item-icon">home</span>
+                <span class="sidebar-item-text">Portal</span>
+            </a>
+            <a class="sidebar-item active" href="/developer/bots">
+                <span class="material-symbols-rounded sidebar-item-icon">smart_toy</span>
+                <span class="sidebar-item-text">Bots</span>
+            </a>
+            <a class="sidebar-item" href="/developer/docs">
+                <span class="material-symbols-rounded sidebar-item-icon">book_2</span>
+                <span class="sidebar-item-text">Documentation</span>
+            </a>
+        </div>
+        <h1 class="content-title">Bots</h1>
+        <p class="content-description">Manage and create bots to enhance your Wokki Chat experience.</p>
+        <h3>Your Bots:</h3>
+        <div class="developer-bots">
+            <?php
+            foreach ($bots as $bot) {
+                echo '
+                <a class="developer-bot" href="/developer/bot/' . $bot['id'] . '/information">
+                    <img class="developer-bot-profile-picture" src="' . $bot['profile_picture'] . '" alt="' . $bot['name'] . '">
+                    <p class="developer-bot-name">' . $bot['name'] . '</p>
+                </a>';
+            }       
+            ?>
+            <div class="developer-bot" id="add-bot">
+                <div class="add-bot-container"><span class="material-symbols-rounded add-bot">add</span></div>
+                <p class="developer-bot-name">Create New Bot</p>
+            </div>
+        </div>
+        <wchat-allowed-scripts value="developer/bots.js;"></wchat-allowed-scripts>
+        <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
+        <wchat-data id="user-id" value="<?php echo $user_id; ?>"></wchat-data>
+        <wchat-data id="page" value="/developer/bots"></wchat-data>
+    </div>
+    <script src="/assets/js/developer/bots.js"></script>
+    <script src="/assets/js/load_scripts.js"></script>
+    <script type="module" data-swup-ignore-script>
+        import Swup from "https://unpkg.com/swup@4?module";
+        import SwupPreloadPlugin from "https://unpkg.com/@swup/preload-plugin@3?module";
+        import SwupScriptsPlugin from "https://unpkg.com/@swup/scripts-plugin@2?module";
+
+        window.swup = new Swup({
+            containers: ["#app"],
+            cache: false,
+            plugins: [
+                new SwupPreloadPlugin(),
+                new SwupScriptsPlugin({
+                    body: true,
+                    head: false,
+                })
+            ]
+        });
     </script>
 </body>
 </html>

@@ -4,17 +4,25 @@ console.log(
 	"font-size: 18px; font-weight: 500;"
 );
 
+const accessToken = document.getElementById("access-token").getAttribute("value");
 
-const socket = io("https://chat.wokki20.nl", {
-    path: "/socket.io",
-    transports: ["websocket"],
-    query: {
-        access_token: document.getElementById("access-token").getAttribute("value")
-    },
-});
+let socket;
+
+if (location.hostname === "localhost") {
+	socket = io("http://localhost:5001", {
+		transports: ["websocket"],
+		query: { access_token: accessToken },
+	}); 
+} else {
+	socket = io("/", {
+		path: "/socket.io",
+		transports: ["websocket"],
+		query: { access_token: accessToken },
+	});
+}
 
 let serverName = "Unknown Server";
 
 socket.on("connected to server", (data) => {
-    serverName = data.server_name;
+	serverName = data.server_name;
 });

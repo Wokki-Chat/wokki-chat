@@ -71,7 +71,7 @@ function create_account() {
     formData.append('email', email);
     formData.append('password', password);
 
-    fetch('https://chat.wokki20.nl/app/create_account', {
+    fetch('/app/create_account', {
         method: 'POST',
         body: formData
     })
@@ -81,7 +81,7 @@ function create_account() {
         if (result.status === 'error') {
             showError(result.description);
         } else {
-            window.location.href = '/login';
+            window.location.href = '/verify_email';
         }
     })
     .catch(error => {

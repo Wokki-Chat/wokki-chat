@@ -54,6 +54,6 @@ if (isset($_GET['activatecode']) && isset($_GET['user_id'])) {
         exit;
     }
 } else {
-    header('Location: /login?return_code=22');
+    header('Location: /login?return_code=19');
     exit;
 }

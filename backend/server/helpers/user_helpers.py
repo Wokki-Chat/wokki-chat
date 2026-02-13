@@ -7,6 +7,7 @@ import aiomysql
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server, verify_bot_token
 from server.helpers.logs import addMessageToLogs
 import aiohttp
+import asyncio
 
 async def verify_access_token(cur, access_token):
     await cur.execute(
@@ -43,7 +44,6 @@ async def verify_access_token(cur, access_token):
     await addMessageToLogs(f"verify_access_token: valid for user {user_id}, expires at {expires_at}", "INFO")
     return user_id
 
-    
 def auth_required(server_required = True, allow_bots = True): # problem: it doesn't send correct name upon error!
     from server.helpers.server_helpers import is_user_in_server
     """
@@ -99,7 +99,7 @@ def auth_required(server_required = True, allow_bots = True): # problem: it does
                                 'error', {'success': False, 'error': 'Invalid access token'}, to=sid
                             )
                             return
-                        if server_required and not await is_user_in_server(cur, user_id, server_id):
+                        if server_required and server_id and not await is_user_in_server(cur, user_id, server_id) :
                             await addMessageToLogs(f"User not in server, user id: {user_id}, server id: {server_id}", "INFO")
                             await sio_instance.sio.emit(
                                 'error', {'success': False, 'error': 'User not in server'}, to=sid
@@ -137,41 +137,88 @@ async def get_user_premium_status(cur, user_id):
     now = datetime.now(timezone.utc)
     return premium_expires_at > now
 
-async def broadcast_user_update(user_id, is_bot=False):
-    if not is_bot:
-        async with config.pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
-                user_info = await get_user_info_from_id(cur, user_id)
-                if not user_info:
-                    await addMessageToLogs(f"User not found, user id: {user_id}", "INFO")
-                    return
-                
-                await sio_instance.sio.emit('user_updated', user_info)
-                await addMessageToLogs(f"Broadcasted for user {user_id}", "INFO")
-                return
-    if is_bot:
-        async with config.pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
-                bot_info = await get_bot_info_from_id(cur, user_id)
-                if not bot_info:
-                    await addMessageToLogs(f"Bot not found, bot id: {user_id}", "INFO")
-                    return
-                
-                await sio_instance.sio.emit('user_updated', bot_info)
-                await addMessageToLogs(f"Broadcasted for bot {user_id}", "INFO")
-                return
+async def get_user_rooms(cur, user_id, notification_only=False):
+    query = "SELECT server_id FROM server_members WHERE user_id = %s"
+    await cur.execute(query, (user_id,))
+    rows = await cur.fetchall()
+    rooms = [f"{'server_notif' if notification_only else 'server'}:{r['server_id']}" for r in rows]
+    
+    query = "SELECT contact_id FROM contact_users WHERE user_id = %s"
+    await cur.execute(query, (user_id,))
+    rows = await cur.fetchall()
+    rooms.extend([f"{'contact_notif' if notification_only else 'contact'}:{r['contact_id']}" for r in rows])
+    
+    return rooms
+    
+async def get_bot_rooms(cur, bot_id):
+    query = "SELECT server_id FROM server_members WHERE bot_id = %s"
+    await cur.execute(query, (bot_id,))
+    rows = await cur.fetchall()
+    return [f"server:{r['server_id']}" for r in rows]
 
-async def broadcast_user_widget_update(user_id, widget_name):
+async def broadcast_user_update(user_id, is_bot=False):
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            user_info = await get_user_widgets(cur, user_id, widget_name)
-            if not user_info:
-                return
+            if is_bot:
+                info = await get_bot_info_from_id(cur, user_id)
+                if not info:
+                    await addMessageToLogs(f"Bot not found, bot id: {user_id}", "INFO")
+                    return
+                rooms = await get_bot_rooms(cur, user_id)
+            else:
+                info = await get_user_info_from_id(cur, user_id)
+                if not info:
+                    await addMessageToLogs(f"User not found, user id: {user_id}", "INFO")
+                    return
+                rooms = await get_user_rooms(cur, user_id)
             
-            user_info["user_id"] = user_id
+            await addMessageToLogs(f"broadcast_user_update: rooms -> {rooms}", "INFO")
             
-            await sio_instance.sio.emit('user_widget_updated', user_info)
-            return
+            await asyncio.gather(*[
+                sio_instance.sio.emit('user_updated', info, room=room)
+                for room in rooms
+            ])
+
+async def broadcast_widgets(user_id):
+    try:
+        async with config.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                widgets = await get_user_widgets(cur, user_id)
+                if widgets:
+                    await broadcast_widget_update(user_id, widgets=widgets)
+    except Exception as e:
+        await addMessageToLogs(f"Error broadcasting widgets for user {user_id}: {e}")
+
+
+async def broadcast_widget_update(user_id, widget_name=None, widgets=None):
+    try:
+        async with config.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                if widgets is None:
+                    widgets = await get_user_widgets(cur, user_id, widget_name)
+                    if not widgets:
+                        return
+                
+                user_rooms = await get_user_rooms(cur, user_id)
+                
+                update_data = {
+                    "user_id": user_id,
+                    **widgets
+                }
+                
+                for u_room in user_rooms:
+                    await sio_instance.sio.emit('user_widget_updated', update_data, room=u_room)
+                    
+    except Exception as e:
+        await addMessageToLogs(f"Error broadcasting widgets for user {user_id}: {e}")
+
+async def is_user_online(cur, user_id):
+    """Check if user is currently online"""
+    query = "SELECT COUNT(*) as count FROM user_sessions WHERE user_id = %s AND is_active = 1"
+    await cur.execute(query, (user_id,))
+    result = await cur.fetchone()
+    return result and result["count"] > 0
+
 
 async def get_user_widgets(cur, user_id, widget_name=None):
     query = """
@@ -184,6 +231,13 @@ async def get_user_widgets(cur, user_id, widget_name=None):
 
     if not widgets:
         return {}
+    
+    await cur.execute(
+        "SELECT connection_user_name, connection_name FROM user_connections WHERE user_id = %s",
+        (user_id,)
+    )
+    connections = await cur.fetchall() or []
+    connection_map = {c["connection_name"]: c["connection_user_name"] for c in connections}
 
     result = {}
     for widget in widgets:
@@ -191,6 +245,10 @@ async def get_user_widgets(cur, user_id, widget_name=None):
             continue
 
         if widget["widget_name"] == "Spotify" and widget["show_on_profile"] == 1:
+            is_online = await is_user_online(cur, user_id)
+            if not is_online:
+                continue
+                
             try:
                 now = datetime.now(timezone.utc)
                 token_valid_until = widget.get("widget_access_token_valid_until")
@@ -221,12 +279,69 @@ async def get_user_widgets(cur, user_id, widget_name=None):
                             result["Spotify"] = await resp.json()
             except Exception:
                 pass
+        elif widget["widget_name"] == "GitHub" and widget["show_on_profile"] == 1:
+            try:
+                github_username = connection_map.get("GitHub")
+                access_token = widget.get("widget_access_token")
+                if not github_username or not access_token:
+                    continue
+
+                async with aiohttp.ClientSession() as session:
+                    graphql_query = {
+                        "query": f"""
+                        {{
+                          user(login: "{github_username}") {{
+                            contributionsCollection {{
+                              contributionCalendar {{
+                                totalContributions
+                                weeks {{
+                                  contributionDays {{
+                                    date
+                                    contributionCount
+                                    color
+                                  }}
+                                }}
+                              }}
+                            }}
+                          }}
+                        }}
+                        """
+                    }
+
+                    async with session.post(
+                        "https://api.github.com/graphql",
+                        json=graphql_query,
+                        headers={"Authorization": f"Bearer {access_token}"}
+                    ) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            result["GitHub"] = data
+                        else:
+                            result["GitHub"] = {"error": f"GitHub API returned status {resp.status}"}
+
+            except Exception as e:
+                result["GitHub"] = {"error": str(e)}
         else:
             result[widget["widget_name"]] = True
 
     return result
 
-async def get_user_info_from_id(cur, user_id):
+async def get_user_connections(cur, user_id):
+    query = "SELECT * FROM user_connections WHERE user_id = %s"
+    await cur.execute(query, (user_id,))
+    rows = await cur.fetchall()
+    connections = []
+    for row in rows:
+        connection = {
+            "id": row["id"],
+            "connection_type": row["connection_name"],
+            "connection_name": row["connection_user_name"],
+            "connection_user_url": row["connection_user_url"],
+        }
+        connections.append(connection)
+    return connections
+
+async def get_user_info_from_id(cur, user_id, load_widgets=True):
     query = """
         SELECT u.id, u.username, u.status, u.profile_picture, u.created_at, u.bio, u.profile_color_primary, u.profile_color_accent, u.nickname, u.profile_banner,
                t.tag_name, t.tag_icon, t.created_at
@@ -259,7 +374,8 @@ async def get_user_info_from_id(cur, user_id):
         "bio": rows[0]["bio"],
         "profile_color_primary": rows[0]["profile_color_primary"] if haspremium else None,
         "profile_color_accent": rows[0]["profile_color_accent"] if haspremium else None,
-        "widgets": {}
+        "widgets": {},
+        "connections": await get_user_connections(cur, resolved_user_id)
     }
 
     for row in rows:
@@ -269,9 +385,9 @@ async def get_user_info_from_id(cur, user_id):
                 "tag_icon": row["tag_icon"],
                 "created_at": row["created_at"].isoformat() if row["created_at"] else None
             })
-
-    if user["status"] == "online":
-        user["widgets"] = await get_user_widgets(cur, resolved_user_id)
+    
+    if load_widgets:
+        asyncio.create_task(broadcast_widgets(resolved_user_id))
 
     return user
 
@@ -295,15 +411,6 @@ async def refresh_spotify_token(refresh_token):
             expires_in = data.get("expires_in")
             valid_until = datetime.now(timezone.utc) + timedelta(seconds=expires_in) if expires_in else None
             return new_access_token, new_refresh_token, valid_until
-
-async def is_user_friends_with(cur, user_id, friend_id):
-    await cur.execute("SELECT 1 FROM friends WHERE user_id = %s AND friend_id = %s LIMIT 1", (user_id, friend_id))
-    row1 = await cur.fetchone()
-    
-    await cur.execute("SELECT 1 FROM friends WHERE user_id = %s AND friend_id = %s LIMIT 1", (friend_id, user_id))
-    row2 = await cur.fetchone()
-    
-    return row1 is not None and row2 is not None
 
 async def get_user_info(sid, data):
     access_token = data.get('access_token')

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->
+
+
+<url>
+  <loc>https://chat.wokki20.nl/</loc>
+  <lastmod>2026-01-23T21:39:39+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+<url>
+  <loc>https://chat.wokki20.nl/login</loc>
+  <lastmod>2026-01-23T21:39:39+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://chat.wokki20.nl/support</loc>
+  <lastmod>2026-01-23T21:39:39+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://chat.wokki20.nl/legal/privacy</loc>
+  <lastmod>2026-01-19T14:49:14+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://chat.wokki20.nl/legal/terms</loc>
+  <lastmod>2026-01-19T14:49:14+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://chat.wokki20.nl/login?redirect=/developer/portal</loc>
+  <lastmod>2026-01-23T21:39:39+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://chat.wokki20.nl/login?redirect=/developer/docs</loc>
+  <lastmod>2026-01-23T21:39:39+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://chat.wokki20.nl/login?redirect=/developer/bots-sdk</loc>
+  <lastmod>2026-01-23T21:39:39+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://chat.wokki20.nl/login?redirect=/invite/wokkichat</loc>
+  <lastmod>2026-01-23T21:39:39+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://chat.wokki20.nl/register</loc>
+  <lastmod>2026-01-19T14:49:14+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://chat.wokki20.nl/support/faqs</loc>
+  <lastmod>2026-01-23T21:39:39+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+
+
+</urlset>

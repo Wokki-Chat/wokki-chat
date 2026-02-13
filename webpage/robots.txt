@@ -1,0 +1,19 @@
+User-agent: *
+Disallow: /uploads/
+Disallow: /settings_html/
+Disallow: /PHPMailer/
+Disallow: /assets/
+Disallow: /connections/
+Disallow: /bot/
+Disallow: /_private/
+Disallow: /app/
+Disallow: /.htaccess
+Disallow: /.env
+Disallow: /config.php
+
+Allow: /assets/images/logo-purple.png
+Allow: /assets/images/logo-black.png
+Allow: /assets/images/logo-text-purple.png
+Allow: /assets/images/logo-text-black.png
+
+Sitemap: https://chat.wokki20.nl/sitemap.xml

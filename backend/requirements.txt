@@ -1,10 +1,11 @@
-# Backend packages
-aiohttp
-aiomysql
-livekit-api
-logtail-python
-python-dateutil
-python-dotenv
-python-socketio
-redis
-requests
+aiofiles==25.1.0
+aiohttp==3.12.1
+aiomysql==0.3.2
+livekit==1.0.25
+logtail==1.0.1
+python-dotenv==1.2.1
+python-socketio==5.16.1
+python_dateutil==2.9.0.post0
+redis==7.1.1
+Requests==2.32.5
+logtail-python==0.3.4

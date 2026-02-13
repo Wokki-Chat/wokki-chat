@@ -51,6 +51,14 @@ function getTokenExpirationTime($tokenType = 'access') {
     }
 }
 
+function maxAccountsForAlpha($mysqli) {
+    $stmt = $mysqli->prepare("SELECT COUNT(*) AS count FROM users WHERE email_verified = 1");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $stmt->close();
+    $row = $result->fetch_assoc();
+    return $row['count'] >= 500;
+}
 
 function registerUser($mysqli, $username, $email, $password, $mail_password) {
     $stmt = $mysqli->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
@@ -66,16 +74,27 @@ function registerUser($mysqli, $username, $email, $password, $mail_password) {
     };
 
     $password_hash = hashPassword($password);
+
+    if (maxAccountsForAlpha($mysqli)) {
+        return [
+            'status' => 'error',
+            'description' => 'The maximum number of accounts has been reached',
+            'return_code' => 3
+        ];
+    }
     
     try {
-        $stmt = $mysqli->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
-        $stmt->bind_param("sss", $username, $email, $password_hash);
+        $pfp = "/uploads/profile-pictures/default-profile.png";
+
+        $stmt = $mysqli->prepare("INSERT INTO users (username, email, password_hash, profile_picture) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $username, $email, $password_hash, $pfp);
         $stmt->execute();
         $user_id = $stmt->insert_id;
         $stmt->close();
 
         $activatecode = bin2hex(random_bytes(16));
 
+        
         $stmt = $mysqli->prepare("INSERT INTO email_verification_codes (user_id, code, expiry_date) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))");
         $stmt->bind_param("is", $user_id, $activatecode);
         $stmt->execute();
@@ -118,7 +137,7 @@ function registerUser($mysqli, $username, $email, $password, $mail_password) {
         return [
             'status' => 'error',
             'description' => 'Database error: ' . $e->getMessage(),
-            'return_code' => 18
+            'return_code' => 4
         ];
     }
 
@@ -126,53 +145,60 @@ function registerUser($mysqli, $username, $email, $password, $mail_password) {
 
 function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) {
     $mail = new PHPMailer(true);
-
     try {
         $mail->isSMTP();
         $mail->Host = 'mail.wokki20.nl';
         $mail->SMTPAuth = true;
-        $mail->Username = 'noreply@wokki20.nl';
+        $mail->AuthType = 'LOGIN';
+        $mail->Username = 'noreply@cm.wokki20.nl';
         $mail->Password = $mail_password;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = 465;
 
-        
-        $mail->setFrom('noreply@wokki20.nl', 'wokki20 Chat');
+        $mail->SMTPDebug = 2;
+        $mail->Debugoutput = 'error_log';
+
+        $mail->setFrom('noreply@cm.wokki20.nl', 'Wokki Chat');
         $mail->addAddress($email);
 
         $mail->isHTML(true);
         $mail->Subject = 'Verify your account';
 
         $htmlTemplate = file_get_contents('assets/email_activate_template.html');
-        $activationLink = 'https://chat.wokki20.nl/app/activate_account?activatecode=' . $activatecode . '&user_id=' . $user_id;
+
+        if ($htmlTemplate === false) {
+            error_log("Email template not found: assets/email_activate_template.html");
+            echo "ERROR: Email template file is missing.";
+            exit;
+        }
+
+        $activationLink = 'https://chat.wokki20.nl/app/activate_account?activatecode='
+            . $activatecode . '&user_id=' . $user_id;
+
         $htmlTemplate = str_replace('{{activate_link}}', $activationLink, $htmlTemplate);
         $htmlTemplate = str_replace('{{support_link}}', 'mailto:info@wokki20.nl', $htmlTemplate);
 
         $mail->Body = $htmlTemplate;
 
         if (!$mail->send()) {
-            throw new Exception('Failed to send verification email');
+            throw new Exception("PHPMailer send() returned false.");
         }
 
     } catch (Exception $e) {
-        return [
-            'status' => 'error',
-            'description' => $e->getMessage(),
-            'return_code' => 3
-        ];
+        $errorMsg = "MAIL ERROR: " . $e->getMessage() .
+            " | Host: " . $mail->Host .
+            " | Port: " . $mail->Port .
+            " | Encryption: " . $mail->SMTPSecure .
+            " | Username: " . $mail->Username;
+        error_log($errorMsg);
+        echo $errorMsg;
+        exit;
     }
 
-    return [
-        'status' => 'success',
-        'description' => 'Verification email sent successfully',
-        'return_code' => 4
-    ];
+    return true;
 }
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    $allowedOrigin = 'https://chat.wokki20.nl';
 
     if (isset($_SERVER['HTTP_ORIGIN'])) {
         if ($_SERVER['HTTP_ORIGIN'] !== $allowedOrigin) {
@@ -186,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } else if (isset($_SERVER['HTTP_REFERER'])) {
         $referer = parse_url($_SERVER['HTTP_REFERER'], PHP_URL_HOST);
-        if ($referer !== 'chat.wokki20.nl') {
+        if ($referer !== $allowedReferer) {
             http_response_code(403);
             echo json_encode([
                 'status' => 'error',
@@ -214,7 +240,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'All fields are required',
-                'return_code' => 7
+                'return_code' => 8
             ]);
             exit;
         }
@@ -223,7 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Password must be at least 8 characters long',
-                'return_code' => 8
+                'return_code' => 9
             ]);
             exit;
         }
@@ -231,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Password cannot contain only spaces',
-                'return_code' => 9
+                'return_code' => 10
             ]);
             exit;
         }
@@ -239,7 +265,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Password contains invalid characters',
-                'return_code' => 10
+                'return_code' => 11
             ]);
             exit;
         }
@@ -247,7 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Username contains invalid characters',
-                'return_code' => 11
+                'return_code' => 12
             ]);
             exit;
         }
@@ -255,7 +281,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Username cannot contain only spaces',
-                'return_code' => 12
+                'return_code' => 13
             ]);
             exit;
         }
@@ -263,7 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Username can only contain letters, numbers, hyphens, spaces, and underscores',
-                'return_code' => 13
+                'return_code' => 14
             ]);
             exit;
         }
@@ -271,7 +297,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Username must be at least 3 characters long',
-                'return_code' => 14
+                'return_code' => 15
             ]);
             exit;
         }
@@ -280,7 +306,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'status' => 'error',
                 'description' => 'Username cannot contain newlines',
-                'return_code' => 15
+                'return_code' => 16
             ]);
             exit;
         }
@@ -293,14 +319,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'status' => 'error',
             'description' => 'Missing required fields',
             'missing_fields' => array_diff(['username', 'email', 'password'], array_keys($_POST)),
-            'return_code' => 16
+            'return_code' => 17
         ]);
     }
 } else {
     echo json_encode([
         'status' => 'error',
         'description' => 'Invalid request method',
-        'return_code' => 17
+        'return_code' => 18
     ]);
 }
 ?>

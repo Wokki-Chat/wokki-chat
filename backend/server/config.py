@@ -11,7 +11,7 @@ load_dotenv()
 # --------------------
 # Redis
 # --------------------
-redis_client = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+redis_client = redis.Redis(host=os.getenv("REDIS_HOST", "localhost"), port=os.getenv("REDIS_PORT", 6379), db=0, decode_responses=True)
 
 # --------------------
 # Local per-worker state
@@ -48,6 +48,7 @@ room = {}
 MAX_MESSAGES = 10
 TIME_WINDOW_SECONDS = 3
 DISCONNECT_TIMEOUT = 30
+TYPING_TIMEOUT = 10
 
 # --------------------
 # Regex / validation patterns
@@ -93,38 +94,50 @@ async def get_user_from_sid(sid: str) -> str | None:
         if sid in sids:
             return key.split("user_to_sid:")[1]
     return None
+
 # --------------------
 # TYPING USERS
 # --------------------
 async def add_typing_user(user_id: str, channel_id: str, server_id: str):
-    key = f"typing_users:{server_id}:{channel_id}"
-    await redis_client.sadd(key, user_id)
+    key = f"typing_user:{server_id}:{channel_id}:{user_id}"
+    await redis_client.set(key, 1, ex=TYPING_TIMEOUT)
 
 async def remove_typing_user(user_id: str, channel_id: str, server_id: str):
-    key = f"typing_users:{server_id}:{channel_id}"
-    await redis_client.srem(key, user_id)
+    key = f"typing_user:{server_id}:{channel_id}:{user_id}"
+    await redis_client.delete(key)
 
-async def get_typing_users():
-    users = set()
-    keys = await redis_client.keys("typing_users:*")
-    for key in keys:
-        members = await redis_client.smembers(key)
-        users.update(members)
+async def get_typing_users(channel_id: str, server_id: str):
+    pattern = f"typing_user:{server_id}:{channel_id}:*"
+    keys = await redis_client.keys(pattern)
+    users = {key.split(":")[-1] for key in keys}
     return users
-
 
 # --------------------
 # CACHING
 # --------------------
 CHANNEL_CACHE_LIMIT = 100
 
-async def cache_message(server_id: str, channel_id: str, message: dict):
-    key = f"channel_messages:{server_id}:{channel_id}"
+async def cache_message(server_id: str = None, channel_id: str = None, contact_id: str = None, message: dict = None):
+    """Cache a message for either a channel or contact"""
+    if contact_id:
+        key = f"contact_messages:{contact_id}"
+    elif server_id and channel_id:
+        key = f"channel_messages:{server_id}:{channel_id}"
+    else:
+        raise ValueError("Must provide either contact_id or (server_id and channel_id)")
+    
     await redis_client.rpush(key, json.dumps(message))
     await redis_client.ltrim(key, 0, CHANNEL_CACHE_LIMIT - 1)
 
-async def get_cached_messages(server_id: str, channel_id: str, offset: int = 0, limit: int = 50):
-    key = f"channel_messages:{server_id}:{channel_id}"
+async def get_cached_messages(server_id: str = None, channel_id: str = None, contact_id: str = None, offset: int = 0, limit: int = 50):
+    """Get cached messages for either a channel or contact"""
+    if contact_id:
+        key = f"contact_messages:{contact_id}"
+    elif server_id and channel_id:
+        key = f"channel_messages:{server_id}:{channel_id}"
+    else:
+        return []
+    
     total = await redis_client.llen(key)
     if offset >= total:
         return []
@@ -133,22 +146,42 @@ async def get_cached_messages(server_id: str, channel_id: str, offset: int = 0, 
     cached = await redis_client.lrange(key, start, end)
     return [json.loads(msg) for msg in cached]
 
-async def delete_cached_message(server_id: str, channel_id: str, message_id: str):
-    key = f"channel_messages:{server_id}:{channel_id}"
+async def delete_cached_message(server_id: str = None, channel_id: str = None, contact_id: str = None, message_id: str = None):
+    """Delete a cached message for either a channel or contact"""
+    if contact_id:
+        key = f"contact_messages:{contact_id}"
+    elif server_id and channel_id:
+        key = f"channel_messages:{server_id}:{channel_id}"
+    else:
+        raise ValueError("Must provide either contact_id or (server_id and channel_id)")
+    
     cached = await redis_client.lrange(key, 0, -1)
     for msg in cached:
         data = json.loads(msg)
         if data.get("id") == message_id:
             await redis_client.lrem(key, 0, msg)
             break
-
-async def get_cached_users(server_id: str):
-    key = f"server_users:{server_id}"
+        
+async def get_cached_users(server_id: str = None, contact_id: str = None):
+    if contact_id:
+        key = f"contact_users:{contact_id}"
+    elif server_id:
+        key = f"server_users:{server_id}"
+    else:
+        raise ValueError("Must provide either contact_id or server_id")
+    
     cached = await redis_client.lrange(key, 0, -1)
     return [json.loads(msg) for msg in cached]
 
-async def cache_users(server_id: str, users: list):
-    key = f"server_users:{server_id}"
+async def cache_users(server_id: str = None, users: list = [], contact_id: str = None):
+    """Cache a list of users for either a server or contact"""
+    if contact_id:
+        key = f"contact_users:{contact_id}"
+    elif server_id:
+        key = f"server_users:{server_id}"
+    else:
+        raise ValueError("Must provide either contact_id or server_id")
+    
     await redis_client.delete(key)
     for user in users:
         await redis_client.rpush(key, json.dumps(user))
@@ -161,3 +194,17 @@ async def acquire_user_lock(user_id: str, sid: str, expire: int = 60):
 
 async def release_user_lock(user_id: str):
     await redis_client.delete(f"user_disconnect_lock:{user_id}")
+
+# --------------------
+# BOTS
+# --------------------
+async def save_command_id(user_id: str, command_id: str, command: str):
+    data = {"user_id": user_id, "command": command}
+    await redis_client.hset("command_id_to_user_id", command_id, json.dumps(data))
+    
+async def get_command_id(command_id: str) -> dict | None:
+    data = await redis_client.hget("command_id_to_user_id", command_id)
+    if data is None:
+        return None
+    await redis_client.hdel("command_id_to_user_id", command_id)
+    return json.loads(data)

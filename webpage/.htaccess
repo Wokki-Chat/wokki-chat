@@ -1,4 +1,5 @@
 RewriteEngine On
+AcceptPathInfo On
 
 # Redirect HTTP to HTTPS
 RewriteCond %{HTTP:X-Forwarded-Proto} !https
@@ -15,16 +16,17 @@ RewriteRule ^server/([a-zA-Z0-9\-]+)/channel/([a-zA-Z0-9\-]+)$ server.php [QSA,L
 RewriteRule ^invite/([a-zA-Z0-9\-]+)$ invite.php [QSA,L]
 
 RewriteRule ^settings/?$ /settings.php [QSA,L]
-
 RewriteRule ^settings/([a-zA-Z0-9\-]+)$ /settings.php/$1 [QSA,L]
 
 RewriteRule ^dm/(.+)$ /dm.php/$1 [QSA,L]
 
-RewriteRule ^developer/bot/([a-zA-Z0-9\-]+)$ /developer/bot.php/$1 [QSA,L]
-
 RewriteRule ^bot/invite/([a-zA-Z0-9\-]+)$ /bot/invite.php/$1 [QSA,L]
 
 RewriteRule ^profile/(.+)$ /profile.php/$1 [QSA,L]
+
+RewriteRule ^faqs/?$ /support/faqs [R=302,L]
+
+RewriteRule ^support/faqs/?$ faqs.php [QSA,L]
 
 # Rewrite URLs for .html files
 RewriteCond %{REQUEST_FILENAME} !-d
@@ -53,7 +55,14 @@ DirectoryIndex index.php
     Header set Expires "0" env=no_cache
 </IfModule>
 
-# Set favicon
+# ALSO EXPLICIT NO CACHE FOR /assets/*
+<IfModule mod_headers.c>
+    SetEnvIf Request_URI "^/assets/" no_cache_js
+    Header set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate" env=no_cache_js
+    Header set Pragma "no-cache" env=no_cache_js
+    Header set Expires "0" env=no_cache_js
+</IfModule>
+
 <Files "favicon.ico">
     Header set Content-Type "image/x-icon"
 </Files>
@@ -65,3 +74,8 @@ DirectoryIndex index.php
 </Files>
 
 Options -Indexes
+
+ErrorDocument 404 /error-pages/404.php
+ErrorDocument 500 /error-pages/500.php
+ErrorDocument 405 /error-pages/405.php
+ErrorDocument 403 /error-pages/403.php

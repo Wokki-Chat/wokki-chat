@@ -1,3 +1,5 @@
+import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
+import { NotificationsManager } from "./modules/global/notifications.js";
 function initSettings() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -12,6 +14,19 @@ function initSettings() {
 			event.preventDefault();
 		}
 	});
+
+	const sidebarMenuButton = document.getElementById('settings-sidebar-button');
+	const settingsTabs = document.querySelector('.settings-tabs');
+
+	if (sidebarMenuButton && settingsTabs) {
+		sidebarMenuButton.replaceWith(sidebarMenuButton.cloneNode(true));
+
+		const newButton = document.getElementById('settings-sidebar-button');
+		newButton.addEventListener('click', () => {
+			settingsTabs.classList.toggle('active');
+			newButton.textContent = settingsTabs.classList.contains('active') ? 'close' : 'menu';
+		});
+	}
   
 	const access_token = document.getElementById("access-token").getAttribute("value");
 	const user_id = document.getElementById("user-id").getAttribute("value");
@@ -21,6 +36,12 @@ function initSettings() {
 	const connections = JSON.parse(document.getElementById("connections").getAttribute("value"));
 	const kudo_items = JSON.parse(document.getElementById("kudo-items").getAttribute("value"));
 	const kudos = JSON.parse(document.getElementById("kudos").getAttribute("value"));
+
+	const sanitizer = new Sanitizer();
+	const textareaFormatter = new TextareaFormatter();
+		
+	const notificationsManager = new NotificationsManager({ access_token: access_token, socket: socket });
+	notificationsManager.listen();
 
 	if (active_tab === "account") {
 
@@ -76,7 +97,7 @@ function initSettings() {
 				updateHeight();
 				updateCharsLeft();
 
-				preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+				preview.innerHTML = textareaFormatter.format(textarea.innerText);
 			});
 
 			textarea.addEventListener('input', (e) => {
@@ -89,7 +110,7 @@ function initSettings() {
 				updateHeight();
 				updateCharsLeft();
 
-				preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+				preview.innerHTML = textareaFormatter.format(textarea.innerText);
 			});
 
 			textarea.addEventListener('paste', (e) => {
@@ -131,38 +152,18 @@ function initSettings() {
 
 			updateHeight();
 			updateCharsLeft();
-			preview.innerHTML = renderMarkdownInTextarea(textarea.innerText);
+			preview.innerHTML = textareaFormatter.format(textarea.innerText);
 		}
 		Coloris({
 			theme: 'default',
 			themeMode: 'dark',
 			format: 'hex',
 			formatToggle: false,
-			parent: '.setting-page',
 			alpha: false,
-			swatches: [
-				"#185929",
-				"#0c4752",
-				"#1d0a45"
-			],
-			onChange: (color, input) => updateProfileColor(color, input),
-			el: '#profile-color-primary'
-		});
-
-		Coloris({
-			theme: 'default',
-			themeMode: 'dark',
-			format: 'hex',
-			formatToggle: false,
-			alpha: false,
+			forceAlpha: false,
 			parent: '.setting-page',
-			swatches: [
-				"#006332",
-				"#137385",
-				"#371f69"
-			],
 			onChange: (color, input) => updateProfileColor(color, input),
-			el: '#profile-color-accent'
+			el: '#profile-color-primary, #profile-color-accent'
 		});
 
 		const updateProfileColor = (color, input) => {
@@ -281,7 +282,7 @@ function initSettings() {
 					if (displayNameOnProfile) displayNameOnProfile.textContent = originalDisplayName !== "" ? originalDisplayName : originalUsername;
 					if (displayNameOnMessage) displayNameOnMessage.textContent = originalDisplayName !== "" ? originalDisplayName : originalUsername;
 					if (bioInput) bioInput.textContent = originalBio;
-					if (preview) preview.innerHTML = renderMarkdownInTextarea(originalBio);
+					if (preview) preview.innerHTML = textareaFormatter.format(originalBio);
 					container.remove();
 				});
 
@@ -436,18 +437,18 @@ function initSettings() {
 		bioInput.addEventListener("input", async () => {
 			if (bioProfile) {
 				let text = bioInput.textContent;
-				text = await sanitizeMrk(text);
+				text = await sanitizer.sanitizeMrk(text);
 				bioProfile.innerHTML = text || "You have no bio yet.";
 			}
 			if (accountFormChanged()) showSaveResetButtons();
 		});
 
 		display_name_input.addEventListener("input", () => {
-			if (displayNameOnProfile && display_name_input.value !== "") displayNameOnProfile.textContent = sanitize(display_name_input.value);
-			else if (displayNameOnProfile) displayNameOnProfile.textContent = originalDisplayName !== "" ? sanitize(originalDisplayName) : sanitize(originalUsername);
+			if (displayNameOnProfile && display_name_input.value !== "") displayNameOnProfile.textContent = sanitizer.sanitize(display_name_input.value);
+			else if (displayNameOnProfile) displayNameOnProfile.textContent = originalDisplayName !== "" ? sanitizer.sanitize(originalDisplayName) : sanitizer.sanitize(originalUsername);
 
-			if (displayNameOnMessage && display_name_input.value !== "") displayNameOnMessage.textContent = sanitize(display_name_input.value);
-			else if (displayNameOnMessage) displayNameOnMessage.textContent = originalDisplayName !== "" ? sanitize(originalDisplayName) : sanitize(originalUsername);
+			if (displayNameOnMessage && display_name_input.value !== "") displayNameOnMessage.textContent = sanitizer.sanitize(display_name_input.value);
+			else if (displayNameOnMessage) displayNameOnMessage.textContent = originalDisplayName !== "" ? sanitizer.sanitize(originalDisplayName) : sanitizer.sanitize(originalUsername);
 			if (accountFormChanged()) showSaveResetButtons();
 		});
 
@@ -464,7 +465,7 @@ function initSettings() {
 		}
 
 		(async () => {
-			bioProfile.innerHTML = (await sanitizeMrk(bioInput.textContent)) || "You have no bio yet.";
+			bioProfile.innerHTML = (await sanitizer.sanitizeMrk(bioInput.textContent)) || "You have no bio yet.";
 		})();
 
 	}
@@ -606,6 +607,7 @@ function initSettings() {
 	if (active_tab === "connections") {
 		const chatAction = document.getElementById("chat-action");
 		const spotifyAction = document.getElementById("spotify-action");
+		const githubAction = document.getElementById("github-action");
 
 		function handleAction(element) {
 			const action = element.dataset.action;
@@ -623,6 +625,7 @@ function initSettings() {
 
 		chatAction.addEventListener("click", () => handleAction(chatAction));
 		spotifyAction.addEventListener("click", () => handleAction(spotifyAction));
+		githubAction.addEventListener("click", () => handleAction(githubAction));
 	}
 
 	function openConnectionModal(connection) {
@@ -632,6 +635,7 @@ function initSettings() {
 			}
 		})
 		let spotifyToggleHtml = '';
+		let githubToggleHtml = '';
 		if (connection["connection_name"] === "Spotify") {
 			spotifyToggleHtml = `
 			<div class="connection-modal-spotify-toggle">
@@ -642,6 +646,22 @@ function initSettings() {
 				<div class="container">
 					<label class="switch" for="spotify-checkbox">
 						<input type="checkbox" id="spotify-checkbox" ${connection["show_on_profile"] ? "checked" : ""} />
+						<div class="slider round"></div>
+					</label>
+				</div>
+			</div>
+			`;
+		}
+		if (connection["connection_name"] === "GitHub") {
+			githubToggleHtml = `
+			<div class="connection-modal-spotify-toggle">
+				<div class="option-description-container">
+					<p class="option-title">Show on profile</p>
+					<p class="option-description">Show your GitHub commit graph on your profile</p>
+				</div>
+				<div class="container">
+					<label class="switch" for="github-checkbox">
+						<input type="checkbox" id="github-checkbox" ${connection["show_on_profile"] ? "checked" : ""} />
 						<div class="slider round"></div>
 					</label>
 				</div>
@@ -664,6 +684,7 @@ function initSettings() {
 						<p class="connection-modal-connected-since-date">${formatFullDate(connection["connected_at"])}</p>
 					</div>
 					${spotifyToggleHtml}
+					${githubToggleHtml}
 					<div class="connection-modal-buttons">
 						<button class="connection-modal-button button-primary-filled" onclick="window.open('${connection["connection_user_url"]}', '_blank')">Open Profile Page</button>
 						<button class="connection-modal-button button-primary-outline" data-id="${connection["connection_name"]}" id="unlink-connection-btn">Unlink</button>
@@ -711,6 +732,22 @@ function initSettings() {
 				});
 			});
 		}
+
+		const githubCheckbox = document.getElementById("github-checkbox");
+		if (githubCheckbox) {
+			githubCheckbox.addEventListener("change", () => {
+				const formData = new FormData();
+				formData.append("github_widget_show", githubCheckbox.checked ? "true" : "false");
+
+				fetch("/app/widgets", {
+					method: "POST",
+					headers: {
+						"Authorization": `Bearer ${access_token}`
+					},
+					body: formData
+				});
+			});
+		}
 	}
 
   function unlinkConnection(connection) {
@@ -738,5 +775,9 @@ function initSettings() {
       });
   }
 }
-
+if (typeof window.swup !== "undefined") {
+	window.swup.hooks.on('page:view', (visit) => {
+		initSettings();
+	});
+}
 initSettings();

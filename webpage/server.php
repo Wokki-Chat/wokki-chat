@@ -1,4 +1,5 @@
 <?php
+session_start();
 include 'app/config.php';
 include 'global.php';
 include 'app/maintenance.php';
@@ -381,13 +382,79 @@ $is_in_server = true;
 if (!$server_id || !isset($user_servers[$server_id])) {
     $is_in_server = false;
 }
+
+$userRoles = $mysqli->prepare("SELECT role_id FROM user_server_roles WHERE user_id = ? AND server_id = ?");
+$userRoles->bind_param("is", $user_id, $server_id);
+$userRoles->execute();
+$userRoles->store_result();
+$userRoles->bind_result($role_id);
+
+$roles = [];
+while ($userRoles->fetch()) {
+    $roles[] = $role_id;
+}
+$userRoles->close();
+
+$permissionsList = [
+    'send_messages',
+    'view_channels',
+    'manage_channels',
+    'manage_server',
+    'manage_roles',
+    'kick_members',
+    'ban_members',
+    'mute_members',
+    'manage_groups',
+    'read_message_history'
+];
+
+$finalPermissions = array_fill_keys($permissionsList, false);
+
+if ($isServerAdmin) {
+    foreach ($finalPermissions as $perm => $_) {
+        $finalPermissions[$perm] = true;
+    }
+} elseif (count($roles) > 0) {
+    $rolePlaceholders = implode(',', array_fill(0, count($roles), '?'));
+    $types = str_repeat('s', count($roles));
+
+    $stmt = $mysqli->prepare("SELECT send_messages, view_channels, manage_channels, manage_server, manage_roles, kick_members, ban_members, mute_members, manage_groups, read_message_history FROM role_permissions WHERE role_id IN ($rolePlaceholders)");
+    $stmt->bind_param($types, ...$roles);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        foreach ($finalPermissions as $perm => $_) {
+            if (!empty($row[$perm]) && $row[$perm] == 1) {
+                $finalPermissions[$perm] = true;
+            }
+        }
+    }
+
+    $stmt->close();
+}
+
+$send_messages = $finalPermissions['send_messages'];
+$view_channels = $finalPermissions['view_channels'];
+$manage_channels = $finalPermissions['manage_channels'];
+$manage_server = $finalPermissions['manage_server'];
+$manage_roles = $finalPermissions['manage_roles'];
+$kick_members = $finalPermissions['kick_members'];
+$ban_members = $finalPermissions['ban_members'];
+$mute_members = $finalPermissions['mute_members'];
+$manage_groups = $finalPermissions['manage_groups'];
+$read_message_history = $finalPermissions['read_message_history'];
+
+$_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
+
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme; ?>">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>wokki chat</title>
+    <title>Wokki Chat</title>
+    <link rel="manifest" href="/manifest.json">
     <link
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
       rel="stylesheet"
@@ -406,7 +473,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
 </head>
 <body>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css"/>
-    <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js" defer></script>
     <div class="server-bar">
         <div class="server-bar-dms">
             <a class="server-bar-item" id="server-bar-item-home" href="/home">
@@ -429,7 +496,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         </div>
         <div class="server-bar-options">
             <div class="server-bar-option">
-                <div class="server-bar-option-icon" onclick="openCreateServerModal()">
+                <div class="server-bar-option-icon" id="open-create-server-modal">
                     <span class="material-symbols-rounded">add_circle</span>
                 </div>
                 <p class="tooltip">create server</p>
@@ -451,6 +518,12 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                         <p>Invite people</p>
                         <span class="material-symbols-rounded">group_add</span>
                     </div>
+                    <?php if ($manage_server): ?>
+                    <div class="settings-dropdown-item" id="server-settings">
+                        <p>Server Settings</p>
+                        <span class="material-symbols-rounded">settings</span>
+                    </div>
+                    <?php endif; ?>
                     <div class="divider"></div>
                     <div class="settings-dropdown-item danger" id="leave-server">
                         <p>Leave server</p>
@@ -480,7 +553,7 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                                 if ($ch['channel_type'] === "text") {
                                     $channelIcon = "tag";
                                 } else if ($ch['channel_type'] === "voice") {
-                                    $channelIcon = "headset_mic";
+                                    continue;
                                 }
 
                                 echo '
@@ -553,17 +626,15 @@ if (!$server_id || !isset($user_servers[$server_id])) {
                                 <span class="material-symbols-rounded option-icon" onclick="document.getElementById('file-input').click();">attach_file</span>
                                 <input type="file" id="file-input" accept="image/jpeg,image/png,image/gif,text/plain,audio/mpeg,audio/wav,video/mp4,image/webp,application/pdf" style="display: none;" multiple/>
                             </div>
+                            <div class="option" id="emoji-option">
+                                <span class="material-symbols-rounded option-icon">sentiment_satisfied</span>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="max-message-length">
                     <p class="max-characters-left"></p>
                 </div>
-                <?php endif; ?>
-                <?php if ($channel['channel_type'] === "voice"): ?>
-                    <script>
-                        openParticipantsPopup(token, roomName);
-                    </script>
                 <?php endif; ?>
             <?php endif; ?>
             <?php if (!$is_in_server): ?>
@@ -714,7 +785,11 @@ if (!$server_id || !isset($user_servers[$server_id])) {
         <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
         <wchat-data id="premium" value="<?php echo htmlspecialchars(json_encode($premium_active)); ?>"></wchat-data>
         <wchat-data id="is-in-server" value="<?php echo htmlspecialchars(json_encode($is_in_server)); ?>"></wchat-data>
-        <script src="/assets/js/emojis.js"></script>
+        <wchat-data id="username-text" value="<?php echo htmlspecialchars($username); ?>"></wchat-data>
+        <wchat-data id="profile-picture-url" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
+        <wchat-data id="permissions" value="<?php echo htmlspecialchars(json_encode($finalPermissions)); ?>"></wchat-data>
+        <wchat-data id="server-name" value="<?php echo htmlspecialchars($serverInfo['name']); ?>"></wchat-data>
+        <wchat-data id="server-description" value="<?php echo htmlspecialchars($serverInfo['description']); ?>"></wchat-data>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
@@ -737,9 +812,9 @@ if (!$server_id || !isset($user_servers[$server_id])) {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" data-swup-ignore-script></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
     <script src="/assets/js/create_server.js" data-swup-ignore-script></script>
-    <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
+    <script src="/assets/js/globalFunctions.js"></script>
     <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
-    <script src="/assets/js/server.js"></script>
+    <script src="/assets/js/server.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
 </body>
 </html>

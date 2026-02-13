@@ -1,4 +1,3 @@
-<h2 class="settings-page-title">Appearance</h2>
 <div class="settings-appearance-container"> 
     <div class="theme-container">
         <h3>Theme</h3>
@@ -19,12 +18,45 @@
                 <div class="theme-option {{hidden_2}} {{hidden_2_active}}" onclick="setTheme('{{hidden_2}}')"></div>
             </div>
         </div>
+        <h3>Layout</h3>
+        <div class="appearance-type-container">
+            <p class="appearance-type-title">Layouts</p>
+            <p class="appearance-type-description">Change your layout to fit your needs</p>
+            <div class="layout-options-container">
+                <label class="radio">
+                    <input type="radio" name="layout" value="floaty" onchange="setLayout('floaty')" {{floaty_active_checked}}>
+                    <span class="checkmark"></span>
+                    Floaty
+                </label>
+                <label class="radio">
+                    <input type="radio" name="layout" value="compact" onchange="setLayout('compact')" {{compact_active_checked}}>
+                    <span class="checkmark"></span>
+                    Compact
+                </label>
+            </div>
+        </div>
     </div>
     <script>
+    const themes = ["light", "dark", "night", "chat_dark_blue", "chat_light_blue"];
+
     function setTheme(theme) {
         if (theme === "hidden_1_disabled" || theme === "hidden_2_disabled") return;
         document.cookie = `theme=${theme}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=None; Secure;`;
-        window.location.reload();
+        themes.forEach(t => document.documentElement.classList.remove(t));
+        document.documentElement.classList.add(theme);
+        document.querySelectorAll(".theme-option").forEach(el => el.classList.remove("active"));
+        const activeBtn = document.querySelector(`.theme-option.${theme}`);
+        if (activeBtn) activeBtn.classList.add("active");
+    }
+    const layouts = ["floaty", "compact"];
+
+    function setLayout(layout) {
+        document.cookie = `layout=${layout}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/; SameSite=None; Secure;`;
+        layouts.forEach(l => document.documentElement.classList.remove(l));
+        document.documentElement.classList.add(layout);
+        document.querySelectorAll('input[name="layout"]').forEach(input => {
+            input.checked = input.value === layout;
+        });
     }
     </script>
 </div>

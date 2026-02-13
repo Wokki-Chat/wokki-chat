@@ -3,27 +3,31 @@ include 'app/config.php';
 include 'global.php';
 include 'app/maintenance.php';
 
-if (!isset($_COOKIE['access_token'])) {
-    header('Location: login');
-    exit;
-}
-$access_token = $_COOKIE['access_token'];
+$access_token = $_COOKIE['access_token'] ?? '';
 
 $stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?");
 $stmt->bind_param("s", $access_token);
 $stmt->execute();
 $result = $stmt->get_result();
+$user_id = null;
 if ($result->num_rows > 0) {
     $row = $result->fetch_assoc();
     $user_id = $row['user_id'];
 }
 $stmt->close();
 
-$headerBtn = '<a href="login" class="button-primary-outline no-underline">Login</a>';
+$headerBtn = '<a href="login" class="button-primary-outline no-underline">Log In</a>';
 
 if ($user_id) {
     $headerBtn = '<a href="home" class="button-primary-outline no-underline">Open Wokki Chat</a>';
 }
+
+$stmt = $mysqli->prepare("SELECT COUNT(*) AS count FROM users WHERE email_verified = 1");
+$stmt->execute();
+$result = $stmt->get_result();
+$stmt->close();
+$row = $result->fetch_assoc();
+$spots_left = 500 - $row['count'];
 
 ?>
 <!DOCTYPE html>
@@ -34,12 +38,32 @@ if ($user_id) {
     <title>Wokki Chat - Connect with friends, share your world & make every conversation count</title>
     <link rel="stylesheet" href="assets/styles/index.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
 <body>
+    <div class="hover-overlay"></div>
     <div class="main-content">
         <div class="sticky-header">
-            <a href="/"><img src="assets/images/logo-text-purple.png" alt="Wokki Chat" class="logo"></a>
+            <a href="/" class="logo"></a>
             <?php echo $headerBtn; ?>
+        </div>
+        <div class="fixed-header">
+            <a href="https://chat.wokki20.nl/support" class="header-option" tabindex="0">Support</a>
+            <div class="header-option multiple" tabindex="0">
+                <p class="header-option-text">Legal</p>
+                <div class=header-option-dropdown>
+                    <a href="https://chat.wokki20.nl/legal/privacy" class="link">Privacy Policy</a>
+                    <a href="https://chat.wokki20.nl/legal/terms" class="link">Terms of Service</a>
+                </div>
+            </div>
+            <div class="header-option multiple" tabindex="0">
+                <p class="header-option-text">Developers</p>
+                <div class=header-option-dropdown>
+                    <a href="https://chat.wokki20.nl/developer" class="link">Developer Portal</a>
+                    <a href="https://chat.wokki20.nl/developer/docs" class="link">Developer Documentation</a>
+                    <a href="https://chat.wokki20.nl/developer/docs#sdk" class="link">Wokki Chat Bots SDK</a>
+                </div>
+            </div>
         </div>
         <div class="center-text">
             <div class="slogan">
@@ -57,6 +81,10 @@ if ($user_id) {
                 <span class="description-text">Wokki Chat is the ultimate place to connect with friends, share your thoughts and moments freely,</span>
                 <span class="description-text">exciting conversations, discover new connections, and keep the people you care about just a click away.</span>
                 <span class="description-text">All of that without paying a dime.</span>
+            </div>
+            <div class="spots-left">
+                <span class="spots-left-text">Sign up now before it&rsquo;s too late!</span>
+                <span class="spots-left-text">Only <span class="spots-left-highlight"><?php echo $spots_left; ?></span> spots left in the Alpha!</span>
             </div>
         </div>
     </div>
@@ -88,5 +116,6 @@ if ($user_id) {
             </div>
         </div>
     </footer>
+    <script src="assets/js/index.js"></script>
 </body>
 </html>
