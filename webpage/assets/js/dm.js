@@ -127,12 +127,8 @@ function initDm() {
 
 		socket.on("user_updated", async (user) => {
 			if (!groupUsersContainer) return;
-            console.log(user);
-			const userIndex = usersList.findIndex(u => String(u.id) === user.id);
-			if (userIndex === -1) return;
-            console.log(userIndex);
 			
-			userRenderer.render(usersList[userIndex], groupUsersContainer);
+			userRenderer.render(user, groupUsersContainer);
 		});
 	}
 
