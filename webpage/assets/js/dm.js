@@ -130,6 +130,7 @@ function initDm() {
             console.log(user);
 			const userIndex = usersList.findIndex(u => String(u.id) === user.id);
 			if (userIndex === -1) return;
+            console.log(userIndex);
 			
 			userRenderer.render(usersList[userIndex], groupUsersContainer);
 		});
