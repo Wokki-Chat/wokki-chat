@@ -1,6 +1,6 @@
 import uuid
 from server.config import typing_lock, user_current_room, add_user_to_sid, get_sids_for_user, remove_user_sid, get_user_from_sid, get_bot_sid_from_id, add_sid_to_bot, get_bot_id_from_sid, remove_sid, get_typing_users, remove_typing_user, redis_client, server_name, acquire_user_lock, release_user_lock, DISCONNECT_TIMEOUT
-from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status, broadcast_widget_update, auth_required
+from server.helpers.user_helpers import verify_access_token, broadcast_user_update, get_user_premium_status, broadcast_widget_update, auth_required, get_user_rooms
 from server.helpers.server_helpers import is_user_in_server, get_member_ids_from_server
 from server.helpers.bot_helpers import is_bot_in_server, verify_bot_token
 import server.sio_instance as sio_instance
@@ -101,6 +101,11 @@ async def handle_connect(sid, environ):
                 await sio_instance.sio.emit('connected to server', {'server_name': server_name}, room=f"user:{user_id}")
                 await sio_instance.sio.emit('user_connected', {'user_id': user_id, 'server_id': server_id}, room=f"user:{user_id}")
                 await broadcast_user_update(user_id)
+                
+                user_notif_rooms = get_user_rooms(cur, user_id, notification_only=True)
+                
+                for room in user_notif_rooms:
+                    await sio_instance.sio.enter_room(sid, room)
 
                 sids = await get_sids_for_user(user_id)
                 if sid not in sids:

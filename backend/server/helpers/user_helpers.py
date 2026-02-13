@@ -137,16 +137,16 @@ async def get_user_premium_status(cur, user_id):
     now = datetime.now(timezone.utc)
     return premium_expires_at > now
 
-async def get_user_rooms(cur, user_id):
+async def get_user_rooms(cur, user_id, notification_only=False):
     query = "SELECT server_id FROM server_members WHERE user_id = %s"
     await cur.execute(query, (user_id,))
     rows = await cur.fetchall()
-    rooms = [f"server:{r['server_id']}" for r in rows]
+    rooms = [f"{'server_notif' if notification_only else 'server'}:{r['server_id']}" for r in rows]
     
     query = "SELECT contact_id FROM contact_users WHERE user_id = %s"
     await cur.execute(query, (user_id,))
     rows = await cur.fetchall()
-    rooms.extend([f"contact:{r['contact_id']}" for r in rows])
+    rooms.extend([f"{'contact_notif' if notification_only else 'contact'}:{r['contact_id']}" for r in rows])
     
     return rooms
     

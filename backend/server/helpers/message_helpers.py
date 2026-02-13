@@ -306,9 +306,24 @@ async def send_message(sid, metadata, data):
     if is_contact:
         await sio_instance.sio.emit('new_message', message_response, room=f"contact:{contact_id}")
         await addMessageToLogs(f"new_message emitted for contact_id: {contact_id}", "INFO")
+        
+        await sio_instance.sio.emit('new_message_notification', {
+            'contact_id': contact_id,
+            'message_id': message_id,
+            'message': message,
+            'sender_info': message_response['sender_info']
+        }, room=f"contact_notif:{contact_id}", skip_sid=sid)
     else:
         await sio_instance.sio.emit('new_message', message_response, room=f"server:{server_id}:channel:{channel_id}")
         await addMessageToLogs(f"new_message emitted for server_id: {server_id} and channel_id: {channel_id}", "INFO")
+        
+        await sio_instance.sio.emit('new_message_notification', {
+            'server_id': server_id,
+            'channel_id': channel_id,
+            'message_id': message_id,
+            'message': message,
+            'sender_info': message_response['sender_info']
+        }, room=f"server_notif:{server_id}", skip_sid=sid)
     
     await sio_instance.sio.emit('send_message_response', {
         'success': True, 

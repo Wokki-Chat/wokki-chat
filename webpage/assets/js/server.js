@@ -6,6 +6,7 @@ import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
 import { UserRenderer } from "./modules/users/profiles.js";
 import { Mentions } from "./modules/users/mentions.js";
 import { CommandsManager } from "./modules/global/commands.js";
+import { NotificationsManager } from "./modules/global/notifications.js";
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -52,6 +53,8 @@ function initServer() {
 
 	const userRenderer = new UserRenderer({ user_id, access_token, userListContainer: document.querySelector(".users") });
 
+	const notificationsManager = new NotificationsManager({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket });
+
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
 			el.parentElement.classList.toggle('expanded');
@@ -87,6 +90,7 @@ function initServer() {
 
 	async function loadMessages(offsetValue = 0) {
 		messageHandler.initFileUpload();
+		notificationsManager.listen();
 		socket.emit("get_messages", {
 			access_token,
 			server_id,
