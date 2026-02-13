@@ -102,7 +102,7 @@ async def handle_connect(sid, environ):
                 await sio_instance.sio.emit('user_connected', {'user_id': user_id, 'server_id': server_id}, room=f"user:{user_id}")
                 await broadcast_user_update(user_id)
                 
-                user_notif_rooms = get_user_rooms(cur, user_id, notification_only=True)
+                user_notif_rooms = await get_user_rooms(cur, user_id, notification_only=True)
                 
                 for room in user_notif_rooms:
                     await sio_instance.sio.enter_room(sid, room)
