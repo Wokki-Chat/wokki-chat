@@ -266,16 +266,37 @@ export class Sanitizer {
     async processInline(text) {
         text = await this.replaceWithCheck(text, /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, async (match, linkText, url) => {
             return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${linkText}</a>`;
-        });
-        text = await this.replaceWithCheck(text, /(?<!\\)~~([\s\S]+?)~~/g, async (match, content) => `<del>${content}</del>`);
-        text = await this.replaceWithCheck(text, /(?<!\\)`([^`\n]+)`/g, async (match, code) => `<code>${code}</code>`);
+        }, { skipAcrossHtmlTags: true });
+        
+        text = await this.replaceWithCheck(text, /(?<!["'>])(https?:\/\/[^\s<]+)/g, async (url) => {
+            if (!url.startsWith('https://open.spotify.com/track/') && !url.startsWith('https://chat.wokki20.nl/invite/')) {
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>`;
+            }
+            return url;
+        }, { skipAcrossHtmlTags: true });
+        
+        text = await this.replaceWithCheck(text, /(?<!\\)~~([\s\S]+?)~~/g, async (match, content) => `<del>${content}</del>`, { skipAcrossHtmlTags: true });
+        text = await this.replaceWithCheck(text, /(?<!\\)`([^`\n]+)`/g, async (match, code) => `<code>${code}</code>`, { skipAcrossHtmlTags: true });
+        
         text = await this.replaceWithCheck(text, /(?<!\\)\*\*(?!\*)([\s\S]+?)\*\*/g, async (match, content) => {
             return `<strong>${content}</strong>`;
-        });
+        }, { skipAcrossHtmlTags: true });
+        
         text = await this.replaceWithCheck(text, /(?<!\\)(\*|_)([\s\S]+?)\1/g, async (match, wrap, content) => {
             if (content.includes('**')) return match;
             return `<em>${content}</em>`;
-        });
+        }, { skipAcrossHtmlTags: true });
+        
+        text = await this.replaceWithCheck(text, /#([^\s#<]+)/g, async (match, channelName) => {
+            if (!Array.isArray(this.channels)) return match;
+            const channel = this.channels.find(c => c.name.toLowerCase() === channelName.toLowerCase());
+            if (channel) {
+                const url = `https://chat.wokki20.nl/server/${this.server_id}/channel/${channel.channel_id}`;
+                return `<a href="${url}" rel="noopener noreferrer" class="channel-link">#${channelName}</a>`;
+            }
+            return match;
+        }, { skipAcrossHtmlTags: true });
+        
         text = await this.replaceWithCheck(text, /&lt;@([^&]+)&gt;/g, async (match, username) => {
             const cleanUsername = username.trim();
             if (cleanUsername.toLowerCase() === "everyone") {
@@ -287,7 +308,36 @@ export class Sanitizer {
                 return `<a href="${url}" rel="noopener noreferrer" class="user-link ${user.id == this.user_id ? "self" : ""}" data-user-id="${user.id}">@${cleanUsername}</a>`;
             }
             return match;
-        });
+        }, { skipAcrossHtmlTags: true });
+        
+        text = await this.replaceWithCheck(text, /&lt;t:(\d+):(\w+)&gt;/g, async (match, timeNumber, type) => {
+            return await this.getTimeEl(timeNumber, type);
+        }, { skipAcrossHtmlTags: true });
+        
+        text = await this.replaceWithCheck(text, /(?<!["'>])(https?:\/\/chat\.wokki20\.nl\/invite\/[^\s)]+)/g, async (url) => {
+            const inviteId = url.split("/").pop();
+            return `
+            <a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>
+            <div class="invite-item-container loading"
+                data-invite-url="${url}"
+                data-invite-id="${inviteId}">
+                <p>Loading invite…</p>
+            </div>
+            `;
+        }, { skipAcrossHtmlTags: true });
+        
+        text = await this.replaceWithCheck(text, /(?<!["'>])(https?:\/\/open\.spotify\.com\/track\/[0-9A-Za-z]+)(\?[^\s]*)?/g, async (url) => {
+            const trackId = url.split("/").pop().split("?")[0];
+            return `
+            <a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>
+            <div class="spotify-track-container loading"
+                data-spotify-track-url="${url}"
+                data-spotify-track-id="${trackId}">
+                <p>Loading Spotify Embed…</p>
+            </div>
+            `;
+        }, { skipAcrossHtmlTags: true });
+        
         text = text.replace(/\\([*_\-~`\\[\](){}])/g, '$1');
 
         return text;
