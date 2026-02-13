@@ -1454,7 +1454,8 @@ input:checked + .slider:before {
 .info-profile,
 .available-command,
 .mention-item,
-.request-item {
+.request-item,
+.contact-tab {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -1473,16 +1474,19 @@ input:checked + .slider:before {
     justify-content: space-between;
 }
 
-.info-profile {
+.info-profile,
+.contact-tab {
     position: relative;
     overflow: hidden;
 }
-.info-profile:hover {
+.info-profile:hover,
+.contact-tab:hover {
     background-color: var(--clr-popup-a10);
     border: 1px solid var(--clr-popup-a20);
 }
 
-.info-profile.active {
+.info-profile.active,
+.contact-tab.active {
     background-color: var(--clr-popup-a10);
     color: var(--clr-text-a0);
     border: 1px solid var(--clr-popup-a20);
