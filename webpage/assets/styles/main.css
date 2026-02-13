@@ -1159,7 +1159,6 @@ input:checked + .slider:before {
     font-size: 16px;
     word-break: break-word;
     overflow-wrap: anywhere;
-    white-space: pre-wrap;
 }
 
 .message-text span:not(code span) {
