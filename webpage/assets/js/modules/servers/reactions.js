@@ -130,8 +130,7 @@ export default class ReactionsRender {
 			const newReactionEl = await this.reaction({
 				reactionGroup: [{
 					reaction: emoji,
-					user_id: reactingUserId,
-					reaction_user_info: { profile_picture: profile_picture_url }
+					user_id: reactingUserId
 				}],
 				count: 1
 			}, msg_id);
