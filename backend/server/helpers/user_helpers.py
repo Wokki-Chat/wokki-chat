@@ -141,8 +141,14 @@ async def get_user_rooms(cur, user_id):
     query = "SELECT server_id FROM server_members WHERE user_id = %s"
     await cur.execute(query, (user_id,))
     rows = await cur.fetchall()
-    return [f"server:{r['server_id']}" for r in rows]
-    # TODO: Add friends aswell
+    rooms = [f"server:{r['server_id']}" for r in rows]
+    
+    query = "SELECT contact_id FROM contact_users WHERE user_id = %s"
+    await cur.execute(query, (user_id,))
+    rows = await cur.fetchall()
+    rooms.extend([f"contact:{r['contact_id']}" for r in rows])
+    
+    return rooms
     
 async def get_bot_rooms(cur, bot_id):
     query = "SELECT server_id FROM server_members WHERE bot_id = %s"
