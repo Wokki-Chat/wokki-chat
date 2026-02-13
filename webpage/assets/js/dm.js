@@ -5,7 +5,7 @@ import { Mentions } from "./modules/users/mentions.js";
 import { StaticProfileManager } from "./modules/users/profiles.js";
 import { UserRenderer } from "./modules/users/profiles.js";
 import { NotificationsManager } from "./modules/global/notifications.js";
-
+import ReactionRenderer from "./modules/servers/reactions.js";
 function initDm() {
     const el = document.querySelector('wchat-allowed-scripts');
     const scripts = el.getAttribute('value').split(';');
@@ -43,6 +43,8 @@ function initDm() {
 	const staticProfileManager = new StaticProfileManager(access_token, user_id);
 
 	const userRenderer = new UserRenderer({ user_id, access_token, userListContainer: groupUsersContainer });
+        
+    const reactionRenderer = new ReactionRenderer({ user_id: user_id, access_token: access_token, socket: socket, contact_id: contact_id });
 
     const notificationsManager = new NotificationsManager({ access_token: access_token, socket: socket, contact_id: contact_id });
 
@@ -88,6 +90,16 @@ function initDm() {
     })();
 
     loadMessages();
+
+	socket.on("add_reaction", ({ message_id, reaction, user_id: reactingUserId }) => {
+		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
+		if (el) reactionRenderer.updateReactionUI(el, message_id, reaction, reactingUserId, false);
+	});
+
+	socket.on("remove_reaction", ({ message_id, reaction, user_id: reactingUserId }) => {
+		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
+		if (el) reactionRenderer.updateReactionUI(el, message_id, reaction, reactingUserId, true);
+	});
 
 	if (contact_type == "individual") {
 		staticProfileManager.openStaticProfile(contact_user_id, usersContainer);

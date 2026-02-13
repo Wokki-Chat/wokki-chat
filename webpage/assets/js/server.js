@@ -42,7 +42,7 @@ function initServer() {
 	const textarea = document.getElementById("message-input");
 	const preview = document.getElementById("message-input-bg");
 	
-	const reactionRenderer = new ReactionRenderer({ user_id, channel_id, server_id, access_token, socket });
+	const reactionRenderer = new ReactionRenderer({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket });
 	const settingsManager = new SettingsManager({ user_id, channel_id, server_id, access_token, socket });
 	const mentions = new Mentions({ user_id, channels, server_id, users_list: [] });
 	const commandsManager = new CommandsManager({ user_id, channel_id, server_id, access_token, socket });
@@ -151,102 +151,14 @@ function initServer() {
 		}
 	}
 
-	async function updateReactionUI(el, msg_id, emoji, reactingUserId, removed = false) {
-		const scrollTopBefore = messageContainer.scrollTop;
-		const scrollHeightBefore = messageContainer.scrollHeight;
-		const nearBottom = scrollHeightBefore - scrollTopBefore - messageContainer.clientHeight <= 10;
-
-		let messageReactions = el.querySelector(".message-reactions-container");
-		if (!messageReactions && !removed) {
-			messageReactions = document.createElement("div");
-			messageReactions.classList.add("message-reactions-container");
-			const reactionsWrapper = el.querySelector(".message-reactions");
-			reactionsWrapper.appendChild(messageReactions);
-		}
-		if (!messageReactions) return;
-
-		const reactionEl = messageReactions.querySelector(`.reaction[data-reaction-name="${emoji}"]`);
-
-		if (reactionEl) {
-			const countEl = reactionEl.querySelector(".count");
-
-			if (removed) {
-				if (countEl) {
-					const newCount = parseInt(countEl.textContent) - 1;
-					if (newCount <= 0) {
-						reactionEl.remove();
-					} else {
-						countEl.textContent = newCount;
-						if (String(reactingUserId) === String(user_id)) {
-							reactionEl.classList.remove("own");
-						}
-					}
-				} else {
-					reactionEl.remove();
-				}
-			} else {
-				if (countEl) {
-					countEl.textContent = parseInt(countEl.textContent) + 1;
-				} else {
-					const countSpan = document.createElement("span");
-					countSpan.classList.add("count");
-					countSpan.textContent = "1";
-					reactionEl.appendChild(countSpan);
-				}
-				if (String(reactingUserId) === String(user_id)) {
-					reactionEl.classList.add("own");
-				}
-			}
-		} else if (!removed) {
-			const newReactionEl = await reactionRenderer.reaction({
-				reactionGroup: [{
-					reaction: emoji,
-					user_id: reactingUserId,
-					reaction_user_info: { username: username_text, profile_picture: profile_picture_url }
-				}],
-				count: 1
-			}, msg_id);
-
-			const addReactionBtn = messageReactions.querySelector(".reaction.add-reaction");
-			if (addReactionBtn) {
-				addReactionBtn.before(newReactionEl);
-			} else {
-				messageReactions.appendChild(newReactionEl);
-			}
-		}
-
-		const realReactions = messageReactions.querySelectorAll(".reaction:not(.add-reaction)");
-		if (realReactions.length === 0) {
-			messageReactions.remove();
-			return;
-		}
-
-		let addBtn = messageReactions.querySelector(".reaction.add-reaction");
-		if (!addBtn) {
-			addBtn = document.createElement("div");
-			addBtn.classList.add("reaction", "add-reaction");
-			addBtn.innerHTML = `<span class="add-reaction-icon material-symbols-rounded">add_reaction</span>`;
-			messageReactions.appendChild(addBtn);
-		}
-
-		if (!nearBottom) {
-			const scrollHeightAfter = messageContainer.scrollHeight;
-			messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
-		} else {
-			requestAnimationFrame(() => {
-				messageContainer.scrollTop = messageContainer.scrollHeight;
-			});
-		}
-	}
-
 	socket.on("add_reaction", ({ message_id, reaction, user_id: reactingUserId }) => {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
-		if (el) updateReactionUI(el, message_id, reaction, reactingUserId, false);
+		if (el) reactionRenderer.updateReactionUI(el, message_id, reaction, reactingUserId, false);
 	});
 
 	socket.on("remove_reaction", ({ message_id, reaction, user_id: reactingUserId }) => {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);
-		if (el) updateReactionUI(el, message_id, reaction, reactingUserId, true);
+		if (el) reactionRenderer.updateReactionUI(el, message_id, reaction, reactingUserId, true);
 	});
 
 	const builtInBot = {
