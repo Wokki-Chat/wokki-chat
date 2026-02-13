@@ -265,9 +265,30 @@ export class MessageHydrator {
 
 		if (assets && assets.length > 0) {
 			const lazyEls = msgEl.querySelectorAll('[data-src]');
+			const mediaLoadPromises = [];
+			
 			lazyEls.forEach(el => {
 				if (el.tagName === 'IMG' || el.tagName === 'VIDEO') {
 					el.src = el.dataset.src;
+					
+					const loadPromise = new Promise((resolve) => {
+						if (el.tagName === 'IMG') {
+							if (el.complete) {
+								resolve();
+							} else {
+								el.addEventListener('load', resolve, { once: true });
+								el.addEventListener('error', resolve, { once: true });
+							}
+						} else if (el.tagName === 'VIDEO') {
+							if (el.readyState >= 1) {
+								resolve();
+							} else {
+								el.addEventListener('loadedmetadata', resolve, { once: true });
+								el.addEventListener('error', resolve, { once: true });
+							}
+						}
+					});
+					mediaLoadPromises.push(loadPromise);
 				}
 				el.removeAttribute('data-src');
 				el.classList.remove('lazyload');
@@ -311,7 +332,7 @@ export class MessageHydrator {
 				}
 			});
 
-			await Promise.all([...invitePromises, ...txtPromises]);
+			await Promise.all([...invitePromises, ...mediaLoadPromises, ...txtPromises]);
 		} else {
 			await Promise.all(invitePromises);
 		}
