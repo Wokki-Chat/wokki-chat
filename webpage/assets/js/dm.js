@@ -87,12 +87,6 @@ function initDm() {
 
 	if (contact_type == "individual") {
 		staticProfileManager.openStaticProfile(contact_user_id, usersContainer);
-
-		socket.on("user_updated", async (user) => {
-			if (!usersContainer) return;
-			usersContainer.innerHTML = "";
-			staticProfileManager.openStaticProfile(user.id, usersContainer);
-		});
 	} else {
 		socket.emit("get_contact_users", { access_token, contact_id });
 
