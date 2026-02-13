@@ -44,7 +44,7 @@ function initDm() {
 
 	const userRenderer = new UserRenderer({ user_id, access_token, userListContainer: groupUsersContainer });
 
-    const notificationsManager = new NotificationsManager({ user_id: user_id, access_token: access_token, socket: socket, contact_id: contact_id });
+    const notificationsManager = new NotificationsManager({ access_token: access_token, socket: socket, contact_id: contact_id });
 
 	const textareaEmojiOptions = document.getElementById("emoji-option");
 	textareaEmojiOptions.addEventListener("click", async () => {

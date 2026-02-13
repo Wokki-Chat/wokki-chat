@@ -40,7 +40,7 @@ function initSettings() {
 	const sanitizer = new Sanitizer();
 	const textareaFormatter = new TextareaFormatter();
 		
-	const notificationsManager = new NotificationsManager({ user_id: user_id, access_token: access_token, socket: socket });
+	const notificationsManager = new NotificationsManager({ access_token: access_token, socket: socket });
 	notificationsManager.listen();
 
 	if (active_tab === "account") {

@@ -2,8 +2,7 @@
 // Module description: This module helps with showing notifications.
 
 export class NotificationsManager {
-    constructor({ user_id, channel_id = null, server_id = null, access_token, socket, contact_id = null }) {
-        this.user_id = user_id;
+    constructor({ channel_id = null, server_id = null, access_token, socket, contact_id = null }) {
         this.channel_id = channel_id;
         this.server_id = server_id;
         this.access_token = access_token;

@@ -53,7 +53,7 @@ function initServer() {
 
 	const userRenderer = new UserRenderer({ user_id, access_token, userListContainer: document.querySelector(".users") });
 
-	const notificationsManager = new NotificationsManager({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket });
+	const notificationsManager = new NotificationsManager({ channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket });
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
