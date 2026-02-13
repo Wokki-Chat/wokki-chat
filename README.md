@@ -17,8 +17,8 @@ A real-time chat application with load-balanced Socket.IO workers.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/levkris/wokki-chat.git
-   cd wokki-chat
+    git clone -b developing https://github.com/levkris/wokki-chat.git
+    cd wokki-chat
    ```
 
 2. **Set up environment files**
