@@ -204,7 +204,7 @@ export class MessageHydrator {
 
 	async hydrate(msgEl, assets, msgId) {
 		const invites = msgEl.querySelectorAll('.invite-item-container.loading');
-		invites.forEach(async el => {
+		const invitePromises = Array.from(invites).map(async el => {
 			const url = el.dataset.inviteUrl;
 			const inviteId = el.dataset.inviteId;
 
@@ -242,6 +242,7 @@ export class MessageHydrator {
 				el.innerHTML = `<p>This invite is invalid</p>`;
 			}
 		});
+
 		const tracks = msgEl.querySelectorAll('.spotify-track-container.loading');
 		tracks.forEach(el => {
 			const trackId = el.dataset.spotifyTrackId;
@@ -310,7 +311,9 @@ export class MessageHydrator {
 				}
 			});
 
-			await Promise.all(txtPromises);
+			await Promise.all([...invitePromises, ...txtPromises]);
+		} else {
+			await Promise.all(invitePromises);
 		}
 
 		return true;
@@ -582,14 +585,13 @@ export class MessageHandler {
 		
 		this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
 		this.messageBehaviour.attach(el, msg);
-		
-		const hydratePromise = this.messageHydrator.hydrate(el, msg.assets, msg.id).then(() => {
-			if (nearBottom) {
-				requestAnimationFrame(() => {
-					this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
-				});
-			}
-		});
+				
+		await this.messageHydrator.hydrate(el, msg.assets, msg.id);
+		if (nearBottom) {
+			requestAnimationFrame(() => {
+				this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+			});
+		}
 
 		await emojis.replaceEl(el);
 
