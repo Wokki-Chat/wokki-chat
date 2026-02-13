@@ -42,6 +42,14 @@ export class NotificationsManager {
 
         const { sender_info, message, server_id, channel_id, contact_id } = data;
         
+        if (contact_id && this.contact_id === contact_id) {
+            return;
+        }
+        
+        if (server_id && channel_id && this.server_id === server_id && this.channel_id === channel_id) {
+            return;
+        }
+        
         const senderName = sender_info.display_name || sender_info.username;
         let title, body, tag;
         

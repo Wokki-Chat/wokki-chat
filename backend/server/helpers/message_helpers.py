@@ -601,23 +601,40 @@ async def get_message_by_id(sid, metadata, data):
     message_id = data.get('message_id')
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
+    contact_id = data.get('contact_id')
     user_id = metadata.get('account_id')
 
-    if message_id is None or server_id is None or channel_id is None:
+    if (server_id is None and channel_id is None) and contact_id is None or message_id is None:
         await addMessageToLogs(f"Missing required fields for get_message_by_id", "INFO")
         await sio_instance.sio.emit('message_by_id', None, to=sid)
         return
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            await cur.execute("""
-                SELECT m.id, m.message, m.sent_by, m.sent_by_bot, u.username AS user_name, b.name AS bot_name, m.created_at
-                FROM messages m
-                LEFT JOIN users u ON m.sent_by = u.id
-                LEFT JOIN bots b ON m.sent_by_bot = b.id
-                WHERE m.id = %s AND m.server_id = %s AND m.channel_id = %s
-                LIMIT 1
-            """, (message_id, server_id, channel_id))
+            if contact_id is not None:
+                if not await inContact(cur, user_id, contact_id):
+                    await addMessageToLogs(f"User {user_id} not in contact {contact_id}", "INFO")
+                    await sio_instance.sio.emit('message_by_id', None, to=sid)
+                    return
+                
+                await cur.execute("""
+                    SELECT m.id, m.message, m.sent_by, m.sent_by_bot, u.username AS user_name, b.name AS bot_name, m.created_at
+                    FROM messages m
+                    LEFT JOIN users u ON m.sent_by = u.id
+                    LEFT JOIN bots b ON m.sent_by_bot = b.id
+                    WHERE m.id = %s AND m.contact_id = %s
+                    LIMIT 1
+                """, (message_id, contact_id))
+            else:
+                await cur.execute("""
+                    SELECT m.id, m.message, m.sent_by, m.sent_by_bot, u.username AS user_name, b.name AS bot_name, m.created_at
+                    FROM messages m
+                    LEFT JOIN users u ON m.sent_by = u.id
+                    LEFT JOIN bots b ON m.sent_by_bot = b.id
+                    WHERE m.id = %s AND m.server_id = %s AND m.channel_id = %s
+                    LIMIT 1
+                """, (message_id, server_id, channel_id))
+            
             message = await cur.fetchone()
 
             if not message:
@@ -662,7 +679,16 @@ async def delete_message(sid, metadata, data):
             server_id = None
             channel_id = None
 
-            if not contact_id:
+            if contact_id:
+                if not await inContact(cur, account_id, contact_id):
+                    await sio_instance.sio.emit(
+                        'message_deleted',
+                        {'success': False, 'error': 'User not in contact', 'req_id': req_id},
+                        to=sid
+                    )
+                    await addMessageToLogs(f"User {account_id} not in contact {contact_id}", "INFO")
+                    return
+            else:
                 if is_bot:
                     await cur.execute(
                         "SELECT server_id, channel_id FROM messages WHERE id = %s AND sent_by_bot = %s",
@@ -743,7 +769,7 @@ async def add_reaction(sid, metadata, data):
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             await cur.execute(
-                "SELECT channel_id, server_id FROM messages WHERE id = %s",
+                "SELECT channel_id, server_id, contact_id FROM messages WHERE id = %s",
                 (message_id,)
             )
             message_info = await cur.fetchone()
@@ -754,17 +780,24 @@ async def add_reaction(sid, metadata, data):
 
             channel_id = message_info['channel_id']
             server_id = message_info['server_id']
+            contact_id = message_info['contact_id']
 
-            if is_bot:
-                if not await is_bot_in_server(cur, account_id, server_id):
-                    await respond({'success': False, 'error': f'Bot not in server, server id: {server_id}', 'req_id': req_id})
-                    await addMessageToLogs(f"Bot not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
+            if contact_id:
+                if not await inContact(cur, account_id, contact_id):
+                    await respond({'success': False, 'error': f'User not in contact, contact id: {contact_id}', 'req_id': req_id})
+                    await addMessageToLogs(f"User not in contact for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
                     return
             else:
-                if not await is_user_in_server(cur, account_id, server_id):
-                    await respond({'success': False, 'error': f'User not in server, server id: {server_id}', 'req_id': req_id})
-                    await addMessageToLogs(f"User not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
-                    return
+                if is_bot:
+                    if not await is_bot_in_server(cur, account_id, server_id):
+                        await respond({'success': False, 'error': f'Bot not in server, server id: {server_id}', 'req_id': req_id})
+                        await addMessageToLogs(f"Bot not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
+                        return
+                else:
+                    if not await is_user_in_server(cur, account_id, server_id):
+                        await respond({'success': False, 'error': f'User not in server, server id: {server_id}', 'req_id': req_id})
+                        await addMessageToLogs(f"User not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
+                        return
 
             if not reaction.startswith(':') or not reaction.endswith(':'):
                 await respond({'success': False, 'error': 'Invalid reaction', 'req_id': req_id})
@@ -783,6 +816,8 @@ async def add_reaction(sid, metadata, data):
                 )
             existing = await cur.fetchone()
 
+            room = f'contact:{contact_id}' if contact_id else f'server:{server_id}:channel:{channel_id}'
+
             if existing:
                 if is_bot:
                     await cur.execute(
@@ -798,7 +833,7 @@ async def add_reaction(sid, metadata, data):
                 await sio_instance.sio.emit(
                     'remove_reaction',
                     {'success': True, 'message_id': message_id, 'reaction': reaction, 'user_id': account_id, 'req_id': req_id},
-                    room=f'server:{server_id}:channel:{channel_id}'
+                    room=room
                 )
                 await addMessageToLogs(f"Removed reaction {reaction} from message {message_id} by user {account_id}", "INFO")
             else:
@@ -816,6 +851,6 @@ async def add_reaction(sid, metadata, data):
                 await sio_instance.sio.emit(
                     'add_reaction',
                     {'success': True, 'message_id': message_id, 'reaction': reaction, 'user_id': account_id, 'req_id': req_id},
-                    room=f'server:{server_id}:channel:{channel_id}'
+                    room=room
                 )
                 await addMessageToLogs(f"Added reaction {reaction} to message {message_id} by user {account_id}", "INFO")
