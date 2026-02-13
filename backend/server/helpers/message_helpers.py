@@ -240,6 +240,13 @@ async def send_message(sid, metadata, data):
                     parent_message_id
                 )
             )
+            
+            if is_contact:
+                await cur.execute(
+                    'UPDATE contacts SET last_message_sent = %s WHERE contact_id = %s',
+                    (timestamp, contact_id)
+                )
+                await addMessageToLogs(f"Updated last_message_sent for contact_id: {contact_id}", "INFO")
 
             if is_bot:
                 await addMessageToLogs(f"Inserted bot message for bot id: {account_id}", "INFO")

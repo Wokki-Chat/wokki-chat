@@ -95,10 +95,12 @@ $serverStmt->close();
 
 $friendsStmt = $mysqli->prepare("
     SELECT u.id, u.username, u.profile_picture, u.status, u.premium, u.premium_expires_at, u.bio,
-           'individual' as contact_type, NULL as contact_id, NULL as contact_name
+           'individual' as contact_type, NULL as contact_id, NULL as contact_name,
+           c.last_message_sent
     FROM contact_users cu1
     JOIN contact_users cu2 ON cu1.contact_id = cu2.contact_id AND cu2.user_id != cu1.user_id
     JOIN users u ON cu2.user_id = u.id
+    JOIN contacts c ON cu1.contact_id = c.contact_id
     LEFT JOIN contact_requests cr ON cu1.contact_id = cr.contact_id
     WHERE cu1.user_id = ? 
       AND cr.contact_id IS NULL
@@ -119,14 +121,16 @@ while ($row = $friendsResult->fetch_assoc()) {
         'premium' => $row['premium'] && ($row['premium_expires_at'] > time() || $row['premium_expires_at'] === null),
         'bio' => $row['bio'],
         'contact_type' => 'individual',
-        'is_group' => false
+        'is_group' => false,
+        'last_message_sent' => $row['last_message_sent']
     ];
 }
 $friendsStmt->close();
 
 $groupsStmt = $mysqli->prepare("
     SELECT c.contact_id as contact_id, c.contact_name, c.contact_picture,
-           'group' as contact_type, (SELECT COUNT(*) FROM contact_users WHERE contact_id = c.contact_id) as members_count
+           'group' as contact_type, (SELECT COUNT(*) FROM contact_users WHERE contact_id = c.contact_id) as members_count,
+           c.last_message_sent
     FROM contact_users cu
     JOIN contacts c ON cu.contact_id = c.contact_id
     LEFT JOIN contact_requests cr ON c.contact_id = cr.contact_id
@@ -151,10 +155,15 @@ while ($row = $groupsResult->fetch_assoc()) {
         'contact_type' => 'group',
         'contact_id' => $row['contact_id'],
         'is_group' => true,
-        'members_count' => $row['members_count']
+        'members_count' => $row['members_count'],
+        'last_message_sent' => $row['last_message_sent']
     ];
 }
 $groupsStmt->close();
+
+usort($friendsList, function($a, $b) {
+    return ($b['last_message_sent'] ?? 0) <=> ($a['last_message_sent'] ?? 0);
+});
 
 $friendsList[] = [
     'id' => $user_id,
