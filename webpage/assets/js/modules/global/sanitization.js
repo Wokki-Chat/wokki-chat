@@ -172,7 +172,7 @@ export class Sanitizer {
                         return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link">${url}</a>`;
                     }
                     return url;
-                });
+                }, { skipAcrossHtmlTags: true });
 
                 escaped = await this.replaceWithCheck(escaped, /(?<!\\)~~([\s\S]+?)~~/g, async (match, content) => `<del>${content}</del>`, { skipAcrossHtmlTags: true });
                 escaped = await this.replaceWithCheck(escaped, /(?<!\\)`([^`\n]+)`/g, async (match, code) => `<code>${code}</code>`, { skipAcrossHtmlTags: true });
