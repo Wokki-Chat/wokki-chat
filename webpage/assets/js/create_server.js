@@ -94,7 +94,7 @@ function initCreateServer() {
       formData.append("image", serverIconFile);
       }
 
-      fetch("https://chat.wokki20.nl/app/create_server.php", {
+      fetch("/app/create_server.php", {
       method: "POST",
       headers: {
           Authorization: `Bearer ${access_token}`,
@@ -106,7 +106,7 @@ function initCreateServer() {
       console.log("Server created:", data);
           const server_id = data.server_id;
 
-          window.location.href = `https://chat.wokki20.nl/server/${server_id}`;
+          window.location.href = `/server/${server_id}`;
       })
       .catch((error) => {
       console.error("Error creating server:", error);

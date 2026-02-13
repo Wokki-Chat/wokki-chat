@@ -49,6 +49,7 @@ services:
       - "5001:5001"
     depends_on:
       - db
+      - redis
 
   aqua:
     build:
@@ -60,6 +61,7 @@ services:
       - "5002:5002"
     depends_on:
       - db
+      - redis
 
   terra:
     build:
@@ -71,6 +73,7 @@ services:
       - "5003:5003"
     depends_on:
       - db
+      - redis
 
   ventus:
     build:
@@ -82,6 +85,7 @@ services:
       - "5004:5004"
     depends_on:
       - db
+      - redis
 
   proxy:
     build:
@@ -97,6 +101,16 @@ services:
       - terra
       - ventus
       - db
+      - redis
+      
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
 
 volumes:
   db_data:
+  redis_data:

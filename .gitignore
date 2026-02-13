@@ -12,3 +12,15 @@ __pycache__
 
 /webpage/version-info.json
 /webpage/update-info.md
+
+/webpage/uploads/*
+!/webpage/uploads/*/
+/webpage/uploads/*/*
+!/webpage/uploads/*/*/
+/webpage/uploads/*/*/*
+!/webpage/uploads/*/*/*/
+/webpage/uploads/*/*/*/*
+
+!/webpage/uploads/**/.htaccess
+
+!/webpage/uploads/profile-pictures/default-profile.png

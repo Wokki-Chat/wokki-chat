@@ -292,7 +292,7 @@ if ($active_tab === 'account') {
                     <span class="material-symbols-rounded top-bar-menu" id="settings-sidebar-button">menu</span>
                     <h2 class="settings-page-title"><?php echo $active_tab_formatted; ?></h2>
                 </div>
-                <a class="close-settings-container no-underline" href="https://chat.wokki20.nl<?php echo $from; ?>">
+                <a class="close-settings-container no-underline" href="<?php echo $from; ?>">
                     <div class="close-settings">
                         <span class="material-symbols-rounded">close</span>
                     </div>
@@ -364,9 +364,9 @@ if ($active_tab === 'account') {
                     $settingsHtml = str_replace("{{created_at}}", $createdAtFormatted, $settingsHtml);
                     $settingsHtml = str_replace("{{profile_link_style}}", $profileLinkStyle, $settingsHtml);
                     $settingsHtml = str_replace("{{tags_style}}", ($premium_active ? '' : 'display: none;'), $settingsHtml);
-                    $settingsHtml = str_replace("{{display_name}}", htmlspecialchars($display_name), $settingsHtml);
-                    $settingsHtml = str_replace("{{profile_color_primary}}", $profile_color_primary, $settingsHtml);
-                    $settingsHtml = str_replace("{{profile_color_accent}}", $profile_color_accent, $settingsHtml);
+                    $settingsHtml = str_replace("{{display_name}}", $display_name ? htmlspecialchars($display_name) : '', $settingsHtml);
+                    $settingsHtml = str_replace("{{profile_color_primary}}", $profile_color_primary ? $profile_color_primary : '', $settingsHtml);
+                    $settingsHtml = str_replace("{{profile_color_accent}}", $profile_color_accent ? $profile_color_accent : '', $settingsHtml);
                     $settingsHtml = str_replace("{{banner}}", $bannerHtml, $settingsHtml);
                     $settingsHtml = str_replace("{{banner_url}}", $bannerUrl, $settingsHtml);
                     $settingsHtml = str_replace("{{premium_badge}}", ($premium_active ? '<div class="dm-info-tag"><img draggable="false" class="dm-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="dm-info-tag-tooltip">Premium</p></div>' : ''), $settingsHtml);
