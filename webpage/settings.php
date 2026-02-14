@@ -186,10 +186,8 @@ if ($active_tab === 'account') {
     $active_tab_formatted = "Connections";
 } elseif ($active_tab === 'appearance') {
     $active_tab_formatted = "Appearance";
-} elseif ($active_tab === 'kudos') {
-    $active_tab_formatted = "Kudos";
-} elseif ($active_tab === 'logs') {
-    $active_tab_formatted = "Logs";
+} elseif ($active_tab === 'devtools') {
+    $active_tab_formatted = "Dev Tools";
 }
 ?>
 <!DOCTYPE html>
@@ -251,24 +249,32 @@ if ($active_tab === 'account') {
         <?php echo $maintenanceHtml; ?>
         <div class="settings-content">
             <div class="settings-tabs">
-                <p class="settings-tab-title">User Settings</p>
-                <a class="settings-tab <?php echo ($active_tab === "account") ? "active" : ""; ?> no-underline" href="/settings/account?from=<?php echo $from; ?>">
-                    <span class="material-symbols-rounded">account_circle</span>
-                    <p>My Account</p>
-                </a>
-                <a class="settings-tab <?php echo ($active_tab === "appearance") ? "active" : ""; ?> no-underline" href="/settings/appearance?from=<?php echo $from; ?>">
-                    <span class="material-symbols-rounded">format_paint</span>
-                    <p>Appearance</p>
-                </a>
-                <a class="settings-tab <?php echo ($active_tab === "connections") ? "active" : ""; ?> no-underline" href="/settings/connections?from=<?php echo $from; ?>">
-                    <span class="material-symbols-rounded">link</span>
-                    <p>Connections</p>
-                </a>
+                <div class="settings-group">
+                    <span class="settings-group-title">User Settings</span>
+                    <a class="settings-tab <?php echo ($active_tab === "account") ? "active" : ""; ?> no-underline" href="/settings/account?from=<?php echo $from; ?>">
+                        <span class="material-symbols-rounded">account_circle</span>
+                        <p>My Account</p>
+                    </a>
+                    <a class="settings-tab <?php echo ($active_tab === "connections") ? "active" : ""; ?> no-underline" href="/settings/connections?from=<?php echo $from; ?>">
+                        <span class="material-symbols-rounded">link</span>
+                        <p>Connections</p>
+                    </a>
+                </div>
+                <div class="settings-group">
+                    <span class="settings-group-title">General Settings</span>
+                    <a class="settings-tab <?php echo ($active_tab === "appearance") ? "active" : ""; ?> no-underline" href="/settings/appearance?from=<?php echo $from; ?>">
+                        <span class="material-symbols-rounded">format_paint</span>
+                        <p>Appearance</p>
+                    </a>
+                </div>
                 <?php if ($is_developer): ?>
-                <a class="settings-tab <?php echo ($active_tab === "logs") ? "active" : ""; ?> no-underline" href="/settings/logs?from=<?php echo $from; ?>">
-                    <span class="material-symbols-rounded">contract</span>
-                    <p>Logs</p>
-                </a>
+                <div class="settings-group">
+                    <span class="settings-group-title">Developer Settings</span>
+                    <a class="settings-tab <?php echo ($active_tab === "devtools") ? "active" : ""; ?> no-underline" href="/settings/devtools?from=<?php echo $from; ?>">
+                        <span class="material-symbols-rounded">code</span>
+                        <p>Dev Tools</p>
+                    </a>
+                </div>
                 <?php endif; ?>
             </div>
             <div class="setting-page">
@@ -389,12 +395,12 @@ if ($active_tab === 'account') {
                 }
                 ?>
                 <?php 
-                if ($active_tab === "logs") {
+                if ($active_tab === "devtools") {
                     if ($is_developer === false) {
                         header('Location: /');
                     }
-                    $logsHtml = file_get_contents('settings_html/settings_logs.html');
-                    echo $logsHtml;
+                    $devtoolsHtml = file_get_contents('settings_html/settings_devtools.html');
+                    echo $devtoolsHtml;
                 }
                 ?>
             </div>
