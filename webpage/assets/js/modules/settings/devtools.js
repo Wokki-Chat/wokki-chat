@@ -8,26 +8,21 @@ export default class DevtoolsPanel {
     }
 
     async checkServerAvailability(url) {
-        return new Promise((resolve) => {
-            const timeout = setTimeout(() => {
-                img.src = '';
-                resolve(false);
-            }, 3000);
-
-            const img = new Image();
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
             
-            img.onload = () => {
-                clearTimeout(timeout);
-                resolve(true);
-            };
+            await fetch(`${url}/favicon.ico?t=${Date.now()}`, {
+                method: 'HEAD',
+                mode: 'no-cors',
+                signal: controller.signal
+            });
             
-            img.onerror = () => {
-                clearTimeout(timeout);
-                resolve(true);
-            };
-            
-            img.src = `${url}/favicon.ico?t=${Date.now()}`;
-        });
+            clearTimeout(timeoutId);
+            return true;
+        } catch (error) {
+            return false;
+        }
     }
 
     async init({ connectedWorkerEl, connectedServerEl, switchServerBtn }) {
