@@ -1,6 +1,10 @@
 <?php
 header('Content-Type: application/json');
 
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
 $workerName = $_GET['worker'] ?? '';
 if (!$workerName) {
     echo json_encode(['error' => 'No worker specified']);
