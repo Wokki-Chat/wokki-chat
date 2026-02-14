@@ -62,7 +62,6 @@ A real-time chat application with load-balanced Socket.IO workers.
 4. **Access the application**
    - **Website:** https://localhost:8443
    - **phpMyAdmin:** http://localhost:8081
-   > phpMyAdmin must be accessed over http, not https
 
 ---
 

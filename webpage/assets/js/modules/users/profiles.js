@@ -418,7 +418,7 @@ export class UserPopupManager {
         const headers = new Headers();
         headers.append('Authorization', `Bearer ${this.access_token}`);
 
-        const res = await fetch(`/app/user_info?user_id=${user_id}`, { headers });
+        const res = await fetch(`https://chat.wokki20.nl/app/user_info?user_id=${user_id}`, { headers });
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
 
@@ -533,7 +533,7 @@ export class UserPopupManager {
             window.history.replaceState({}, '', currentPageUrl);
         });
 
-        window.history.replaceState({}, '', `/profile/@${this.sanitizer.sanitize(profileData.username)}`);
+        window.history.replaceState({}, '', `https://chat.wokki20.nl/profile/@${this.sanitizer.sanitize(profileData.username)}`);
     }
 }
 
@@ -545,7 +545,7 @@ export class StaticProfileManager extends UserPopupManager {
     }
 
     async loadStaticProfile(user_id) {
-        const res = await fetch(`/app/user_info?user_id=${user_id}`);
+        const res = await fetch(`https://chat.wokki20.nl/app/user_info?user_id=${user_id}`);
         const data = await res.json();
         return data.user;
     }
@@ -658,7 +658,7 @@ export class StaticProfileManager extends UserPopupManager {
         const headers = new Headers();
         headers.append('Authorization', `Bearer ${this.access_token}`);
 
-        const res = await fetch(`/app/user_info?user_id=${user_id}`, { headers });
+        const res = await fetch(`https://chat.wokki20.nl/app/user_info?user_id=${user_id}`, { headers });
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
 

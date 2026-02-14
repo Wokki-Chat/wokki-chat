@@ -410,10 +410,6 @@ setcookie(
                     <span class="material-symbols-rounded channel-bar-channel-icon">home</span>
                     <p class="channel-bar-channel-name">Home</p>
                 </a>
-                <a class="contact-tab" href="/kudos">
-                    <span class="material-symbols-rounded channel-bar-channel-icon">poker_chip</span>
-                    <p class="channel-bar-channel-name">Kudos <span class="new-tag">NEW!</span></p>
-                </a>
                 <?php
                 foreach ($friendsList as $friend) {
                     if ($friend['id'] == $user_id) {

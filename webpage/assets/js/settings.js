@@ -1,7 +1,5 @@
 import { Sanitizer, TextareaFormatter } from "./modules/global/sanitization.js";
 import { NotificationsManager } from "./modules/global/notifications.js";
-import Dev from "./modules/global/dev.js";
-import DevtoolsPanel from "./modules/settings/devtools.js";
 function initSettings() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -12,7 +10,7 @@ function initSettings() {
 
 	document.addEventListener('keydown', event => {
 		if (event.key === 'Escape') {
-			window.swup.navigate(returnUrl, { cache: { read: false, write: true } });
+			window.swup.navigate('https://chat.wokki20.nl' + returnUrl, { cache: { read: false, write: true } });
 			event.preventDefault();
 		}
 	});
@@ -36,17 +34,14 @@ function initSettings() {
 	const returnUrl = document.getElementById("return-url").getAttribute("value");
 	const active_tab = document.getElementById("active-tab").getAttribute("value");
 	const connections = JSON.parse(document.getElementById("connections").getAttribute("value"));
+	const kudo_items = JSON.parse(document.getElementById("kudo-items").getAttribute("value"));
+	const kudos = JSON.parse(document.getElementById("kudos").getAttribute("value"));
 
 	const sanitizer = new Sanitizer();
 	const textareaFormatter = new TextareaFormatter();
 		
 	const notificationsManager = new NotificationsManager({ access_token: access_token, socket: socket });
 	notificationsManager.listen();
-
-	const devtoolsPanel = new DevtoolsPanel({ access_token: access_token, socket: socket, worker_name: serverName });
-
-	const dev = new Dev();
-	dev.init();
 
 	if (active_tab === "account") {
 
@@ -475,12 +470,139 @@ function initSettings() {
 
 	}
 
-	if (active_tab === "devtools") {
-		const connectedWorkerEl = document.getElementById("connected-worker");
-		const connectedServerEl = document.getElementById("connected-server");
-		const switchServerBtn = document.getElementById("switch-server-btn");
-		devtoolsPanel.init({ connectedWorkerEl, connectedServerEl, switchServerBtn });
-	}
+
+    if (active_tab === "logs") {
+		const connectedServer = document.getElementById("connected-server");
+		connectedServer.textContent = serverName;
+		
+		function loadLogs(firstload = false) {
+			if (active_tab !== "logs") return;
+
+			const params = new URLSearchParams();
+
+			if (document.getElementById("worker-checkbox").checked) params.append("hide_worker_pid", "true");
+			if (document.getElementById("timestamp-checkbox").checked) params.append("hide_timestamp", "true");
+			if (document.getElementById("file-checkbox").checked) params.append("hide_file_name", "true");
+			if (document.getElementById("type-checkbox").checked) params.append("hide_type", "true");
+			if (document.getElementById("message-checkbox").checked) params.append("hide_message", "true");
+			
+
+			const url = `https://chat.wokki20.nl/developer/official/logs?${params.toString()}`;
+
+			fetch(url, {
+				method: "GET",
+				headers: {
+					"Authorization": `Bearer ${access_token}`
+				}
+			})
+			.then(response => {
+				if (!response.ok) throw new Error("Failed to fetch logs");
+				return response.text();
+			})
+			.then(text => { 
+				const logs = document.getElementById("logs");
+				const lines = text.split("\n");
+
+				const escapeHTML = str =>
+					str.replace(/&/g, "&amp;")
+						.replace(/</g, "&lt;")
+						.replace(/>/g, "&gt;");
+
+				const enableColor = document.getElementById("color-checkbox").checked;
+
+				const coloredLines = lines.map(line => {
+					if (!enableColor) return escapeHTML(line);
+
+					const parts = line.match(/\[.*?\]/g) || [];
+					let restOfLine = line;
+
+					const coloredParts = parts.map(part => {
+						let color = 'inherit';
+
+						if (part.startsWith('[Worker Name:')) color = 'var(--clr-logs-green)';
+						else if (/^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]$/.test(part)) color = 'var(--clr-logs-blue)';
+						else if (/^\[.*\.\w+(:\d+)?\]$/.test(part)) color = 'var(--clr-logs-purple)';
+						else if (/^\[.*\]$/.test(part)) color = 'var(--clr-logs-orange)';
+
+						restOfLine = restOfLine.replace(part, '');
+						return `<span style="color: ${color};">${part}</span> `;
+					});
+
+					return coloredParts.join('') + escapeHTML(restOfLine);
+				});
+
+
+
+
+				logs.innerHTML = coloredLines.join("<br>");
+				const offset = 10;
+				if (logs.scrollTop + logs.clientHeight >= logs.scrollHeight - offset && !firstload) logs.scrollTop = logs.scrollHeight;
+				if (firstload) logs.scrollTop = logs.scrollHeight;
+			});
+		}
+
+      loadLogs(true);
+
+      const checkboxes = document.querySelectorAll(".log-option-checkbox");
+      checkboxes.forEach(cb => cb.addEventListener("change", loadLogs));
+      document.getElementById("color-checkbox").addEventListener("change", loadLogs);
+
+      setInterval(loadLogs, 10000);
+
+    }
+
+    if (active_tab === "kudos") {
+      document.querySelectorAll(".kudos-item").forEach(item => {
+        item.addEventListener("click", () => {
+          const kudosItemId = item.getAttribute("data-id");
+          kudoItem = kudo_items.find(item => item["id"].toString() === kudosItemId);
+          let modalHtml = `
+          <div class="modal" id="kudo-item-modal">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h2 class="modal-title">${kudoItem["name"]}</h2>
+                      <span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
+                  </div>
+                  <div class="modal-body kudo-item-modal">
+                      <div class="kudo-item-modal-image-container"><img draggable="false" src="${kudoItem["image"]}" alt="Kudo Shop Item Image" class="kudo-item-modal-image"></div>
+                      <p class="kudo-item-modal-name">${kudoItem["name"]}</p>
+                      <p class="kudo-item-modal-description">${kudoItem["description"]}</p>
+                      <div class="kudo-item-modal-price-container">
+                          <span class="material-symbols-rounded">poker_chip</span>
+                          <p class="kudo-item-modal-price">${kudoItem["price"] > 9999 ? kudoItem["price"].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : kudoItem["price"]}</p>
+                      </div>
+                      <div class="kudo-item-modal-buttons">
+                          <button class="kudo-item-modal-button button-primary-filled" onclick="buyKudo('${kudoItem["id"]}')" ${kudos >= kudoItem["price"] ? "" : "disabled"} >Buy for <span class="material-symbols-rounded">poker_chip</span>${kudoItem["price"] > 9999 ? kudoItem["price"].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : kudoItem["price"]}</button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+        `;
+
+        document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+        const modal = document.getElementById("kudo-item-modal");
+        const modalContent = modal.querySelector(".modal-content");
+
+        setTimeout(() => {
+            function handleClickOutside(event) {
+                if (!modalContent.contains(event.target)) {
+                    modal.remove();
+                    document.removeEventListener("click", handleClickOutside);
+                }
+            }
+
+            document.addEventListener("click", handleClickOutside);
+        }, 10);
+
+        const modalCloseBtn = document.getElementById("close-modal-btn");
+        modalCloseBtn.addEventListener("click", () => {
+            modal.remove();
+        });
+          
+        });
+      });
+    }
 
 	if (active_tab === "connections") {
 		const chatAction = document.getElementById("chat-action");
@@ -631,6 +753,26 @@ function initSettings() {
   function unlinkConnection(connection) {
       const connectionNameLower = connection.toLowerCase();
       window.location.href = `/connections/${connectionNameLower}_unlink`;
+  }
+
+  function buyKudo(kudoId) {
+      let formData = new FormData();
+      formData.append("kudo_id", kudoId);
+
+      fetch(`/app/buy_item`, {
+          method: "POST",
+          headers: {
+              Authorization: `Bearer ${access_token}`,
+          },
+          body: formData,
+      })
+      .then((response) => response.json())
+      .then((data) => {
+          window.location.reload();
+      })
+      .catch((error) => {
+          console.error(error);
+      });
   }
 }
 if (typeof window.swup !== "undefined") {

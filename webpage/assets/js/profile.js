@@ -1,12 +1,8 @@
 import { UserPopupManager } from "./modules/users/profiles.js";
-import { Dev } from "./modules/global/dev.js";
 function initProfile() {
     const el = document.querySelector('wchat-allowed-scripts');
     const scripts = el.getAttribute('value').split(';');
     if (!scripts.includes('profile.js')) return;
-
-    const dev = new Dev();
-    dev.init();
 
     const access_token = document.getElementById("access-token").getAttribute("value");
     const user_id = document.getElementById("user-id").getAttribute("value");
