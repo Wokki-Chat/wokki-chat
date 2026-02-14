@@ -7,19 +7,27 @@ export default class DevtoolsPanel {
         this.worker_name = worker_name;
     }
 
-    async checkServerAvailability(url) {
+    async checkServerAvailability(url, type = 'text') {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3000);
             
-            await fetch(`${url}/favicon.ico?t=${Date.now()}`, {
-                method: 'HEAD',
-                mode: 'no-cors',
+            const response = await fetch(url, {
+                method: 'GET',
                 signal: controller.signal
             });
             
             clearTimeout(timeoutId);
-            return true;
+            
+            if (!response.ok) return false;
+            
+            if (type === 'json') {
+                const data = await response.json();
+                return data.status === 'online';
+            } else {
+                const text = await response.text();
+                return text.trim() === 'OK';
+            }
         } catch (error) {
             return false;
         }
@@ -37,7 +45,7 @@ export default class DevtoolsPanel {
             switchServerBtn.href = "https://chat.wokki20.nl/settings/devtools";
             switchServerBtn.innerText = "Switch to production server";
             
-            const isAvailable = await this.checkServerAvailability("https://chat.wokki20.nl");
+            const isAvailable = await this.checkServerAvailability("https://chat.wokki20.nl/app/check_worker?worker=Ignis", 'json');
             if (!isAvailable) {
                 switchServerBtn.disabled = true;
                 switchServerBtn.title = "Production server is not available";
@@ -50,7 +58,7 @@ export default class DevtoolsPanel {
             switchServerBtn.href = "https://localhost:8443/settings/devtools";
             switchServerBtn.innerText = "Switch to development server";
             
-            const isAvailable = await this.checkServerAvailability("https://localhost:8443");
+            const isAvailable = await this.checkServerAvailability("http://localhost:5001/health", 'text');
             if (!isAvailable) {
                 switchServerBtn.disabled = true;
                 switchServerBtn.title = "Development server is not available";
