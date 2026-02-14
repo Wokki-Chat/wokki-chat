@@ -273,6 +273,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'connections' => getConnections($requested_user_id, $mysqli),
     ];
 
+    ob_start();
+
     echo json_encode([
         'status' => 'success',
         'description' => 'User info fetched successfully',
@@ -292,6 +294,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     ]);
     ob_flush();
     flush();
+
+    ob_end_clean();
 } else {
     echo json_encode([
         'status' => 'error',

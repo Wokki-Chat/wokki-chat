@@ -1,4 +1,5 @@
 <?php
+session_start();
 include 'app/config.php';
 include 'global.php';
 $access_token = $_COOKIE['access_token'];
@@ -353,6 +354,7 @@ setcookie(
     true
 );
 
+$_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme ?>">

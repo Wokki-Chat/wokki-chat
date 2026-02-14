@@ -1,5 +1,5 @@
 import { UserPopupManager } from "./modules/users/profiles.js";
-import { Dev } from "./modules/global/dev.js";
+import Dev from "./modules/global/dev.js";
 function initProfile() {
     const el = document.querySelector('wchat-allowed-scripts');
     const scripts = el.getAttribute('value').split(';');

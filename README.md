@@ -138,6 +138,27 @@ docker compose up -d
 - **Password:** `dev`
 - **Database:** `wokki_chat`
 
+### Database Schema Changes
+
+**⚠️ IMPORTANT:** If you make any SQL changes (creating, modifying, or deleting tables), you **must** add them to `/database/updates/update.sql` before committing.
+
+This ensures that:
+- Database changes are tracked and versioned
+- Other developers can apply the same schema updates
+- Production deployments include all necessary database migrations
+
+**Example:**
+```sql
+-- /database/updates/update.sql
+ALTER TABLE users ADD COLUMN last_login TIMESTAMP NULL;
+CREATE TABLE notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
 ---
 
 ## 📝 Notes
