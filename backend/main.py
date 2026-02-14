@@ -139,9 +139,16 @@ async def cleanup(app):
 
 async def health(request):
     if accepting_connections:
-        return web.Response(text="OK")
+        return web.Response(
+            text="OK",
+            headers={'Access-Control-Allow-Origin': '*'}
+        )
     else:
-        return web.Response(status=503, text="Shutting down")
+        return web.Response(
+            status=503,
+            text="Shutting down",
+            headers={'Access-Control-Allow-Origin': '*'}
+        )
 
 app.router.add_get("/health", health)
 
