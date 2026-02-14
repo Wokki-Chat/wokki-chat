@@ -48,7 +48,7 @@ export default class DevtoolsPanel {
             const isAvailable = await this.checkServerAvailability("https://chat.wokki20.nl/app/check_worker?worker=Ignis", 'json');
             if (!isAvailable) {
                 switchServerBtn.disabled = true;
-                switchServerBtn.title = "Production server is not available";
+                switchServerBtn.innerText = "Production server is not available";
                 switchServerBtn.style.opacity = "0.5";
                 switchServerBtn.style.cursor = "not-allowed";
                 switchServerBtn.style.pointerEvents = "none";
@@ -61,7 +61,7 @@ export default class DevtoolsPanel {
             const isAvailable = await this.checkServerAvailability("http://localhost:5001/health", 'text');
             if (!isAvailable) {
                 switchServerBtn.disabled = true;
-                switchServerBtn.title = "Development server is not available";
+                switchServerBtn.innerText = "Development server is not available";
                 switchServerBtn.style.opacity = "0.5";
                 switchServerBtn.style.cursor = "not-allowed";
                 switchServerBtn.style.pointerEvents = "none";
