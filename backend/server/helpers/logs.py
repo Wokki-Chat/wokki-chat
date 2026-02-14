@@ -1,9 +1,13 @@
 import os
 import inspect
 import logging
+import aiofiles
 from datetime import datetime
 from server.config import server_name
 from server.config import BETTERSTACK_TOKEN, BETTERSTACK_HOST
+
+logs_file = "/home/lvwij/wokki20_chat/webpage/_private/logs/logs.txt"
+MAX_LINES = 500
 
 betterstack_logger = logging.getLogger("betterstack")
 if BETTERSTACK_TOKEN:
@@ -20,8 +24,28 @@ async def addMessageToLogs(message, level="INFO"):
     caller_file = os.path.basename(caller_frame.filename)
     caller_line = caller_frame.lineno
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_line = f"[Worker Name: {server_name}] [{timestamp}] [{caller_file}:{caller_line}] [{level}] -> {message}"
+    log_line = f"[Worker Name: {server_name}] [{timestamp}] [{caller_file}:{caller_line}] [{level}] -> {message}\n"
     
+    lines = []
+    try:
+        if os.path.exists(logs_file):
+            async with aiofiles.open(logs_file, "r") as f:
+                lines = await f.readlines()
+    except Exception as e:
+        print(f"[WARNING] Could not read logs file: {e}")
+
+    if len(lines) >= MAX_LINES:
+        lines = lines[-(MAX_LINES-1):]
+
+    lines.append(log_line)
+
+    try:
+        async with aiofiles.open(logs_file, "w") as f:
+            await f.writelines(lines)
+    except Exception as e:
+        print(f"[WARNING] Could not write to logs file: {e}")
+        print(log_line)
+
     if BETTERSTACK_TOKEN:
         log_data = {
             'worker': server_name,
@@ -41,6 +65,3 @@ async def addMessageToLogs(message, level="INFO"):
                 betterstack_logger.info(message, extra=log_data)
         except Exception as e:
             print(f"[WARNING] Could not log to BetterStack: {e}")
-            print(log_line)
-    else:
-        print(log_line)

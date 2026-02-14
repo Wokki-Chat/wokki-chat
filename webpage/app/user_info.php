@@ -207,11 +207,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $headers = getallheaders();
-    $headers = array_change_key_case($headers, CASE_LOWER);
-
     if (
-        !isset($headers['authorization']) ||
-        !preg_match('/Bearer\s(\S+)/', $headers['authorization'], $matches)
+        !isset($headers['Authorization']) ||
+        !preg_match('/Bearer\s(\S+)/', $headers['Authorization'], $matches)
     ) {
         http_response_code(401);
         echo json_encode([

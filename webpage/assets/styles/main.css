@@ -2407,6 +2407,7 @@ code {
     flex-direction: column;
     position: absolute;
     top: 15px;
+    gap: 10px;
     z-index: 1;
     background-color: var(--clr-popup-a0);
     height: calc(100vh - 30px);
@@ -2414,23 +2415,6 @@ code {
     border-radius: 16px;
     overflow-y: auto;
     color: var(--clr-text-a10);
-}
-
-.settings-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 5px;
-}
-
-.settings-group-title {
-    font-size: 14px;
-    font-weight: var(--font-weight-semibold);
-    margin: 0px;
-    padding: 10px;
-    color: var(--clr-text-a30);
-    margin-bottom: -10px;
-    user-select: none;
 }
 
 .settings-sidebar-button {
@@ -2474,7 +2458,7 @@ code {
 .settings-tab {
     cursor: pointer;
     padding: 10px;
-    border-radius: 9px;
+    border-radius: 16px;
     user-select: none;
     display: flex;
     margin: 0px 10px;
@@ -2482,7 +2466,6 @@ code {
     gap: 10px;
     flex-direction: row;
     background-color: var(--clr-popup-a10);
-    border: 1px solid var(--clr-popup-a20);
     color: var(--clr-text-a10);
     transition: background-color 0.3s ease;
     font-variation-settings:
@@ -2493,13 +2476,11 @@ code {
 }
 
 .settings-tab.active {
-    background-color: var(--clr-popup-a20);
-    border: 1px solid var(--clr-popup-a30);
+    background-color: var(--clr-popup-a30);
 }
 
 .settings-tab:hover {
     background-color: var(--clr-popup-a20);
-    border: 1px solid var(--clr-popup-a30);
 }
 
 .settings-tab p {
@@ -2577,21 +2558,27 @@ code {
 
 .profile-container {
     margin-top: 50px;
-    padding: 0px;
+    background-color: var(--clr-popup-a10);
+    padding: 10px;
+    border-radius: 16px;
     display: flex;
+    flex-direction: column;
     gap: 10px;
-    flex-direction: row;
-    justify-content: space-between;
 }
 
 .settings-appearance-container,
+.kudos-container,
 .logs-container {
     margin-top: 50px;
 }
 
-.kudos-container {
-    width: calc(100% - 30px);
+
+.profile-container {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 20px;
 }
+
 @media screen and (max-width: 1600px) {
     .profile-container {
         flex-direction: column;
@@ -3452,10 +3439,6 @@ ul {
     align-items: center;
 }
 
-.settings-appearance-container-title {
-    margin: 0px;
-}
-
 .layout-options-container {
     display: flex;
     flex-direction: column;
@@ -3543,8 +3526,7 @@ ul {
     user-select: none;
 }
 
-.connections-container,
-.devtools-container {
+.connections-container {
     width: 100%;
     height: 100%;
     margin-top: 50px;
@@ -3558,6 +3540,9 @@ ul {
     width: calc(100% - 20px);
     height: calc(100% - 20px);
     overflow-y: auto;
+    padding: 10px;
+    background-color: var(--clr-popup-a10);
+    border-radius: 16px;
 }
 
 .connection-container {
@@ -3567,8 +3552,8 @@ ul {
     justify-content: center;
     gap: 10px;
     padding: 10px;
-    background-color: var(--clr-popup-a10);
-    border: 1.5px solid var(--clr-popup-a20);
+    background-color: var(--clr-popup-a20);
+    border: 1.5px solid var(--clr-input-bg-dark);
     border-radius: 6px;
     transition: all 0.2s ease;
     color: var(--clr-text-a20);
@@ -3739,11 +3724,10 @@ ul {
     align-items: center;
     overflow: hidden;
     position: relative;
-    border-bottom: 1.5px solid var(--clr-popup-a10);
+    border-bottom: 1.5px solid var(--clr-popup-a30);
 }
 
-.kudos-item-extra-message,
-.new-tag {
+.kudos-item-extra-message {
     position: absolute;
     top: 10px;
     left: 10px;
@@ -3755,17 +3739,6 @@ ul {
     color: var(--clr-text-a10);
     user-select: none;
     margin: 0px;
-    border: 1px solid var(--clr-popup-a50);
-}
-
-.new-tag {
-    top: 50%;
-    right: 5px;
-    left: unset;
-    transform: translateY(-50%);
-    background-color: var(--clr-primary-a0);
-    color: var(--clr-text-a0);
-    border: 1px solid var(--clr-primary-a50);
 }
 
 .kudos-item-name {
@@ -4912,28 +4885,4 @@ hr {
     font-size: 14px;
     font-weight: var(--font-weight-semibold);
     white-space: nowrap;
-}
-
-.devtools-text-item {
-    font-size: 14px;
-    color: var(--clr-text-a0);
-    user-select: none;
-}
-.connected-worker,
-.connected-server {
-    font-weight: var(--font-weight-semibold);
-}
-
-.devtools-container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-}
-
-.devtools-buttons-container {
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
 }
