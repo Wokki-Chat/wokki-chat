@@ -7,6 +7,7 @@ import { UserRenderer } from "./modules/users/profiles.js";
 import { Mentions } from "./modules/users/mentions.js";
 import { CommandsManager } from "./modules/global/commands.js";
 import { NotificationsManager } from "./modules/global/notifications.js";
+import Dev from "./modules/global/dev.js";
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -51,6 +52,9 @@ function initServer() {
 	const userRenderer = new UserRenderer({ user_id, access_token, userListContainer: document.querySelector(".users") });
 
 	const notificationsManager = new NotificationsManager({ channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket });
+	
+	const dev = new Dev();
+	dev.init();
 
 	document.querySelectorAll('.channel-group-name').forEach(el => {
 		el.addEventListener('click', () => {
@@ -207,6 +211,32 @@ function initServer() {
 	let typingInterval;
 
 	if (textarea) {
+		document.addEventListener("keydown", (e) => {
+			if (e.target.tagName === "BODY" &&
+				!e.target.closest("div[contenteditable]") &&
+				e.target.tagName !== "INPUT" &&
+				e.target.tagName !== "TEXTAREA"
+			) {
+				if (e.ctrlKey || e.metaKey || e.altKey || 
+					e.key.length > 1 && e.key !== 'Enter' && e.key !== ' ') {
+					return;
+				}
+				
+				e.preventDefault();
+				textarea.focus();
+				
+				const selection = window.getSelection();
+				const range = selection.getRangeAt(0);
+				const textNode = document.createTextNode(e.key);
+				range.insertNode(textNode);
+				range.setStartAfter(textNode);
+				range.setEndAfter(textNode);
+				selection.removeAllRanges();
+				selection.addRange(range);
+				
+				textarea.dispatchEvent(new Event('input', { bubbles: true }));
+			}
+		});
 		const maxHeight = 250;
 		const warningThreshold = 1000;
 		const maxChars = premium ? 10000 : 3000;

@@ -174,18 +174,6 @@ $serverStmt->bind_param("i", $user_id);
 $serverStmt->execute();
 $serverResult = $serverStmt->get_result();
 $serverStmt->close();
-
-$kudosStmt = $mysqli->prepare("SELECT SUM(kudo_amount) AS total_kudos FROM Kudos WHERE user_id = ?");
-$kudosStmt->bind_param("i", $user_id);
-$kudosStmt->execute();
-$kudosResult = $kudosStmt->get_result();
-$row = $kudosResult->fetch_assoc();
-$totalKudos = $row['total_kudos'] ?? 0;
-$kudosStmt->close();
-
-$kudosJson = file_get_contents('app/assets/kudos/items.json');
-$kudosArray = json_decode($kudosJson, true);
-
 $bannerUrl = $banner ? $banner : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAsAAAAGMAQMAAADuk4YmAAAAA1BMVEX///+nxBvIAAAAAXRSTlMAQObYZgAAADlJREFUeF7twDEBAAAAwiD7p7bGDlgYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAGJrAABgPqdWQAAAABJRU5ErkJggg==';
 
 $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
@@ -198,10 +186,8 @@ if ($active_tab === 'account') {
     $active_tab_formatted = "Connections";
 } elseif ($active_tab === 'appearance') {
     $active_tab_formatted = "Appearance";
-} elseif ($active_tab === 'kudos') {
-    $active_tab_formatted = "Kudos";
-} elseif ($active_tab === 'logs') {
-    $active_tab_formatted = "Logs";
+} elseif ($active_tab === 'devtools') {
+    $active_tab_formatted = "Dev Tools";
 }
 ?>
 <!DOCTYPE html>
@@ -263,28 +249,32 @@ if ($active_tab === 'account') {
         <?php echo $maintenanceHtml; ?>
         <div class="settings-content">
             <div class="settings-tabs">
-                <p class="settings-tab-title">User Settings</p>
-                <a class="settings-tab <?php echo ($active_tab === "account") ? "active" : ""; ?> no-underline" href="/settings/account?from=<?php echo $from; ?>">
-                    <span class="material-symbols-rounded">account_circle</span>
-                    <p>My Account</p>
-                </a>
-                <a class="settings-tab <?php echo ($active_tab === "appearance") ? "active" : ""; ?> no-underline" href="/settings/appearance?from=<?php echo $from; ?>">
-                    <span class="material-symbols-rounded">format_paint</span>
-                    <p>Appearance</p>
-                </a>
-                <a class="settings-tab <?php echo ($active_tab === "connections") ? "active" : ""; ?> no-underline" href="/settings/connections?from=<?php echo $from; ?>">
-                    <span class="material-symbols-rounded">link</span>
-                    <p>Connections</p>
-                </a>
-                <a class="settings-tab <?php echo ($active_tab === "kudos") ? "active" : ""; ?> no-underline" href="/settings/kudos?from=<?php echo $from; ?>">
-                    <span class="material-symbols-rounded">poker_chip</span>
-                    <p>Kudos</p>
-                </a>
+                <div class="settings-group">
+                    <span class="settings-group-title">User Settings</span>
+                    <a class="settings-tab <?php echo ($active_tab === "account") ? "active" : ""; ?> no-underline" href="/settings/account?from=<?php echo $from; ?>">
+                        <span class="material-symbols-rounded">account_circle</span>
+                        <p>My Account</p>
+                    </a>
+                    <a class="settings-tab <?php echo ($active_tab === "connections") ? "active" : ""; ?> no-underline" href="/settings/connections?from=<?php echo $from; ?>">
+                        <span class="material-symbols-rounded">link</span>
+                        <p>Connections</p>
+                    </a>
+                </div>
+                <div class="settings-group">
+                    <span class="settings-group-title">General Settings</span>
+                    <a class="settings-tab <?php echo ($active_tab === "appearance") ? "active" : ""; ?> no-underline" href="/settings/appearance?from=<?php echo $from; ?>">
+                        <span class="material-symbols-rounded">format_paint</span>
+                        <p>Appearance</p>
+                    </a>
+                </div>
                 <?php if ($is_developer): ?>
-                <a class="settings-tab <?php echo ($active_tab === "logs") ? "active" : ""; ?> no-underline" href="/settings/logs?from=<?php echo $from; ?>">
-                    <span class="material-symbols-rounded">contract</span>
-                    <p>Logs</p>
-                </a>
+                <div class="settings-group">
+                    <span class="settings-group-title">Developer Settings</span>
+                    <a class="settings-tab <?php echo ($active_tab === "devtools") ? "active" : ""; ?> no-underline" href="/settings/devtools?from=<?php echo $from; ?>">
+                        <span class="material-symbols-rounded">code</span>
+                        <p>Dev Tools</p>
+                    </a>
+                </div>
                 <?php endif; ?>
             </div>
             <div class="setting-page">
@@ -405,40 +395,12 @@ if ($active_tab === 'account') {
                 }
                 ?>
                 <?php 
-                if ($active_tab === "kudos") {
-                    $connectionsHtml = file_get_contents('settings_html/settings_kudos.html');
-                    $connectionsHtml = str_replace("{{kudos_amount}}", '<div class="kudos-amount"><span class="material-symbols-rounded">poker_chip</span><p class="kudos-amount-value">' . number_format($totalKudos, 0, '.', ','). '</p></div>', $connectionsHtml);
-                    $kudosHtml = '';
-                    if (is_array($kudosArray)) {
-                        foreach ($kudosArray as $index => $kudo) {
-                            $kudosHtml .= '
-                            <div class="kudos-item" data-id="' . $kudo['id'] . '" id="kudos-item">
-                                <div class="kudos-item-image">
-                                    <img draggable="false" src="' . $kudo['image'] . '" alt="' . $kudo['name'] . '" />
-                                    ' . ($kudo['extra_message'] !== "" ? '<p class="kudos-item-extra-message">' . $kudo['extra_message'] . '</p>' : '') . '
-                                </div>
-                                <div class="kudos-item-name">
-                                    ' . $kudo['name'] . '
-                                </div>
-                                <div class="kudos-item-amount">
-                                    <span class="material-symbols-rounded">poker_chip</span><p class="kudos-item-amount-value">' . number_format($kudo['price'], 0, '.', ',') . '</p>
-                                </div>
-                                <button class="kudos-item-view-details-button button-primary-filled">View Details</button>
-                            </div>
-                            ';
-                        }
-                    }
-                    $connectionsHtml = str_replace("{{kudos_items}}", $kudosHtml, $connectionsHtml);
-                    echo $connectionsHtml;
-                }
-                ?>
-                <?php 
-                if ($active_tab === "logs") {
+                if ($active_tab === "devtools") {
                     if ($is_developer === false) {
                         header('Location: /');
                     }
-                    $logsHtml = file_get_contents('settings_html/settings_logs.html');
-                    echo $logsHtml;
+                    $devtoolsHtml = file_get_contents('settings_html/settings_devtools.html');
+                    echo $devtoolsHtml;
                 }
                 ?>
             </div>
@@ -469,8 +431,6 @@ if ($active_tab === 'account') {
         <wchat-data id="return-url" value="<?php echo htmlspecialchars($from, ENT_QUOTES); ?>"></wchat-data>
         <wchat-data id="active-tab" value="<?php echo htmlspecialchars($active_tab); ?>"></wchat-data>
         <wchat-data id="connections" value="<?php echo htmlspecialchars(json_encode($connections)); ?>"></wchat-data>
-        <wchat-data id="kudo-items" value="<?php echo htmlspecialchars(json_encode($kudosArray)); ?>"></wchat-data>
-        <wchat-data id="kudos" value="<?php echo htmlspecialchars(json_encode($totalKudos)); ?>"></wchat-data>
         <wchat-data id="profile-picture" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
         <wchat-data id="banner-picture" value="<?php echo htmlspecialchars($bannerUrl); ?>"></wchat-data>
     </main>

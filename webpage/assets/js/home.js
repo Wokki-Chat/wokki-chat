@@ -1,5 +1,6 @@
 import { Sanitizer } from "./modules/global/sanitization.js";
 import { NotificationsManager } from "./modules/global/notifications.js";
+import Dev from "./modules/global/dev.js";
 function initHome() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -16,6 +17,9 @@ function initHome() {
     const users = JSON.parse(document.getElementById("users-list").getAttribute("value"));
     const usersList = users.map(user => ({ id: user.id, username: user.username, profile_picture: user.profile_picture, status: user.status, premium: user.premium, is_in_server: user.is_in_server }));
 
+    const dev = new Dev();
+    dev.init();
+    
     socket.on("user_updated", (user) => {
         if (!usersList.some(u => String(u.id) === user.id)) return;
         renderUser(user);
