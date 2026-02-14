@@ -1,12 +1,14 @@
 <?php
+session_start();
 include 'app/config.php';
 include 'global.php';
-$access_token = $_COOKIE['access_token'];
+include 'app/maintenance.php';
 
-if (!$access_token) {
-    header('Location: /login');
+if (!isset($_COOKIE['access_token'])) {
+    header('Location: login');
     exit;
 }
+$access_token = $_COOKIE['access_token'];
 
 $stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?");
 $stmt->bind_param("s", $access_token);
@@ -19,74 +21,34 @@ if ($result->num_rows > 0) {
 $stmt->close();
 
 if (!$user_id) {
-    header('Location: /login');
+    header('Location: login');
     exit;
 }
 
-$userStmt = $mysqli->prepare("SELECT username, premium, premium_expires_at, premium_know, profile_picture, status, bio FROM users WHERE id = ?");
-$userStmt->bind_param("i", $user_id);
-$userStmt->execute();
-$userResult = $userStmt->get_result();
-if ($userResult->num_rows > 0) {
-    $row = $userResult->fetch_assoc();
+$stmt = $mysqli->prepare("SELECT username, profile_picture, premium, premium_expires_at, premium_know FROM users WHERE id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($result->num_rows > 0) {
+    $row = $result->fetch_assoc();
     $username = $row['username'];
+    $profile_picture = $row['profile_picture'];
     $premium = $row['premium'];
     $premium_expires_at = $row['premium_expires_at'];
     $premium_know = $row['premium_know'];
-    $profile_picture = $row['profile_picture'];
-    $status = $row['status'];
-    $bio = $row['bio'];
-} else {
-    $username = "Unknown";
-    $premium = false;
-    $premium_expires_at = null;
-    $premium_know = false;
-    $profile_picture = "/uploads/profile-pictures/default-profile.png";
-    $status = null;
-    $bio = null;
 }
-$userStmt->close();
-
-$premium_popup = false;
-
-if ($premium && !$premium_know && ($premium_expires_at > time() || $premium_expires_at === null)) {
-    $premium_know = true;
-    $stmt = $mysqli->prepare("UPDATE users SET premium_know = ? WHERE id = ?");
-    $stmt->bind_param("ii", $premium_know, $user_id);
-    $stmt->execute();
-    $stmt->close();
-
-    $premium_popup = true;
-}
-
-$premium_active = $premium && ($premium_expires_at > time() || $premium_expires_at === null);
-
-function formatPremiumExpiration($timestamp) {
-    if ($timestamp === null) {
-        return "never";
-    }
-
-    if (!is_numeric($timestamp)) {
-        $timestamp = strtotime($timestamp);
-    }
-    
-    $now = time();
-    $diff = $timestamp - $now;
-    
-    if ($diff <= 0) {
-        return "0 days";
-    }
-    
-    $days = ceil($diff / 86400);
-    
-    return $days . " days";
-}
+$stmt->close();
 
 $serverStmt = $mysqli->prepare("
     SELECT s.*
     FROM servers s
     INNER JOIN server_members sm ON sm.server_id = s.id
     WHERE sm.user_id = ?
+    ORDER BY
+        CASE WHEN sm.position IS NULL THEN 1 ELSE 0 END,
+        sm.position DESC,
+        sm.joined_at DESC,
+        sm.id ASC
 ");
 $serverStmt->bind_param("i", $user_id);
 $serverStmt->execute();
@@ -94,8 +56,8 @@ $serverResult = $serverStmt->get_result();
 $serverStmt->close();
 
 $friendsStmt = $mysqli->prepare("
-    SELECT u.id, u.username, u.profile_picture, u.status, u.premium, u.premium_expires_at, u.bio,
-           'individual' as contact_type, NULL as contact_id, NULL as contact_name,
+    SELECT u.id, u.username, u.profile_picture, u.status, u.premium,
+           'individual' as contact_type, NULL as contact_id,
            c.last_message_sent
     FROM contact_users cu1
     JOIN contact_users cu2 ON cu1.contact_id = cu2.contact_id AND cu2.user_id != cu1.user_id
@@ -118,8 +80,7 @@ while ($row = $friendsResult->fetch_assoc()) {
         'username' => $row['username'],
         'profile_picture' => $row['profile_picture'],
         'status' => $row['status'], 
-        'premium' => $row['premium'] && ($row['premium_expires_at'] > time() || $row['premium_expires_at'] === null),
-        'bio' => $row['bio'],
+        'premium' => $row['premium'],
         'contact_type' => 'individual',
         'is_group' => false,
         'last_message_sent' => $row['last_message_sent']
@@ -165,203 +126,77 @@ usort($friendsList, function($a, $b) {
     return ($b['last_message_sent'] ?? 0) <=> ($a['last_message_sent'] ?? 0);
 });
 
-$friendsList[] = [
-    'id' => $user_id,
-    'username' => $username,
-    'profile_picture' => $profile_picture,
-    'status' => $status, 
-    'bio' => $bio,
-    'contact_type' => 'self'
-];
+$premium_popup = false;
 
-$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$segments = explode('/', trim($path, '/'));
-
-$dm_name = null;
-if (isset($segments[0]) && $segments[0] === 'dm' && !empty($segments[1])) {
-    $dm_name = ltrim(urldecode($segments[1]), '@');
-}
-
-if (!$dm_name) {
-    header('Location: /home');
-    exit;
-}
-
-$is_group = false;
-$dm_id = null;
-$contact_id = null;
-
-$userLookupStmt = $mysqli->prepare("SELECT id FROM users WHERE username = ?");
-$userLookupStmt->bind_param("s", $dm_name);
-$userLookupStmt->execute();
-$userLookupResult = $userLookupStmt->get_result();
-
-if ($userLookupResult->num_rows > 0) {
-    $userLookupRow = $userLookupResult->fetch_assoc();
-    $dm_id = $userLookupRow['id'];
-    $is_group = false;
-} else {
-    $groupLookupStmt = $mysqli->prepare("
-        SELECT c.contact_id
-        FROM contacts c
-        JOIN contact_users cu ON cu.contact_id = c.contact_id
-        WHERE c.contact_name = ? AND cu.user_id = ?
-    ");
-    $groupLookupStmt->bind_param("si", $dm_name, $user_id);
-    $groupLookupStmt->execute();
-    $groupLookupResult = $groupLookupStmt->get_result();
-    
-    if ($groupLookupResult->num_rows > 0) {
-        $groupLookupRow = $groupLookupResult->fetch_assoc();
-        $contact_id = $groupLookupRow['contact_id'];
-        $is_group = true;
-    }
-    
-    $groupLookupStmt->close();
-}
-
-$userLookupStmt->close();
-
-if (!$is_group && !$dm_id) {
-    header('Location: /home');
-    exit;
-}
-
-if (!$is_group) {
-    if ($dm_id === $user_id) {
-        header('Location: /home');
-        exit;
-    }
-
-    $found = false;
-    foreach ($friendsList as $friend) {
-        if ($friend['contact_type'] === 'individual' && $friend['id'] === $dm_id) {
-            $found = true;
-            break;
-        }
-    }
-
-    if (!$found) {
-        header('Location: /home');
-        exit;
-    }
-
-    $contactStmt = $mysqli->prepare("
-        SELECT cu1.contact_id
-        FROM contact_users cu1
-        JOIN contact_users cu2 ON cu1.contact_id = cu2.contact_id
-        LEFT JOIN contact_requests cr ON cu1.contact_id = cr.contact_id
-        WHERE cu1.user_id = ? 
-        AND cu2.user_id = ? 
-        AND cr.contact_id IS NULL
-        AND (SELECT COUNT(*) FROM contact_users WHERE contact_id = cu1.contact_id) = 2
-        LIMIT 1
-    ");
-    $contactStmt->bind_param("ii", $user_id, $dm_id);
-    $contactStmt->execute();
-    $contactResult = $contactStmt->get_result();
-
-    if ($contactResult->num_rows > 0) {
-        $contactRow = $contactResult->fetch_assoc();
-        $contact_id = $contactRow['contact_id'];
-    } else {
-        header('Location: /home');
-        exit;
-    }
-    $contactStmt->close();
-}
-
-function getMembersCount($mysqli, $contact_id) {
-    $stmt = $mysqli->prepare("
-        SELECT COUNT(*) as members_count
-        FROM contact_users
-        WHERE contact_id = ?
-    ");
-    $stmt->bind_param("s", $contact_id);
+if ($premium && !$premium_know && ($premium_expires_at > time() || $premium_expires_at === null)) {
+    $premium_know = true;
+    $stmt = $mysqli->prepare("UPDATE users SET premium_know = ? WHERE id = ?");
+    $stmt->bind_param("ii", $premium_know, $user_id);
     $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
     $stmt->close();
-    return $row['members_count'];
+    $premium_popup = true;
 }
 
-if ($is_group) {
-    $groupInfoStmt = $mysqli->prepare("SELECT contact_name, contact_picture FROM contacts WHERE contact_id = ?");
-    $groupInfoStmt->bind_param("s", $contact_id);
-    $groupInfoStmt->execute();
-    $groupInfoResult = $groupInfoStmt->get_result();
-    
-    $dm_info = null;
-    $dm_tags = [];
-    
-    if ($groupInfoResult->num_rows > 0) {
-        $groupRow = $groupInfoResult->fetch_assoc();
-        $dm_info = [
-            'username' => $groupRow['contact_name'],
-            'profile_picture' => $groupRow['contact_picture'],
-            'status' => null,
-            'premium' => false,
-            'premium_expires_at' => null,
-            'bio' => null,
-            'created_at' => null,
-            'is_group' => true,
-            'type' => 'group',
-            'id' => null,
-            'members_count' => getMembersCount($mysqli, $contact_id)
-        ];
+$premium_active = $premium && ($premium_expires_at > time() || $premium_expires_at === null);
+
+function formatPremiumExpiration($timestamp) {
+    if ($timestamp === null) {
+        return "never";
     }
-    
-    $groupInfoStmt->close();
-} else {
-    $dm_info_stmt = $mysqli->prepare("SELECT u.username, u.profile_picture, u.status, u.premium, u.premium_expires_at, u.bio, u.created_at, t.tag_name, t.tag_icon, u.id
-        FROM users u
-        LEFT JOIN tags t ON t.user_id = u.id
-        WHERE u.id = ?");
-    $dm_info_stmt->bind_param("i", $dm_id);
-    $dm_info_stmt->execute();
-    $dm_info_result = $dm_info_stmt->get_result();
-
-    $dm_info = $dm_info_result->fetch_assoc();
-    $dm_tags = [];
-
-    if ($dm_info) {
-        $dm_info['is_group'] = false;
-        $dm_info['type'] = 'individual';
-        $dm_info['members_count'] = null;
-        $dm_info_result->data_seek(0);
-        while ($row = $dm_info_result->fetch_assoc()) {
-            if ($row['tag_name']) {
-                $dm_tags[] = [
-                    'tag_name' => $row['tag_name'],
-                    'tag_icon' => $row['tag_icon']
-                ];
-            }
-        }
+    if (!is_numeric($timestamp)) {
+        $timestamp = strtotime($timestamp);
     }
-
-    $dm_info_result->free();
-    $dm_info_stmt->close();
+    $now = time();
+    $diff = $timestamp - $now;
+    if ($diff <= 0) {
+        return "0 days";
+    }
+    $days = ceil($diff / 86400);
+    return $days . " days";
 }
 
-setcookie(
-    'dm_active_user',
-    $dm_name,
-    time() + 60 * 60 * 24 * 30,
-    '/',
-    '',
-    true,
-    true
-);
+$_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
 
+$kudosStmt = $mysqli->prepare("SELECT SUM(kudo_amount) AS total_kudos FROM Kudos WHERE user_id = ?");
+$kudosStmt->bind_param("i", $user_id);
+$kudosStmt->execute();
+$kudosResult = $kudosStmt->get_result();
+$row = $kudosResult->fetch_assoc();
+$totalKudos = $row['total_kudos'] ?? 0;
+$kudosStmt->close();
+
+$kudosJson = file_get_contents('app/assets/kudos/items.json');
+$kudosArray = json_decode($kudosJson, true);
+
+$kudosHtml = '';
+if (is_array($kudosArray)) {
+    foreach ($kudosArray as $index => $kudo) {
+        $kudosHtml .= '
+        <div class="kudos-item" data-id="' . $kudo['id'] . '" id="kudos-item">
+            <div class="kudos-item-image">
+                <img draggable="false" src="' . $kudo['image'] . '" alt="' . $kudo['name'] . '" />
+                ' . ($kudo['extra_message'] !== "" ? '<p class="kudos-item-extra-message">' . $kudo['extra_message'] . '</p>' : '') . '
+            </div>
+            <div class="kudos-item-name">
+                ' . $kudo['name'] . '
+            </div>
+            <div class="kudos-item-amount">
+                <span class="material-symbols-rounded">poker_chip</span><p class="kudos-item-amount-value">' . number_format($kudo['price'], 0, '.', ',') . '</p>
+            </div>
+            <button class="kudos-item-view-details-button button-primary-filled">View Details</button>
+        </div>
+        ';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" class="<?php echo $theme ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wokki Chat - <?php echo $dm_info['username'] ?></title>
+    <title>Wokki Chat - Kudos</title>
     <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="/assets/styles/main.css">
+    <link rel="stylesheet" href="assets/styles/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/dark.min.css" />
@@ -376,7 +211,7 @@ setcookie(
     <div class="server-bar">
         <div class="server-bar-dms">
             <a class="server-bar-item active" id="server-bar-item-home" href="/home">
-                <img src="/assets/images/monochrome-logo-purple-background.png">
+                <img src="assets/images/monochrome-logo-purple-background.png">
             </a>
         </div>
         <div class="divider"></div>
@@ -410,7 +245,7 @@ setcookie(
                     <span class="material-symbols-rounded channel-bar-channel-icon">home</span>
                     <p class="channel-bar-channel-name">Home</p>
                 </a>
-                <a class="contact-tab" href="/kudos">
+                <a class="contact-tab active" href="/kudos">
                     <span class="material-symbols-rounded channel-bar-channel-icon">poker_chip</span>
                     <p class="channel-bar-channel-name">Kudos <span class="new-tag">NEW!</span></p>
                 </a>
@@ -430,7 +265,7 @@ setcookie(
                     }
 
                     echo '
-                    <a class="contact-tab '.($friend['username'] == $dm_name ? 'active' : '').'" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
+                    <a class="contact-tab" data-user-id="'.$friend['id'].'" href="/dm/@'.$encodedUsername.'">
                         <div class="self-info-profile-status" data-user-id="'.$friend['id'].'">
                             <img class="self-info-profile-picture" src="'.$friend['profile_picture'].'" />
                             '.$statusIcon.'
@@ -444,58 +279,32 @@ setcookie(
                     </a>';
                 }
                 ?>
-
             </div>
         </div>
-
 
         <div class="top-bar">
             <div class="top-bar-left">
                 <span class="material-symbols-rounded top-bar-menu" id="top-bar-menu">menu</span>
-                <div class="top-bar-item dm_with">
-                    <img draggable="false" src="<?php echo $dm_info['profile_picture']; ?>">
-                    <p><?php echo $dm_info['username']; ?></p>
-                </div>
             </div>
         </div>
 
-        <div class="main-content">
-            <div class="message-container" id="message-container"></div>
-            <div class="typing-indicator"></div>
-            <div class="input-container-2">
-                <div class="file-uploads">
-                    <div class="file-upload-container"></div>
+        <div class="main-content home-content">
+            <?php echo $maintenanceHtml; ?>
+            <div class="kudos-container">
+                <p class="settings-page-subtitle">You can earn and spend Kudos by sending messages and buying items from the shop.</p>
+                <div class="kudos-amount-container">
+                    <p class="kudos-amount-title">Kudos</p>
+                    <div class="kudos-amount"><span class="material-symbols-rounded">poker_chip</span><p class="kudos-amount-value"><?php echo number_format($totalKudos, 0, '.', ','); ?></p></div>
                 </div>
-                <div class="textarea-container">
-                    <div class="message-input-wrapper">
-                        <div class="message-input-bg" id="message-input-bg"></div>
-                        <div class="message-input" id="message-input" data-placeholder="Type a message..." contenteditable="true"></div>
-                    </div>
-                    <div class="options">
-                        <div class="option">
-                            <span class="material-symbols-rounded option-icon" onclick="document.getElementById('file-input').click();">attach_file</span>
-                            <input type="file" id="file-input" accept="image/jpeg,image/png,image/gif,text/plain,audio/mpeg,audio/wav,video/mp4,image/webp,application/pdf" style="display: none;" multiple/>
-                        </div>
-                        <div class="option" id="emoji-option">
-                            <span class="material-symbols-rounded option-icon">sentiment_satisfied</span>
-                        </div>
-                    </div>
+                <h3>Shop</h3>
+                <div class="kudos-items-container">
+                    <?php echo $kudosHtml; ?>
                 </div>
-            </div>
-            <div class="max-message-length">
-                <p class="max-characters-left"></p>
             </div>
         </div>
 
         <div class="users">
-            <?php if ($dm_info['is_group']): ?>
-            <div class="group-users">
-                <p class="users-title">Members - <?php echo $dm_info['members_count']; ?></p>
-                <div class="group-users-content">
-
-                </div>
-            </div>
-            <?php endif; ?>
+            
         </div>
 
         <div class="self-info">
@@ -535,14 +344,12 @@ setcookie(
             </div>
         <?php endif; ?>
 
-        <wchat-allowed-scripts value="dm.js;"></wchat-allowed-scripts>
+        <wchat-allowed-scripts value="kudos.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
         <wchat-data id="users-list" value="<?php echo htmlspecialchars(json_encode($friendsList)); ?>"></wchat-data>
-        <wchat-data id="contact-id" value="<?php echo htmlspecialchars($contact_id); ?>"></wchat-data>
-        <wchat-data id="premium" value="<?php echo htmlspecialchars(json_encode($premium_active)); ?>"></wchat-data>
-        <wchat-data id="contact-type" value="<?php echo htmlspecialchars($dm_info['type']); ?>"></wchat-data>
-        <wchat-data id="contact-user-id" value="<?php echo htmlspecialchars($dm_info['id']); ?>"></wchat-data>
+        <wchat-data id="kudo-items" value="<?php echo htmlspecialchars(json_encode($kudosArray)); ?>"></wchat-data>
+        <wchat-data id="kudos" value="<?php echo htmlspecialchars($totalKudos); ?>"></wchat-data>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
@@ -567,7 +374,7 @@ setcookie(
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/assets/js/notifiers.js"></script>
     <script src="/assets/js/globalFunctions.js"></script>
-    <script src="/assets/js/dm.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
+    <script src="/assets/js/kudos.js" type="module"></script>
 </body>
 </html>
