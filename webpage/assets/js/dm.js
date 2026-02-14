@@ -6,6 +6,7 @@ import { StaticProfileManager } from "./modules/users/profiles.js";
 import { UserRenderer } from "./modules/users/profiles.js";
 import { NotificationsManager } from "./modules/global/notifications.js";
 import ReactionRenderer from "./modules/servers/reactions.js";
+import Dev from "./modules/global/dev.js";
 function initDm() {
     const el = document.querySelector('wchat-allowed-scripts');
     const scripts = el.getAttribute('value').split(';');
@@ -47,6 +48,9 @@ function initDm() {
     const reactionRenderer = new ReactionRenderer({ user_id: user_id, access_token: access_token, socket: socket, contact_id: contact_id });
 
     const notificationsManager = new NotificationsManager({ access_token: access_token, socket: socket, contact_id: contact_id });
+
+    const dev = new Dev();
+    dev.init();
 
 	const textareaEmojiOptions = document.getElementById("emoji-option");
 	textareaEmojiOptions.addEventListener("click", async () => {
@@ -178,6 +182,32 @@ function initDm() {
     }
 
     if (textarea) {
+		document.addEventListener("keydown", (e) => {
+			if (e.target.tagName === "BODY" &&
+				!e.target.closest("div[contenteditable]") &&
+				e.target.tagName !== "INPUT" &&
+				e.target.tagName !== "TEXTAREA"
+			) {
+				if (e.ctrlKey || e.metaKey || e.altKey || 
+					e.key.length > 1 && e.key !== 'Enter' && e.key !== ' ') {
+					return;
+				}
+				
+				e.preventDefault();
+				textarea.focus();
+				
+				const selection = window.getSelection();
+				const range = selection.getRangeAt(0);
+				const textNode = document.createTextNode(e.key);
+				range.insertNode(textNode);
+				range.setStartAfter(textNode);
+				range.setEndAfter(textNode);
+				selection.removeAllRanges();
+				selection.addRange(range);
+				
+				textarea.dispatchEvent(new Event('input', { bubbles: true }));
+			}
+		});
         const maxHeight = 250;
         const warningThreshold = 1000;
         const maxChars = premium ? 10000 : 3000;

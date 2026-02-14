@@ -1,3 +1,0 @@
-# Root packages
-discord.py
-python-dotenv

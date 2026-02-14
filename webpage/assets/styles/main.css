@@ -2567,11 +2567,13 @@ code {
 }
 
 .settings-appearance-container,
-.kudos-container,
 .logs-container {
     margin-top: 50px;
 }
 
+.kudos-container {
+    width: calc(100% - 30px);
+}
 
 .profile-container {
     flex-direction: row;
@@ -3724,10 +3726,11 @@ ul {
     align-items: center;
     overflow: hidden;
     position: relative;
-    border-bottom: 1.5px solid var(--clr-popup-a30);
+    border-bottom: 1.5px solid var(--clr-popup-a10);
 }
 
-.kudos-item-extra-message {
+.kudos-item-extra-message,
+.new-tag {
     position: absolute;
     top: 10px;
     left: 10px;
@@ -3739,6 +3742,17 @@ ul {
     color: var(--clr-text-a10);
     user-select: none;
     margin: 0px;
+    border: 1px solid var(--clr-popup-a50);
+}
+
+.new-tag {
+    top: 50%;
+    right: 5px;
+    left: unset;
+    transform: translateY(-50%);
+    background-color: var(--clr-primary-a0);
+    color: var(--clr-text-a0);
+    border: 1px solid var(--clr-primary-a50);
 }
 
 .kudos-item-name {
