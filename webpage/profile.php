@@ -246,9 +246,9 @@ function formatPremiumExpiration($timestamp) {
         <wchat-data id="requested-user-id" value="<?php echo htmlspecialchars($profile_user_id); ?>"></wchat-data>
         <wchat-data id="users-list" value="<?php echo htmlspecialchars(json_encode($friendsList)); ?>"></wchat-data>
         <wchat-data id="last-page" value="<?php 
-            $lastPage = $_SESSION['last_page'];
+            $lastPage = $_SESSION['last_page'] ?? '/home';
             if ($lastPage === null || $lastPage === '') {
-                echo htmlspecialchars('/home');
+                echo '/home';
             } else {
                 echo htmlspecialchars($lastPage);
             }

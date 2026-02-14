@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Feb 13, 2026 at 02:07 PM
+-- Generation Time: Feb 14, 2026 at 01:39 PM
 -- Server version: 10.11.14-MariaDB-0+deb12u2
 -- PHP Version: 8.2.29
 
@@ -296,14 +296,13 @@ CREATE TABLE `message_reactions` (
 --
 
 CREATE TABLE `notifications` (
-  `notification_id` char(36) NOT NULL,
-  `user_id` int(11) DEFAULT NULL,
-  `notification_read` tinyint(1) DEFAULT 0,
-  `server_id` int(11) DEFAULT NULL,
-  `channel_id` int(11) DEFAULT NULL,
-  `dm_id` int(11) DEFAULT NULL,
-  `created_at` datetime(6) DEFAULT NULL
-) ;
+  `id` char(36) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `server_id` char(36) DEFAULT NULL,
+  `channel_id` char(36) DEFAULT NULL,
+  `contact_id` char(36) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -413,7 +412,7 @@ CREATE TABLE `tags` (
 
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
-  `username` varchar(255) NOT NULL,
+  `username` text NOT NULL,
   `password_hash` text NOT NULL,
   `email` varchar(255) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
@@ -504,7 +503,8 @@ ALTER TABLE `bots`
 -- Indexes for table `bot_commands`
 --
 ALTER TABLE `bot_commands`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_command_per_bot` (`bot_id`,`command`) USING HASH;
 
 --
 -- Indexes for table `channels`
@@ -610,8 +610,7 @@ ALTER TABLE `message_reactions`
 -- Indexes for table `notifications`
 --
 ALTER TABLE `notifications`
-  ADD PRIMARY KEY (`notification_id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `profile_widgets`
@@ -815,11 +814,6 @@ ALTER TABLE `friends`
   ADD CONSTRAINT `fk_friend` FOREIGN KEY (`friend_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
---
--- Constraints for table `notifications`
---
-ALTER TABLE `notifications`
-  ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `user_tokens`

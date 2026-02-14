@@ -64,46 +64,6 @@ async def is_user_in_server(cur, user_id, server_id):
     server = await cur.fetchone()
     await addMessageToLogs(f"User {user_id} in server {server_id}: {bool(server)}", "INFO")
     return bool(server)
-
-async def send_server_notifications(cur, server_id, channel_id):
-    query = """
-        SELECT user_id FROM server_members WHERE server_id = %s
-    """
-    
-    await cur.execute(query, (server_id,))
-    result = await cur.fetchall()
-
-    if not result:
-        return
-
-    members = [row['user_id'] if isinstance(row, dict) else row[0] for row in result]
-
-    for user_id in members:
-        if not user_id:
-            continue
-        
-        user_sids = await get_sids_for_user(user_id)
-        notification_id = str(uuid.uuid4())
-        timestamp = datetime.now(timezone.utc)
-
-        await cur.execute(
-            "INSERT INTO notifications (notification_id, user_id, server_id, channel_id, created_at) VALUES (%s, %s, %s, %s, %s)",
-            (notification_id, user_id, server_id, channel_id, timestamp)
-        )
-        
-        if user_sids:
-            for sid in user_sids:
-                await sio_instance.sio.emit(
-                    'server_notification',
-                    {
-                        'server_id': server_id,
-                        'channel_id': channel_id,
-                        'notification_id': notification_id,
-                        'timestamp': timestamp.isoformat().replace('+00:00', 'Z')
-                    },
-                    to=sid
-                )
-                await addMessageToLogs(f"Server notification sent to user {user_id} in server {server_id}", "INFO")
                 
 async def get_member_ids_from_server(cur, server_id):
     await cur.execute(
