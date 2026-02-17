@@ -52,6 +52,7 @@ function newIdeaModal() {
             <div class="modal-body">
                 <form id="new-idea-form" class="new-idea-form">
                     <label for="idea-image">Idea Image:</label>
+                    <span class="upload-description">Image is optional but helps the idea stand out. Image dimensions must be at least 50x50px.</span>
                     <label for="idea-image" id="icon-preview" class="icon-preview">
                         <span class="material-symbols-rounded upload-icon">add</span>
                     </label>
@@ -106,8 +107,9 @@ function newIdeaModal() {
 
         const formData = new FormData();
         formData.append("title", title);
-        formData.append("image", ideaImageFile);
         formData.append("description", description);
+
+        if (ideaImageFile) formData.append("image", ideaImageFile);
 
         fetch("/app/add_idea", {
             method: "POST",
@@ -123,6 +125,7 @@ function newIdeaModal() {
         })
         .finally(() => modal.remove());
     });
+
 }
 
 function formatDate(created_at) {
@@ -164,23 +167,48 @@ function renderAssignees(assignees) {
 }
 
 function renderComment(comment) {
-    const isDeveloperReply = comment.body.startsWith("### 👨‍💻 Developer Response");
-    const bodyLines = comment.body.split('\n');
-    const displayBody = isDeveloperReply ? bodyLines.slice(3).join('\n').replace(/^---\n\n/, '') : comment.body;
+    const isUserResponse = comment.body.startsWith("### User Response");
+    const isDeveloperReply = !isUserResponse;
 
-    return `
-        <div class="idea-comment ${isDeveloperReply ? 'idea-comment-developer' : ''}">
-            <div class="idea-comment-header">
-                <img draggable="false" class="idea-comment-avatar" src="${comment.github_avatar}" alt="${comment.github_username}">
-                <div class="idea-comment-meta">
-                    <span class="idea-comment-username">${comment.github_username}</span>
-                    ${isDeveloperReply ? '<span class="idea-comment-dev-badge">Developer</span>' : ''}
-                    <span class="idea-comment-date">${formatDate(comment.created_at)}</span>
+    let displayBody = comment.body;
+
+    if (isDeveloperReply) {
+        const userMatch = comment.body.match(/from \*\*(.+?)\*\*/);
+        const imgMatch = comment.body.match(/!\[.*?\]\((.*?)\)/);
+
+        const github_username = userMatch ? userMatch[1] : comment.github_username || 'Developer';
+        const github_avatar = imgMatch ? imgMatch[1] : comment.github_avatar || 'https://via.placeholder.com/40';
+
+        const bodyLines = comment.body.split('\n');
+        displayBody = bodyLines.slice(3).join('\n').replace(/^---\n\n/, '');
+
+        return `
+            <div class="idea-comment idea-comment-developer">
+                <div class="idea-comment-header">
+                    <img draggable="false" class="idea-comment-avatar" src="${github_avatar}" alt="${github_username}">
+                    <div class="idea-comment-meta">
+                        <span class="idea-comment-username">${github_username}</span>
+                        <span class="idea-comment-dev-badge">Developer</span>
+                        <span class="idea-comment-date">${formatDate(comment.created_at)}</span>
+                    </div>
                 </div>
+                <p class="idea-comment-body">${escapeHtml(displayBody)}</p>
             </div>
-            <p class="idea-comment-body">${escapeHtml(displayBody)}</p>
-        </div>
-    `;
+        `;
+    } else {
+        return `
+            <div class="idea-comment">
+                <div class="idea-comment-header">
+                    <img draggable="false" class="idea-comment-avatar" src="${comment.github_avatar}" alt="${comment.github_username}">
+                    <div class="idea-comment-meta">
+                        <span class="idea-comment-username">${comment.github_username}</span>
+                        <span class="idea-comment-date">${formatDate(comment.created_at)}</span>
+                    </div>
+                </div>
+                <p class="idea-comment-body">${escapeHtml(displayBody)}</p>
+            </div>
+        `;
+    }
 }
 
 function escapeHtml(str) {
@@ -204,6 +232,16 @@ async function showIdea(id) {
     if (!idea) return;
 
     window.history.replaceState({}, '', `?idea=${id}`);
+
+    const canReply = is_developer === 'true' || user_id === idea.user_id;
+
+    const replyFormHtml = canReply ? `
+    <div class="idea-reply-form">
+        <textarea id="reply-text" class="input-text-dark-bg" placeholder="${user_id === idea.user_id && is_developer !== 'true' ? 'Write a response...' : 'Write a developer response...'}" maxlength="2000"></textarea>
+        <button class="button-primary-filled" id="reply-btn">
+            <span class="material-symbols-rounded">send</span>Reply
+        </button>
+    </div>` : '';
 
     const initialAssignees = idea.github_assignees || [];
     const assigneesHtml = initialAssignees.length > 0 ? renderAssignees(initialAssignees) : '<div id="idea-assignees-section"></div>';
@@ -247,13 +285,6 @@ async function showIdea(id) {
                             <span class="material-symbols-rounded spinning">progress_activity</span>
                         </div>
                     </div>
-                    ${is_developer === 'true' ? `
-                    <div class="idea-reply-form">
-                        <textarea id="reply-text" class="input-text-dark-bg" placeholder="Write a developer response..." maxlength="2000"></textarea>
-                        <button class="button-primary-filled" id="reply-btn">
-                            <span class="material-symbols-rounded">send</span>Reply
-                        </button>
-                    </div>` : ''}
                 </div>
             </div>
         </div>
@@ -279,6 +310,8 @@ async function showIdea(id) {
         upvoteButton.innerHTML = `<span class="material-symbols-rounded">arrow_shape_up</span>${idea.votes}`;
         upvoteButton.classList.add("done");
     }
+
+    document.querySelector(".idea-comments-section").insertAdjacentHTML("beforeend", replyFormHtml);
 
     const replyBtn = modal.querySelector("#reply-btn");
     if (replyBtn) {

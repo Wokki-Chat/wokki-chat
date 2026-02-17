@@ -726,12 +726,6 @@ h2 {
     border-radius: 10px;
     background-color: var(--clr-popup-a10);
 }
-
-.idea-comment-developer {
-    background-color: transparent;
-    border: 1px solid var(--clr-primary-a0);
-}
-
 .idea-comment-header {
     display: flex;
     flex-direction: row;
@@ -816,4 +810,10 @@ h2 {
 .idea-reply-form .button-primary-filled:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.upload-description {
+    margin: 0px;
+    font-size: 14px;
+    color: var(--clr-text-a30);
 }

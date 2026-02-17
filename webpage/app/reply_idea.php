@@ -69,9 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_row = $result->fetch_assoc();
     $stmt->close();
 
-    if (!$user_row || !isset($user_row['is_developer']) || $user_row['is_developer'] != 1) {
+    if (!$user_row) {
         http_response_code(403);
-        echo json_encode(['status' => 'error', 'description' => 'Forbidden: User is not a developer', 'return_code' => 43]);
+        echo json_encode(['status' => 'error', 'description' => 'Forbidden: User not found', 'return_code' => 43]);
         exit;
     }
 
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $stmt = $mysqli->prepare("SELECT github_issue_number FROM ideas WHERE id = ?");
+    $stmt = $mysqli->prepare("SELECT github_issue_number, user_id FROM ideas WHERE id = ?");
     $stmt->bind_param("s", $idea_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -105,13 +105,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $username = $user_row['username'];
-    $profile_picture = $user_row['profile_picture'] ?? '';
+    $profile_picture = !empty($user_row['profile_picture']) ? "https://chat.wokki20.nl" . $user_row['profile_picture'] : '';
 
-    $comment_body = "### 👨‍💻 Developer Response from **{$username}**\n";
-    if ($profile_picture) {
-        $comment_body .= "![{$username}]({$profile_picture})\n\n";
+    $is_idea_author = ($idea_row['user_id'] == $user_id);
+
+    if ($is_idea_author && $user_row['is_developer'] != 1) {
+        $comment_body = "### User Response from **{$username}**\n";
+        if ($profile_picture) {
+            $comment_body .= "![{$username}]({$profile_picture})\n\n";
+        }
+        $comment_body .= "---\n\n" . $reply_text;
+    } else {
+        if (!isset($user_row['is_developer']) || $user_row['is_developer'] != 1) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'description' => 'Forbidden: User is not a developer', 'return_code' => 43]);
+            exit;
+        }
+        $comment_body = "### 👨‍💻 Developer Response from **{$username}**\n";
+        if ($profile_picture) {
+            $comment_body .= "![{$username}]({$profile_picture})\n\n";
+        }
+        $comment_body .= "---\n\n" . $reply_text;
     }
-    $comment_body .= "---\n\n" . $reply_text;
 
     $github = new GitHubService();
     $success = $github->createComment((int)$idea_row['github_issue_number'], $comment_body);
