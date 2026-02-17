@@ -56,7 +56,7 @@ function newIdeaModal() {
                     <label for="idea-image" id="icon-preview" class="icon-preview">
                         <span class="material-symbols-rounded upload-icon">add</span>
                     </label>
-                    <input required type="file" id="idea-image" name="idea-image" accept="image/jpeg,image/png,image/gif" class="input-file-dark-bg file-input" style="display: none;">
+                    <input type="file" id="idea-image" name="idea-image" accept="image/jpeg,image/png,image/gif" class="input-file-dark-bg file-input" style="display: none;">
                     <label for="title" style="margin-top: 15px;">Title:</label>
                     <input type="text" id="title" name="title" class="input-text-dark-bg w270" required maxlength="50" placeholder="Title (up to 50 characters)">
                     <label for="description" style="margin-top: 15px;">Description:</label>
