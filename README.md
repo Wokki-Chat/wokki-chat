@@ -81,13 +81,14 @@ After creating your first account:
 
 ## 🔌 Socket.IO Configuration
 
-By default, the client connects to **Ignis** worker:
+By default, the client connects to the **proxy**:
 ```javascript
-http://localhost:5001  // Ignis (default)
+http://localhost:5000  // Proxy
 ```
 
 You can change the worker in your frontend code:
 ```javascript
+http://localhost:5001  // Ignis
 http://localhost:5002  // Aqua
 http://localhost:5003  // Terra
 http://localhost:5004  // Ventus
