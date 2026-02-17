@@ -7,6 +7,8 @@ function initBotInfo() {
 
     let profilePictureChanged = false;
     let newProfilePictureFile = null;
+    let originalBotName = null;
+    let originalBotBio = null;
 
     let wrapper = profilePicturePreview.parentElement;
 
@@ -17,43 +19,43 @@ function initBotInfo() {
     document.body.appendChild(fileInput);
 
     profilePicturePreview.addEventListener("click", () => {
-    fileInput.click();
+        fileInput.click();
     });
 
     fileInput.addEventListener("change", () => {
-    const file = fileInput.files[0];
-    if (!file) {
-        profilePicturePreview.src = profile_picture;
-        return;
-    }
-
-    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
-
-    if (!allowedTypes.includes(file.type)) {
-        Toastify({
-        text: "File type not allowed. Please upload a valid image file.",
-        className: "copy-code-failed",
-        duration: 3000,
-        close: true,
-        gravity: "bottom",
-        position: "right",
-        style: {
-            background: "var(--clr-error-a0)",
-            boxShadow: "none",
-            borderRadius: "12px"
+        const file = fileInput.files[0];
+        if (!file) {
+            profilePicturePreview.src = profile_picture;
+            return;
         }
-        }).showToast();
-        return;
-    }
 
-    const reader = new FileReader();
-    reader.onload = e => {
-        profilePicturePreview.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+        const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
 
-    newProfilePictureFile = file;
-    profilePictureChanged = true;
+        if (!allowedTypes.includes(file.type)) {
+            Toastify({
+            text: "File type not allowed. Please upload a valid image file.",
+            className: "copy-code-failed",
+            duration: 3000,
+            close: true,
+            gravity: "bottom",
+            position: "right",
+            style: {
+                background: "var(--clr-error-a0)",
+                boxShadow: "none",
+                borderRadius: "12px"
+            }
+            }).showToast();
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = e => {
+            profilePicturePreview.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        newProfilePictureFile = file;
+        profilePictureChanged = true;
     });
         
 
@@ -198,5 +200,9 @@ function initBotInfo() {
 
     });
 }
-
+if (typeof window.swup !== "undefined") {
+    window.swup.hooks.on('page:view', (visit) => {
+        initBotInfo();
+    });
+}
 initBotInfo();

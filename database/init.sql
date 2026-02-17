@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Feb 14, 2026 at 01:39 PM
+-- Generation Time: Feb 17, 2026 at 11:26 AM
 -- Server version: 10.11.14-MariaDB-0+deb12u2
 -- PHP Version: 8.2.29
 
@@ -196,7 +196,11 @@ CREATE TABLE `ideas` (
   `description` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `image_path` varchar(512) DEFAULT NULL,
-  `status` enum('voting','planned','implemented') DEFAULT 'voting'
+  `status` enum('voting','planned','implemented') DEFAULT 'voting',
+  `github_issue_number` int(11) DEFAULT NULL,
+  `github_issue_node_id` varchar(100) DEFAULT NULL,
+  `github_project_item_id` varchar(100) DEFAULT NULL,
+  `github_assignees` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`github_assignees`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -564,7 +568,8 @@ ALTER TABLE `friends`
 -- Indexes for table `ideas`
 --
 ALTER TABLE `ideas`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_ideas_github_issue_number` (`github_issue_number`);
 
 --
 -- Indexes for table `idea_votes`
@@ -813,7 +818,6 @@ ALTER TABLE `email_verification_codes`
 ALTER TABLE `friends`
   ADD CONSTRAINT `fk_friend` FOREIGN KEY (`friend_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
-
 
 --
 -- Constraints for table `user_tokens`

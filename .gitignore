@@ -3,6 +3,10 @@
 *.pyc
 *config.php
 
+*github_config.php
+
+*.pem
+
 livekit.yaml
 .cloudflared
 /webpage/connections/*

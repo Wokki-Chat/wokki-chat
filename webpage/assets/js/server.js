@@ -8,6 +8,7 @@ import { Mentions } from "./modules/users/mentions.js";
 import { CommandsManager } from "./modules/global/commands.js";
 import { NotificationsManager } from "./modules/global/notifications.js";
 import Dev from "./modules/global/dev.js";
+import * as jspt from "https://cdn.wokki20.nl/content/jspt-v2.1.0/jspt.module.js";
 function initServer() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -445,19 +446,12 @@ function initServer() {
 			console.error("Failed to send message:", resp.error);
 
 			if (resp.error?.includes("Rate limit exceeded")) {
-			Toastify({
-				text: "Please wait before sending your next message",
-				duration: 3000,
-				gravity: "bottom",
-				position: "right",
-				close: true,
-				stopOnFocus: true,
-				style: {
-					background: "var(--clr-popup-a20)",
-					borderRadius: "12px",
-					boxShadow: "none"
-				}
-			}).showToast();
+				jspt.makeToast({
+					message: "Please wait before sending your next message",
+					style: "default-error",
+					duration: 3000,
+					close_on_click: true
+				})
 			}
 		}
 	});
@@ -746,36 +740,24 @@ function initServer() {
 		})
 		.then(data => {
 			if (data.status === "success") {
-				Toastify({
-					text: "Category created!",
+				jspt.makeToast({
+					message: "Category created!",
+					style: "default",
 					duration: 3000,
-					gravity: "bottom",
-					position: "right",
-					close: true,
-					stopOnFocus: true,
-					style: {
-					background: "var(--clr-popup-a20)",
-					borderRadius: "12px",
-					boxShadow: "none"
-					}
-				}).showToast();
-
-				window.location.reload();
+					close_on_click: true
+				})
+				
+				if (typeof window.swup !== "undefined") {
+					window.swup.navigate(window.location.href, { history: 'replace', cache: { read: false, write: true }});
+				}
 
 			} else {
-				Toastify({
-					text: "Failed to create category. Please try again.",
+				jspt.makeToast({
+					message: "Failed to create category. Please try again later.",
+					style: "default-error",
 					duration: 5000,
-					gravity: "bottom",
-					position: "right",
-					close: true,
-					stopOnFocus: true,
-					style: {
-					background: "var(--clr-popup-a20)",  
-					borderRadius: "12px", 
-					boxShadow: "none"
-					}
-				}).showToast();
+					close_on_click: true
+				});
 			}
 		})
 		.catch(error => {
@@ -804,36 +786,23 @@ function initServer() {
 		})
 		.then(data => {
 			if (data.status === "success") {
-				Toastify({
-					text: "Channel created!",
+				jspt.makeToast({
+					message: "Channel created!",
+					style: "default",
 					duration: 3000,
-					gravity: "bottom",
-					position: "right",
-					close: true,
-					stopOnFocus: true,
-					style: {
-					background: "var(--clr-popup-a20)",   
-					borderRadius: "12px",     
-					boxShadow: "none"
-					}
-				}).showToast();
-
-				window.location.reload();
+					close_on_click: true
+				})
+				if (typeof window.swup !== "undefined") {
+					window.swup.navigate(window.location.href, { history: 'replace', cache: { read: false, write: true }});
+				}
 
 			} else {
-				Toastify({
-					text: "Failed to create channel. Please try again.",
+				jspt.makeToast({
+					message: "Failed to create channel. Please try again later.",
+					style: "default-error",
 					duration: 5000,
-					gravity: "bottom",
-					position: "right",
-					close: true,
-					stopOnFocus: true,
-					style: {
-					background: "var(--clr-popup-a20)",   
-					borderRadius: "12px", 
-					boxShadow: "none"
-					}
-				}).showToast();
+					close_on_click: true
+				})
 			}
 		})
 		.catch(error => {
@@ -907,35 +876,23 @@ function initServer() {
 		})
 		.then(data => {
 			if (data.status === "success") {
-				Toastify({
-					text: "You have left the server. ",
+				jspt.makeToast({
+					message: "You have left the server.",
+					style: "default",
 					duration: 3000,
-					gravity: "bottom",
-					position: "right",
-					close: true,
-					stopOnFocus: true,
-					style: {
-					background: "var(--clr-popup-a20)",
-					borderRadius: "12px",
-					boxShadow: "none"
-					}
-				}).showToast();
+					close_on_click: true
+				})
 
-				window.location.href = "/home";
+				if (typeof window.swup !== "undefined") {
+					window.swup.navigate("/home");
+				}
 			} else {
-				Toastify({
-					text: "Failed to leave server. Please try again.",
+				jspt.makeToast({
+					message: "Failed to leave server. Please try again later.",
+					style: "default-error",
 					duration: 5000,
-					gravity: "bottom",
-					position: "right",
-					close: true,
-					stopOnFocus: true,
-					style: {
-					background: "var(--clr-popup-a20)",
-					borderRadius: "12px",
-					boxShadow: "none"
-					}
-				}).showToast();
+					close_on_click: true
+				})
 			}
 		})
 		.catch(error => {
@@ -1072,24 +1029,22 @@ function initServer() {
 
 			const copyBtn = document.getElementById("copy-btn");
 			copyBtn.addEventListener("click", (e) => {
-			e.preventDefault();
-			navigator.clipboard.writeText(url).then(() => {
-				Toastify({
-				text: "Copied to clipboard",
-				duration: 5000,
-				gravity: "bottom",
-				position: "right",
-				close: true,
-				stopOnFocus: true,
-				style: {
-					background: "var(--clr-popup-a20)",
-					borderRadius: "12px",
-					boxShadow: "none"
-				}
-				}).showToast();
-			}).catch(err => {
-				console.error("Failed to copy: ", err);
-			});
+				e.preventDefault();
+				navigator.clipboard.writeText(url).then(() => {
+					jspt.makeToast({
+						message: "Invite link copied to clipboard",
+						style: "default",
+						duration: 5000,
+						close_on_click: true
+					})
+				}).catch(err => {
+					jspt.makeToast({
+						message: "Failed to copy invite link to clipboard",
+						style: "default-error",
+						duration: 5000,
+						close_on_click: true
+					})
+				});
 			});
 			
 			copyBtn.click();
@@ -1106,19 +1061,12 @@ function initServer() {
 				modal.remove();
 			});
 		} else {
-			Toastify({
-				text: "Failed to create invite. Please try again.",
+			jspt.makeToast({
+				message: "Failed to create invite link, please try again.",
+				style: "default-error",
 				duration: 5000,
-				gravity: "bottom",
-				position: "right",
-				close: true,
-				stopOnFocus: true,
-				style: {
-				background: "var(--clr-popup-a20)",
-				borderRadius: "12px",
-				boxShadow: "none"
-				}
-			}).showToast();
+				close_on_click: true
+			})
 		}
 	})
 	.catch(error => {
@@ -1240,7 +1188,7 @@ function initServer() {
 				otherChannelIndexes[id] = idx;
 			});
 
-			fetch('https://chat.wokki20.nl/app/edit_server', {
+			fetch('/app/edit_server', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/x-www-form-urlencoded',
@@ -1424,7 +1372,7 @@ function initServer() {
 				otherGroupIndexes[id] = idx;
 			});
 
-			fetch('https://chat.wokki20.nl/app/edit_server', {
+			fetch('/app/edit_server', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/x-www-form-urlencoded',
