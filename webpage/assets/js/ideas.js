@@ -179,8 +179,11 @@ function renderComment(comment) {
         const github_username = userMatch ? userMatch[1] : comment.github_username || 'Developer';
         const github_avatar = imgMatch ? imgMatch[1] : comment.github_avatar || 'https://via.placeholder.com/40';
 
-        const bodyLines = comment.body.split('\n');
-        displayBody = bodyLines.slice(3).join('\n').replace(/^---\n\n/, '');
+        displayBody = comment.body
+            .split('\n')
+            .filter(line => !line.startsWith('from **') && !line.startsWith('---') && !line.startsWith('!['))
+            .join('\n')
+            .trim();
 
         return `
             <div class="idea-comment idea-comment-developer">
@@ -196,6 +199,8 @@ function renderComment(comment) {
             </div>
         `;
     } else {
+        displayBody = displayBody.replace(/^### User Response.*\n?/, '').trim();
+
         return `
             <div class="idea-comment">
                 <div class="idea-comment-header">
