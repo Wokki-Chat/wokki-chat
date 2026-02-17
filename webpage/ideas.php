@@ -10,18 +10,26 @@ if (!isset($_COOKIE['access_token'])) {
     $logged_in = true;
 }
 
-if ($logged_in) {
-$access_token = $_COOKIE['access_token'];
+$username = null;
+$profile_picture = null;
+$access_token = null;
+$user_id = null;
+$is_staff = false;
+$is_developer = false;
 
-$stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?");
-$stmt->bind_param("s", $access_token);
-$stmt->execute();
-$result = $stmt->get_result();
-if ($result->num_rows > 0) {
-    $row = $result->fetch_assoc();
-    $user_id = $row['user_id'];
-}
-$stmt->close();
+if ($logged_in) {
+    $access_token = $_COOKIE['access_token'];
+
+    $stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?");
+    $stmt->bind_param("s", $access_token);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $user_id = $row['user_id'];
+    }
+    $stmt->close();
+
     $stmt = $mysqli->prepare("SELECT username, profile_picture, is_staff, is_developer FROM users WHERE id = ?");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
@@ -30,23 +38,13 @@ $stmt->close();
         $row = $result->fetch_assoc();
         $username = $row['username'];
         $profile_picture = $row['profile_picture'];
-        $is_staff_stmt = $row['is_staff'];
-        $is_developer_stmt = $row['is_developer'];
+        $is_staff = $row['is_staff'] === 1 ? 'true' : 'false';
+        $is_developer = $row['is_developer'] === 1 ? 'true' : 'false';
     }
     $stmt->close();
 
     $param = json_encode(['user_id' => (int)$user_id]);
-
-    $is_developer = false;
-    $is_staff = false;
-    if ($is_developer_stmt === 1 && $is_developer_stmt === 1) {
-        $is_developer = true;
-    }
-    if ($is_staff_stmt === 1) {
-        $is_staff = true;
-    }
 }
-
 
 $ideasStmt = $mysqli->prepare("SELECT * FROM ideas");
 $ideasStmt->execute();
@@ -87,27 +85,40 @@ foreach ($ideas as $index => $idea) {
     $votesStmt->bind_param("s", $idea['id']);
     $votesStmt->execute();
     $votesResult = $votesStmt->get_result();
-    $idea['votes'] = $votesResult->num_rows > 0
-        ? $votesResult->fetch_assoc()['votes']
-        : 0;
+    $idea['votes'] = $votesResult->num_rows > 0 ? $votesResult->fetch_assoc()['votes'] : 0;
     $votesStmt->close();
 
-    $ideas[$index] = $idea;
+    $idea['github_assignees'] = isset($idea['github_assignees']) ? json_decode($idea['github_assignees'], true) : [];
 
+    $ideas[$index] = $idea;
 }
 
 
 function render_idea($idea) {
+    $assignees = $idea['github_assignees'] ?? [];
+    $assignees_html = '';
+    if (!empty($assignees)) {
+        $assignees_html .= '<div class="idea-assignees">';
+        foreach (array_slice($assignees, 0, 5) as $assignee) {
+            $assignees_html .= '<img draggable="false" class="idea-assignee-avatar" src="' . htmlspecialchars($assignee['avatar_url']) . '" title="' . htmlspecialchars($assignee['username']) . '" alt="' . htmlspecialchars($assignee['username']) . '">';
+        }
+        if (count($assignees) > 5) {
+            $assignees_html .= '<span class="idea-assignees-overflow">+' . (count($assignees) - 5) . '</span>';
+        }
+        $assignees_html .= '</div>';
+    }
+
     return '
-        <div class="idea" onclick="showIdea(\''.$idea['id'].'\')">
+        <div class="idea" data-id="' . $idea['id'] . '">
             <div class="idea-header">
-                <p class="idea-title">'.htmlspecialchars($idea['title']).'</p>
+                <p class="idea-title">' . htmlspecialchars($idea['title']) . '</p>
                 <div class="idea-votes">
-                    <span class="material-symbols-rounded idea-votes-icon '.($idea['voted'] ? 'filled' : '').'" data-id="'.$idea['id'].'">arrow_shape_up</span>
-                    <p class="idea-votes-count" data-id="'.$idea['id'].'">'.htmlspecialchars($idea['votes']).'</p>
+                    <span class="material-symbols-rounded idea-votes-icon ' . ($idea['voted'] ? 'filled' : '') . '" data-id="' . $idea['id'] . '">arrow_shape_up</span>
+                    <p class="idea-votes-count" data-id="' . $idea['id'] . '">' . htmlspecialchars($idea['votes']) . '</p>
                 </div>
             </div>
-            <img draggable="false" class="idea-image" src="'.htmlspecialchars($idea['image_path']).'">
+            <img draggable="false" class="idea-image" src="' . htmlspecialchars($idea['image_path']) . '">
+            ' . $assignees_html . '
         </div>
     ';
 }
@@ -118,10 +129,9 @@ function render_idea($idea) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>wokki chat</title>
+    <title>Wokki Chat - Ideas</title>
     <link rel="stylesheet" href="/assets/styles/ideas.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />  
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
 <body>
     <div class="top-bar">
@@ -147,7 +157,6 @@ function render_idea($idea) {
                     <span class="material-symbols-rounded top-bar-profile-dropdown-item-icon">settings</span>
                     <p class="top-bar-profile-dropdown-item-text">Settings</p>
                 </div>
-
             </div>
             <?php } ?>
             <?php if (!$logged_in) { ?>
@@ -175,56 +184,34 @@ function render_idea($idea) {
         <div class="ideas-voting" id="ideas-voting">
             <div class="ideas-voting-content">
                 <?php foreach ($ideas as $idea) {
-                    if ($idea['status'] === 'voting') {
-                        echo render_idea($idea);
-                    }
-                }
-                ?>
+                    if ($idea['status'] === 'voting') echo render_idea($idea);
+                } ?>
             </div>
         </div>
         <div class="ideas-planned" id="ideas-planned">
             <div class="ideas-planned-content">
                 <?php foreach ($ideas as $idea) {
-                    if ($idea['status'] === 'planned') {
-                        echo render_idea($idea);
-                    }
-                }
-                ?>
+                    if ($idea['status'] === 'planned') echo render_idea($idea);
+                } ?>
             </div>
         </div>
         <div class="ideas-implemented" id="ideas-implemented">
             <div class="ideas-implemented-content">
                 <?php foreach ($ideas as $idea) {
-                    if ($idea['status'] === 'implemented') {
-                        echo render_idea($idea);
-                    }
-                }
-                ?>
+                    if ($idea['status'] === 'implemented') echo render_idea($idea);
+                } ?>
             </div>
         </div>
     </div>
+    <wchat-data id="is_developer" value="<?php echo $is_developer; ?>"></wchat-data>
+    <wchat-data id="is_staff" value="<?php echo htmlspecialchars($is_staff, ENT_QUOTES, 'UTF-8'); ?>"></wchat-data>
+    <wchat-data id="ideas" value="<?php echo htmlspecialchars(json_encode($ideas), ENT_QUOTES, 'UTF-8'); ?>"></wchat-data>
+    <wchat-data id="logged_in" value="<?php echo htmlspecialchars($logged_in, ENT_QUOTES, 'UTF-8'); ?>"></wchat-data>
+    <wchat-data id="username" value="<?php echo htmlspecialchars($username, ENT_QUOTES, 'UTF-8'); ?>"></wchat-data>
+    <wchat-data id="access_token" value="<?php echo htmlspecialchars($access_token, ENT_QUOTES, 'UTF-8'); ?>"></wchat-data>
+    <wchat-data id="user_id" value="<?php echo htmlspecialchars($user_id, ENT_QUOTES, 'UTF-8'); ?>"></wchat-data>
+    <wchat-data id="profile_picture" value="<?php echo htmlspecialchars($profile_picture, ENT_QUOTES, 'UTF-8'); ?>"></wchat-data>
 
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="/assets/js/globalFunctions.js"></script>
-    <script src="/assets/js/ideas.js"></script>
-    <script>
-        // DO NOT TOUCH OR EDIT
-        <?php if ($logged_in) { ?>
-        const username = "<?php echo $username; ?>";
-        const access_token = "<?php echo $access_token; ?>";
-        const user_id = "<?php echo $user_id; ?>";
-        const profile_picture = "<?php echo $profile_picture; ?>";
-        <?php } ?>
-
-        const is_developer = <?php echo json_encode($is_developer); ?>;
-        const is_staff = <?php echo json_encode($is_staff); ?>;
-
-        const ideas = <?php echo json_encode($ideas); ?>;
-
-        if (window.location.href.includes("?idea=")) {
-            const id = window.location.href.split("?idea=")[1];
-            showIdea(id);
-        }
-    </script>
+    <script src="/assets/js/ideas.js" type="module"></script>
 </body>
 </html>

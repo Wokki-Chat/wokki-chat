@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "checkJs": false,
+        "ignoreDeprecations": "6.0",
+        "baseUrl": ".",
+        "paths": {
+            "https://cdn.wokki20.nl/content/jspt-v2.1.0/jspt.module.js": ["./jspt.d.ts"]
+        }
+    },
+    "exclude": ["node_modules"]
+}

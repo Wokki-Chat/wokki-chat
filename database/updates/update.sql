@@ -9,3 +9,10 @@ CREATE TABLE `notifications` (
     `contact_id` CHAR(36),
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE ideas ADD COLUMN github_issue_number INT NULL;
+ALTER TABLE ideas ADD COLUMN github_issue_node_id VARCHAR(100) NULL;
+ALTER TABLE ideas ADD COLUMN github_project_item_id VARCHAR(100) NULL;
+ALTER TABLE ideas ADD COLUMN github_assignees JSON NULL;
+
+CREATE INDEX idx_ideas_github_issue_number ON ideas (github_issue_number);

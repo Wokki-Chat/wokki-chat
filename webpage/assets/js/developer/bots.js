@@ -138,5 +138,9 @@ function initBots() {
 	const addBot = document.getElementById("add-bot");
 	addBot.addEventListener("click", openCreateBotModal);
 }
-
+if (typeof window.swup !== "undefined") {
+    window.swup.hooks.on('page:view', (visit) => {
+        initBots();
+    });
+}
 initBots();

@@ -1,4 +1,15 @@
-top_bar_profile = document.querySelector(".top-bar-profile");
+import * as jspt from "https://cdn.wokki20.nl/content/jspt-v2.1.0/jspt.module.js";
+import { Sanitizer } from "./modules/global/sanitization.js";
+
+const user_id = document.getElementById("user_id").getAttribute("value");
+const access_token = document.getElementById("access_token").getAttribute("value");
+const is_developer = document.getElementById("is_developer").getAttribute("value");
+const ideas = JSON.parse(document.getElementById("ideas").getAttribute("value"));
+const is_staff = document.getElementById("is_staff").getAttribute("value");
+
+const sanitizer = new Sanitizer(user_id, null, null);
+
+const top_bar_profile = document.querySelector(".top-bar-profile");
 if (top_bar_profile) {
     top_bar_profile.addEventListener("click", () => {
         const dropdown = document.querySelector(".top-bar-profile-dropdown");
@@ -28,10 +39,10 @@ window.addEventListener("load", () => change_page("voting"));
 document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => change_page(tab.id)));
 
 const addIdeaBtn = document.getElementById("add-idea-btn");
-addIdeaBtn.addEventListener("click", newIdeaModal);
+if (addIdeaBtn) addIdeaBtn.addEventListener("click", newIdeaModal);
 
 function newIdeaModal() {
-  let modalHtml = `
+    let modalHtml = `
     <div class="modal" id="new-idea-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -41,7 +52,7 @@ function newIdeaModal() {
             <div class="modal-body">
                 <form id="new-idea-form" class="new-idea-form">
                     <label for="idea-image">Idea Image:</label>
-                    <label for="idea-image" id="icon-preview" class="icon-preview" >
+                    <label for="idea-image" id="icon-preview" class="icon-preview">
                         <span class="material-symbols-rounded upload-icon">add</span>
                     </label>
                     <input required type="file" id="idea-image" name="idea-image" accept="image/jpeg,image/png,image/gif" class="input-file-dark-bg file-input" style="display: none;">
@@ -56,121 +67,146 @@ function newIdeaModal() {
     </div>
   `;
 
-  document.body.insertAdjacentHTML("beforeend", modalHtml);
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
 
-  const modal = document.getElementById("new-idea-modal");
-  const modalContent = modal.querySelector(".modal-content");
+    const modal = document.getElementById("new-idea-modal");
+    const modalCloseBtn = document.getElementById("close-modal-btn");
+    modalCloseBtn.addEventListener("click", () => modal.remove());
 
-  const modalCloseBtn = document.getElementById("close-modal-btn");
-  modalCloseBtn.addEventListener("click", () => {
-    modal.remove();
-  });
+    const ideaImageInput = document.getElementById("idea-image");
+    const iconPreview = document.getElementById("icon-preview");
 
-  const ideaImageInput = document.getElementById("idea-image");
-  const iconPreview = document.getElementById("icon-preview");
-
-  ideaImageInput.addEventListener("change", () => {
-    const file = ideaImageInput.files[0];
-    if (file && file.type.startsWith("image/")) {
-      const img = new Image();
-      img.onload = () => {
-        if (img.width < 50 || img.height < 50) {
-            Toastify({
-            text: "Image dimensions must be at least 50x50px.",
-            duration: 5000,
-            gravity: "bottom",
-            position: "right",
-            close: true,
-            stopOnFocus: true,
-            style: {
-              background: "var(--clr-popup-a20)",  
-              borderRadius: "12px", 
-              boxShadow: "none"
-            }
-          }).showToast();
-          ideaImageInput.value = "";
-          iconPreview.innerHTML = `<span class="material-symbols-rounded upload-icon">add</span>`;
+    ideaImageInput.addEventListener("change", () => {
+        const file = ideaImageInput.files[0];
+        if (file && file.type.startsWith("image/")) {
+            const img = new Image();
+            img.onload = () => {
+                if (img.width < 50 || img.height < 50) {
+                    jspt.makeToast({ message: "Image dimensions must be at least 50x50px.", type: "default-error", duration: 5000, close_on_click: true });
+                    ideaImageInput.value = "";
+                    iconPreview.innerHTML = `<span class="material-symbols-rounded upload-icon">add</span>`;
+                } else {
+                    iconPreview.innerHTML = `<img src="${img.src}" alt="Idea Icon" style="width: 100%; height: 100%; object-fit: cover;">`;
+                }
+            };
+            const reader = new FileReader();
+            reader.onload = e => { img.src = e.target.result; };
+            reader.readAsDataURL(file);
         } else {
-          iconPreview.innerHTML = `<img src="${img.src}" alt="Server Icon" style="width: 100%; height: 100%; object-fit: cover;">`;
+            iconPreview.innerHTML = `<span class="material-symbols-rounded upload-icon">add</span>`;
         }
-      };
-      const reader = new FileReader();
-      reader.onload = e => {
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    } else {
-      iconPreview.innerHTML = `<span class="material-symbols-rounded upload-icon">add</span>`;
-    }
-  });
-
-  const createChannelForm = document.getElementById("new-idea-form");
-  createChannelForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const title = document.getElementById("title").value;
-    const ideaImageFile = ideaImageInput.files[0];
-    const description = document.getElementById("description").value;
-
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("image", ideaImageFile);
-    formData.append("description", description);
-
-
-    fetch("https://chat.wokki20.nl/app/add_idea", {
-    method: "POST",
-    headers: {
-        Authorization: `Bearer ${access_token}`,
-    },
-    body: formData,
-    })
-    .then((response) => response.json())
-    .then((data) => {
-    console.log("Server created:", data);
-        Toastify({
-            text: "Idea created!",
-            duration: 5000,
-            gravity: "bottom",
-            position: "right",
-            close: true,
-            stopOnFocus: true,
-            style: {
-            background: "var(--clr-popup-a20)",
-            borderRadius: "12px",
-            boxShadow: "none",
-            },
-        }).showToast();
-        window.location.reload();
-    })
-    .catch((error) => {
-    console.error("Error creating server:", error);
-    Toastify({
-        text: "Failed to create server.",
-        duration: 5000,
-        gravity: "bottom",
-        position: "right",
-        close: true,
-        stopOnFocus: true,
-        style: {
-        background: "var(--clr-popup-a20)",
-        borderRadius: "12px",
-        boxShadow: "none",
-        },
-    }).showToast();
-    })
-    .finally(() => {
-    modal.remove();
     });
-    modal.remove();
-  });
+
+    const createChannelForm = document.getElementById("new-idea-form");
+    createChannelForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const title = document.getElementById("title").value;
+        const ideaImageFile = ideaImageInput.files[0];
+        const description = document.getElementById("description").value;
+
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("image", ideaImageFile);
+        formData.append("description", description);
+
+        fetch("/app/add_idea", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${access_token}` },
+            body: formData,
+        })
+        .then((response) => response.json())
+        .then(() => {
+            jspt.makeToast({ message: "Idea created!", type: "default", duration: 5000, close_on_click: true });
+        })
+        .catch(() => {
+            jspt.makeToast({ message: "Failed to create idea", type: "default-error", duration: 5000, close_on_click: true });
+        })
+        .finally(() => modal.remove());
+    });
 }
 
+function formatDate(created_at) {
+    const now = new Date();
+    const date = new Date(created_at);
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
+    if (diffDays > 7) {
+        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+    if (diffDays === 1) {
+        return `Yesterday at ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    if (diffDays >= 2) {
+        return `${diffDays} days ago at ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+}
 
-function showIdea(id) {
+function renderAssignees(assignees) {
+    if (!assignees || assignees.length === 0) return '';
+    const visible = assignees.slice(0, 5);
+    const overflow = assignees.length > 5 ? `<span class="idea-assignees-overflow">+${assignees.length - 5}</span>` : '';
+    return `
+        <div class="idea-assignees-modal">
+            <p class="idea-assignees-label">Assigned to</p>
+            <div class="idea-assignees-list">
+                ${visible.map(a => `
+                    <div class="idea-assignee">
+                        <img draggable="false" class="idea-assignee-avatar" src="${a.avatar_url}" alt="${a.username}">
+                        <span class="idea-assignee-name">${a.username}</span>
+                    </div>
+                `).join('')}
+                ${overflow}
+            </div>
+        </div>
+    `;
+}
+
+function renderComment(comment) {
+    const isDeveloperReply = comment.body.startsWith("### 👨‍💻 Developer Response");
+    const bodyLines = comment.body.split('\n');
+    const displayBody = isDeveloperReply ? bodyLines.slice(3).join('\n').replace(/^---\n\n/, '') : comment.body;
+
+    return `
+        <div class="idea-comment ${isDeveloperReply ? 'idea-comment-developer' : ''}">
+            <div class="idea-comment-header">
+                <img draggable="false" class="idea-comment-avatar" src="${comment.github_avatar}" alt="${comment.github_username}">
+                <div class="idea-comment-meta">
+                    <span class="idea-comment-username">${comment.github_username}</span>
+                    ${isDeveloperReply ? '<span class="idea-comment-dev-badge">Developer</span>' : ''}
+                    <span class="idea-comment-date">${formatDate(comment.created_at)}</span>
+                </div>
+            </div>
+            <p class="idea-comment-body">${escapeHtml(displayBody)}</p>
+        </div>
+    `;
+}
+
+function escapeHtml(str) {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+const ideaItems = document.querySelectorAll(".idea");
+ideaItems.forEach(item => item.addEventListener("click", async () => await showIdea(item.dataset.id)));
+
+const urlParams = new URLSearchParams(window.location.search);
+const ideaId = urlParams.get("idea");
+if (ideaId) showIdea(ideaId);
+
+async function showIdea(id) {
     const idea = ideas.find(idea => idea.id === id);
+    if (!idea) return;
 
     window.history.replaceState({}, '', `?idea=${id}`);
+
+    const initialAssignees = idea.github_assignees || [];
+    const assigneesHtml = initialAssignees.length > 0 ? renderAssignees(initialAssignees) : '<div id="idea-assignees-section"></div>';
 
     let modalHtml = `
     <div class="modal" id="new-idea-modal">
@@ -186,150 +222,214 @@ function showIdea(id) {
                     <p class="idea-creator-name">${idea.username}</p>
                     <p class="idea-creator-date">${formatDate(idea.created_at)}</p>
                 </div>
-                <div class="idea-description">${sanitizeMsg(idea.description)}</div>
-                ${is_developer ? `<div class="developer-info" style="display: flex; flex-direction: column; align-items: flex-start; margin-top: 10px;">` : ""}
-                ${is_developer ? `<p class="idea-id" style="margin: 0;">ID: ${idea.id}</p>` : ""}
-                ${is_developer ? `<p class="idea-channel-id" style="margin: 0;">Status: ${idea.status}</p>` : ""}
-                ${is_developer ? `</div>` : ""}
+                <div class="idea-description">${await sanitizer.sanitizeMsg(idea.description)}</div>
+                ${is_developer === 'true' ? `
+                <div class="developer-info" style="display: flex; flex-direction: column; align-items: flex-start; margin-top: 10px;">
+                    <p class="idea-id" style="margin: 0;">ID: ${idea.id}</p>
+                    <p class="idea-channel-id" style="margin: 0;">Status: ${idea.status}</p>
+                </div>` : ''}
+                <div id="idea-assignees-section">${assigneesHtml}</div>
                 <div class="idea-actions">
-                    <button class="idea-action" id="upvote-button" onclick="upvoteIdea('${idea.id}')" data-id="${idea.id}"><span class="material-symbols-rounded">arrow_shape_up</span>${idea.votes}</button>
+                    <button class="idea-action" id="upvote-button" data-id="${idea.id}"><span class="material-symbols-rounded">arrow_shape_up</span>${idea.votes}</button>
                     <div class="idea-actions-owner">
-                      <button class="idea-action" onclick="share('${idea.id}')"><span class="material-symbols-rounded">share</span></button>
-                      ${is_developer ? `<button class="idea-action" onclick="moveIdeaBack('${idea.id}')"><span class="material-symbols-rounded">move_down</span></button>` : ""}
-                      ${is_developer ? `<button class="idea-action" onclick="moveIdea('${idea.id}')"><span class="material-symbols-rounded">move_up</span></button>` : ""}
+                        <button class="idea-action" onclick="share('${idea.id}')"><span class="material-symbols-rounded">share</span></button>
+                        ${is_developer === 'true' ? `<button class="idea-action" data-id="${idea.id}" id="move-idea-back-button"><span class="material-symbols-rounded">move_down</span></button>` : ''}
+                        ${is_developer === 'true' ? `<button class="idea-action" data-id="${idea.id}" id="move-idea-button"><span class="material-symbols-rounded">move_up</span></button>` : ''}
                     </div>
+                </div>
+                <div class="idea-comments-section">
+                    <div class="idea-comments-header">
+                        <span class="material-symbols-rounded">forum</span>
+                        <h3 class="idea-comments-title">Responses</h3>
+                    </div>
+                    <div id="idea-comments-list">
+                        <div class="idea-comments-loading">
+                            <span class="material-symbols-rounded spinning">progress_activity</span>
+                        </div>
+                    </div>
+                    ${is_developer === 'true' ? `
+                    <div class="idea-reply-form">
+                        <textarea id="reply-text" class="input-text-dark-bg" placeholder="Write a developer response..." maxlength="2000"></textarea>
+                        <button class="button-primary-filled" id="reply-btn">
+                            <span class="material-symbols-rounded">send</span>Reply
+                        </button>
+                    </div>` : ''}
                 </div>
             </div>
         </div>
     </div>
-  `;
-
-  document.body.insertAdjacentHTML("beforeend", modalHtml);
-
-  const modal = document.getElementById("new-idea-modal");
-  const modalContent = modal.querySelector(".modal-content");
-  const ideaActions = modalContent.querySelector(".idea-actions");
-
-//   if (idea.user_id === user_id) {
-//     ideaActions.innerHTML += `
-//         <div class="idea-actions-owner">
-//             <button class="idea-action" onclick="editIdea('${idea.id}')"><span class="material-symbols-rounded">edit</span></button>
-//             <button class="idea-action" onclick="deleteIdea('${idea.id}')"><span class="material-symbols-rounded">delete</span></button>
-//         </div>
-//     `;
-//   }
-
-  if (idea.voted === 1) {
-    ideaActions.querySelector("#upvote-button").innerHTML = `
-        <span class="material-symbols-rounded">arrow_shape_up</span>${idea.votes}
     `;
-    ideaActions.querySelector("#upvote-button").classList.add("done");
-  }
 
-  const modalCloseBtn = document.getElementById("close-modal-btn");
-  modalCloseBtn.addEventListener("click", () => {
-    window.history.replaceState({}, '', location.pathname);
-    modal.remove();
-  });
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+    const modal = document.getElementById("new-idea-modal");
+    const modalContent = modal.querySelector(".modal-content");
+    const ideaActions = modalContent.querySelector(".idea-actions");
+
+    const upvoteButton = ideaActions.querySelector("#upvote-button");
+    upvoteButton.addEventListener("click", () => upvoteIdea(upvoteButton.dataset.id));
+
+    const moveIdeaButton = ideaActions.querySelector("#move-idea-button");
+    if (moveIdeaButton) moveIdeaButton.addEventListener("click", () => moveIdea(moveIdeaButton.dataset.id));
+
+    const moveIdeaBackButton = ideaActions.querySelector("#move-idea-back-button");
+    if (moveIdeaBackButton) moveIdeaBackButton.addEventListener("click", () => moveIdeaBack(moveIdeaBackButton.dataset.id));
+
+    if (idea.voted === 1) {
+        upvoteButton.innerHTML = `<span class="material-symbols-rounded">arrow_shape_up</span>${idea.votes}`;
+        upvoteButton.classList.add("done");
+    }
+
+    const replyBtn = modal.querySelector("#reply-btn");
+    if (replyBtn) {
+        replyBtn.addEventListener("click", () => {
+            const replyText = modal.querySelector("#reply-text").value.trim();
+            if (!replyText) return;
+            replyIdea(id, replyText, modal);
+        });
+    }
+
+    const modalCloseBtn = document.getElementById("close-modal-btn");
+    modalCloseBtn.addEventListener("click", () => {
+        window.history.replaceState({}, '', location.pathname);
+        modal.remove();
+    });
+
+    fetchIdeaGitHubData(id, modal);
 }
 
-function upvoteIdea(id) {   
-    const formData = new FormData();
-    formData.append("idea_id", id);
+async function fetchIdeaGitHubData(id, modal) {
+    const commentsList = modal.querySelector("#idea-comments-list");
+    const assigneesSection = modal.querySelector("#idea-assignees-section");
 
-    fetch(`https://chat.wokki20.nl/app/upvote_idea`, {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${access_token}`,
-        },
-        body: formData,
-    })
-    .then((response) => response.json())
-    .then((data) => {
-        console.log("Server created:", data);
+    try {
+        const response = await fetch(`/app/get_idea?idea_id=${id}`);
+        const data = await response.json();
 
-        const button = document.querySelector(`#upvote-button[data-id="${id}"]`);
-        if (!button) {
-            console.error("Upvote button not found for id:", id);
+        if (data.assignees && data.assignees.length > 0) {
+            assigneesSection.innerHTML = renderAssignees(data.assignees);
+            updateCardAssignees(id, data.assignees);
+        }
+
+        if (!data.comments || data.comments.length === 0) {
+            commentsList.innerHTML = `<p class="idea-no-comments">No responses yet.</p>`;
             return;
         }
 
-        button.innerHTML = `
-            <span class="material-symbols-rounded">arrow_shape_up</span>${data.votes}
-        `;
+        commentsList.innerHTML = data.comments.map(renderComment).join('');
+    } catch {
+        commentsList.innerHTML = `<p class="idea-no-comments">Could not load responses.</p>`;
+    }
+}
+
+function updateCardAssignees(id, assignees) {
+    const card = document.querySelector(`.idea[data-id="${id}"]`);
+    if (!card) return;
+
+    let assigneesEl = card.querySelector(".idea-assignees");
+    if (!assigneesEl) {
+        assigneesEl = document.createElement("div");
+        assigneesEl.className = "idea-assignees";
+        card.appendChild(assigneesEl);
+    }
+
+    const visible = assignees.slice(0, 5);
+    const overflow = assignees.length > 5 ? `<span class="idea-assignees-overflow">+${assignees.length - 5}</span>` : '';
+    assigneesEl.innerHTML = visible.map(a => `
+        <img draggable="false" class="idea-assignee-avatar" src="${a.avatar_url}" title="${a.username}" alt="${a.username}">
+    `).join('') + overflow;
+}
+
+function replyIdea(id, replyText, modal) {
+    const replyBtn = modal.querySelector("#reply-btn");
+    const replyTextArea = modal.querySelector("#reply-text");
+    replyBtn.disabled = true;
+
+    const formData = new FormData();
+    formData.append("idea_id", id);
+    formData.append("reply", replyText);
+
+    fetch("/app/reply_idea", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${access_token}` },
+        body: formData,
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            jspt.makeToast({ message: "Reply posted!", type: "default", duration: 3000, close_on_click: true });
+            replyTextArea.value = "";
+            fetchIdeaGitHubData(id, modal);
+        } else {
+            jspt.makeToast({ message: "Failed to post reply", type: "default-error", duration: 5000, close_on_click: true });
+        }
+    })
+    .catch(() => {
+        jspt.makeToast({ message: "Failed to post reply", type: "default-error", duration: 5000, close_on_click: true });
+    })
+    .finally(() => {
+        replyBtn.disabled = false;
+    });
+}
+
+function upvoteIdea(id) {
+    const formData = new FormData();
+    formData.append("idea_id", id);
+
+    fetch(`/app/upvote_idea`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${access_token}` },
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        const button = document.querySelector(`#upvote-button[data-id="${id}"]`);
+        if (!button) return;
+
+        button.innerHTML = `<span class="material-symbols-rounded">arrow_shape_up</span>${data.votes}`;
         button.classList.toggle("done", data.voted === 1);
 
         const ideaVotesIcon = document.querySelector(`.idea-votes-icon[data-id="${id}"]`);
-        if (ideaVotesIcon) {
-            ideaVotesIcon.classList.toggle("filled", data.voted === 1);
-        }
+        if (ideaVotesIcon) ideaVotesIcon.classList.toggle("filled", data.voted === 1);
 
         const ideaVotesCount = document.querySelector(`.idea-votes-count[data-id="${id}"]`);
-        if (ideaVotesCount) {
-            ideaVotesCount.textContent = data.votes;
-        }
+        if (ideaVotesCount) ideaVotesCount.textContent = data.votes;
 
         ideas.find(idea => idea.id === id).votes = data.votes;
         ideas.find(idea => idea.id === id).voted = data.voted;
     })
-    .catch((error) => {
-        console.error("Error creating server:", error);
-    });
+    .catch(error => console.error("Error upvoting idea:", error));
 }
 
 function moveIdea(id) {
     const formData = new FormData();
     formData.append("idea_id", id);
 
-    fetch(`https://chat.wokki20.nl/app/move_idea`, {
+    fetch(`/app/move_idea`, {
         method: "POST",
-        headers: {
-            Authorization: `Bearer ${access_token}`,
-        },
+        headers: { Authorization: `Bearer ${access_token}` },
         body: formData,
     })
-    .then((response) => response.json())
-    .then((data) => {
-        window.location.reload();
-    })
-    .catch((error) => {
-
-    });
+    .then(r => r.json())
+    .then(() => window.location.reload())
+    .catch(() => {});
 }
 
 function moveIdeaBack(id) {
     const formData = new FormData();
     formData.append("idea_id", id);
 
-    fetch(`https://chat.wokki20.nl/app/move_idea_back`, {
+    fetch(`/app/move_idea_back`, {
         method: "POST",
-        headers: {
-            Authorization: `Bearer ${access_token}`,
-        },
+        headers: { Authorization: `Bearer ${access_token}` },
         body: formData,
     })
-    .then((response) => response.json())
-    .then((data) => {
-        window.location.reload();
-    })
-    .catch((error) => {
-      
-    });
+    .then(r => r.json())
+    .then(() => window.location.reload())
+    .catch(() => {});
 }
 
 function share(id) {
-    navigator.clipboard.writeText(`https://chat.wokki20.nl/ideas?idea=${id}`);
-    Toastify({
-        text: "Link copied to clipboard",
-        duration: 3000,
-        gravity: "bottom",
-        position: "right",
-        close: true,
-        stopOnFocus: true,
-        style: {
-          background: "var(--clr-popup-a20)",
-          borderRadius: "12px",
-          boxShadow: "none"
-        }
-    }).showToast();
+    navigator.clipboard.writeText(`/ideas?idea=${id}`);
+    jspt.makeToast({ message: "Link copied to clipboard!", style: "default", duration: 3000, close_on_click: true });
 }
