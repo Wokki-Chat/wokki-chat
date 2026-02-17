@@ -108,6 +108,15 @@ function render_idea($idea) {
         $assignees_html .= '</div>';
     }
 
+    $image_or_preview = '';
+    if (!empty($idea['image_path'])) {
+        $image_or_preview = '<img draggable="false" class="idea-image" src="' . htmlspecialchars($idea['image_path']) . '">';
+    } else {
+        $preview_text = substr($idea['description'], 0, 150);
+        if (strlen($idea['description']) > 150) $preview_text .= '...';
+        $image_or_preview = '<div class="idea-description-preview">' . htmlspecialchars($preview_text) . '</div>';
+    }
+
     return '
         <div class="idea" data-id="' . $idea['id'] . '">
             <div class="idea-header">
@@ -117,7 +126,7 @@ function render_idea($idea) {
                     <p class="idea-votes-count" data-id="' . $idea['id'] . '">' . htmlspecialchars($idea['votes']) . '</p>
                 </div>
             </div>
-            <img draggable="false" class="idea-image" src="' . htmlspecialchars($idea['image_path']) . '">
+            ' . $image_or_preview . '
             ' . $assignees_html . '
         </div>
     ';
