@@ -168,21 +168,28 @@ function renderAssignees(assignees) {
 
 function renderComment(comment) {
     const isUserResponse = comment.body.startsWith("### User Response");
-    const isDeveloperReply = !isUserResponse;
+    const lines = comment.body.split('\n');
 
-    let displayBody = comment.body;
+    let github_username = 'Unknown';
+    let github_avatar = 'https://via.placeholder.com/40';
 
-    if (isDeveloperReply) {
-        const userMatch = comment.body.match(/from \*\*(.+?)\*\*/);
-        const github_username = userMatch ? userMatch[1] : comment.github_username || 'Developer';
-        const github_avatar = comment.github_avatar || 'https://via.placeholder.com/40';
+    if (lines.length > 1) {
+        const secondLine = lines[1].trim();
+        const usernameMatch = secondLine.match(/!\[(.*?)\]\(/);
+        const avatarMatch = secondLine.match(/\((.*?)\)/);
+        if (usernameMatch) github_username = usernameMatch[1];
+        if (avatarMatch) github_avatar = avatarMatch[1];
+    }
 
-        displayBody = comment.body
-            .split('\n')
-            .filter(line => !line.startsWith('###') && !line.startsWith('from **') && !line.startsWith('![') && line.trim() !== '---')
-            .join('\n')
-            .trim();
+    let displayBody = lines
+        .slice(2)
+        .filter(line => line.trim() !== '---')
+        .join('\n')
+        .trim();
 
+    if (!displayBody) displayBody = '(No comment text)';
+
+    if (!isUserResponse) {
         return `
             <div class="idea-comment idea-comment-developer">
                 <div class="idea-comment-header">
@@ -197,15 +204,6 @@ function renderComment(comment) {
             </div>
         `;
     } else {
-        const github_username = comment.github_username || 'User';
-        const github_avatar = comment.github_avatar || 'https://via.placeholder.com/40';
-
-        displayBody = displayBody
-            .split('\n')
-            .filter(line => !line.startsWith('###') && !line.startsWith('![') && line.trim() !== '---')
-            .join('\n')
-            .trim();
-
         return `
             <div class="idea-comment">
                 <div class="idea-comment-header">
