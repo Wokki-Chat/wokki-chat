@@ -39,7 +39,7 @@ function createTextImage($text, $width = 500, $height = 300) {
     $textColor = imagecolorallocate($image, 255, 255, 255);
     imagefilledrectangle($image, 0, 0, $width, $height, $bgColor);
 
-    $fontFile = $_SERVER['DOCUMENT_ROOT'] . '/assets/fonts/Inter_24pt-SemiBold.ttf';
+    $fontFile = $_SERVER['DOCUMENT_ROOT'] . '/app/assets/fonts/Inter_24pt-SemiBold.ttf';
     $fontSize = 24;
     $margin = 20;
     $y = $margin + $fontSize;
