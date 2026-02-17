@@ -531,6 +531,7 @@
     font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition: background-color 0.3s ease;
+    font-family: inherit;
 }
 
 .button-primary-filled:hover {
@@ -553,6 +554,7 @@
     font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition: background-color 0.3s ease;
+    font-family: inherit;
 }
 
 .button-primary-outline:hover {
