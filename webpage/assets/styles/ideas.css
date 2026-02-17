@@ -817,3 +817,9 @@ h2 {
     font-size: 14px;
     color: var(--clr-text-a30);
 }
+
+.idea-comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}

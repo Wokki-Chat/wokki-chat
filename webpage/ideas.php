@@ -132,6 +132,7 @@ function render_idea($idea) {
     <title>Wokki Chat - Ideas</title>
     <link rel="stylesheet" href="/assets/styles/ideas.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://cdn.wokki20.nl/content/jspt-v2.1.0/jspt.css">
 </head>
 <body>
     <div class="top-bar">
