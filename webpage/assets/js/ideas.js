@@ -174,14 +174,12 @@ function renderComment(comment) {
 
     if (isDeveloperReply) {
         const userMatch = comment.body.match(/from \*\*(.+?)\*\*/);
-        const imgMatch = comment.body.match(/!\[.*?\]\((.*?)\)/);
-
         const github_username = userMatch ? userMatch[1] : comment.github_username || 'Developer';
-        const github_avatar = imgMatch ? imgMatch[1] : comment.github_avatar || 'https://via.placeholder.com/40';
+        const github_avatar = comment.github_avatar || 'https://via.placeholder.com/40';
 
         displayBody = comment.body
             .split('\n')
-            .filter(line => !line.startsWith('from **') && !line.startsWith('---') && !line.startsWith('!['))
+            .filter(line => !line.startsWith('###') && !line.startsWith('from **') && !line.startsWith('![') && line.trim() !== '---')
             .join('\n')
             .trim();
 
@@ -199,14 +197,21 @@ function renderComment(comment) {
             </div>
         `;
     } else {
-        displayBody = displayBody.replace(/^### User Response.*\n?/, '').trim();
+        const github_username = comment.github_username || 'User';
+        const github_avatar = comment.github_avatar || 'https://via.placeholder.com/40';
+
+        displayBody = displayBody
+            .split('\n')
+            .filter(line => !line.startsWith('###') && !line.startsWith('![') && line.trim() !== '---')
+            .join('\n')
+            .trim();
 
         return `
             <div class="idea-comment">
                 <div class="idea-comment-header">
-                    <img draggable="false" class="idea-comment-avatar" src="${comment.github_avatar}" alt="${comment.github_username}">
+                    <img draggable="false" class="idea-comment-avatar" src="${github_avatar}" alt="${github_username}">
                     <div class="idea-comment-meta">
-                        <span class="idea-comment-username">${comment.github_username}</span>
+                        <span class="idea-comment-username">${github_username}</span>
                         <span class="idea-comment-date">${formatDate(comment.created_at)}</span>
                     </div>
                 </div>
@@ -259,7 +264,7 @@ async function showIdea(id) {
                 <span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
             </div>
             <div class="modal-body">
-                <img draggable="false" class="idea-image" src="${idea.image_path}" style="border-radius: 10px; height: 300px;">
+                ${ idea.image_path ? `<img draggable="false" class="idea-image" src="${idea.image_path}" style="border-radius: 10px; height: 300px;">` : '' }
                 <div class="idea-creator">
                     <img draggable="false" class="idea-creator-img" src="${idea.profile_picture}">
                     <p class="idea-creator-name">${idea.username}</p>
