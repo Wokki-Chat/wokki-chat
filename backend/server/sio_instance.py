@@ -2,8 +2,11 @@ from server.helpers.logs import addMessageToLogs
 import traceback
 import functools
 import socketio
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
-REDIS_URL = 'redis://localhost:6379'
+REDIS_URL = f'redis://{os.getenv("REDIS_HOST", "localhost")}:{os.getenv("REDIS_PORT", 6379)}'
 sio = socketio.AsyncServer(
     async_mode='aiohttp',
     cors_allowed_origins='*',
@@ -22,7 +25,6 @@ def sio_safe(event, *on_args, **on_kwargs):
             try:
                 return await fn(*handler_args, **handler_kwargs)
             except Exception as exc:
-                # sid = handler_args[0] if len(handler_args) > 0 else None
                 data = handler_args[1] if len(handler_args) > 1 else None
                 tb_str = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
                 msg = (f'Error in event "{event}" with data "{data}":\n{tb_str}')

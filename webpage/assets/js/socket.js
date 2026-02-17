@@ -9,7 +9,7 @@ const accessToken = document.getElementById("access-token").getAttribute("value"
 let socket;
 
 if (location.hostname === "localhost") {
-	socket = io("http://localhost:5001", {
+	socket = io("http://localhost:5000", {
 		transports: ["websocket"],
 		query: { access_token: accessToken },
 	}); 

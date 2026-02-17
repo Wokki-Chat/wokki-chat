@@ -4937,3 +4937,55 @@ hr {
     flex-direction: row;
     gap: 10px;
 }
+
+.status-notice {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    background-color: var(--clr-danger-a0);
+    border: 1px solid var(--clr-danger-a10);
+    border-radius: 16px;
+    color: var(--clr-text-white-a0);
+    width: max-content;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.status-notice div {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    align-items: center;
+}
+
+.reconnect-btn {
+    border-radius: 9px;
+    padding: 10px 10px;
+    border: none;
+    color: var(--clr-text-white-a0);
+    background-color: var(--clr-danger-a10);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    margin: 0px;
+}
+
+.reconnect-btn:hover {
+    background-color: var(--clr-danger-a20);
+    color: var(--clr-text-black-a0);
+}
+
+.info-icon {
+    cursor: pointer;
+    color: var(--clr-text-white-a0);
+    transition: color 0.1s ease;
+}
+
+.info-icon:hover {
+    color: var(--clr-text-white-a10);
+}

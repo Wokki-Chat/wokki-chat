@@ -314,83 +314,92 @@ if (typeof window.swup !== "undefined") {
 }
 
 window.addEventListener("load", () => {
+  const msgContainer = document.querySelector(".input-container-2");
+
+  function createStatusDiv(id, shortText, fullHtml) {
+    removeStatusDiv(id);
+
+    const div = document.createElement("div");
+    div.id = id;
+    div.className = "status-notice";
+
+    div.innerHTML = `
+      <span class="info-icon material-symbols-rounded">info</span>
+      <span>${shortText}</span>
+      <button class="reconnect-btn">Reconnect</button>
+    `;
+
+    div.querySelector(".reconnect-btn").addEventListener("click", () => {
+      if (socket && !socket.connected) socket.connect();
+    });
+
+    div.querySelector(".info-icon").addEventListener("click", () => {
+      jspt.makePopup({
+        content_type: "html",
+        content: fullHtml,
+        header: "Connection Info",
+      });
+    });
+
+    msgContainer.prepend(div);
+  }
+
+  function removeStatusDiv(id) {
+    const existing = document.getElementById(id);
+    if (existing) existing.remove();
+  }
+
+  function updateConnectionStatus() {
+    if (navigator.onLine) {
+      removeStatusDiv("disconnect-notice");
+      removeStatusDiv("server-error-notice");
+    } else {
+      createStatusDiv(
+        "disconnect-notice",
+        "Disconnected due to network issues",
+        `
+          <p>You have been disconnected from the server due to network issues.</p>
+          <ul>
+            <li>Check your internet connection.</li>
+            <li>Try a different network.</li>
+            <li>Restart your router or computer.</li>
+          </ul>
+          <p>If none of these work, contact support.</p>
+        `
+      );
+    }
+  }
+
+  function showServerError() {
+    createStatusDiv(
+      "server-error-notice",
+      "Disconnected from server",
+      `
+        <p>You have been disconnected from the server for an unknown reason.</p>
+        <ul>
+          <li>Check your internet connection.</li>
+          <li>Refresh the page.</li>
+          <li>Restart your router or computer.</li>
+        </ul>
+        <p>If none of these work, contact support.</p>
+      `
+    );
+  }
+
   if (socket) {
-    socket.on("disconnect", (reason) => {
+    socket.on("disconnect", () => {
       if (navigator.onLine) {
-          showServerErrorModal();
+        showServerError();
       } else {
-          showDisconnectModal();
+        updateConnectionStatus();
       }
     });
 
-    socket.on("connect", () => {
-        hideDisconnectModal();
-        hideServerErrorModal();
-    });
+    socket.on("connect", updateConnectionStatus);
   }
 
-  function showServerErrorModal() {
-      let modalHtml = `
-        <div class="modal" id="server-error-modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title">Disconnected from server</h2>
-                </div>
-                <div class="modal-body">
-                    <p class="modal-text">You have been disconnected from the server for an unknown reason.</p>
-                    <p class="modal-text">What can I do?</p>
-                    <ul class="modal-list">
-                        <li class="modal-list-item">Check your internet connection.</li>
-                        <li class="modal-list-item">Try refreshing the page.</li>
-                        <li class="modal-list-item">Try restarting your router.</li>
-                        <li class="modal-list-item">Try restarting your computer.</li>
-                    </ul>
-                    <p class="modal-text">If none of these options work, Please contact support.</p>
-                </div>
-            </div>
-        </div>
-      `;
-
-      document.body.insertAdjacentHTML("beforeend", modalHtml);      
-  }
-
-  function showDisconnectModal() {
-      let modalHtml = `
-        <div class="modal" id="disconnect-modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title">Disconnected from server</h2>
-                </div>
-                <div class="modal-body">
-                    <p class="modal-text">You have been disconnected from the server for due to network issues.</p>
-                    <p class="modal-text">What can I do?</p>
-                    <ul class="modal-list">
-                        <li class="modal-list-item">Check your internet connection.</li>
-                        <li class="modal-list-item">Try a different network.</li>
-                        <li class="modal-list-item">Try restarting your router.</li>
-                        <li class="modal-list-item">Try restarting your computer.</li>
-                    </ul>
-                    <p class="modal-text">If none of these options work, Please contact support.</p>
-                </div>
-            </div>
-        </div>
-      `;
-
-      document.body.insertAdjacentHTML("beforeend", modalHtml);          
-  }
-
-  function hideServerErrorModal() {
-      const serverErrorModal = document.getElementById("server-error-modal");
-      if (serverErrorModal) {
-          serverErrorModal.remove();
-      }
-  }
-  function hideDisconnectModal() {
-      const disconnectModal = document.getElementById("disconnect-modal");
-      if (disconnectModal) {
-          disconnectModal.remove();
-      }
-  }
+  window.addEventListener("online", updateConnectionStatus);
+  window.addEventListener("offline", updateConnectionStatus);
 
   let draggedServerClone = null;
 	let originalServerElement = null;
