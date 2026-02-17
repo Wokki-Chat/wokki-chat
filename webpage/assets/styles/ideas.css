@@ -353,6 +353,12 @@ h2 {
     transition: transform 0.1s ease;
 }
 
+#idea-comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
 .idea:hover {
     transform: scale(1.05);
 }
@@ -816,10 +822,4 @@ h2 {
     margin: 0px;
     font-size: 14px;
     color: var(--clr-text-a30);
-}
-
-.idea-comments-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
 }
