@@ -591,7 +591,7 @@ export class MessageHandler {
 		});
 	}
 
-	_attachMediaLoadListeners(el) { // FIXME Somehow this only works how it should be when the console is open, JAVASCRIPT WHYYY????
+	_attachMediaLoadListeners(el) { // FIXME still only works reliably when console is open
 		const scrollIfPinned = () => {
 			requestAnimationFrame(() => {
 				if (this._pinToBottom) this._scrollToBottom();
@@ -599,12 +599,20 @@ export class MessageHandler {
 		};
 
 		el.querySelectorAll('img, video').forEach(media => {
-			if (media.tagName === 'IMG' && !media.complete) {
-				media.addEventListener('load', scrollIfPinned, { once: true });
-				media.addEventListener('error', scrollIfPinned, { once: true });
-			} else if (media.tagName === 'VIDEO' && media.readyState < 1) {
-				media.addEventListener('loadedmetadata', scrollIfPinned, { once: true });
-				media.addEventListener('error', scrollIfPinned, { once: true });
+			if (media.tagName === 'IMG') {
+				if (!media.complete) {
+					media.addEventListener('load', scrollIfPinned, { once: true });
+					media.addEventListener('error', scrollIfPinned, { once: true });
+				} else {
+					scrollIfPinned();
+				}
+			} else if (media.tagName === 'VIDEO') {
+				if (media.readyState < 1) {
+					media.addEventListener('loadedmetadata', scrollIfPinned, { once: true });
+					media.addEventListener('error', scrollIfPinned, { once: true });
+				} else {
+					scrollIfPinned();
+				}
 			}
 		});
 	}
