@@ -43,15 +43,10 @@ body {
     opacity: 1;
 }
 
-:root.dark {
-    background-color: var(--clr-surface-a0);
-}
-
-:root.night {
-    background-color: var(--clr-surface-a0);
-}
-
-:root.light {
+:root.dark,
+:root.light,
+:root.night,
+:root.midnight {
     background-color: var(--clr-surface-a0);
 }
 
@@ -62,17 +57,6 @@ body {
 }
 
 :root.chat_dark_blue {
-    background-image: linear-gradient(90deg, #1c2331 0%, #261e2f 100%);
-    overflow: visible;
-    height: 1px;
-}
-
-:root.chat_light_red {
-    background-image: linear-gradient(90deg, #f0d1d1 0%, #e8b099 100%);
-    overflow: visible;
-    height: 1px;
-}
-:root.chat_dark_red {
     background-image: linear-gradient(90deg, #1c2331 0%, #261e2f 100%);
     overflow: visible;
     height: 1px;
@@ -3460,8 +3444,23 @@ ul {
 .theme-options-container {
     display: flex;
     flex-direction: row;
-    gap: 10px;
+    gap: 15px;
     align-items: center;
+}
+
+.theme-option-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+    cursor: pointer;
+}
+
+.theme-option-name {
+    font-size: 14px;
+    margin: 0px;
+    color: var(--clr-text-a0);
+    user-select: none;
 }
 
 .settings-appearance-container-title {
@@ -3478,10 +3477,10 @@ ul {
 .theme-option {
     width: 65px;
     height: 65px;
-    border-radius: 50%;
-    border: 1px solid var(--clr-text-a20);
+    border-radius: 12px;
+    outline: 1px solid var(--clr-text-a20);
     cursor: pointer;
-    transition: all 0.2s ease
+    position: relative;
 }
 .theme-option.light {
     background-color: var(--clr-light);
@@ -3491,6 +3490,9 @@ ul {
 }
 .theme-option.night {
     background-color: var(--clr-night);
+}
+.theme-option.midnight {
+    background-color: var(--clr-midnight);
 }
 .theme-option.chat_light_blue {
     background-image: var(--clr-chat-light-blue);
@@ -3508,7 +3510,7 @@ ul {
 }
 
 .theme-option.active {
-    border: 2px solid var(--clr-primary-a0);
+    outline: 2px solid var(--clr-primary-a0);
 }
 
 @media screen and (max-width: 440px) {
@@ -4511,10 +4513,10 @@ input#clr-hue-slider {
 .emoji-picker-dropdown {
 	position: absolute;
 	left: 0;
-	width: 360px;
+	width: 500px;
 	height: 350px;
 	background: var(--clr-popup-a0);
-	border: 1px solid var(--clr-text-a50);
+	border: 1px solid var(--clr-popup-a10);
 	border-radius: 8px;
 	box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 	overflow: hidden;
@@ -4526,13 +4528,13 @@ input#clr-hue-slider {
 
 .emoji-picker-sidebar {
 	width: 44px;
-	background: var(--clr-popup-a20);
+	background: var(--clr-popup-a10);
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	padding: 6px 0;
 	gap: 6px;
-	border-right: 1px solid var(--clr-text-a50);
+	border-right: 1px solid var(--clr-popup-a20);
     overflow-y: auto;
     scrollbar-width: none;
 }
@@ -4543,7 +4545,7 @@ input#clr-hue-slider {
 	cursor: pointer;
 	padding: 6px;
 	border-radius: 6px;
-	color: var(--clr-text-a30);
+	color: var(--clr-text-a20);
 	transition: background 0.2s, color 0.2s;
 }
 
@@ -4564,14 +4566,14 @@ input#clr-hue-slider {
 	padding: 8px 12px;
 	border: none;
 	outline: none;
-	background: var(--clr-popup-a20);
+	background: var(--clr-popup-a10);
 	color: var(--clr-text-a0);
 	font-size: 14px;
 	box-sizing: border-box;
 }
 
 .emoji-picker-search::placeholder {
-	color: var(--clr-text-a30);
+	color: var(--clr-text-a20);
 }
 
 .emoji-picker-list {

@@ -206,7 +206,6 @@ if ($active_tab === 'account') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/dark.min.css" />
     <link rel="stylesheet" href="/assets/styles/main.css" />
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
-    <script src="/assets/js/call_reconnect.js"></script>
     <meta name="app_page_name" content="Settings">
     <meta name="app_page_icon" content="settings">
     <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
@@ -371,6 +370,7 @@ if ($active_tab === 'account') {
                     $appearanceHtml = str_replace("{{light_active}}", ($theme === "light" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{dark_active}}", ($theme === "dark" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{night_active}}", ($theme === "night" ? "active" : ""), $appearanceHtml);
+                    $appearanceHtml = str_replace("{{midnight_active}}", ($theme === "midnight" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{hidden_1}}", ($chat_connected === "Connected" ? "chat_light_blue" : "hidden_1_disabled"), $appearanceHtml);
                     $appearanceHtml = str_replace("{{hidden_1_active}}", ($theme === "chat_light_blue" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{hidden_2}}", ($chat_connected === "Connected" ? "chat_dark_blue" : "hidden_2_disabled"), $appearanceHtml);
@@ -442,7 +442,7 @@ if ($active_tab === 'account') {
 
         window.swup = new Swup({
             containers: ["#app"],
-            cache: true,
+            cache: false,
             plugins: [
                 new SwupPreloadPlugin(),
                 new SwupScriptsPlugin({
@@ -454,7 +454,6 @@ if ($active_tab === 'account') {
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" data-swup-ignore-script></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
-    <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
     <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
     <script src="/assets/js/settings.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>

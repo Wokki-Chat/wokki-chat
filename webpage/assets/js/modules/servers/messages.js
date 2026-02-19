@@ -591,7 +591,7 @@ export class MessageHandler {
 		});
 	}
 
-	_attachMediaLoadListeners(el) {
+	_attachMediaLoadListeners(el) { // FIXME Somehow this only works how it should be when the console is open, JAVASCRIPT WHYYY????
 		const scrollIfPinned = () => {
 			requestAnimationFrame(() => {
 				if (this._pinToBottom) this._scrollToBottom();
@@ -663,7 +663,6 @@ export class MessageHandler {
 		}
 
 		this.messageHydrator.hydrate(el, msg.assets, msg.id).then(async () => {
-			console.log("hydrated", msg.id);
 			this._attachMediaLoadListeners(el);
 			const customPlayer = el.querySelector(".custom-player");
 			if (customPlayer) await this.initCustomPlayer(customPlayer);
