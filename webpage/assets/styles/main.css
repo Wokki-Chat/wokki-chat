@@ -4631,18 +4631,28 @@ input#clr-hue-slider {
     height: 20px !important;
 }
 
-.emoji {
-    width: 20px;
-    height: 20px;
-    object-fit: cover;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    vertical-align: middle;
+img.emoji {
+   height: 1.3em;
+   width: 1.3em;
+   margin: 0 .05em 0 .1em;
+   vertical-align: -0.1em;
 }
 
 .message-text .emoji {
-    margin-bottom: -4px;
+    margin-bottom: -3px;
+}
+
+.message-text > .emoji-only:only-child,
+.message-text > .emoji-only:nth-child(3n) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.message-text > .emoji-only:only-child .emoji,
+.message-text > .emoji-only:nth-child(3n) .emoji {
+    height: 2.5em;
+    width: 2.5em;
 }
 
 .popup-container#server-settings-popup,

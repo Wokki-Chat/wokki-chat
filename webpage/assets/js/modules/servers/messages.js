@@ -617,6 +617,15 @@ export class MessageHandler {
 		});
 	}
 
+	_markEmojiOnlyElements(root) {
+		root.querySelectorAll('.message-text > *').forEach(el => {
+			const onlyEmojis = [...el.childNodes].every(
+				node => node.nodeType === Node.ELEMENT_NODE && node.classList.contains('emoji')
+			);
+			if (onlyEmojis) el.classList.add('emoji-only');
+		});
+	}
+
 	async handleMessage(msg) {
 		this.messageCache.removeExisting(msg.id);
 
@@ -653,6 +662,7 @@ export class MessageHandler {
 		this.cleanupDateSeparators();
 
 		await emojis.replaceEl(el);
+		this._markEmojiOnlyElements(el);
 
 		const replyBtn = el.querySelector("#reply-btn");
 		replyBtn.addEventListener("click", async () => await this.replyMessage(msg.id));
@@ -733,6 +743,7 @@ export class MessageHandler {
 
 		this.cleanupDateSeparators();
 		await emojis.replaceEl(this.messageContainer);
+		this._markEmojiOnlyElements(this.messageContainer);
 
 		if (isPagination) {
 			const scrollHeightAfter = this.messageContainer.scrollHeight;
