@@ -16,8 +16,8 @@ export class MessageRenderer {
 	addAssets(asset, msgId, index) {
 		const type = getAssetType(asset.savedName);
 		const url = type === 'profile_picture'
-			? `https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}`
-			: `https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}`;
+			? `/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}`
+			: `/uploads/messages/${encodeURIComponent(asset.savedName)}`;
 
 		if (type === 'image' || type === 'profile_picture') {
 			return `<img data-src="${url}" alt="${asset.originalName}" class="message-asset-image${type === 'profile_picture' ? ' message-asset-profile-picture' : ''} lazyload" data-prefetch-size="true" />`;
@@ -232,10 +232,10 @@ export class MessageHydrator {
 							<p>${date}</p>
 						</div>
 					</div>
-					<button class="button-primary-filled ${expired ? "disabled" : ""} invite-join-button"
-							onclick="${expired ? "" : `window.location.href='https://chat.wokki20.nl/server/${serverId}?invite=${inviteId}'`}">
+					<a class="button-primary-filled ${expired ? "disabled" : ""} no-underline invite-join-button"
+							href="${expired ? "" : `/server/${serverId}?invite=${inviteId}`}">
 						${expired ? "Invite Expired" : "Join Server"}
-					</button>
+					</a>
 				`;
 				el.classList.remove('loading');
 			} catch {
@@ -341,7 +341,7 @@ export class MessageHydrator {
 	}
 
 	async getAssetFileInsides(file) {
-		const res = await fetch(`https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(file)}`);
+		const res = await fetch(`/uploads/messages/${encodeURIComponent(file)}`);
 		const blob = await res.blob();
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
@@ -513,6 +513,20 @@ export class MessageHandler {
 		this.textarea = textarea;
 		this.uploadContainer = uploadContainer;
     	this.selectedFiles = [];
+
+		this._pinToBottom = true;
+		this._programmaticScroll = false;
+
+		this.messageContainer.addEventListener('scroll', () => {
+			if (this._programmaticScroll) return;
+			const { scrollTop, scrollHeight, clientHeight } = this.messageContainer;
+			this._pinToBottom = scrollHeight - scrollTop - clientHeight <= 10;
+		}, { passive: true });
+
+		this._mutationObserver = new MutationObserver(() => {
+			if (this._pinToBottom) this._scrollToBottom();
+		});
+		this._mutationObserver.observe(this.messageContainer, { childList: true });
 	}
 
 	initU(usersList) {
@@ -568,6 +582,33 @@ export class MessageHandler {
 		return separator;
 	}
 
+	_scrollToBottom() {
+		this._programmaticScroll = true;
+		this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+		requestAnimationFrame(() => {
+			this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+			this._programmaticScroll = false;
+		});
+	}
+
+	_attachMediaLoadListeners(el) {
+		const scrollIfPinned = () => {
+			requestAnimationFrame(() => {
+				if (this._pinToBottom) this._scrollToBottom();
+			});
+		};
+
+		el.querySelectorAll('img, video').forEach(media => {
+			if (media.tagName === 'IMG' && !media.complete) {
+				media.addEventListener('load', scrollIfPinned, { once: true });
+				media.addEventListener('error', scrollIfPinned, { once: true });
+			} else if (media.tagName === 'VIDEO' && media.readyState < 1) {
+				media.addEventListener('loadedmetadata', scrollIfPinned, { once: true });
+				media.addEventListener('error', scrollIfPinned, { once: true });
+			}
+		});
+	}
+
 	async handleMessage(msg) {
 		this.messageCache.removeExisting(msg.id);
 
@@ -576,48 +617,34 @@ export class MessageHandler {
 
 		const scrollTopBefore = this.messageContainer.scrollTop;
 		const scrollHeightBefore = this.messageContainer.scrollHeight;
-		const nearBottom = scrollHeightBefore - scrollTopBefore - this.messageContainer.clientHeight <= 10;
+		const wasAtBottom = this._pinToBottom;
 
 		const insertIndex = this.messageCache.insertIntoCache(msg, el);
-		
 		this.insertMessageEl(el, insertIndex);
-		
+
 		const prevMsg = this.messageCache.cache[insertIndex - 1];
 		if (prevMsg) {
-			const prevMsg = this.messageCache.cache[insertIndex - 1];
 			const currDateKey = this.getDateKey(msg.created_at);
-			if (!currDateKey) return;
-
-			const prevDateKey = prevMsg ? this.getDateKey(prevMsg.timestamp) : null;
-
-			if (prevDateKey !== currDateKey) {
-				const prevEl = el.previousElementSibling;
-				const hasCorrectSeparator =
-					prevEl &&
-					prevEl.classList.contains('message-date-separator') &&
-					prevEl.dataset.dateKey === currDateKey;
-
-				if (!hasCorrectSeparator) {
-					const separator = this.createDateSeparator(msg.created_at);
-					el.insertAdjacentElement('beforebegin', separator);
+			if (currDateKey) {
+				const prevDateKey = this.getDateKey(prevMsg.timestamp);
+				if (prevDateKey !== currDateKey) {
+					const prevEl = el.previousElementSibling;
+					const hasCorrectSeparator =
+						prevEl &&
+						prevEl.classList.contains('message-date-separator') &&
+						prevEl.dataset.dateKey === currDateKey;
+					if (!hasCorrectSeparator) {
+						el.insertAdjacentElement('beforebegin', this.createDateSeparator(msg.created_at));
+					}
 				}
 			}
 		}
-		
+
 		this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
 		this.messageBehaviour.attach(el, msg);
-				
-		await this.messageHydrator.hydrate(el, msg.assets, msg.id);
-		if (nearBottom) {
-			requestAnimationFrame(() => {
-				this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
-			});
-		}
+		this.cleanupDateSeparators();
 
 		await emojis.replaceEl(el);
-
-		const customPlayer = el.querySelector(".custom-player");
-		if (customPlayer) await this.initCustomPlayer(customPlayer);
 
 		const replyBtn = el.querySelector("#reply-btn");
 		replyBtn.addEventListener("click", async () => await this.replyMessage(msg.id));
@@ -630,17 +657,89 @@ export class MessageHandler {
 			});
 		}
 
-		if (!nearBottom) {
+		if (!wasAtBottom) {
 			const scrollHeightAfter = this.messageContainer.scrollHeight;
 			this.messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
-		} else {
-			requestAnimationFrame(() => {
-				this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
-			});
 		}
-		this.cleanupDateSeparators();
+
+		this.messageHydrator.hydrate(el, msg.assets, msg.id).then(async () => {
+			console.log("hydrated", msg.id);
+			this._attachMediaLoadListeners(el);
+			const customPlayer = el.querySelector(".custom-player");
+			if (customPlayer) await this.initCustomPlayer(customPlayer);
+		});
 	}
 
+	async handleAllMessages(messages, isPagination = false) {
+		if (!Array.isArray(messages) || messages.length === 0) return;
+
+		const scrollTopBefore = this.messageContainer.scrollTop;
+		const scrollHeightBefore = this.messageContainer.scrollHeight;
+
+		if (!isPagination) this._pinToBottom = true;
+
+		const hydrateQueue = [];
+
+		for (const msg of messages) {
+			this.messageCache.removeExisting(msg.id);
+
+			const el = await this.messageRenderer.create(msg, this.usersList);
+			if (!el) continue;
+
+			const insertIndex = this.messageCache.insertIntoCache(msg, el);
+			this.insertMessageEl(el, insertIndex);
+
+			const prevMsg = this.messageCache.cache[insertIndex - 1];
+			if (prevMsg) {
+				const currDateKey = this.getDateKey(msg.created_at);
+				if (currDateKey) {
+					const prevDateKey = this.getDateKey(prevMsg.timestamp);
+					if (prevDateKey !== currDateKey) {
+						const prevEl = el.previousElementSibling;
+						const hasCorrectSeparator =
+							prevEl &&
+							prevEl.classList.contains('message-date-separator') &&
+							prevEl.dataset.dateKey === currDateKey;
+						if (!hasCorrectSeparator) {
+							el.insertAdjacentElement('beforebegin', this.createDateSeparator(msg.created_at));
+						}
+					}
+				}
+			}
+
+			this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
+			this.messageBehaviour.attach(el, msg);
+
+			const replyBtn = el.querySelector("#reply-btn");
+			replyBtn.addEventListener("click", async () => await this.replyMessage(msg.id));
+
+			const deleteBtn = el.querySelector("#delete-btn");
+			if (deleteBtn) {
+				deleteBtn.addEventListener("click", () => {
+					this.socket.emit("delete_message", { access_token: this.access_token, message_id: msg.id, server_id: this.server_id, channel_id: this.channel_id, contact_id: this.contact_id });
+					this.deleteMsg(msg.id);
+				});
+			}
+
+			hydrateQueue.push({ el, msg });
+		}
+
+		this.cleanupDateSeparators();
+		await emojis.replaceEl(this.messageContainer);
+
+		if (isPagination) {
+			const scrollHeightAfter = this.messageContainer.scrollHeight;
+			this.messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
+		}
+
+		Promise.all(hydrateQueue.map(async ({ el, msg }) => {
+			await this.messageHydrator.hydrate(el, msg.assets, msg.id);
+			this._attachMediaLoadListeners(el);
+			const customPlayer = el.querySelector(".custom-player");
+			if (customPlayer) await this.initCustomPlayer(customPlayer);
+		}));
+	}
+	
 	cleanupDateSeparators() {
 		const children = Array.from(this.messageContainer.children);
 
@@ -967,7 +1066,7 @@ export class MessageHandler {
 						const formData = new FormData();
 						formData.append('savedName', removed.savedName);
 
-						await fetch('https://chat.wokki20.nl/app/delete_file', {
+						await fetch('/app/delete_file', {
 							method: 'POST',
 							headers: {
 								"Authorization": `Bearer ${this.access_token}`
@@ -1010,7 +1109,7 @@ export class MessageHandler {
 			const formData = new FormData();
 			formData.append("files[]", file);
 
-			const response = await fetch("https://chat.wokki20.nl/app/upload_file", {
+			const response = await fetch("/app/upload_file", {
 				method: "POST",
 				body: formData,
 				headers: {

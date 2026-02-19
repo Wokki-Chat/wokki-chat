@@ -1919,6 +1919,7 @@ input:checked + .slider:before {
     display: none;
     flex-direction: column;
     z-index: 1;
+    border: 1px solid var(--clr-popup-a20);
 }
 
 .settings-dropdown.show {
@@ -2406,14 +2407,25 @@ code {
     display: flex;
     flex-direction: column;
     position: absolute;
-    top: 15px;
     z-index: 1;
     background-color: var(--clr-popup-a0);
+    overflow-y: auto;
+    color: var(--clr-text-a10);
+}
+
+:root.floaty .settings-tabs {
+    top: 15px;
     height: calc(100vh - 30px);
     width: 250px;
     border-radius: 16px;
-    overflow-y: auto;
-    color: var(--clr-text-a10);
+}
+
+:root.compact .settings-tabs {
+    top: 0px;
+    height: 100vh;
+    width: 250px;
+    border-radius: 0px;
+    border: 1px solid var(--clr-popup-a10);
 }
 
 .settings-group {
@@ -4988,4 +5000,9 @@ hr {
 
 .info-icon:hover {
     color: var(--clr-text-white-a10);
+}
+
+.channel-bar-empty {
+    margin: 0px;
+    margin-left: 10px;
 }

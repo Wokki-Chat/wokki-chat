@@ -164,22 +164,12 @@ function initDm() {
     });
 
     socket.on("all_messages", async (messages) => {
-        await handleAllMessages(messages);
+        await messageHandler.handleAllMessages(messages, offset > 0);
     });
 
     socket.on("all_messages_nocache", async (messages) => {
-        await handleAllMessages(messages);
+        await messageHandler.handleAllMessages(messages, offset > 0);
     });
-
-    async function handleAllMessages(messages) {
-        if (!Array.isArray(messages)) {
-            return;
-        }
-
-        for (const msg of messages) {
-            await messageHandler.handleMessage(msg);
-        }
-    }
 
     if (textarea) {
 		document.addEventListener("keydown", (e) => {

@@ -134,24 +134,13 @@ function initServer() {
 		}
 	});
 
-	socket.on("all_messages", async (messages) => {
-		await handleAllMessages(messages);
-	});
+    socket.on("all_messages", async (messages) => {
+        await messageHandler.handleAllMessages(messages, offset > 0);
+    });
 
-	socket.on("all_messages_nocache", async (messages) => {
-		await handleAllMessages(messages);
-	});
-
-	async function handleAllMessages(messages) {
-
-		if (!Array.isArray(messages)) {
-			return;
-		}
-
-		for (const msg of messages) {
-			await messageHandler.handleMessage(msg);
-		}
-	}
+    socket.on("all_messages_nocache", async (messages) => {
+        await messageHandler.handleAllMessages(messages, offset > 0);
+    });
 
 	socket.on("add_reaction", ({ message_id, reaction, user_id: reactingUserId }) => {
 		const el = document.querySelector(`.message[data-message-id="${message_id}"]`);

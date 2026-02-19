@@ -524,7 +524,7 @@
 .button-primary-filled {
     background-color: var(--clr-primary-a0);
     color: var(--clr-text-white-a0);
-    border: none;
+    border: 1px solid var(--clr-primary-a30);
     border-radius: 9px;
     padding: 10px 15px;
     font-size: 16px;
