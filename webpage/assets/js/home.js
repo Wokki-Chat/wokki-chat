@@ -1,6 +1,7 @@
 import { Sanitizer } from "./modules/global/sanitization.js";
 import { NotificationsManager } from "./modules/global/notifications.js";
 import Dev from "./modules/global/dev.js";
+import * as jspt from "https://cdn.wokki20.nl/content/jspt-v2.1.0/jspt.module.js";
 function initHome() {
 	const el = document.querySelector('wchat-allowed-scripts');
 	const scripts = el.getAttribute('value').split(';');
@@ -270,70 +271,40 @@ function initHome() {
             window.location.reload();
             } else {
                 if (response.msg == "User not found") {
-                    Toastify({
-                        text: "User doesn't exist",
+                    jspt.makeToast({
+                        message: "This user does not exist",
+                        style: "default-error",
                         duration: 3000,
-                        close: true,
-                        gravity: "bottom",
-                        position: "right",
-                        style: {
-                        background: "var(--clr-error-a0)",
-                        boxShadow: "none",
-                        borderRadius: "12px"
-                        }
-                    }).showToast();
+                        close_on_click: true
+                    })
                 } else if (response.msg == "Cannot send friend request to yourself") {
-                    Toastify({
-                        text: "You can't send a friend request to yourself",
+                    jspt.makeToast({
+                        message: "You cannot send a friend request to yourself",
+                        style: "default-error",
                         duration: 3000,
-                        close: true,
-                        gravity: "bottom",
-                        position: "right",
-                        style: {
-                        background: "var(--clr-error-a0)",
-                        boxShadow: "none",
-                        borderRadius: "12px"
-                        }
-                    }).showToast();
+                        close_on_click: true
+                    })
                 } else if (response.msg == "You have already sent a friend request to this person") {
-                    Toastify({
-                        text: "Friend request already sent",
+                    jspt.makeToast({
+                        message: "You have already sent a friend request to this person",
+                        style: "default-error",
                         duration: 3000,
-                        close: true,
-                        gravity: "bottom",
-                        position: "right",
-                        style: {
-                        background: "var(--clr-error-a0)",
-                        boxShadow: "none",
-                        borderRadius: "12px"
-                        }
-                    }).showToast();
+                        close_on_click: true
+                    })
                 } else if (response.msg == "Already friends") {
-                    Toastify({
-                        text: "You are already friends with this person",
+                    jspt.makeToast({
+                        message: "You are already friends with this user",
+                        style: "default-error",
                         duration: 3000,
-                        close: true,
-                        gravity: "bottom",
-                        position: "right",
-                        style: {
-                        background: "var(--clr-error-a0)",
-                        boxShadow: "none",
-                        borderRadius: "12px"
-                        }
-                    }).showToast();
+                        close_on_click: true
+                    })
                 } else {
-                    Toastify({
-                        text: "Something went wrong",
+                    jspt.makeToast({
+                        message: "Something went wrong",
+                        style: "default-error",
                         duration: 3000,
-                        close: true,
-                        gravity: "bottom",
-                        position: "right",
-                        style: {
-                        background: "var(--clr-error-a0)",
-                        boxShadow: "none",
-                        borderRadius: "12px"
-                        }
-                    }).showToast();
+                        close_on_click: true
+                    })
                 }
             }
         });
