@@ -25,17 +25,13 @@ body {
   scrollbar-color: var(--clr-popup-a20) transparent;
 }
 
-:root.dark {
+:root.dark,
+:root.light,
+:root.night,
+:root.midnight {
     background-color: var(--clr-surface-a0);
 }
 
-:root.night {
-    background-color: var(--clr-surface-a0);
-}
-
-:root.light {
-    background-color: var(--clr-surface-a0);
-}
 
 h2 {
     font-size: 20px;

@@ -19,10 +19,7 @@ class GitHubService {
     }
 
     private function getGraphqlToken(): string {
-        if (!defined('GITHUB_PERSONAL_ACCESS_TOKEN') || !GITHUB_PERSONAL_ACCESS_TOKEN) {
-            throw new RuntimeException('GITHUB_PERSONAL_ACCESS_TOKEN is missing');
-        }
-        return GITHUB_PERSONAL_ACCESS_TOKEN;
+        return $this->getInstallationToken();
     }
 
     private function base64UrlEncode(string $data): string {
@@ -125,7 +122,7 @@ class GitHubService {
 
         $result = $this->graphql('
             query($owner: String!, $number: Int!) {
-                user(login: $owner) {
+                organization(login: $owner) {
                     projectV2(number: $number) {
                         id
                         fields(first: 20) {
@@ -142,7 +139,7 @@ class GitHubService {
             }
         ', ['owner' => $this->owner, 'number' => $this->projectNumber]);
 
-        $project = $result['data']['user']['projectV2'] ?? null;
+        $project = $result['data']['organization']['projectV2'] ?? null;
         if (!$project) return;
 
         $this->projectId = $project['id'];
@@ -170,7 +167,7 @@ class GitHubService {
     public function debugLoadProject(): array {
         return $this->graphql('
             query($owner: String!, $number: Int!) {
-                user(login: $owner) {
+                organization(login: $owner) {
                     projectV2(number: $number) {
                         id
                         title
