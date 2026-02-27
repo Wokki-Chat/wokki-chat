@@ -10,7 +10,3 @@ $GITHUB_REDIRECT_URI = ""; // Github redirect URI
 $SPOTIFY_CLIENT_ID = ""; // Spotify client ID
 $SPOTIFY_CLIENT_SECRET = ""; // Spotify client secret
 $SPOTIFY_REDIRECT_URI = ""; // Spotify redirect URI
-
-$NOTION_CLIENT_ID = ""; // Notion client ID
-$NOTION_CLIENT_SECRET = ""; // Notion client secret
-$NOTION_REDIRECT_URI = ""; // Notion redirect URI
