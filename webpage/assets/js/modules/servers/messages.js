@@ -14,13 +14,13 @@ export class MessageRenderer {
 	}
 
 	addAssets(asset, msgId, index) {
-		const type = getAssetType(asset.savedName);
+		const type = this.getAssetType(asset.savedName);
 		const url = type === 'profile_picture'
 			? `/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}`
 			: `/uploads/messages/${encodeURIComponent(asset.savedName)}`;
 
 		if (type === 'image' || type === 'profile_picture') {
-			return `<img data-src="${url}" alt="${asset.originalName}" class="message-asset-image${type === 'profile_picture' ? ' message-asset-profile-picture' : ''} lazyload" data-prefetch-size="true" />`;
+			return `<img data-src="${url}" alt="${asset.originalName}" class="message-asset-image${type === 'profile_picture' ? ' message-asset-profile-picture' : ''} lazyload" data-prefetch-size="true" data-originalName="${asset.originalName}" />`;
 		} else if (type === 'video') {
 			return `<video data-src="${url}" controls class="message-asset-video lazyload" data-prefetch-size="true"></video>`;
 		} else if (type === 'audio') {
@@ -47,6 +47,23 @@ export class MessageRenderer {
 			return `<a href="${url}" download class="message-asset-file link">${this.sanitizer.sanitize(asset.savedName)}</a>`;
 		}
 	}
+
+	getAssetType(fileName) {
+		const parts = fileName.toLowerCase().split('.');
+
+		if (parts.length >= 3 && parts[parts.length - 1] === 'pfp' && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(parts[parts.length - 2])) {
+			return 'profile_picture';
+		}
+		
+		const ext = parts[parts.length - 1];
+
+		if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(ext)) return 'image';
+		if (['mp4', 'webm', 'ogg'].includes(ext)) return 'video';
+		if (['mp3', 'wav', 'ogg'].includes(ext)) return 'audio';
+		if (['pdf', 'txt'].includes(ext)) return ext;
+		return 'other';
+	}
+
 
 	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, assets }, usersList, onlyMe = false) {
 		if (!message && !embed) return null;
@@ -202,6 +219,137 @@ export class MessageRenderer {
 export class MessageHydrator {
 	constructor() {}
 
+	imageViewer(img_src, originalName) {
+		if (!img_src) return;
+		if (document.querySelector(".image-viewer-popup")) document.querySelector(".image-viewer-popup").remove();
+
+		const imageViewer = `
+			<div class="image-viewer-popup">
+				<div class="image-viewer-popup-container">
+					<div class="image-viewer-popup-options">
+						<div class="image-viewer-popup-option" id="image-viewer-popup-save">
+							<span class="material-symbols-rounded image-viewer-popup-option-icon">download</span>
+							<p class="image-viewer-popup-option-text">Save image</p>
+						</div>
+						<div class="image-viewer-popup-option" id="image-viewer-popup-new-tab">
+							<span class="material-symbols-rounded image-viewer-popup-option-icon">open_in_new</span>
+							<p class="image-viewer-popup-option-text">Open in new tab</p>
+						</div>
+						<div class="image-viewer-popup-option" id="image-viewer-popup-close">
+							<span class="material-symbols-rounded image-viewer-popup-option-icon">close</span>
+							<p class="image-viewer-popup-option-text">Close</p>
+						</div>
+					</div>
+					<div class="magnifier-circle" style="display: none;"></div>
+					<img src="${img_src}" draggable="false" class="image-viewer-popup-image"/>
+				</div>
+			</div>
+		`;
+
+		document.body.insertAdjacentHTML("beforeend", imageViewer);
+
+		const popup = document.querySelector(".image-viewer-popup");
+		const image = popup.querySelector(".image-viewer-popup-image");
+		const magnifier = popup.querySelector(".magnifier-circle");
+
+		let zoomLevel = 1;
+		let magnifierSize = 150;
+
+		popup.addEventListener("click", (e) => {
+			if (e.target === popup) popup.remove();
+		});
+
+		popup.querySelector(".image-viewer-popup-options").addEventListener("click", e => e.stopPropagation());
+		image.addEventListener("click", e => e.stopPropagation());
+
+		popup.querySelector("#image-viewer-popup-close").addEventListener("click", () => popup.remove());
+		popup.querySelector("#image-viewer-popup-new-tab").addEventListener("click", () => window.open(img_src, '_blank'));
+		popup.querySelector("#image-viewer-popup-save").addEventListener("click", () => {
+			const a = document.createElement('a');
+			a.href = img_src;
+			a.download = originalName;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+		});
+
+		let isMagnifierActive = false;
+		let lastMouseEvent = null;
+
+		image.addEventListener("mousedown", (e) => {
+			e.preventDefault();
+			isMagnifierActive = true;
+			magnifier.style.backgroundImage = `url('${img_src}')`;
+			magnifier.style.display = "block";
+			updateMagnifierPosition(e);
+		});
+
+		document.addEventListener("mouseup", () => {
+			isMagnifierActive = false;
+			magnifier.style.display = "none";
+		});
+
+		image.addEventListener("mousemove", (e) => {
+			if (!isMagnifierActive) return;
+			lastMouseEvent = e;
+			updateMagnifierPosition(e);
+		});
+
+
+		image.addEventListener("wheel", (e) => {
+			if (!isMagnifierActive) return;
+
+			e.preventDefault();
+
+			if (e.shiftKey) {
+				const centerX = parseFloat(magnifier.style.left) + magnifierSize / 2;
+				const centerY = parseFloat(magnifier.style.top) + magnifierSize / 2;
+
+				magnifierSize += e.deltaY * -0.5;
+				magnifierSize = Math.max(50, Math.min(400, magnifierSize));
+
+				magnifier.style.width = magnifierSize + "px";
+				magnifier.style.height = magnifierSize + "px";
+				magnifier.style.left = (centerX - magnifierSize / 2) + "px";
+				magnifier.style.top = (centerY - magnifierSize / 2) + "px";
+			} else {
+				zoomLevel *= e.deltaY < 0 ? 1.1 : 0.9;
+				zoomLevel = Math.max(1, Math.min(5, zoomLevel));
+				magnifier.style.setProperty("--zoom", zoomLevel);
+			}
+
+			if (lastMouseEvent) updateMagnifierPosition(lastMouseEvent);
+		}, { passive: false });
+
+
+		function updateMagnifierPosition(e) {
+			const rect = image.getBoundingClientRect();
+			const naturalWidth = image.naturalWidth;
+			const naturalHeight = image.naturalHeight;
+
+			const x = e.clientX - rect.left;
+			const y = e.clientY - rect.top;
+
+			const relX = x / rect.width;
+			const relY = y / rect.height;
+
+			const left = e.clientX - magnifierSize / 2;
+			const top = e.clientY - magnifierSize / 2;
+
+			magnifier.style.left = `${left}px`;
+			magnifier.style.top = `${top}px`;
+
+			const bgWidth = naturalWidth * zoomLevel;
+			const bgHeight = naturalHeight * zoomLevel;
+
+			const bgPosX = -(relX * bgWidth) + magnifierSize / 2;
+			const bgPosY = -(relY * bgHeight) + magnifierSize / 2;
+
+			magnifier.style.backgroundSize = `${bgWidth}px ${bgHeight}px`;
+			magnifier.style.backgroundPosition = `${bgPosX}px ${bgPosY}px`;
+		}
+	}
+
 	async hydrate(msgEl, assets, msgId) {
 		const invites = msgEl.querySelectorAll('.invite-item-container.loading');
 		const invitePromises = Array.from(invites).map(async el => {
@@ -270,7 +418,15 @@ export class MessageHydrator {
 			lazyEls.forEach(el => {
 				if (el.tagName === 'IMG' || el.tagName === 'VIDEO') {
 					el.src = el.dataset.src;
-					
+
+					if (el.tagName === 'IMG') {
+						const originalName = el.dataset.originalname;
+						el.style.cursor = 'pointer';
+						el.addEventListener('click', () => {
+							this.imageViewer(el.src, originalName);
+						});
+					}
+
 					const loadPromise = new Promise((resolve) => {
 						if (el.tagName === 'IMG') {
 							if (el.complete) {
