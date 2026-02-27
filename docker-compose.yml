@@ -17,6 +17,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./webpage:/var/www/html
+      - vendor_data:/var/www/html/vendor
     ports:
       - "8080:80"
       - "8443:443"
@@ -114,3 +115,4 @@ services:
 volumes:
   db_data:
   redis_data:
+  vendor_data:

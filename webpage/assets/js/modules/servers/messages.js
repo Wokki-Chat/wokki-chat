@@ -1101,7 +1101,7 @@ export class MessageHandler {
 			this.uploadContainer.appendChild(fileBlock);
 		});
 	}
-
+	
 	initFileUpload() {
 		const MAX_FILES = 10;
 		const MAX_SIZE = 25 * 1024 * 1024;
@@ -1120,7 +1120,14 @@ export class MessageHandler {
 			"audio/wav",
 			"audio/ogg",
 			"application/pdf",
-			"text/plain"
+			"text/plain",
+			"application/zip",
+			"application/x-zip-compressed",
+			"application/x-rar-compressed",
+			"application/x-7z-compressed",
+			"application/gzip",
+			"application/x-tar",
+			"application/octet-stream"
 		];
 
 		const upload_single_file = async (file) => {

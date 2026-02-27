@@ -475,6 +475,58 @@ function initSettings() {
 
 	}
 
+	if (active_tab === "media") {
+		const deleteButtons = document.querySelectorAll(".file-remove-icon");
+		const shareButtons = document.querySelectorAll(".media-share-icon");
+
+		shareButtons.forEach(shareButton => {
+			shareButton.addEventListener("click", async () => {
+				try {
+					const url = `${window.location.origin}/uploads/messages/${shareButton.dataset.savedName}`;
+					await navigator.clipboard.writeText(url);
+					jspt.makeToast({
+						message: "Link copied to clipboard!",
+						style: "success",
+						duration: 3000
+					});
+				} catch (err) {
+					jspt.makeToast({
+						message: "Failed to copy link, try again later.",
+						style: "error",
+						duration: 3000
+					})
+				}
+			});
+		});
+		
+		deleteButtons.forEach(deleteButton => {
+			deleteButton.addEventListener("click", async () => {
+				try {
+					const formData = new FormData();
+					formData.append('savedName', deleteButton.dataset.savedName);
+
+					const response = await fetch('/app/delete_file', {
+						method: 'POST',
+						headers: {
+							"Authorization": `Bearer ${access_token}`
+						},
+						body: formData
+					});
+
+					if (response.ok) {
+						deleteButton.parentElement.parentElement.remove();
+					}
+				} catch (err) {
+					jspt.makeToast({
+						message: "Failed to delete file, try again later.",
+						style: "error",
+						duration: 3000
+					})
+				}
+			});
+		});
+	}
+
 	if (active_tab === "devtools") {
 		const connectedWorkerEl = document.getElementById("connected-worker");
 		const connectedServerEl = document.getElementById("connected-server");

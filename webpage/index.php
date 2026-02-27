@@ -48,20 +48,20 @@ $spots_left = 500 - $row['count'];
             <?php echo $headerBtn; ?>
         </div>
         <div class="fixed-header">
-            <a href="https://chat.wokki20.nl/support" class="header-option" tabindex="0">Support</a>
+            <a href="/support" class="header-option" tabindex="0">Support</a>
             <div class="header-option multiple" tabindex="0">
                 <p class="header-option-text">Legal</p>
                 <div class=header-option-dropdown>
-                    <a href="https://chat.wokki20.nl/legal/privacy" class="link">Privacy Policy</a>
-                    <a href="https://chat.wokki20.nl/legal/terms" class="link">Terms of Service</a>
+                    <a href="/legal/privacy" class="link">Privacy Policy</a>
+                    <a href="/legal/terms" class="link">Terms of Service</a>
                 </div>
             </div>
             <div class="header-option multiple" tabindex="0">
                 <p class="header-option-text">Developers</p>
                 <div class=header-option-dropdown>
-                    <a href="https://chat.wokki20.nl/developer" class="link">Developer Portal</a>
-                    <a href="https://chat.wokki20.nl/developer/docs" class="link">Developer Documentation</a>
-                    <a href="https://chat.wokki20.nl/developer/docs#sdk" class="link">Wokki Chat Bots SDK</a>
+                    <a href="/developer" class="link">Developer Portal</a>
+                    <a href="/developer/docs" class="link">Developer Documentation</a>
+                    <a href="/developer/docs#sdk" class="link">Wokki Chat Bots SDK</a>
                 </div>
             </div>
         </div>

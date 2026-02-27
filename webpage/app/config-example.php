@@ -7,6 +7,8 @@ $mail_password = '';
 $allowedOrigin = 'https://localhost:8443';
 $allowedReferer = 'localhost';
 
+$notion_integration_secret = '';
+
 $mysqli = new mysqli($host, $db_username, $db_password, $dbname);
 
 if ($mysqli->connect_error) {

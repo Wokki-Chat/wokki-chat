@@ -48,6 +48,164 @@ function generateSafeName($originalName) {
     return $uuid . $ext;
 }
 
+function isDangerousExtension($filename) {
+    $dangerousExtensions = [
+        'php', 'php3', 'php4', 'php5', 'php7', 'phtml', 'phps',
+        'exe', 'bat', 'cmd', 'com', 'pif', 'scr', 'vbs', 'vbe',
+        'js', 'jse', 'ws', 'wsf', 'wsh', 'msi', 'jar',
+        'cgi', 'pl', 'py', 'rb', 'sh', 'bash',
+        'asp', 'aspx', 'jsp', 'csh', 'ksh',
+        'dll', 'so', 'dylib', 'app',
+        'htaccess', 'htpasswd', 'ini', 'config'
+    ];
+    
+    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    
+    if (in_array($ext, $dangerousExtensions)) {
+        return true;
+    }
+    
+    $basename = strtolower(basename($filename));
+    if (strpos($basename, '.php') !== false || 
+        strpos($basename, '.phtml') !== false ||
+        strpos($basename, '.htaccess') !== false) {
+        return true;
+    }
+    
+    return false;
+}
+
+function scanFileForMalware($filepath, $mimeType) {
+    $archiveMimes = [
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/x-rar-compressed',
+        'application/x-7z-compressed',
+        'application/gzip',
+        'application/x-tar',
+        'application/x-gzip',
+        'application/octet-stream'
+    ];
+    
+    if (in_array($mimeType, $archiveMimes)) {
+        return false;
+    }
+    
+    $fileContent = file_get_contents($filepath, false, null, 0, 1024 * 1024);
+    
+    if ($fileContent === false) {
+        return 'Cannot read file';
+    }
+    
+    $maliciousPatterns = [
+        '/<\?php/i',
+        '/<%/i',
+        '/<script/i',
+        '/eval\s*\(/i',
+        '/base64_decode/i',
+        '/exec\s*\(/i',
+        '/shell_exec/i',
+        '/system\s*\(/i',
+        '/passthru/i',
+        '/proc_open/i',
+        '/popen/i',
+        '/curl_exec/i',
+        '/curl_multi_exec/i',
+        '/parse_ini_file/i',
+        '/show_source/i',
+        '/file_get_contents.*php:\/\//i',
+        '/fsockopen/i',
+        '/assert\s*\(/i',
+        '/preg_replace.*\/e/i',
+        '/create_function/i',
+        '/include\s*\(/i',
+        '/require\s*\(/i',
+        '/\\$_(GET|POST|REQUEST|COOKIE|SERVER|FILES)/i',
+        '/move_uploaded_file/i',
+        '/chmod\s*\(/i',
+        '/chown\s*\(/i',
+        '/symlink\s*\(/i',
+        '/link\s*\(/i',
+        '/unlink\s*\(/i',
+        '/rmdir\s*\(/i',
+        '/mkdir\s*\(/i',
+        '/fopen\s*\(.*[\'"]w/i',
+        '/file_put_contents/i',
+    ];
+    
+    foreach ($maliciousPatterns as $pattern) {
+        if (preg_match($pattern, $fileContent)) {
+            return 'Malicious code detected';
+        }
+    }
+    
+    $binarySignatures = [
+        "\x4D\x5A" => 'Windows executable (EXE/DLL)',
+        "\x7F\x45\x4C\x46" => 'Linux executable (ELF)',
+        "\xCF\xFA\xED\xFE" => 'macOS executable (Mach-O)',
+        "\xFE\xED\xFA\xCF" => 'macOS executable (Mach-O)',
+    ];
+    
+    foreach ($binarySignatures as $signature => $description) {
+        if (strpos($fileContent, $signature) === 0) {
+            return "Executable file detected: $description";
+        }
+    }
+    
+    if (preg_match('/\x00/', substr($fileContent, 0, 100))) {
+        $mime = $mimeType;
+        $textMimes = ['text/', 'application/json', 'application/xml'];
+        $isTextType = false;
+        foreach ($textMimes as $textMime) {
+            if (strpos($mime, $textMime) === 0) {
+                $isTextType = true;
+                break;
+            }
+        }
+        if ($isTextType) {
+            return 'Null byte detected in text file';
+        }
+    }
+    
+    return false;
+}
+
+function validateFileSignature($filepath, $mimeType) {
+    $handle = fopen($filepath, 'rb');
+    if (!$handle) {
+        return false;
+    }
+    
+    $header = fread($handle, 12);
+    fclose($handle);
+    
+    $signatures = [
+        'image/jpeg' => ["\xFF\xD8\xFF"],
+        'image/png' => ["\x89\x50\x4E\x47"],
+        'image/gif' => ["\x47\x49\x46\x38\x37\x61", "\x47\x49\x46\x38\x39\x61"],
+        'image/webp' => ["\x52\x49\x46\x46"],
+        'application/pdf' => ["\x25\x50\x44\x46"],
+        'application/zip' => ["\x50\x4B\x03\x04", "\x50\x4B\x05\x06", "\x50\x4B\x07\x08"],
+        'application/x-zip-compressed' => ["\x50\x4B\x03\x04", "\x50\x4B\x05\x06", "\x50\x4B\x07\x08"],
+        'application/octet-stream' => ["\x50\x4B\x03\x04", "\x50\x4B\x05\x06", "\x50\x4B\x07\x08"],
+        'application/x-rar-compressed' => ["\x52\x61\x72\x21"],
+        'application/x-7z-compressed' => ["\x37\x7A\xBC\xAF\x27\x1C"],
+        'application/gzip' => ["\x1F\x8B"],
+        'application/x-tar' => ["\x75\x73\x74\x61\x72"],
+    ];
+    
+    if (isset($signatures[$mimeType])) {
+        foreach ($signatures[$mimeType] as $signature) {
+            if (strpos($header, $signature) === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    return true;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_SERVER['HTTP_ORIGIN'])) {
         if ($_SERVER['HTTP_ORIGIN'] !== $allowedOrigin) {
@@ -121,20 +279,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $fileArray = $_FILES['files'];
 
-    $allowedMimes = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/gif' => 'gif',
-        'image/webp' => 'webp',
-        'text/plain' => 'txt',
-        'audio/mpeg' => 'mp3',
-        'audio/wav' => 'wav',
-        'video/mp4' => 'mp4',
-        'application/octet-stream' => 'bin',
-        'application/pdf' => 'pdf'
-    ];
-
-
     if (!is_array($fileArray['name'])) {
         echo json_encode([
             'status' => 'error',
@@ -170,9 +314,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     for ($i = 0; $i < $fileCount; $i++) {
         if ($fileArray['error'][$i] !== UPLOAD_ERR_OK) {
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'File exceeds PHP upload_max_filesize',
+                UPLOAD_ERR_FORM_SIZE => 'File exceeds HTML form MAX_FILE_SIZE',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'Upload stopped by PHP extension'
+            ];
+            
+            $errorMsg = isset($errorMessages[$fileArray['error'][$i]]) 
+                ? $errorMessages[$fileArray['error'][$i]] 
+                : 'Unknown upload error';
+            
             echo json_encode([
                 'status' => 'error',
-                'description' => "Error uploading file {$fileArray['name'][$i]}",
+                'description' => "Error uploading file {$fileArray['name'][$i]}: {$errorMsg}",
                 'return_code' => 47
             ]);
             exit;
@@ -189,15 +347,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $tmpPath = $fileArray['tmp_name'][$i];
         $originalName = basename($fileArray['name'][$i]);
-        $safeName = generateSafeName($originalName);
-
-        $mimeType = mime_content_type($tmpPath);
-
-        if (!array_key_exists($mimeType, $allowedMimes)) {
+        
+        if (isDangerousExtension($originalName)) {
             echo json_encode([
                 'status' => 'error',
-                'description' => "File type not allowed: {$originalName} (detected type: {$mimeType})",
-                'return_code' => 49
+                'description' => "Dangerous file type not allowed: {$originalName}",
+                'return_code' => 51
+            ]);
+            exit;
+        }
+        
+        $safeName = generateSafeName($originalName);
+        $mimeType = mime_content_type($tmpPath);
+        
+        $malwareScan = scanFileForMalware($tmpPath, $mimeType);
+        if ($malwareScan !== false) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => "Security threat detected in {$originalName}: {$malwareScan}",
+                'return_code' => 52
+            ]);
+            exit;
+        }
+        
+        if (!validateFileSignature($tmpPath, $mimeType)) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => "File signature mismatch for {$originalName}",
+                'return_code' => 53
             ]);
             exit;
         }
@@ -209,14 +386,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (in_array($mimeType, $imageMimes)) {
             if ($mimeType === 'image/jpeg') {
                 $image = imagecreatefromjpeg($tmpPath);
+                if ($image === false) {
+                    echo json_encode([
+                        'status' => 'error',
+                        'description' => "Invalid or corrupt JPEG: {$originalName}",
+                        'return_code' => 54
+                    ]);
+                    exit;
+                }
                 imagejpeg($image, $targetPath, 75);
                 imagedestroy($image);
             } elseif ($mimeType === 'image/png') {
                 $image = imagecreatefrompng($tmpPath);
+                if ($image === false) {
+                    echo json_encode([
+                        'status' => 'error',
+                        'description' => "Invalid or corrupt PNG: {$originalName}",
+                        'return_code' => 54
+                    ]);
+                    exit;
+                }
                 imagepng($image, $targetPath, 6);
                 imagedestroy($image);
             } elseif ($mimeType === 'image/webp') {
                 $image = imagecreatefromwebp($tmpPath);
+                if ($image === false) {
+                    echo json_encode([
+                        'status' => 'error',
+                        'description' => "Invalid or corrupt WebP: {$originalName}",
+                        'return_code' => 54
+                    ]);
+                    exit;
+                }
                 imagewebp($image, $targetPath, 75);
                 imagedestroy($image);
             } elseif ($mimeType === 'image/gif') {
@@ -226,7 +427,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             move_uploaded_file($tmpPath, $targetPath);
         }
 
-
         $filesInfo[] = [
             'original_name' => $originalName,
             'saved_name' => $safeName,
@@ -234,8 +434,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'size' => $fileArray['size'][$i]
         ];
 
-        $stmtInsert = $mysqli->prepare("INSERT INTO assets (saved_name, user_id) VALUES (?, ?)");
-        $stmtInsert->bind_param("si", $safeName, $user_id);
+        $stmtInsert = $mysqli->prepare("INSERT INTO assets (saved_name, original_name, mime_type, user_id) VALUES (?, ?, ?, ?)");
+        $stmtInsert->bind_param("sssi", $safeName, $originalName, $mimeType, $user_id);
         $stmtInsert->execute();
         $stmtInsert->close();
     }

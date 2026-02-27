@@ -19,7 +19,7 @@ $stmt->close();
 $headerBtn = '<a href="login" class="button-primary-outline no-underline">Log In</a>';
 
 if ($user_id) {
-    $headerBtn = '<a href="home" class="button-primary-outline no-underline">Open Wokki Chat</a>';
+    $headerBtn = '<a href="/home" class="button-primary-outline no-underline">Open Wokki Chat</a>';
 }
 
 ?>
@@ -41,68 +41,41 @@ if ($user_id) {
             <?php echo $headerBtn; ?>
         </div>
         <div class="fixed-header">
-            <a href="https://chat.wokki20.nl/support" class="header-option" tabindex="0">Support</a>
+            <a href="/support" class="header-option" tabindex="0">Support</a>
             <div class="header-option multiple" tabindex="0">
                 <p class="header-option-text">Legal</p>
                 <div class=header-option-dropdown>
-                    <a href="https://chat.wokki20.nl/legal/privacy" class="link">Privacy Policy</a>
-                    <a href="https://chat.wokki20.nl/legal/terms" class="link">Terms of Service</a>
+                    <a href="/legal/privacy" class="link">Privacy Policy</a>
+                    <a href="/legal/terms" class="link">Terms of Service</a>
                 </div>
             </div>
             <div class="header-option multiple" tabindex="0">
                 <p class="header-option-text">Developers</p>
                 <div class=header-option-dropdown>
-                    <a href="https://chat.wokki20.nl/developer" class="link">Developer Portal</a>
-                    <a href="https://chat.wokki20.nl/developer/docs" class="link">Developer Documentation</a>
-                    <a href="https://chat.wokki20.nl/developer/docs#sdk" class="link">Wokki Chat Bots SDK</a>
+                    <a href="/developer" class="link">Developer Portal</a>
+                    <a href="/developer/docs" class="link">Developer Documentation</a>
+                    <a href="/developer/docs#sdk" class="link">Wokki Chat Bots SDK</a>
                 </div>
             </div>
         </div>
 
         <div class="legal-content">
             <h1 class="page-title">Terms of Service</h1>
-            <p class="page-description">Last updated: 24th of January 2026.</p>
+            <p class="page-description">Last updated: 27th of February 2026.</p>
 
             <div class="legal-container">
-                <h2>1. Acceptance of Terms</h2>
-                <p>By accessing or using Wokki Chat, you agree to these Terms of Service. If you do not agree, do not use our platform. These terms apply to all features, including chat, Spotify integration, and any future updates or services.</p>
+                <?php
+                require_once '../vendor/autoload.php';
 
-                <h2>2. Age Requirement</h2>
-                <p>You must be at least 13 years old (or the minimum age required by your government) to use Wokki Chat. Users under the required age must have a parent or guardian's consent. By creating an account, you confirm that you meet these age requirements or have guardian approval.</p>
+                $parsedown = new Parsedown();
+                $markdown = file_get_contents(__DIR__ . '/terms.md');
 
-                <h2>3. Account Responsibilities</h2>
-                <ul>
-                    <li>Keep your account credentials secure. Wokki Chat is not responsible for unauthorized access to your account.</li>
-                    <li>Only you are responsible for the content you post and share on the platform.</li>
-                    <li>You may not impersonate Wokki Chat or its owner (wokki20).</li>
-                </ul>
+                $html = $parsedown->text($markdown);
 
-                <h2>4. User Conduct</h2>
-                <p>Users are expected to behave respectfully. Harassment, hate speech, threats, or any offensive behavior will not be tolerated. Users violating these rules may have their accounts suspended or terminated.</p>
+                $html = preg_replace('/<a\s+href="([^"]*)">/', '<a href="$1" class="link">', $html);
 
-                <h2>5. Connections & Data Usage</h2>
-
-                <h3>Spotify Connection</h3>
-                <p>By enabling Spotify, you consent to Wokki Chat storing your access token, refresh token, user ID, username, user URI, and profile image. Tokens are only used to retrieve your currently playing music if you have this feature enabled (enabled by default). Tokens cannot be used for any other purposes beyond retrieving your music.</p>
-
-                <h3>Chat Connection</h3>
-                <p>For chat functionality, your username, user URL, and profile image will be stored in our database. This data allows other users to see your profile information in chat.</p>
-
-                <h2>6. Prohibited Activities</h2>
-                <ul>
-                    <li>Do not attempt to reverse-engineer, hack, or exploit Wokki Chat (Unless authorized).</li>
-                    <li>Do not advertise or claim ownership of Wokki Chat except for wokki20.</li>
-                    <li>Do not share harmful content, spam, or malware.</li>
-                </ul>
-
-                <h2>7. Termination of Use</h2>
-                <p>Wokki Chat may suspend or terminate accounts that violate these Terms or act maliciously. Users who are removed may not be allowed to return. Termination does not remove the platform's right to retain certain information for legal or administrative purposes.</p>
-
-                <h2>8. Modifications to Terms</h2>
-                <p>Wokki Chat may update these Terms at any time. Continued use of the platform constitutes acceptance of the updated Terms. Users are encouraged to review the Terms periodically.</p>
-
-                <h2>9. Contact</h2>
-                <p>If you have questions about these Terms, you can contact us at <strong><a class="link" href="mailto:support@cm.wokki20.nl">support@cm.wokki20.nl</a></strong>.</p>
+                echo $html;
+                ?>
             </div>
         </div>
     </div>

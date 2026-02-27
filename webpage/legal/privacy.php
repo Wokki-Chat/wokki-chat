@@ -19,7 +19,7 @@ $stmt->close();
 $headerBtn = '<a href="login" class="button-primary-outline no-underline">Log In</a>';
 
 if ($user_id) {
-    $headerBtn = '<a href="home" class="button-primary-outline no-underline">Open Wokki Chat</a>';
+    $headerBtn = '<a href="/home" class="button-primary-outline no-underline">Open Wokki Chat</a>';
 }
 
 ?>
@@ -41,66 +41,41 @@ if ($user_id) {
             <?php echo $headerBtn; ?>
         </div>
         <div class="fixed-header">
-            <a href="https://chat.wokki20.nl/support" class="header-option" tabindex="0">Support</a>
+            <a href="/support" class="header-option" tabindex="0">Support</a>
             <div class="header-option multiple" tabindex="0">
                 <p class="header-option-text">Legal</p>
                 <div class=header-option-dropdown>
-                    <a href="https://chat.wokki20.nl/legal/privacy" class="link">Privacy Policy</a>
-                    <a href="https://chat.wokki20.nl/legal/terms" class="link">Terms of Service</a>
+                    <a href="/legal/privacy" class="link">Privacy Policy</a>
+                    <a href="/legal/terms" class="link">Terms of Service</a>
                 </div>
             </div>
             <div class="header-option multiple" tabindex="0">
                 <p class="header-option-text">Developers</p>
                 <div class=header-option-dropdown>
-                    <a href="https://chat.wokki20.nl/developer" class="link">Developer Portal</a>
-                    <a href="https://chat.wokki20.nl/developer/docs" class="link">Developer Documentation</a>
-                    <a href="https://chat.wokki20.nl/developer/docs#sdk" class="link">Wokki Chat Bots SDK</a>
+                    <a href="/developer" class="link">Developer Portal</a>
+                    <a href="/developer/docs" class="link">Developer Documentation</a>
+                    <a href="/developer/docs#sdk" class="link">Wokki Chat Bots SDK</a>
                 </div>
             </div>
         </div>
 
         <div class="legal-content">
             <h1 class="page-title">Privacy Policy</h1>
-            <p class="page-description">Last updated: 24th of January 2026.</p>
+            <p class="page-description">Last updated: 27th of February 2026.</p>
 
             <div class="legal-container">
-                <h2>1. Information We Collect</h2>
-                <ul>
-                    <li><strong>Chat:</strong> Username, user URL, profile image.</li>
-                    <li><strong>Spotify Connection:</strong> Access token, refresh token, user ID, username, user URI, profile image. Tokens are only used to retrieve your currently playing music.</li>
-                </ul>
+                <?php
+                require_once '../vendor/autoload.php';
 
-                <h2>2. How We Use Your Information</h2>
-                <ul>
-                    <li>To provide and maintain chat and connection features.</li>
-                    <li>To display your currently playing music (if Spotify integration is enabled).</li>
-                    <li>To ensure platform security and compliance with our Terms of Service.</li>
-                </ul>
+                $parsedown = new Parsedown();
+                $markdown = file_get_contents(__DIR__ . '/privacy.md');
 
-                <h2>3. Sharing and Disclosure</h2>
-                <p>We do not sell or share your personal information for advertising purposes. Data may only be accessed by authorized personnel for platform maintenance, moderation, or legal obligations.</p>
+                $html = $parsedown->text($markdown);
 
-                <h2>4. Data Storage and Security</h2>
-                <p>We store user data securely in our database and take reasonable technical and administrative measures to protect your information from unauthorized access, alteration, disclosure, or destruction.</p>
+                $html = preg_replace('/<a\s+href="([^"]*)">/', '<a href="$1" class="link">', $html);
 
-                <h2>5. User Rights</h2>
-                <ul>
-                    <li>You can request the deletion of your account and all associated data at any time.</li>
-                    <li>You can disable Spotify integration at any time, this will still keep the tokens stored in our database.</li>
-                    <li>You can update or remove your profile information by contacting support.</li>
-                </ul>
-
-                <h2>6. Children's Privacy</h2>
-                <p>Wokki Chat is not intended for children under the age of 13 (or the age required by local law) without parental consent. Users under the required age must have guardian approval to use the platform.</p>
-
-                <h2>7. Cookies & Tracking</h2>
-                <p>Wokki Chat may use cookies or similar technologies for functional purposes such as keeping you logged in, personalizing your experience, and monitoring usage to improve our services.</p>
-
-                <h2>8. Changes to Privacy Policy</h2>
-                <p>Wokki Chat may update this Privacy Policy at any time. Continued use of the platform constitutes acceptance of any changes. Users should check this page periodically to stay informed about updates.</p>
-
-                <h2>9. Contact</h2>
-                <p>If you have questions about these Terms, you can contact us at <strong><a class="link" href="mailto:support@cm.wokki20.nl">support@cm.wokki20.nl</a></strong>.</p>
+                echo $html;
+                ?>
             </div>
         </div>
     </div>

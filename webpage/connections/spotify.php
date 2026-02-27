@@ -5,7 +5,7 @@ session_start();
 $access_token = $_COOKIE['access_token'];
 
 if (!$access_token) {
-    header('Location: /login?redirect=/connections/chat');
+    header('Location: /login?redirect=/connections/spotify');
     exit;
 }
 
@@ -20,23 +20,22 @@ if ($result->num_rows > 0) {
 $stmt->close();
 
 if (!$user_id) {
-    header('Location: /login?redirect=/connections/chat');
+    header('Location: /login?redirect=/connections/spotify');
     exit;
 }
 
-$CLIENT_ID = $CHAT_CLIENT_ID;
-$CLIENT_SECRET = $CHAT_CLIENT_SECRET;
-$REDIRECT_URI = $CHAT_REDIRECT_URI;
+$CLIENT_ID = $SPOTIFY_CLIENT_ID;
+$CLIENT_SECRET = $SPOTIFY_CLIENT_SECRET;
+$REDIRECT_URI = $SPOTIFY_REDIRECT_URI;
 
-if (!isset($_GET['code']) && !isset($_SESSION['chat_access_token'])) {
+if (!isset($_GET['code']) && !isset($_SESSION['spotify_access_token'])) {
     $state = substr(bin2hex(random_bytes(5)), 0, 10);
 
-    $authUrl = "https://chat.jonazwetsloot.nl/oauth/authorize?" . http_build_query([
+    $authUrl = "https://accounts.spotify.com/authorize?" . http_build_query([
         'response_type' => 'code',
         'client_id' => $CLIENT_ID,
         'redirect_uri' => $REDIRECT_URI,
-        'scope' => 'profile',
-        'force_login' => true,
+        'scope' => 'user-read-private user-read-email user-read-playback-state'
     ]);
 
     echo "<script>
@@ -46,17 +45,21 @@ if (!isset($_GET['code']) && !isset($_SESSION['chat_access_token'])) {
 }
 
 if (isset($_GET['code'])) {
-    $postData = [
+    $postData = http_build_query([
         'grant_type' => 'authorization_code',
         'code' => $_GET['code'],
-        'redirect_uri' => $REDIRECT_URI,
-        'client_id' => $CLIENT_ID,
-        'client_secret' => $CLIENT_SECRET
-    ];
+        'redirect_uri' => $REDIRECT_URI
+    ]);
 
-    $ch = curl_init("https://chat.jonazwetsloot.nl/oauth/token");
+    $ch = curl_init("https://accounts.spotify.com/api/token");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Basic ' . base64_encode($CLIENT_ID . ':' . $CLIENT_SECRET),
+        'Content-Type: application/x-www-form-urlencoded'
+    ]);
+
     $response = curl_exec($ch);
     curl_close($ch);
 
@@ -64,24 +67,31 @@ if (isset($_GET['code'])) {
 
     if (!isset($data['access_token'])) {
         header("Location: /home");
+        exit;
     }
 
-    $_SESSION['chat_access_token'] = $data['access_token'];
+    $_SESSION['spotify_access_token'] = $data['access_token'];
+    $widget_name = 'Spotify';
 
+    $widgetStmt = $mysqli->prepare("INSERT INTO profile_widgets (user_id, widget_name, widget_access_token, widget_refresh_token) VALUES (?, ?, ?, ?)");
+    $widgetStmt->bind_param("isss", $user_id, $widget_name, $data['access_token'], $data['refresh_token']);
+    $widgetStmt->execute();
+    $widgetStmt->close();
+    
     header("Location: $REDIRECT_URI");
     exit;
 }
 
-if (!isset($_SESSION['chat_access_token'])) {
+if (!isset($_SESSION['spotify_access_token'])) {
     die("Not logged in. Please log in first.");
 }
 
-$apiUrl = "https://chat.jonazwetsloot.nl/oauth/userinfo";
+$apiUrl = "https://api.spotify.com/v1/me";
 
 $ch = curl_init($apiUrl);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    "Authorization: Bearer " . $_SESSION['chat_access_token']
+    "Authorization: Bearer " . $_SESSION['spotify_access_token']
 ]);
 
 $response = curl_exec($ch);
@@ -94,11 +104,11 @@ if ($httpCode !== 200 || isset($data['error'])) {
     header("Location: /home");
 }
 
-$connection_user_id = null;
-$connection_user_name = $data['name'];
-$connection_user_url = $data['profile'];
-$connection_name = "Chat";
-$connection_user_image = $data['picture'];
+$connection_user_id = $data['id'];
+$connection_user_name = $data['display_name'];
+$connection_user_url = $data['uri'];
+$connection_name = "Spotify";
+$connection_user_image = $data['images'][0]['url'] ?? null;
 
 $stmt = $mysqli->prepare("
     INSERT INTO user_connections (connection_name, user_id, connection_user_id, connection_user_name, connection_user_url, connection_user_image)
@@ -123,26 +133,7 @@ $stmt->bind_param(
 $stmt->execute();
 $stmt->close();
 
-$stmt = $mysqli->prepare("SELECT premium, premium_expires_at, added_chat_account_once FROM users WHERE id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-if ($result->num_rows > 0) {
-    $row = $result->fetch_assoc();
-    $premium = $row['premium'];
-    $premium_expires_at = $row['premium_expires_at'];
-    $already_added_chat_account_once = $row['added_chat_account_once'] === 1;
-}
-$stmt->close();
-
-if ((!$premium || ($premium_expires_at !== null && $premium_expires_at <= time())) && !$already_added_chat_account_once) {
-    $stmt = $mysqli->prepare("UPDATE users SET premium = 1, premium_expires_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), premium_know = 0, added_chat_account_once = 1 WHERE id = ?");
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $stmt->close();
-}
-
-$_SESSION['chat_access_token'] = null;
+$_SESSION['spotify_access_token'] = null;
 
 header("Location: /settings/connections");
 ?>
