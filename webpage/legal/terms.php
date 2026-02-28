@@ -61,7 +61,7 @@ if ($user_id) {
 
         <div class="legal-content">
             <h1 class="page-title">Terms of Service</h1>
-            <p class="page-description">Last updated: 27th of February 2026.</p>
+            <p class="page-description">Last updated: 1st of March 2026.</p>
 
             <div class="legal-container">
                 <?php
