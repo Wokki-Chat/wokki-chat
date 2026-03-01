@@ -162,6 +162,22 @@ async def delete_cached_message(server_id: str = None, channel_id: str = None, c
             await redis_client.lrem(key, 0, msg)
             break
         
+async def update_cached_messages(server_id: str = None, channel_id: str = None, contact_id: str = None, messages: list = None):
+    if contact_id:
+        key = f"contact_messages:{contact_id}"
+    elif server_id and channel_id:
+        key = f"channel_messages:{server_id}:{channel_id}"
+    else:
+        raise ValueError("Must provide either contact_id or (server_id and channel_id)")
+    
+    updates = {msg.get("id"): msg for msg in messages}
+
+    cached = await redis_client.lrange(key, 0, -1)
+    for i, msg in enumerate(cached):
+        data = json.loads(msg)
+        if data.get("id") in updates:
+            await redis_client.lset(key, i, json.dumps(updates[data.get("id")]))
+        
 async def get_cached_users(server_id: str = None, contact_id: str = None):
     if contact_id:
         key = f"contact_users:{contact_id}"

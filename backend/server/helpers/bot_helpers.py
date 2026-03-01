@@ -4,6 +4,7 @@ import server.sio_instance as sio_instance
 import server.config as config
 import aiomysql
 from server.helpers.logs import addMessageToLogs
+from server.config import get_bot_sid_from_id
 
 def is_valid_hex_color(color):
     return color is None or (isinstance(color, str) and HEX_COLOR_RE.match(color))
@@ -189,3 +190,59 @@ async def initialize_commands(sid, data):
                     
             await addMessageToLogs(f"Initialized commands for bot {bot_id}", "INFO")
             await sio_instance.sio.emit('initialize_commands_response', {'success': True}, to=sid)
+            
+
+async def embed_button(sid, data):
+    from server.helpers.server_helpers import is_user_in_server
+    from server.helpers.user_helpers import verify_access_token
+    access_token = data.get('access_token')
+    server_id = data.get('server_id')
+    channel_id = data.get('channel_id')
+    bot_id = data.get('bot_id')
+    button_id = data.get('button_id')
+    
+    if not all([access_token, bot_id, button_id, server_id, channel_id]):
+        await addMessageToLogs(f"Missing required fields for embed_button", "INFO")
+        await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
+        return
+    
+    async with config.pool.acquire() as conn:
+        async with conn.cursor(aiomysql.DictCursor) as cur:
+            user_id = await verify_access_token(cur, access_token)
+            if not user_id:
+                await addMessageToLogs(f"Invalid token for embed_button, access token: {access_token}", "INFO")
+                await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'Invalid token'}, to=sid)
+                return
+            
+            if not await is_user_in_server(cur, user_id, server_id):
+                await addMessageToLogs(f"User is not in server for embed_button, user id: {user_id}, server id: {server_id}", "INFO")
+                await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'User is not in server'}, to=sid)
+                return
+            
+            if not await is_bot_in_server(cur, bot_id, server_id):
+                await addMessageToLogs(f"Bot is not in server for embed_button, bot id: {bot_id}, server id: {server_id}", "INFO")
+                await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'Bot is not in server'}, to=sid)
+                return
+                        
+            bot_sid = await get_bot_sid_from_id(bot_id)
+                
+            if not bot_sid:
+                await addMessageToLogs(f"Bot not found for embed_button, bot id: {bot_id}", "INFO")
+                await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'Bot not found'}, to=sid)
+                return
+
+            if bot_sid:
+                await sio_instance.sio.emit('embed_button_pressed', {
+                    'button_id': button_id,
+                    'sent_by_user_id': user_id,
+                    'server_id': server_id,
+                    'channel_id': channel_id
+                }, to=bot_sid)
+                await addMessageToLogs(f"Emitted embed_button_pressed for bot id: {bot_id}, button id: {button_id}, user id: {user_id}, server id: {server_id}, channel id: {channel_id}", "INFO")
+            else:
+                await addMessageToLogs(f"Bot not found for embed_button, bot id: {bot_id}", "INFO")
+                await sio_instance.sio.emit('embed_button_response', {'success': False, 'error': 'Bot not found'}, to=sid)
+                return            
+
+            await sio_instance.sio.emit('embed_button_response', {'success': True}, to=sid)
+            await addMessageToLogs(f"Emited embed_button_response for bot id: {bot_id}, button id: {button_id}", "INFO")

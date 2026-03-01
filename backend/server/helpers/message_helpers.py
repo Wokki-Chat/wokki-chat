@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import json
-from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, get_cached_users, cache_users, delete_cached_message, get_command_id
+from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, update_cached_messages, delete_cached_message, get_command_id
 from server.helpers.user_helpers import get_user_premium_status, auth_required
 from server.helpers.server_helpers import server_permissions, is_user_in_server, is_bot_in_server
 from server.helpers.friend_helpers import inContact
@@ -11,6 +11,7 @@ import server.config as config
 from server.helpers.logs import addMessageToLogs
 from server.helpers.other_helpers import addKudos
 import asyncio
+from server.helpers.bot_helpers import validate_embed
 
 @auth_required(server_required=True, allow_bots=True)
 async def send_message(sid, metadata, data):
@@ -583,6 +584,11 @@ async def get_messages(sid, metadata, data):
                     await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
                     await addMessageToLogs(f"Emitted all_messages to {user_id}, Sent {len(messages)} messages to {user_id}", "INFO")
 
+                    if is_contact:
+                        await update_cached_messages(contact_id=contact_id, messages=messages, offset=offset, limit=limit)
+                    else:
+                        await update_cached_messages(server_id=server_id, channel_id=channel_id, messages=messages, offset=offset, limit=limit)
+
                     await sio_instance.sio.emit(
                         'get_messages_response',
                         {'success': True, 'count': len(messages), 'total': total_count, 'offset': offset},
@@ -854,3 +860,133 @@ async def add_reaction(sid, metadata, data):
                     room=room
                 )
                 await addMessageToLogs(f"Added reaction {reaction} to message {message_id} by user {account_id}", "INFO")
+
+@auth_required(server_required=True, allow_bots=True)
+async def edit_message(sid, metadata, data):
+    message_id = data.get('message_id')
+    message = data.get('message')
+    embed = data.get('embed')
+    req_id = data.get('req_id')
+    account_id = metadata.get('account_id')
+    is_bot = metadata.get('is_bot')
+    server_id = metadata.get('server_id')
+    
+    if is_bot:
+        if not all([(message or embed), message_id]):
+            await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
+            return
+    else:
+        if not all([message, message_id]):
+            await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
+            return
+    
+    if embed is not None and is_bot:
+        if not validate_embed(embed):
+            await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Invalid embed data', 'req_id': req_id}, to=sid)
+            return
+    async with config.pool.acquire() as conn:
+        async with conn.cursor(aiomysql.DictCursor) as cur:
+            message_row = None
+            if is_bot:
+                await cur.execute(
+                    "SELECT server_id, channel_id, message, embed FROM messages WHERE id=%s AND sent_by_bot=%s",
+                    (message_id, account_id)
+                )
+                message_row = await cur.fetchone()
+            else:
+                await cur.execute(
+                    "SELECT server_id, channel_id, message FROM messages WHERE id=%s AND sent_by=%s",
+                    (message_id, account_id)
+                )
+                message_row = await cur.fetchone()
+            
+            if message_row == None:
+                await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Message not found', 'req_id': req_id}, to=sid)
+                return
+            else:
+                if message_row['server_id'] != server_id:
+                    await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Message not found', 'req_id': req_id}, to=sid)
+                    return
+                if is_bot:
+                    db_embed = json.loads(message_row['embed']) if message_row.get('embed') else None
+                    if message_row['message'] == message and db_embed == embed:
+                        await sio_instance.sio.emit('edit_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
+                        return
+                else:
+                    if message_row['message'] == message:
+                        await sio_instance.sio.emit('edit_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
+                        return
+
+            is_premium = False
+            if not is_bot:
+                is_premium = await get_user_premium_status(cur, account_id)
+            
+            limit = 10000 if is_premium else 3000
+            
+            if embed is not None and is_bot:
+                embed_list = embed if isinstance(embed, list) else [embed]
+                for e in embed_list:
+                    e['bot_id'] = account_id
+            
+            if message is not None and len(message) > limit:
+                await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Message too long', 'req_id': req_id}, to=sid)
+                return
+
+            if message is None and (embed is None or not is_bot):
+                await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Invalid update', 'req_id': req_id}, to=sid)
+                return
+            
+            timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            
+            if is_bot:
+                embed_str = json.dumps(embed) if embed is not None else None
+                
+                fields = []
+                values = []
+
+                if message is not None:
+                    fields.append("message = %s")
+                    values.append(message)
+
+                if embed is not None:
+                    embed_str = json.dumps(embed)
+                    fields.append("embed = %s")
+                    values.append(embed_str)
+
+                if fields:
+                    fields.append("updated_at = %s")
+                    fields.append("edited = %s")
+                    values.append(timestamp)
+                    values.append(True)
+
+                    values.append(message_id)
+                    values.append(account_id)
+
+                    sql = f'''
+                        UPDATE messages
+                        SET {', '.join(fields)}
+                        WHERE id = %s AND sent_by_bot = %s
+                    '''
+
+                    await cur.execute(sql, values)
+                    await conn.commit()
+                    await sio_instance.sio.emit('edit_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
+            else:
+                await cur.execute(
+                    "UPDATE messages SET message=%s, updated_at=%s, edited=1 WHERE id=%s AND sent_by=%s",
+                    (message, timestamp, message_id, account_id)
+                )
+                await conn.commit()
+                await sio_instance.sio.emit('edit_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
+
+            server_id = message_row['server_id']
+            channel_id = message_row['channel_id']
+                
+    await sio_instance.sio.emit('update_message', {
+        'id': message_id,
+        'bot_message': is_bot,
+        'message': message,
+        'updated_at': timestamp,
+        'embed': embed if is_bot and embed is not None else None,
+        'sent_by': account_id
+    }, room=f'server:{server_id}:channel:{channel_id}', to=sid)

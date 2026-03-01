@@ -109,7 +109,8 @@ def auth_required(server_required = True, allow_bots = True): # problem: it does
 
             metadata = {
                 'is_bot': is_bot,
-                'account_id': account_id
+                'account_id': account_id,
+                'server_id': server_id
             }
             return await func(sid, metadata, data, *args, **kwargs)
         return wrapper

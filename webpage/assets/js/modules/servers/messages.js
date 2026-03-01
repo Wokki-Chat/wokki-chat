@@ -65,13 +65,27 @@ export class MessageRenderer {
 	}
 
 
-	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, assets }, usersList, onlyMe = false) {
+	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, assets, edited }, usersList, onlyMe = false) {
 		if (!message && !embed) return null;
 
 		this.sanitizer.init(usersList);
 
 		const sanitizedUsername = sender_info.display_name ? this.sanitizer.sanitize(sender_info.display_name) : this.sanitizer.sanitize(sender_info.username);
-		const sanitizedMessage = await this.sanitizer.sanitizeMsg(message);
+		let sanitizedMessage = await this.sanitizer.sanitizeMsg(message);
+
+		if (edited === 1) {
+			const tempDiv = document.createElement('div');
+			tempDiv.innerHTML = sanitizedMessage;
+
+			const lastElement = tempDiv.lastElementChild;
+			if (lastElement && lastElement.tagName === 'SPAN') {
+				lastElement.insertAdjacentHTML('beforeend', '<p class="message-edited">(edited)</p>');
+				sanitizedMessage = tempDiv.innerHTML;
+			} else {
+				sanitizedMessage += '<span class="message-edited">(edited)</span>';
+			}
+		}
+
 		const createdAtDate = new Date(created_at);
 
 		let embedsRaw = null;
@@ -92,6 +106,7 @@ export class MessageRenderer {
 		msgEl.dataset.timestamp = created_at;
 		msgEl.dataset.messageId = message_id;
 		msgEl.dataset.sentBy = sent_by !== null ? sent_by : sent_by_bot;
+		msgEl.dataset.originalContent = this.sanitizer.sanitize(message);
 
 		msgEl.innerHTML = `
 			${
@@ -121,7 +136,7 @@ export class MessageRenderer {
 						${sender_info.premium == true ? '<div class="premium-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_premium.svg"><p class="premium-tag-tooltip">Premium</p></div>' : ''}
 						${sender_info.staff == 1 ? '<div class="staff-tag"><img draggable="false" class="profile-item-info-tag-icon" src="/assets/icons/tags/tag_staff.svg"><p class="staff-tag-tooltip">Staff</p></div>' : ''}
 						${bot_message == 1 ? '<div class="bot-tag"><span class="material-symbols-rounded">check</span>BOT</div>' : ''}
-						<p class="date">${createdAtDate.toLocaleString()}</p>
+						<p class="date">${this.sanitizer.formatDate(createdAtDate.toLocaleString())}</p>
 					</div>
 					<div class="message-text">${sanitizedMessage}</div>
 					${embeds ? `<div class="message-embed">${await this.Embeds({ embeds }, usersList)}</div>` : ''}
@@ -139,6 +154,9 @@ export class MessageRenderer {
 				${
 					String(sent_by) === this.user_id
 					? `
+					<div class="message-option" id="edit-btn">
+						<span class="material-symbols-rounded">edit</span>
+					</div>
 					<div class="message-option danger" id="delete-btn">
 						<span class="material-symbols-rounded">delete</span>
 					</div>
@@ -169,6 +187,55 @@ export class MessageRenderer {
 		}
 
 		return msgEl;
+	}
+
+	async update({ message, id: message_id, embed, updated_at, bot_message, sent_by }) {
+		let embedsRaw = null;
+		try {
+			embedsRaw = typeof embed === 'string' ? JSON.parse(embed) : embed;
+		} catch {
+			embedsRaw = null;
+		}
+
+		const embeds = Array.isArray(embedsRaw)
+			? embedsRaw
+			: embedsRaw
+				? [embedsRaw]
+				: null;
+		
+		const msgEl = document.querySelector(`.message[data-message-id="${message_id}"][data-sent-by="${sent_by}"]`);
+		if (!msgEl) return;
+
+		const messageTextEl = msgEl.querySelector(".message-content").querySelector(".message-info").querySelector(".message-text");
+		if (!messageTextEl) return;
+
+		const newMessage = await this.sanitizer.sanitizeMsg(message);
+		const tempDiv = document.createElement('div');
+		tempDiv.innerHTML = newMessage;
+
+		const lastElement = tempDiv.lastElementChild;
+		if (lastElement && lastElement.tagName === 'SPAN') {
+			lastElement.insertAdjacentHTML('beforeend', '<p class="message-edited">(edited)</p>');
+			messageTextEl.innerHTML = tempDiv.innerHTML;
+		} else {
+			messageTextEl.innerHTML = newMessage + '<span class="message-edited">(edited)</span>';
+		}
+
+		if (embeds && embeds.length > 0) {
+			const messageInfo = msgEl.querySelector(".message-info");
+			const messageTextEl = messageInfo.querySelector(".message-text");
+			const reactionsDiv = messageInfo.querySelector(".message-reactions");
+			const messageEmbedEl = messageInfo.querySelector(".message-embed");
+
+			if (messageEmbedEl) {
+				messageEmbedEl.innerHTML = await this.Embeds({ embeds }, this.usersList);
+			} else {
+				const messageEmbedContainer = document.createElement("div");
+				messageEmbedContainer.classList.add("message-embed");
+				messageEmbedContainer.innerHTML = await this.Embeds({ embeds }, this.usersList);
+				messageInfo.insertBefore(messageEmbedContainer, reactionsDiv);
+			}
+		}
 	}
 
 	async Embed({ embed }, usersList) {
@@ -649,7 +716,7 @@ export class MessageCache {
 }
 
 export class MessageHandler {
-	constructor({ user_id, channel_id = null, server_id = null, access_token, socket, messageContainer, contact_id = null, textarea, channels = null, uploadContainer}) {
+	constructor({ user_id, channel_id = null, server_id = null, access_token, socket, messageContainer, contact_id = null, textarea, channels = null, uploadContainer, premium = false }) {
 		this.user_id = user_id;
 		this.channel_id = channel_id;
 		this.server_id = server_id;
@@ -669,6 +736,7 @@ export class MessageHandler {
 		this.textarea = textarea;
 		this.uploadContainer = uploadContainer;
     	this.selectedFiles = [];
+		this.premium = premium;
 
 		this._pinToBottom = true;
 		this._programmaticScroll = false;
@@ -781,6 +849,166 @@ export class MessageHandler {
 			if (onlyEmojis) el.classList.add('emoji-only');
 		});
 	}
+	
+	async editMsg(msg_id, sent_by) {
+		const revertCurrentEditing = () => {
+			const currentEditing = document.querySelector('.message.editing');
+			if (currentEditing) {
+				const messageTextEl = currentEditing.querySelector('.message-text');
+				const originalContent = currentEditing.getAttribute('data-original-content');
+				if (originalContent) {
+					messageTextEl.innerHTML = originalContent;
+					currentEditing.removeAttribute('data-original-content');
+				}
+				currentEditing.classList.remove('editing');
+			}
+		};
+
+		revertCurrentEditing();
+
+		const msgEl = document.querySelector(`.message[data-message-id="${msg_id}"][data-sent-by="${sent_by}"]`);
+		if (!msgEl) return;
+
+		const messageTextEl = msgEl.querySelector('.message-text');
+		const originalContent = msgEl.getAttribute('data-original-content') || messageTextEl.innerHTML;
+
+		const saveCurrentEditing = () => {
+			const cleanMsgFromTextarea = this.textareaFormatter.cleanMsg(document.getElementById('message-input'));
+			msgEl.setAttribute('data-original-content', cleanMsgFromTextarea);
+			messageTextEl.innerHTML = this.textareaFormatter.format(cleanMsgFromTextarea);
+			msgEl.classList.remove('editing');
+			this.socket.emit("edit_message", { access_token: this.access_token, message_id: msg_id, server_id: this.server_id, message: cleanMsgFromTextarea });
+		};
+
+		msgEl.setAttribute('data-original-content', originalContent);
+		msgEl.classList.add('editing');
+
+		const messageEditInput = document.createElement('div');
+		messageEditInput.classList.add('input-container-2', 'input-container-2-inline', 'message-edit-input');
+		messageEditInput.innerHTML = `
+			<div class="textarea-container">
+				<div class="message-input-wrapper">
+					<div class="message-input-bg" id="message-input-bg">${this.textareaFormatter.format(originalContent)}</div>
+					<div class="message-input" id="message-input" contenteditable="true">${originalContent}</div>
+				</div>
+			</div>
+			<div class="max-message-length">
+				<p class="max-characters-left"></p>
+			</div>
+		`;
+
+		const editActionsEl = document.createElement('div');
+		editActionsEl.classList.add('message-edit-actions');
+		editActionsEl.innerHTML = `Press escape to <span class="message-edit-action" id="message-edit-cancel">cancel</span> or press enter to <span class="message-edit-action" id="message-edit-save">save</span>`;
+
+		const messageTextElInsides = document.createElement('div');
+		messageTextElInsides.appendChild(messageEditInput);
+		messageTextElInsides.appendChild(editActionsEl);
+
+		const cancelBtn = editActionsEl.querySelector("#message-edit-cancel");
+		cancelBtn.addEventListener('click', () => {
+			revertCurrentEditing();
+		});
+
+		const saveBtn = editActionsEl.querySelector("#message-edit-save");
+		saveBtn.addEventListener('click', () => {
+			saveCurrentEditing();
+		});
+
+		messageTextEl.replaceChildren(messageTextElInsides);
+		const textarea = document.getElementById("message-input");
+		const preview = document.getElementById("message-input-bg");
+
+		const minHeight = 18;
+
+		if (textarea) {
+			const maxHeight = 250;
+			const warningThreshold = 1000;
+			const maxChars = this.premium ? 10000 : 3000;
+
+			const messageInputWrapper = document.querySelector('.message-input-wrapper');
+
+			const maxMessageLengthEl = document.querySelector('.max-message-length');
+			const maxCharactersLeftEl = document.querySelector('.max-characters-left');
+
+			document.querySelector(".input-container-2").addEventListener("click", () => textarea.focus());
+
+			const inputContainer = document.querySelector(".input-container-2");
+
+			const updateHeight = () => {
+				let newHeight = Math.min(textarea.scrollHeight, maxHeight);
+				messageInputWrapper.style.height = newHeight + 'px';
+				inputContainer.style.minHeight = newHeight + 'px';
+			};
+
+			const updateCharsLeft = () => {
+				const charsLeft = maxChars - textarea.innerText.length;
+				if (charsLeft <= warningThreshold) {
+					maxMessageLengthEl.style.display = 'flex';
+					maxCharactersLeftEl.textContent = charsLeft;
+					maxCharactersLeftEl.classList.toggle('debt', charsLeft < 0);
+				} else {
+					maxMessageLengthEl.style.display = 'none';
+					maxCharactersLeftEl.classList.remove('debt');
+				}
+			};
+
+			textarea.addEventListener('input', (e) => {
+				if (e.target !== textarea) return;
+
+				if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
+					textarea.innerHTML = '';
+				}
+
+				updateHeight();
+				updateCharsLeft();
+
+				preview.innerHTML = this.textareaFormatter.format(textarea.innerText);
+			});
+
+			textarea.addEventListener('paste', (e) => {
+				e.preventDefault();
+
+				const text = e.clipboardData.getData('text/plain');
+
+				const selection = window.getSelection();
+				if (!selection.rangeCount) return;
+				selection.deleteFromDocument();
+				selection.getRangeAt(0).insertNode(document.createTextNode(text));
+
+				selection.collapseToEnd();
+
+				textarea.dispatchEvent(new Event('input'));
+			});
+
+			document.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' && !e.shiftKey) {
+					e.preventDefault();
+					saveCurrentEditing();
+				}
+				if (e.key === 'Escape') {
+					e.preventDefault();
+					revertCurrentEditing();
+				}
+			});
+
+			updateHeight();
+			updateCharsLeft();
+			preview.innerHTML = this.textareaFormatter.format(textarea.innerText);
+			textarea.focus();
+		}
+	}
+
+	async update(message) {
+		this.messageRenderer.update({
+			message: message.message,
+			id: message.id,
+			embed: message.embed,
+			updated_at: message.updated_at,
+			bot_message: message.bot_message,
+			sent_by: message.sent_by
+		});
+	}
 
 	async handleMessage(msg) {
 		this.messageCache.removeExisting(msg.id);
@@ -828,6 +1056,13 @@ export class MessageHandler {
 			deleteBtn.addEventListener("click", () => {
 				this.socket.emit("delete_message", { access_token: this.access_token, message_id: msg.id, server_id: this.server_id, channel_id: this.channel_id, contact_id: this.contact_id });
 				this.deleteMsg(msg.id);
+			});
+		}
+
+		const editBtn = el.querySelector("#edit-btn");
+		if (editBtn) {
+			editBtn.addEventListener("click", () => {
+				this.editMsg(msg.id, msg.sent_by);
 			});
 		}
 
@@ -891,6 +1126,13 @@ export class MessageHandler {
 				deleteBtn.addEventListener("click", () => {
 					this.socket.emit("delete_message", { access_token: this.access_token, message_id: msg.id, server_id: this.server_id, channel_id: this.channel_id, contact_id: this.contact_id });
 					this.deleteMsg(msg.id);
+				});
+			}
+
+			const editBtn = el.querySelector("#edit-btn");
+			if (editBtn) {
+				editBtn.addEventListener("click", () => {
+					this.editMsg(msg.id, msg.sent_by);
 				});
 			}
 
@@ -1078,19 +1320,26 @@ export class MessageHandler {
 	async replyMessage(id) {
 		if (document.querySelector(".replying-to")) document.querySelector(".replying-to").remove();
 		this.replyingTo = id;
-		document.getElementById("message-input").focus();
 
 		const { parent_message_text, parent_message_user } = await this.loadParentMessage(id);
 
-		document.querySelector(".input-container-2").insertAdjacentHTML("afterbegin", `
-			<div class="replying-to">
-				<div class="replying-to-username-container">
-				<p>Replying to:</p>
-				<p class="replying-to-username">${parent_message_user}</p> 
+		const mainInputContainer = Array.from(document.querySelectorAll(".input-container-2"))
+			.find(el => !el.closest(".message"));
+		
+		if (mainInputContainer) {
+			mainInputContainer.insertAdjacentHTML("afterbegin", `
+				<div class="replying-to">
+					<div class="replying-to-username-container">
+						<p>Replying to:</p>
+						<p class="replying-to-username">${parent_message_user}</p> 
+					</div>
+					<span class="material-symbols-rounded close-replying-to" id="close-replying-to">close</span>
 				</div>
-				<span class="material-symbols-rounded close-replying-to" id="close-replying-to">close</span>
-			</div>
-		`);
+			`);
+			
+			const messageInput = mainInputContainer.querySelector("#message-input");
+			if (messageInput) messageInput.focus();
+		}
 
 		document.getElementById("close-replying-to").addEventListener("click", () => {
 			this.replyingTo = null;

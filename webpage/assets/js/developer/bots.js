@@ -101,7 +101,7 @@ function initBots() {
 				formData.append("profile_picture", botIconFile);
 			}
 
-			fetch("https://chat.wokki20.nl/app/create_bot.php", {
+			fetch("/app/create_bot", {
 				method: "POST",
 				headers: {
 					Authorization: `Bearer ${access_token}`,
@@ -112,7 +112,7 @@ function initBots() {
 			.then((data) => {
 				const bot_id = data.bot_id;
 
-				window.location.href = `https://chat.wokki20.nl/developer/bot/${bot_id}/information`;
+				window.location.href = `/developer/bot/${bot_id}/information`;
 			})
 			.catch((error) => {
 				Toastify({

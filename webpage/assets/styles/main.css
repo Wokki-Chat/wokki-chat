@@ -1149,6 +1149,18 @@ input:checked + .slider:before {
     display: block;
 }
 
+.message-input-bg span {
+    display: inline !important;
+}
+
+.message-edited {
+    color: var(--clr-text-a30);
+    font-size: 12px;
+    margin: 0px;
+    user-select: none;
+    display: inline;
+}
+
 .message {
     padding: 10px;
     border-radius: 10px;
@@ -1170,6 +1182,10 @@ input:checked + .slider:before {
     display: flex;
     flex-direction: row;
     gap: 10px;
+    width: 100%;
+}
+
+.message-info {
     width: 100%;
 }
 
@@ -1761,8 +1777,26 @@ input:checked + .slider:before {
     z-index: 1;
 }
 
-.message:hover .message-options {
+.message:not(.editing):hover .message-options {
     display: flex;
+}
+
+.message.editing {
+    background-color: var(--clr-input-bg-darkest);
+}
+
+.message-edit-actions {
+    display: flex;
+    flex-direction: row;
+    color: var(--clr-text-a30);
+    font-size: 14px;
+    gap: 5px;
+}
+
+.message-edit-action {
+    cursor: pointer;
+    color: var(--clr-primary-a0);
+    font-weight: var(--font-weight-semibold);
 }
 
 .message-option {
@@ -3202,7 +3236,7 @@ ul {
 }
 
 .md-syntax {
-    color: var(--clr-popup-a50);
+    color: var(--clr-text-a30);
 }
 
 .no-member {
