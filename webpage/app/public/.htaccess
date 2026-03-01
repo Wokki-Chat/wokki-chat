@@ -1,6 +1,8 @@
 RewriteEngine On
 AcceptPathInfo On
 
+Options -Indexes
+
 RewriteCond %{HTTP:X-Forwarded-Proto} !https
 SetEnvIf X-Forwarded-Proto "https" HTTPS=on
 RewriteCond %{HTTPS} !=on
@@ -26,8 +28,6 @@ DirectoryIndex help.txt
     Deny from all
     Require user root
 </Files>
-
-Options -Indexes
 
 ErrorDocument 400 '{"error":400,"message":"Bad Request"}'
 ErrorDocument 401 '{"error":401,"message":"Unauthorized"}'
