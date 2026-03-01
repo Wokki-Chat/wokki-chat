@@ -7,6 +7,7 @@ import { UserRenderer } from "./modules/users/profiles.js";
 import { NotificationsManager } from "./modules/global/notifications.js";
 import ReactionRenderer from "./modules/servers/reactions.js";
 import Dev from "./modules/global/dev.js";
+import * as jspt from "https://cdn.wokki20.nl/content/jspt-v2.1.0/jspt.module.js";
 function initDm() {
     const el = document.querySelector('wchat-allowed-scripts');
     const scripts = el.getAttribute('value').split(';');
@@ -164,22 +165,12 @@ function initDm() {
     });
 
     socket.on("all_messages", async (messages) => {
-        await handleAllMessages(messages);
+        await messageHandler.handleAllMessages(messages, offset > 0);
     });
 
     socket.on("all_messages_nocache", async (messages) => {
-        await handleAllMessages(messages);
+        await messageHandler.handleAllMessages(messages, offset > 0);
     });
-
-    async function handleAllMessages(messages) {
-        if (!Array.isArray(messages)) {
-            return;
-        }
-
-        for (const msg of messages) {
-            await messageHandler.handleMessage(msg);
-        }
-    }
 
     if (textarea) {
 		document.addEventListener("keydown", (e) => {
@@ -371,19 +362,12 @@ function initDm() {
             console.error("Failed to send message:", resp.error);
 
             if (resp.error?.includes("Rate limit exceeded")) {
-                Toastify({
-                    text: "Please wait before sending your next message",
+                jspt.makeToast({
+                    message: "Please wait before sending another message.",
+                    style: "default-error",
                     duration: 3000,
-                    gravity: "bottom",
-                    position: "right",
-                    close: true,
-                    stopOnFocus: true,
-                    style: {
-                        background: "var(--clr-popup-a20)",
-                        borderRadius: "12px",
-                        boxShadow: "none"
-                    }
-                }).showToast();
+                    close_on_click: true
+                })
             }
         }
     });

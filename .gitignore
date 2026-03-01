@@ -9,7 +9,6 @@
 
 livekit.yaml
 .cloudflared
-/webpage/connections/*
 
 .venv
 __pycache__
@@ -28,3 +27,5 @@ __pycache__
 !/webpage/uploads/**/.htaccess
 
 !/webpage/uploads/profile-pictures/default-profile.png
+
+vendor

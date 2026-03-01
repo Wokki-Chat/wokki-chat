@@ -1,126 +1,146 @@
 import { TextareaFormatter } from "./modules/global/sanitization.js";
 
+const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@v14.0.2/assets/';
+const EMOJI_DATA_URL = 'https://cdn.jsdelivr.net/npm/@emoji-mart/data';
+
+const PICKER_HEIGHT = 350;
+const PICKER_WIDTH = 500;
+const ROW_HEIGHT = 40;
+const ITEMS_PER_ROW = 11;
+const BUFFER_ROWS = 3;
+
+const TWEMOJI_OPTS = {
+	folder: 'svg',
+	ext: '.svg',
+	base: TWEMOJI_BASE,
+	className: 'emoji'
+};
+
+const GROUP_ICONS = {
+	people: 'sentiment_satisfied',
+	nature: 'pets',
+	foods: 'restaurant',
+	activity: 'sports_esports',
+	places: 'flight',
+	objects: 'emoji_objects',
+	symbols: 'emoji_symbols',
+	flags: 'flag'
+};
+
 const emojis = {
 	map: {},
 	regex: null,
-	missingFound: false,
-	iconCache: {},
 	all: null,
+	_categories: [],
 
-	async load(path = '/assets/json/emojis.json') {
-		const res = await fetch(path);
-		const data = await res.json();
+	async _initTwemoji() {
+		if (window.twemoji) return;
+		await new Promise((resolve, reject) => {
+			const s = document.createElement('script');
+			s.src = 'https://unpkg.com/twemoji@latest/dist/twemoji.min.js';
+			s.crossOrigin = 'anonymous';
+			s.onload = resolve;
+			s.onerror = reject;
+			document.head.appendChild(s);
+		});
+	},
 
-		this.all = data;
+	async load() {
+		await this._initTwemoji();
 
-		for (const entry of data) {
-			if (!entry.emoji || !Array.isArray(entry.shortcodes)) continue;
+		const data = await fetch(EMOJI_DATA_URL).then(r => r.json());
 
-			for (const shortcode of entry.shortcodes) {
-				const code = shortcode.startsWith(':') && shortcode.endsWith(':')
-					? shortcode
-					: `:${shortcode.replace(/\s+/g, '_')}:`;
-				this.map[code] = entry.emoji;
+		this._categories = data.categories;
+		const emojiEntries = data.emojis;
+
+		const groupById = {};
+		for (const cat of this._categories) {
+			for (const id of cat.emojis) {
+				groupById[id] = cat.id;
 			}
 		}
 
-		this.regex = new RegExp(
-			`(?<!\\\\)(${Object.keys(this.map)
-				.map(k => k.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1'))
-				.join('|')})`,
-			'g'
-		);
+		this.all = [];
 
-		await this.preloadIcons();
-	},
+		for (const [id, entry] of Object.entries(emojiEntries)) {
+			const skin = entry.skins?.[0];
+			if (!skin?.native) continue;
 
-	async preloadIcons() {
-		if (!this.all) return;
-		const promises = this.all.map(async e => {
-			if (!e.emoji) return;
+			this.all.push({
+				emoji: skin.native,
+				annotation: entry.name,
+				group: groupById[id] || null,
+				shortcodes: [id, ...(entry.keywords || [])],
+				tags: entry.keywords || []
+			});
 
-			if (e.emojiSvg !== true) {
-				this.iconCache[e.emoji] = e.emoji;
-				return;
-			}
-
-			const hex = Array.from(e.emoji).map(c => c.codePointAt(0).toString(16)).join('-');
-			const url = `/assets/icons/emojis/${hex}.svg`;
-
-			try {
-				const res = await fetch(url, { method: 'HEAD' });
-				if (!res.ok) throw new Error('SVG not found');
-				const img = `<img src="${url}" class="emoji">`;
-				this.iconCache[e.emoji] = img;
-			} catch {
-				this.iconCache[e.emoji] = e.emoji;
-			}
-		});
-		await Promise.all(promises);
-	},
-
-	async emojiToImg(emoji) {
-		if (this.iconCache[emoji]) return this.iconCache[emoji];
-		return emoji;
-	},
-
-	async replaceText(text) {
-		if (!this.regex) return text;
-
-		const parts = [];
-		let lastIndex = 0;
-		text.replace(this.regex, (match, ...args) => {
-			const offset = args[args.length - 2];
-			parts.push(text.slice(lastIndex, offset));
-			lastIndex = offset + match.length;
-			parts.push(match);
-		});
-		parts.push(text.slice(lastIndex));
-		for (let i = 0; i < parts.length; i++) {
-			const part = parts[i];
-			if (this.map[part]) {
-				parts[i] = await this.emojiToImg(this.map[part]);
-				continue;
-			}
-			let newPart = '';
-			for (const char of part) {
-				newPart += await this.emojiToImg(char);
-			}
-			parts[i] = newPart;
+			this.map[`:${id}:`] = skin.native;
 		}
 
-		return parts.join('').replace(/\\:/g, ':');
+		const keys = Object.keys(this.map);
+		if (keys.length > 0) {
+			this.regex = new RegExp(
+				`(?<!\\\\)(${keys
+					.map(k => k.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1'))
+					.join('|')})`,
+				'g'
+			);
+		}
+	},
+
+	emojiToImg(emoji) {
+		if (!window.twemoji) return emoji;
+		return twemoji.parse(emoji, TWEMOJI_OPTS);
+	},
+
+	replaceText(text) {
+		if (!text) return text;
+		let result = text;
+		if (this.regex) {
+			result = result.replace(this.regex, match => this.map[match] || match);
+		}
+		result = result.replace(/\\:/g, ':');
+		if (window.twemoji) {
+			result = twemoji.parse(result, TWEMOJI_OPTS);
+		}
+		return result;
 	},
 
 	isInCodeBlock(node) {
-		let parent = node.parentNode;
-		while (parent) {
+		let p = node.parentNode;
+		while (p) {
 			if (
-				parent.nodeName === 'CODE' ||
-				parent.nodeName === 'PRE' ||
-				parent.nodeName === 'KBD' ||
-				parent.classList?.contains('code-block')
+				p.nodeName === 'CODE' ||
+				p.nodeName === 'PRE' ||
+				p.nodeName === 'KBD' ||
+				p.classList?.contains('code-block')
 			) return true;
-			parent = parent.parentNode;
+			p = p.parentNode;
 		}
 		return false;
 	},
 
 	async replaceAllTextNodes(root = document.body) {
-		this.missingFound = false;
 		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
-		let node;
 		const nodes = [];
-
+		let node;
 		while ((node = walker.nextNode())) {
 			if (this.isInCodeBlock(node)) continue;
 			nodes.push(node);
 		}
 
 		for (const node of nodes) {
-			const html = await this.replaceText(node.textContent);
+			let text = node.textContent;
+			if (this.regex) {
+				text = text.replace(this.regex, match => this.map[match] || match);
+			}
+			text = text.replace(/\\:/g, ':');
+
 			const span = document.createElement('span');
-			span.innerHTML = html;
+			span.textContent = text;
+			if (window.twemoji) {
+				twemoji.parse(span, TWEMOJI_OPTS);
+			}
 			node.replaceWith(...span.childNodes);
 		}
 	},
@@ -131,7 +151,30 @@ const emojis = {
 
 	async replaceEl(element) {
 		if (!element) return;
+		if (!Array.isArray(this.all) || this.all.length === 0) await this.load();
 		await this.replaceAllTextNodes(element);
+	},
+
+	_positionDropdown(dropdown, relativeTo) {
+		const rect = relativeTo.getBoundingClientRect();
+		const spaceAbove = rect.top;
+		const spaceBelow = window.innerHeight - rect.bottom;
+
+		dropdown.style.position = 'fixed';
+		dropdown.style.transform = 'none';
+		dropdown.style.top = 'auto';
+		dropdown.style.bottom = 'auto';
+
+		if (spaceBelow >= PICKER_HEIGHT || spaceBelow >= spaceAbove) {
+			dropdown.style.top = `${rect.bottom + 4}px`;
+		} else {
+			dropdown.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+		}
+
+		let left = rect.right - PICKER_WIDTH;
+		if (left + PICKER_WIDTH > window.innerWidth - 8) left = window.innerWidth - PICKER_WIDTH - 8;
+		if (left < 8) left = 8;
+		dropdown.style.left = `${left}px`;
 	},
 
 	async picker(targetField = null, relativeTo = null, shortcode = false) {
@@ -141,191 +184,168 @@ const emojis = {
 		}
 
 		return new Promise((resolve) => {
-			const dropdownId = 'emoji-picker-dropdown';
-			let dropdown = document.getElementById(dropdownId);
+			document.getElementById('emoji-picker-dropdown')?.remove();
 
-			if (!dropdown) {
-				dropdown = document.createElement('div');
-				dropdown.id = dropdownId;
-				dropdown.classList.add('emoji-picker-dropdown');
+			const dropdown = document.createElement('div');
+			dropdown.id = 'emoji-picker-dropdown';
+			dropdown.classList.add('emoji-picker-dropdown');
 
-				const sidebar = document.createElement('div');
-				sidebar.classList.add('emoji-picker-sidebar');
-				dropdown.appendChild(sidebar);
+			const sidebar = document.createElement('div');
+			sidebar.classList.add('emoji-picker-sidebar');
+			dropdown.appendChild(sidebar);
 
-				const content = document.createElement('div');
-				content.classList.add('emoji-picker-content');
-				dropdown.appendChild(content);
+			const content = document.createElement('div');
+			content.classList.add('emoji-picker-content');
+			dropdown.appendChild(content);
 
-				const search = document.createElement('input');
-				search.type = 'text';
-				search.placeholder = 'Search...';
-				search.classList.add('emoji-picker-search');
-				content.appendChild(search);
+			const search = document.createElement('input');
+			search.type = 'text';
+			search.placeholder = 'Search...';
+			search.classList.add('emoji-picker-search');
+			content.appendChild(search);
 
-				const list = document.createElement('div');
-				list.classList.add('emoji-picker-list');
-				content.appendChild(list);
+			const listEl = document.createElement('div');
+			listEl.classList.add('emoji-picker-list');
+			content.appendChild(listEl);
 
-				document.body.appendChild(dropdown);
+			const groups = [
+				{ key: 'all', icon: 'apps' },
+				...this._categories.map(cat => ({
+					key: cat.id,
+					icon: GROUP_ICONS[cat.id] || 'tag'
+				}))
+			];
 
-				const groups = [
-					{ key: 'all', icon: 'apps' },
-					{ key: 'smileys_emotion', icon: 'sentiment_satisfied' },
-					{ key: 'people_body', icon: 'person' },
-					{ key: 'component', icon: 'extension' },
-					{ key: 'animals_nature', icon: 'pets' },
-					{ key: 'food_drink', icon: 'restaurant' },
-					{ key: 'travel_places', icon: 'flight' },
-					{ key: 'activities', icon: 'sports_esports' },
-					{ key: 'objects', icon: 'emoji_objects' },
-					{ key: 'symbols', icon: 'emoji_symbols' }
-				];
+			let activeGroup = 'all';
+			let currentEmojis = [];
+			let scrollRAF = null;
+			let currentFilteredSource = this.all;
 
-				let activeGroup = 'all';
+			function renderVisible(grid, totalRows) {
+				const scrollTop = listEl.scrollTop;
+				const viewportHeight = listEl.clientHeight;
+				const startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_ROWS);
+				const endRow = Math.min(totalRows, Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT) + BUFFER_ROWS);
+				const startIndex = startRow * ITEMS_PER_ROW;
+				const endIndex = Math.min(currentEmojis.length, endRow * ITEMS_PER_ROW);
 
-				for (const g of groups) {
+				grid.style.transform = `translateY(${startRow * ROW_HEIGHT}px)`;
+				grid.innerHTML = '';
+
+				for (let i = startIndex; i < endIndex; i++) {
+					const e = currentEmojis[i];
 					const btn = document.createElement('button');
-					btn.classList.add('emoji-picker-group-btn');
-					btn.dataset.group = g.key;
+					btn.classList.add('emoji-picker-item');
+					btn.title = e.annotation || e.shortcodes?.[0] || '';
+					btn.innerHTML = emojis.emojiToImg(e.emoji);
+					btn.addEventListener('click', () => handleSelect(e));
+					grid.appendChild(btn);
+				}
+			}
 
-					const icon = document.createElement('span');
-					icon.classList.add('material-symbols-rounded');
-					icon.textContent = g.icon;
+			function renderList(source) {
+				listEl.innerHTML = '';
+				currentEmojis = activeGroup === 'all'
+					? source
+					: source.filter(e => e.group === activeGroup);
 
-					btn.appendChild(icon);
+				const totalRows = Math.ceil(currentEmojis.length / ITEMS_PER_ROW);
 
-					btn.addEventListener('click', () => {
-						activeGroup = g.key;
-						sidebar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-						btn.classList.add('active');
-						renderList(emojis.all);
+				const spacer = document.createElement('div');
+				spacer.style.height = `${totalRows * ROW_HEIGHT}px`;
+
+				const grid = document.createElement('div');
+				grid.classList.add('emoji-picker-grid');
+				grid.style.position = 'absolute';
+				grid.style.top = '0';
+				grid.style.left = '0';
+				grid.style.right = '0';
+
+				listEl.style.position = 'relative';
+				listEl.appendChild(spacer);
+				listEl.appendChild(grid);
+				listEl.scrollTop = 0;
+
+				renderVisible(grid, totalRows);
+
+				listEl.onscroll = () => {
+					if (scrollRAF) return;
+					scrollRAF = requestAnimationFrame(() => {
+						renderVisible(grid, totalRows);
+						scrollRAF = null;
 					});
+				};
+			}
 
-					sidebar.appendChild(btn);
-				}
-
-				sidebar.querySelector('[data-group="all"]').classList.add('active');
-
-				let currentEmojis = [];
-				let rowHeight = 40;
-				let itemsPerRow = 8;
-				let bufferRows = 3;
-
-				async function renderList(allEmojis) {
-					list.innerHTML = '';
-					currentEmojis = activeGroup === 'all'
-						? allEmojis
-						: allEmojis.filter(e => e.group === activeGroup);
-
-					const totalRows = Math.ceil(currentEmojis.length / itemsPerRow);
-
-					const spacer = document.createElement('div');
-					spacer.style.height = `${totalRows * rowHeight}px`;
-					list.appendChild(spacer);
-
-					const grid = document.createElement('div');
-					grid.classList.add('emoji-picker-grid');
-					grid.style.position = 'absolute';
-					grid.style.top = '0';
-					grid.style.left = '0';
-					grid.style.right = '0';
-					list.appendChild(grid);
-
-					list.style.position = 'relative';
-					list.scrollTop = 0;
-
-					async function renderVisible() {
-						const scrollTop = list.scrollTop;
-						const viewportHeight = list.clientHeight;
-
-						const startRow = Math.max(0, Math.floor(scrollTop / rowHeight) - bufferRows);
-						const endRow = Math.min(
-							totalRows,
-							Math.ceil((scrollTop + viewportHeight) / rowHeight) + bufferRows
-						);
-
-						const startIndex = startRow * itemsPerRow;
-						const endIndex = Math.min(currentEmojis.length, endRow * itemsPerRow);
-
-						grid.style.transform = `translateY(${startRow * rowHeight}px)`;
-						grid.innerHTML = '';
-
-						for (let i = startIndex; i < endIndex; i++) {
-							const e = currentEmojis[i];
-							const btn = document.createElement('button');
-							btn.classList.add('emoji-picker-item');
-							btn.title = e.annotation || e.shortcodes?.[0] || '';
-							btn.innerHTML = await emojis.emojiToImg(e.emoji);
-
-							btn.addEventListener('click', () => {
-								let output = shortcode && e.shortcodes?.length ? e.shortcodes[0] : e.emoji;
-
-								if (targetField) {
-									const active = targetField;
-
-									if (active.isContentEditable) {
-										const sel = window.getSelection();
-										if (sel && sel.rangeCount) {
-											const range = sel.getRangeAt(0);
-											range.deleteContents();
-											range.insertNode(document.createTextNode(output));
-											range.collapse(false);
-											sel.removeAllRanges();
-											sel.addRange(range);
-											textareaFormatter.caret_end(targetField);
-										}
-									} else if ('selectionStart' in active) {
-										const start = active.selectionStart;
-										const end = active.selectionEnd;
-										const value = active.value;
-										active.value = value.slice(0, start) + output + value.slice(end);
-										active.selectionStart = active.selectionEnd = start + output.length;
-										textareaFormatter.caret_end(targetField);
-									}
-								}
-
-								resolve(output);
-								dropdown.remove();
-							});
-
-							grid.appendChild(btn);
+			function handleSelect(e) {
+				const output = shortcode && e.shortcodes?.length ? `:${e.shortcodes[0]}:` : e.emoji;
+				if (targetField) {
+					if (targetField.isContentEditable) {
+						const sel = window.getSelection();
+						if (sel && sel.rangeCount) {
+							const range = sel.getRangeAt(0);
+							range.deleteContents();
+							range.insertNode(document.createTextNode(output));
+							range.collapse(false);
+							sel.removeAllRanges();
+							sel.addRange(range);
 						}
+						textareaFormatter.caret_end(targetField);
+					} else if ('selectionStart' in targetField) {
+						const start = targetField.selectionStart;
+						const end = targetField.selectionEnd;
+						const val = targetField.value;
+						targetField.value = val.slice(0, start) + output + val.slice(end);
+						targetField.selectionStart = targetField.selectionEnd = start + output.length;
+						textareaFormatter.caret_end(targetField);
 					}
-
-					await renderVisible();
-
-					let ticking = false;
-					list.onscroll = () => {
-						if (!ticking) {
-							requestAnimationFrame(async () => {
-								await renderVisible();
-								ticking = false;
-							});
-							ticking = true;
-						}
-					};
 				}
+				resolve(output);
+				hideDropdown();
+			}
 
-				renderList(emojis.all);
+			for (const g of groups) {
+				const btn = document.createElement('button');
+				btn.classList.add('emoji-picker-group-btn');
+				btn.dataset.group = g.key;
+				const icon = document.createElement('span');
+				icon.classList.add('material-symbols-rounded');
+				icon.textContent = g.icon;
+				btn.appendChild(icon);
+				btn.addEventListener('click', () => {
+					activeGroup = g.key;
+					sidebar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+					btn.classList.add('active');
+					renderList(currentFilteredSource);
+				});
+				sidebar.appendChild(btn);
+			}
+			sidebar.querySelector('[data-group="all"]').classList.add('active');
 
-				search.addEventListener('input', async () => {
-					const q = search.value.toLowerCase();
-					const filtered = emojis.all.filter(e =>
+			search.addEventListener('input', () => {
+				const q = search.value.toLowerCase().trim();
+				currentFilteredSource = !q
+					? emojis.all
+					: emojis.all.filter(e =>
 						(e.annotation && e.annotation.toLowerCase().includes(q)) ||
 						(e.shortcodes && e.shortcodes.some(s => s.toLowerCase().includes(q))) ||
 						(e.tags && e.tags.some(t => t.toLowerCase().includes(q)))
 					);
-					await renderList(filtered);
-				});
-			}
+				renderList(currentFilteredSource);
+			});
 
+			document.body.appendChild(dropdown);
+
+			let cleanupReposition = null;
 			if (relativeTo) {
-				relativeTo.appendChild(dropdown);
-				dropdown.style.position = 'absolute';
-				dropdown.style.bottom = '100%';
-				dropdown.style.left = '100%';
-				dropdown.style.transform = 'translateX(-100%)';
+				emojis._positionDropdown(dropdown, relativeTo);
+				const onReposition = () => emojis._positionDropdown(dropdown, relativeTo);
+				window.addEventListener('resize', onReposition);
+				window.addEventListener('scroll', onReposition, { passive: true });
+				cleanupReposition = () => {
+					window.removeEventListener('resize', onReposition);
+					window.removeEventListener('scroll', onReposition);
+				};
 			} else {
 				dropdown.style.position = 'fixed';
 				dropdown.style.top = '50%';
@@ -334,17 +354,19 @@ const emojis = {
 			}
 
 			dropdown.style.display = 'flex';
-			const searchInput = dropdown.querySelector('input');
-			searchInput.value = '';
-			searchInput.focus();
+			search.focus();
+			renderList(emojis.all);
 
 			function hideDropdown() {
+				cleanupReposition?.();
 				dropdown.remove();
 				document.removeEventListener('click', outsideClick);
 			}
 
 			function outsideClick(e) {
-				if (!dropdown.contains(e.target) && e.target !== targetField) hideDropdown();
+				if (!dropdown.contains(e.target) && e.target !== targetField) {
+					hideDropdown();
+				}
 			}
 
 			setTimeout(() => document.addEventListener('click', outsideClick), 0);

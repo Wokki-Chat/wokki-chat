@@ -5,20 +5,39 @@
             <p class="appearance-type-title">Default themes</p>
             <p class="appearance-type-description">Personalize your experience by changing your theme</p>
             <div class="theme-options-container">
-                <div class="theme-option light {{light_active}}" onclick="setTheme('light')"></div>
-                <div class="theme-option dark {{dark_active}}" onclick="setTheme('dark')"></div>
-                <div class="theme-option night {{night_active}}" onclick="setTheme('night')"></div>
+                <div class="theme-option-container" onclick="setTheme('light')">
+                    <div class="theme-option light {{light_active}}"></div>
+                    <span class="theme-option-name">Light</span>
+                </div>
+                <div class="theme-option-container" onclick="setTheme('dark')">
+                    <div class="theme-option dark {{dark_active}}"></div>
+                    <span class="theme-option-name">Slate</span>
+                </div>
+                <div class="theme-option-container" onclick="setTheme('night')">
+                    <div class="theme-option night {{night_active}}"></div>
+                    <span class="theme-option-name">Owl</span>
+                </div>
+                <div class="theme-option-container" onclick="setTheme('midnight')">
+                    <div class="theme-option midnight {{midnight_active}}"></div>
+                    <span class="theme-option-name">Midnight</span>
+                </div>
             </div>
         </div>
         <div class="appearance-type-container {{hidden_container_1}}">
             <p class="appearance-type-title">Chat themes</p>
             <p class="appearance-type-description">{{connect_chat_account_text}}</p>
             <div class="theme-options-container">
-                <div class="theme-option {{hidden_1}} {{hidden_1_active}}" onclick="setTheme('{{hidden_1}}')"></div>
-                <div class="theme-option {{hidden_2}} {{hidden_2_active}}" onclick="setTheme('{{hidden_2}}')"></div>
+                <div class="theme-option-container" onclick="setTheme('{{hidden_1}}')">
+                    <div class="theme-option {{hidden_1}} {{hidden_1_active}}"></div>
+                    <span class="theme-option-name">Chat Light</span>
+                </div>
+                <div class="theme-option-container" onclick="setTheme('{{hidden_2}}')">
+                    <div class="theme-option {{hidden_2}} {{hidden_2_active}}"></div>
+                    <span class="theme-option-name">Chat Dark</span>
+                </div>
             </div>
         </div>
-        <h3>Layout</h3>
+        <h3 class="appearance-type-title">Layout</h3>
         <div class="appearance-type-container">
             <p class="appearance-type-title">Layouts</p>
             <p class="appearance-type-description">Change your layout to fit your needs</p>
@@ -37,7 +56,7 @@
         </div>
     </div>
     <script>
-    const themes = ["light", "dark", "night", "chat_dark_blue", "chat_light_blue"];
+    const themes = ["light", "dark", "night", "midnight", "chat_dark_blue", "chat_light_blue"];
 
     function setTheme(theme) {
         if (theme === "hidden_1_disabled" || theme === "hidden_2_disabled") return;

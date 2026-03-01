@@ -188,6 +188,83 @@ if ($active_tab === 'account') {
     $active_tab_formatted = "Appearance";
 } elseif ($active_tab === 'devtools') {
     $active_tab_formatted = "Dev Tools";
+} elseif ($active_tab === 'media') {
+    $active_tab_formatted = "Media";
+} elseif ($active_tab === 'legal') {
+    $active_tab_formatted = "Legal";
+}
+
+function getUserMedia($mysqli, $user_id) {
+    $stmt = $mysqli->prepare("SELECT id, saved_name, original_name, mime_type FROM assets WHERE user_id = ? ORDER BY id ASC");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $html = '';
+    
+    while ($row = $result->fetch_assoc()) {
+        $saved_name = $row['saved_name'];
+        $original_name = $row['original_name'];
+        $mime_type = $row['mime_type'];
+        
+        $file_path = $_SERVER['DOCUMENT_ROOT'] . '/uploads/messages/' . $saved_name;
+        
+        if (empty($mime_type) && file_exists($file_path)) {
+            $mime_type = mime_content_type($file_path);
+        }
+        
+        if (empty($original_name)) {
+            $original_name = $saved_name;
+        }
+        
+        $web_path = '/uploads/messages/' . htmlspecialchars($saved_name);
+        
+        $html .= '<div class="media-item">';
+        
+        if (strpos($mime_type, 'image/') === 0) {
+            $html .= '
+            <img class="media-message-asset-image" src="' . $web_path . '" alt="' . htmlspecialchars($original_name) . '">
+            <span class="media-message-asset-name">' . htmlspecialchars($original_name) . '</span>
+			<div class="file-options">
+				<span class="material-symbols-rounded media-share-icon" style="cursor:pointer;" data-saved-name="' . htmlspecialchars($saved_name) . '">share</span>
+				<span class="material-symbols-rounded file-remove-icon" style="cursor:pointer;" data-saved-name="' . htmlspecialchars($saved_name) . '">delete</span>
+			</div>
+            ';
+        } elseif (strpos($mime_type, 'video/') === 0) {
+            $html .= '
+            <video class="media-message-asset-video" controls><source src="' . $web_path . '" type="' . htmlspecialchars($mime_type) . '"></video>
+            <span class="media-message-asset-name">' . htmlspecialchars($original_name) . '</span>
+			<div class="file-options">
+				<span class="material-symbols-rounded media-share-icon" style="cursor:pointer;" data-saved-name="' . htmlspecialchars($saved_name) . '">share</span>
+				<span class="material-symbols-rounded file-remove-icon" style="cursor:pointer;" data-saved-name="' . htmlspecialchars($saved_name) . '">delete</span>
+			</div>
+            ';
+        } elseif (strpos($mime_type, 'audio/') === 0) {
+            $html .= '<audio class="media-message-asset-audio" controls><source src="' . $web_path . '" type="' . htmlspecialchars($mime_type) . '"></audio>
+            <span class="media-message-asset-name">' . htmlspecialchars($original_name) . '</span>
+			<div class="file-options">
+				<span class="material-symbols-rounded media-share-icon" style="cursor:pointer;" data-saved-name="' . htmlspecialchars($saved_name) . '">share</span>
+				<span class="material-symbols-rounded file-remove-icon" style="cursor:pointer;" data-saved-name="' . htmlspecialchars($saved_name) . '">delete</span>
+			</div>
+            ';
+        } else {
+            $html .= '
+            <a class="media-message-asset-file" href="' . $web_path . '" download="' . htmlspecialchars($original_name) . '">
+            ' . htmlspecialchars($original_name) . '
+            </a>
+			<div class="file-options">
+				<span class="material-symbols-rounded media-share-icon" style="cursor:pointer;" data-saved-name="' . htmlspecialchars($saved_name) . '">share</span>
+				<span class="material-symbols-rounded file-remove-icon" style="cursor:pointer;" data-saved-name="' . htmlspecialchars($saved_name) . '">delete</span>
+			</div>
+            ';
+        }
+        
+        $html .= '</div>';
+    }
+    
+    $stmt->close();
+    
+    return $html;
 }
 ?>
 <!DOCTYPE html>
@@ -206,7 +283,6 @@ if ($active_tab === 'account') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/dark.min.css" />
     <link rel="stylesheet" href="/assets/styles/main.css" />
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
-    <script src="/assets/js/call_reconnect.js"></script>
     <meta name="app_page_name" content="Settings">
     <meta name="app_page_icon" content="settings">
     <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
@@ -265,6 +341,17 @@ if ($active_tab === 'account') {
                     <a class="settings-tab <?php echo ($active_tab === "appearance") ? "active" : ""; ?> no-underline" href="/settings/appearance?from=<?php echo $from; ?>">
                         <span class="material-symbols-rounded">format_paint</span>
                         <p>Appearance</p>
+                    </a>
+                </div>
+                <div class="settings-group">
+                    <span class="settings-group-title">Privacy settings</span>
+                    <a class="settings-tab <?php echo ($active_tab === "legal") ? "active" : ""; ?> no-underline" href="/settings/legal?from=<?php echo $from; ?>">
+                        <span class="material-symbols-rounded">privacy_tip</span>
+                        <p>Legal</p>
+                    </a>
+                    <a class="settings-tab <?php echo ($active_tab === "media") ? "active" : ""; ?> no-underline" href="/settings/media?from=<?php echo $from; ?>">
+                        <span class="material-symbols-rounded">photo</span>
+                        <p>Media</p>
                     </a>
                 </div>
                 <?php if ($is_developer): ?>
@@ -371,6 +458,7 @@ if ($active_tab === 'account') {
                     $appearanceHtml = str_replace("{{light_active}}", ($theme === "light" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{dark_active}}", ($theme === "dark" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{night_active}}", ($theme === "night" ? "active" : ""), $appearanceHtml);
+                    $appearanceHtml = str_replace("{{midnight_active}}", ($theme === "midnight" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{hidden_1}}", ($chat_connected === "Connected" ? "chat_light_blue" : "hidden_1_disabled"), $appearanceHtml);
                     $appearanceHtml = str_replace("{{hidden_1_active}}", ($theme === "chat_light_blue" ? "active" : ""), $appearanceHtml);
                     $appearanceHtml = str_replace("{{hidden_2}}", ($chat_connected === "Connected" ? "chat_dark_blue" : "hidden_2_disabled"), $appearanceHtml);
@@ -392,6 +480,34 @@ if ($active_tab === 'account') {
                     $connectionsHtml = str_replace("{{connection_status.github}}", $github_connected, $connectionsHtml);
                     $connectionsHtml = str_replace("{{onclick_event.github}}", $onclickEventGithub, $connectionsHtml);
                     echo $connectionsHtml;
+                }
+                ?>
+                <?php 
+                if ($active_tab === "media") {
+                    $mediaHtml = file_get_contents('settings_html/settings_media.html');
+                    $userMedia = getUserMedia($mysqli, $user_id);
+                    $mediaHtml = str_replace("{{media_list}}", $userMedia, $mediaHtml);
+                    echo $mediaHtml;
+                }
+                ?>
+                <?php 
+                if ($active_tab === "legal") {
+                    require_once './vendor/autoload.php';
+
+                    $parsedown = new Parsedown();
+
+                    $privacyMarkdown = file_get_contents(__DIR__ . '/legal/privacy.md');
+                    $privacyHtml = $parsedown->text($privacyMarkdown);
+                    $privacyHtml = preg_replace('/<a\s+href="([^"]*)">/', '<a href="$1" class="link">', $privacyHtml);
+
+                    $termsMarkdown = file_get_contents(__DIR__ . '/legal/terms.md');
+                    $termsHtml = $parsedown->text($termsMarkdown);
+                    $termsHtml = preg_replace('/<a\s+href="([^"]*)">/', '<a href="$1" class="link">', $termsHtml);
+
+                    $mediaHtml = file_get_contents('settings_html/settings_legal.html');
+                    $mediaHtml = str_replace("{{privacy_policy}}", $privacyHtml, $mediaHtml);
+                    $mediaHtml = str_replace("{{terms_of_service}}", $privacyHtml, $mediaHtml);
+                    echo $mediaHtml;
                 }
                 ?>
                 <?php 
@@ -442,7 +558,7 @@ if ($active_tab === 'account') {
 
         window.swup = new Swup({
             containers: ["#app"],
-            cache: true,
+            cache: false,
             plugins: [
                 new SwupPreloadPlugin(),
                 new SwupScriptsPlugin({
@@ -454,7 +570,6 @@ if ($active_tab === 'account') {
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" data-swup-ignore-script></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
-    <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
     <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
     <script src="/assets/js/settings.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>

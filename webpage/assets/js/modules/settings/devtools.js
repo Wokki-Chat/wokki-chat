@@ -41,7 +41,7 @@ export default class DevtoolsPanel {
         });
 
         if (location.hostname === "localhost") {
-            connectedServerEl.innerText = "Development server (localhost:5001)";
+            connectedServerEl.innerText = "Development server (localhost:5000)";
             switchServerBtn.href = "https://chat.wokki20.nl/settings/devtools";
             switchServerBtn.innerText = "Switch to production server";
             

@@ -1,6 +1,7 @@
 // modules/global/commands.js
 // Module description: This module helps with executing commands.
 import { Sanitizer } from "./sanitization.js";
+import * as jspt from "https://cdn.wokki20.nl/content/jspt-v2.1.0/jspt.module.js";
 
 export class CommandsManager {
     constructor({ user_id, channel_id, server_id, access_token, socket }) {
@@ -395,19 +396,12 @@ export class CommandsManager {
     }
 
     showError(message) {
-        Toastify({
-            text: message,
-            className: "copy-code-failed",
+        jspt.makeToast({
+            message: message,
+            style: "default-error",
             duration: 3000,
-            close: true,
-            gravity: "bottom",
-            position: "right",
-            style: {
-                background: "var(--clr-error-a0)",
-                boxShadow: "none",
-                borderRadius: "12px"
-            }
-        }).showToast();
+            close_on_click: true
+        })
     }
     async showUpdateInfo(sanitizer) {
         const versionData = await fetch('/version-info.json').then(res => res.json());

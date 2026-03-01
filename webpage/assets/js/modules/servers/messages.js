@@ -14,13 +14,13 @@ export class MessageRenderer {
 	}
 
 	addAssets(asset, msgId, index) {
-		const type = getAssetType(asset.savedName);
+		const type = this.getAssetType(asset.savedName);
 		const url = type === 'profile_picture'
-			? `https://chat.wokki20.nl/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}`
-			: `https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(asset.savedName)}`;
+			? `/uploads/profile-pictures/${encodeURIComponent(asset.savedName.slice(0, -4))}`
+			: `/uploads/messages/${encodeURIComponent(asset.savedName)}`;
 
 		if (type === 'image' || type === 'profile_picture') {
-			return `<img data-src="${url}" alt="${asset.originalName}" class="message-asset-image${type === 'profile_picture' ? ' message-asset-profile-picture' : ''} lazyload" data-prefetch-size="true" />`;
+			return `<img data-src="${url}" alt="${asset.originalName}" class="message-asset-image${type === 'profile_picture' ? ' message-asset-profile-picture' : ''} lazyload" data-prefetch-size="true" data-originalName="${asset.originalName}" />`;
 		} else if (type === 'video') {
 			return `<video data-src="${url}" controls class="message-asset-video lazyload" data-prefetch-size="true"></video>`;
 		} else if (type === 'audio') {
@@ -47,6 +47,23 @@ export class MessageRenderer {
 			return `<a href="${url}" download class="message-asset-file link">${this.sanitizer.sanitize(asset.savedName)}</a>`;
 		}
 	}
+
+	getAssetType(fileName) {
+		const parts = fileName.toLowerCase().split('.');
+
+		if (parts.length >= 3 && parts[parts.length - 1] === 'pfp' && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(parts[parts.length - 2])) {
+			return 'profile_picture';
+		}
+		
+		const ext = parts[parts.length - 1];
+
+		if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(ext)) return 'image';
+		if (['mp4', 'webm', 'ogg'].includes(ext)) return 'video';
+		if (['mp3', 'wav', 'ogg'].includes(ext)) return 'audio';
+		if (['pdf', 'txt'].includes(ext)) return ext;
+		return 'other';
+	}
+
 
 	async create({ message, created_at, id: message_id, bot_message, sender_info, embed, parent_message_info, sent_by, command_info, sent_by_bot, assets }, usersList, onlyMe = false) {
 		if (!message && !embed) return null;
@@ -202,6 +219,137 @@ export class MessageRenderer {
 export class MessageHydrator {
 	constructor() {}
 
+	imageViewer(img_src, originalName) {
+		if (!img_src) return;
+		if (document.querySelector(".image-viewer-popup")) document.querySelector(".image-viewer-popup").remove();
+
+		const imageViewer = `
+			<div class="image-viewer-popup">
+				<div class="image-viewer-popup-container">
+					<div class="image-viewer-popup-options">
+						<div class="image-viewer-popup-option" id="image-viewer-popup-save">
+							<span class="material-symbols-rounded image-viewer-popup-option-icon">download</span>
+							<p class="image-viewer-popup-option-text">Save image</p>
+						</div>
+						<div class="image-viewer-popup-option" id="image-viewer-popup-new-tab">
+							<span class="material-symbols-rounded image-viewer-popup-option-icon">open_in_new</span>
+							<p class="image-viewer-popup-option-text">Open in new tab</p>
+						</div>
+						<div class="image-viewer-popup-option" id="image-viewer-popup-close">
+							<span class="material-symbols-rounded image-viewer-popup-option-icon">close</span>
+							<p class="image-viewer-popup-option-text">Close</p>
+						</div>
+					</div>
+					<div class="magnifier-circle" style="display: none;"></div>
+					<img src="${img_src}" draggable="false" class="image-viewer-popup-image"/>
+				</div>
+			</div>
+		`;
+
+		document.body.insertAdjacentHTML("beforeend", imageViewer);
+
+		const popup = document.querySelector(".image-viewer-popup");
+		const image = popup.querySelector(".image-viewer-popup-image");
+		const magnifier = popup.querySelector(".magnifier-circle");
+
+		let zoomLevel = 1;
+		let magnifierSize = 150;
+
+		popup.addEventListener("click", (e) => {
+			if (e.target === popup) popup.remove();
+		});
+
+		popup.querySelector(".image-viewer-popup-options").addEventListener("click", e => e.stopPropagation());
+		image.addEventListener("click", e => e.stopPropagation());
+
+		popup.querySelector("#image-viewer-popup-close").addEventListener("click", () => popup.remove());
+		popup.querySelector("#image-viewer-popup-new-tab").addEventListener("click", () => window.open(img_src, '_blank'));
+		popup.querySelector("#image-viewer-popup-save").addEventListener("click", () => {
+			const a = document.createElement('a');
+			a.href = img_src;
+			a.download = originalName;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+		});
+
+		let isMagnifierActive = false;
+		let lastMouseEvent = null;
+
+		image.addEventListener("mousedown", (e) => {
+			e.preventDefault();
+			isMagnifierActive = true;
+			magnifier.style.backgroundImage = `url('${img_src}')`;
+			magnifier.style.display = "block";
+			updateMagnifierPosition(e);
+		});
+
+		document.addEventListener("mouseup", () => {
+			isMagnifierActive = false;
+			magnifier.style.display = "none";
+		});
+
+		image.addEventListener("mousemove", (e) => {
+			if (!isMagnifierActive) return;
+			lastMouseEvent = e;
+			updateMagnifierPosition(e);
+		});
+
+
+		image.addEventListener("wheel", (e) => {
+			if (!isMagnifierActive) return;
+
+			e.preventDefault();
+
+			if (e.shiftKey) {
+				const centerX = parseFloat(magnifier.style.left) + magnifierSize / 2;
+				const centerY = parseFloat(magnifier.style.top) + magnifierSize / 2;
+
+				magnifierSize += e.deltaY * -0.5;
+				magnifierSize = Math.max(50, Math.min(400, magnifierSize));
+
+				magnifier.style.width = magnifierSize + "px";
+				magnifier.style.height = magnifierSize + "px";
+				magnifier.style.left = (centerX - magnifierSize / 2) + "px";
+				magnifier.style.top = (centerY - magnifierSize / 2) + "px";
+			} else {
+				zoomLevel *= e.deltaY < 0 ? 1.1 : 0.9;
+				zoomLevel = Math.max(1, Math.min(5, zoomLevel));
+				magnifier.style.setProperty("--zoom", zoomLevel);
+			}
+
+			if (lastMouseEvent) updateMagnifierPosition(lastMouseEvent);
+		}, { passive: false });
+
+
+		function updateMagnifierPosition(e) {
+			const rect = image.getBoundingClientRect();
+			const naturalWidth = image.naturalWidth;
+			const naturalHeight = image.naturalHeight;
+
+			const x = e.clientX - rect.left;
+			const y = e.clientY - rect.top;
+
+			const relX = x / rect.width;
+			const relY = y / rect.height;
+
+			const left = e.clientX - magnifierSize / 2;
+			const top = e.clientY - magnifierSize / 2;
+
+			magnifier.style.left = `${left}px`;
+			magnifier.style.top = `${top}px`;
+
+			const bgWidth = naturalWidth * zoomLevel;
+			const bgHeight = naturalHeight * zoomLevel;
+
+			const bgPosX = -(relX * bgWidth) + magnifierSize / 2;
+			const bgPosY = -(relY * bgHeight) + magnifierSize / 2;
+
+			magnifier.style.backgroundSize = `${bgWidth}px ${bgHeight}px`;
+			magnifier.style.backgroundPosition = `${bgPosX}px ${bgPosY}px`;
+		}
+	}
+
 	async hydrate(msgEl, assets, msgId) {
 		const invites = msgEl.querySelectorAll('.invite-item-container.loading');
 		const invitePromises = Array.from(invites).map(async el => {
@@ -232,10 +380,10 @@ export class MessageHydrator {
 							<p>${date}</p>
 						</div>
 					</div>
-					<button class="button-primary-filled ${expired ? "disabled" : ""} invite-join-button"
-							onclick="${expired ? "" : `window.location.href='https://chat.wokki20.nl/server/${serverId}?invite=${inviteId}'`}">
+					<a class="button-primary-filled ${expired ? "disabled" : ""} no-underline invite-join-button"
+							href="${expired ? "" : `/server/${serverId}?invite=${inviteId}`}">
 						${expired ? "Invite Expired" : "Join Server"}
-					</button>
+					</a>
 				`;
 				el.classList.remove('loading');
 			} catch {
@@ -270,7 +418,15 @@ export class MessageHydrator {
 			lazyEls.forEach(el => {
 				if (el.tagName === 'IMG' || el.tagName === 'VIDEO') {
 					el.src = el.dataset.src;
-					
+
+					if (el.tagName === 'IMG') {
+						const originalName = el.dataset.originalname;
+						el.style.cursor = 'pointer';
+						el.addEventListener('click', () => {
+							this.imageViewer(el.src, originalName);
+						});
+					}
+
 					const loadPromise = new Promise((resolve) => {
 						if (el.tagName === 'IMG') {
 							if (el.complete) {
@@ -341,7 +497,7 @@ export class MessageHydrator {
 	}
 
 	async getAssetFileInsides(file) {
-		const res = await fetch(`https://chat.wokki20.nl/uploads/messages/${encodeURIComponent(file)}`);
+		const res = await fetch(`/uploads/messages/${encodeURIComponent(file)}`);
 		const blob = await res.blob();
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
@@ -513,6 +669,20 @@ export class MessageHandler {
 		this.textarea = textarea;
 		this.uploadContainer = uploadContainer;
     	this.selectedFiles = [];
+
+		this._pinToBottom = true;
+		this._programmaticScroll = false;
+
+		this.messageContainer.addEventListener('scroll', () => {
+			if (this._programmaticScroll) return;
+			const { scrollTop, scrollHeight, clientHeight } = this.messageContainer;
+			this._pinToBottom = scrollHeight - scrollTop - clientHeight <= 10;
+		}, { passive: true });
+
+		this._mutationObserver = new MutationObserver(() => {
+			if (this._pinToBottom) this._scrollToBottom();
+		});
+		this._mutationObserver.observe(this.messageContainer, { childList: true });
 	}
 
 	initU(usersList) {
@@ -568,6 +738,50 @@ export class MessageHandler {
 		return separator;
 	}
 
+	_scrollToBottom() {
+		this._programmaticScroll = true;
+		this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+		requestAnimationFrame(() => {
+			this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+			this._programmaticScroll = false;
+		});
+	}
+
+	_attachMediaLoadListeners(el) { // FIXME still only works reliably when console is open
+		const scrollIfPinned = () => {
+			requestAnimationFrame(() => {
+				if (this._pinToBottom) this._scrollToBottom();
+			});
+		};
+
+		el.querySelectorAll('img, video').forEach(media => {
+			if (media.tagName === 'IMG') {
+				if (!media.complete) {
+					media.addEventListener('load', scrollIfPinned, { once: true });
+					media.addEventListener('error', scrollIfPinned, { once: true });
+				} else {
+					scrollIfPinned();
+				}
+			} else if (media.tagName === 'VIDEO') {
+				if (media.readyState < 1) {
+					media.addEventListener('loadedmetadata', scrollIfPinned, { once: true });
+					media.addEventListener('error', scrollIfPinned, { once: true });
+				} else {
+					scrollIfPinned();
+				}
+			}
+		});
+	}
+
+	_markEmojiOnlyElements(root) {
+		root.querySelectorAll('.message-text > *').forEach(el => {
+			const onlyEmojis = [...el.childNodes].every(
+				node => node.nodeType === Node.ELEMENT_NODE && node.classList.contains('emoji')
+			);
+			if (onlyEmojis) el.classList.add('emoji-only');
+		});
+	}
+
 	async handleMessage(msg) {
 		this.messageCache.removeExisting(msg.id);
 
@@ -576,48 +790,35 @@ export class MessageHandler {
 
 		const scrollTopBefore = this.messageContainer.scrollTop;
 		const scrollHeightBefore = this.messageContainer.scrollHeight;
-		const nearBottom = scrollHeightBefore - scrollTopBefore - this.messageContainer.clientHeight <= 10;
+		const wasAtBottom = this._pinToBottom;
 
 		const insertIndex = this.messageCache.insertIntoCache(msg, el);
-		
 		this.insertMessageEl(el, insertIndex);
-		
+
 		const prevMsg = this.messageCache.cache[insertIndex - 1];
 		if (prevMsg) {
-			const prevMsg = this.messageCache.cache[insertIndex - 1];
 			const currDateKey = this.getDateKey(msg.created_at);
-			if (!currDateKey) return;
-
-			const prevDateKey = prevMsg ? this.getDateKey(prevMsg.timestamp) : null;
-
-			if (prevDateKey !== currDateKey) {
-				const prevEl = el.previousElementSibling;
-				const hasCorrectSeparator =
-					prevEl &&
-					prevEl.classList.contains('message-date-separator') &&
-					prevEl.dataset.dateKey === currDateKey;
-
-				if (!hasCorrectSeparator) {
-					const separator = this.createDateSeparator(msg.created_at);
-					el.insertAdjacentElement('beforebegin', separator);
+			if (currDateKey) {
+				const prevDateKey = this.getDateKey(prevMsg.timestamp);
+				if (prevDateKey !== currDateKey) {
+					const prevEl = el.previousElementSibling;
+					const hasCorrectSeparator =
+						prevEl &&
+						prevEl.classList.contains('message-date-separator') &&
+						prevEl.dataset.dateKey === currDateKey;
+					if (!hasCorrectSeparator) {
+						el.insertAdjacentElement('beforebegin', this.createDateSeparator(msg.created_at));
+					}
 				}
 			}
 		}
-		
+
 		this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
 		this.messageBehaviour.attach(el, msg);
-				
-		await this.messageHydrator.hydrate(el, msg.assets, msg.id);
-		if (nearBottom) {
-			requestAnimationFrame(() => {
-				this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
-			});
-		}
+		this.cleanupDateSeparators();
 
 		await emojis.replaceEl(el);
-
-		const customPlayer = el.querySelector(".custom-player");
-		if (customPlayer) await this.initCustomPlayer(customPlayer);
+		this._markEmojiOnlyElements(el);
 
 		const replyBtn = el.querySelector("#reply-btn");
 		replyBtn.addEventListener("click", async () => await this.replyMessage(msg.id));
@@ -630,17 +831,89 @@ export class MessageHandler {
 			});
 		}
 
-		if (!nearBottom) {
+		if (!wasAtBottom) {
 			const scrollHeightAfter = this.messageContainer.scrollHeight;
 			this.messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
-		} else {
-			requestAnimationFrame(() => {
-				this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
-			});
 		}
-		this.cleanupDateSeparators();
+
+		this.messageHydrator.hydrate(el, msg.assets, msg.id).then(async () => {
+			this._attachMediaLoadListeners(el);
+			const customPlayer = el.querySelector(".custom-player");
+			if (customPlayer) await this.initCustomPlayer(customPlayer);
+		});
 	}
 
+	async handleAllMessages(messages, isPagination = false) {
+		if (!Array.isArray(messages) || messages.length === 0) return;
+
+		const scrollTopBefore = this.messageContainer.scrollTop;
+		const scrollHeightBefore = this.messageContainer.scrollHeight;
+
+		if (!isPagination) this._pinToBottom = true;
+
+		const hydrateQueue = [];
+
+		for (const msg of messages) {
+			this.messageCache.removeExisting(msg.id);
+
+			const el = await this.messageRenderer.create(msg, this.usersList);
+			if (!el) continue;
+
+			const insertIndex = this.messageCache.insertIntoCache(msg, el);
+			this.insertMessageEl(el, insertIndex);
+
+			const prevMsg = this.messageCache.cache[insertIndex - 1];
+			if (prevMsg) {
+				const currDateKey = this.getDateKey(msg.created_at);
+				if (currDateKey) {
+					const prevDateKey = this.getDateKey(prevMsg.timestamp);
+					if (prevDateKey !== currDateKey) {
+						const prevEl = el.previousElementSibling;
+						const hasCorrectSeparator =
+							prevEl &&
+							prevEl.classList.contains('message-date-separator') &&
+							prevEl.dataset.dateKey === currDateKey;
+						if (!hasCorrectSeparator) {
+							el.insertAdjacentElement('beforebegin', this.createDateSeparator(msg.created_at));
+						}
+					}
+				}
+			}
+
+			this.messageBehaviour.applyCompactMode(el, msg, insertIndex, this.messageCache.cache);
+			this.messageBehaviour.attach(el, msg);
+
+			const replyBtn = el.querySelector("#reply-btn");
+			replyBtn.addEventListener("click", async () => await this.replyMessage(msg.id));
+
+			const deleteBtn = el.querySelector("#delete-btn");
+			if (deleteBtn) {
+				deleteBtn.addEventListener("click", () => {
+					this.socket.emit("delete_message", { access_token: this.access_token, message_id: msg.id, server_id: this.server_id, channel_id: this.channel_id, contact_id: this.contact_id });
+					this.deleteMsg(msg.id);
+				});
+			}
+
+			hydrateQueue.push({ el, msg });
+		}
+
+		this.cleanupDateSeparators();
+		await emojis.replaceEl(this.messageContainer);
+		this._markEmojiOnlyElements(this.messageContainer);
+
+		if (isPagination) {
+			const scrollHeightAfter = this.messageContainer.scrollHeight;
+			this.messageContainer.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
+		}
+
+		Promise.all(hydrateQueue.map(async ({ el, msg }) => {
+			await this.messageHydrator.hydrate(el, msg.assets, msg.id);
+			this._attachMediaLoadListeners(el);
+			const customPlayer = el.querySelector(".custom-player");
+			if (customPlayer) await this.initCustomPlayer(customPlayer);
+		}));
+	}
+	
 	cleanupDateSeparators() {
 		const children = Array.from(this.messageContainer.children);
 
@@ -967,7 +1240,7 @@ export class MessageHandler {
 						const formData = new FormData();
 						formData.append('savedName', removed.savedName);
 
-						await fetch('https://chat.wokki20.nl/app/delete_file', {
+						await fetch('/app/delete_file', {
 							method: 'POST',
 							headers: {
 								"Authorization": `Bearer ${this.access_token}`
@@ -984,7 +1257,7 @@ export class MessageHandler {
 			this.uploadContainer.appendChild(fileBlock);
 		});
 	}
-
+	
 	initFileUpload() {
 		const MAX_FILES = 10;
 		const MAX_SIZE = 25 * 1024 * 1024;
@@ -1003,14 +1276,21 @@ export class MessageHandler {
 			"audio/wav",
 			"audio/ogg",
 			"application/pdf",
-			"text/plain"
+			"text/plain",
+			"application/zip",
+			"application/x-zip-compressed",
+			"application/x-rar-compressed",
+			"application/x-7z-compressed",
+			"application/gzip",
+			"application/x-tar",
+			"application/octet-stream"
 		];
 
 		const upload_single_file = async (file) => {
 			const formData = new FormData();
 			formData.append("files[]", file);
 
-			const response = await fetch("https://chat.wokki20.nl/app/upload_file", {
+			const response = await fetch("/app/upload_file", {
 				method: "POST",
 				body: formData,
 				headers: {

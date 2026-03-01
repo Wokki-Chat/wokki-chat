@@ -624,7 +624,7 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
                         <div class="options">
                             <div class="option">
                                 <span class="material-symbols-rounded option-icon" onclick="document.getElementById('file-input').click();">attach_file</span>
-                                <input type="file" id="file-input" accept="image/jpeg,image/png,image/gif,text/plain,audio/mpeg,audio/wav,video/mp4,image/webp,application/pdf" style="display: none;" multiple/>
+                                <input type="file" id="file-input" style="display: none;" multiple/>
                             </div>
                             <div class="option" id="emoji-option">
                                 <span class="material-symbols-rounded option-icon">sentiment_satisfied</span>
@@ -813,7 +813,6 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
     <script src="/assets/js/create_server.js" data-swup-ignore-script></script>
     <script src="/assets/js/globalFunctions.js"></script>
-    <script src="/assets/js/notifiers.js" data-swup-ignore-script></script>
     <script src="/assets/js/server.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
 </body>
