@@ -12,6 +12,7 @@ from server.helpers.logs import addMessageToLogs
 from server.helpers.other_helpers import addKudos
 import asyncio
 from server.helpers.bot_helpers import validate_embed
+from dateutil import parser
 
 @auth_required(server_required=True, allow_bots=True)
 async def send_message(sid, metadata, data):
@@ -340,12 +341,11 @@ async def get_messages(sid, metadata, data):
     contact_id = data.get('contact_id')
     offset = data.get('offset', 0)
     user_id = metadata.get('account_id')
-    
+
     is_contact = bool(contact_id)
     is_channel = bool(server_id and channel_id)
-    
+
     if not (is_contact or is_channel):
-        await addMessageToLogs(f"Missing required fields for get_messages", "INFO")
         await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
 
@@ -357,49 +357,67 @@ async def get_messages(sid, metadata, data):
         offset = 0
 
     limit = 25
-    
+
     if is_contact:
         cached_messages = await get_cached_messages(contact_id=contact_id, offset=offset, limit=limit)
     else:
         cached_messages = await get_cached_messages(server_id=server_id, channel_id=channel_id, offset=offset, limit=limit)
-    
+
     if cached_messages:
         await sio_instance.sio.emit('all_messages', cached_messages, to=sid)
-    
+
     async def send_db():
         try:
             async with config.pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
+
                     joined_at = None
-                    
+                    can_read_history = True
+
                     if is_contact:
                         if not await inContact(cur, user_id, contact_id):
                             await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'User is not in contact'}, to=sid)
                             return
-                        
-                        can_read_history = True
-                        
-                    else:
-                        if not await server_permissions(cur, user_id, server_id, 'view_channels'):
-                            await addMessageToLogs(f"User does not have permission to view channels for get_messages, user id: {user_id}, server id: {server_id}", "INFO")
-                            await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'User does not have permission to view channels'}, to=sid)
-                            return
 
-                        can_read_history = await server_permissions(cur, user_id, server_id, 'read_message_history')
+                    else:
+                        await cur.execute(
+                            "SELECT created_by FROM servers WHERE id = %s AND created_by = %s AND server_type = 'normal'",
+                            (server_id, user_id)
+                        )
+                        is_owner = bool(await cur.fetchone())
+
+                        if not is_owner:
+                            await cur.execute("""
+                                SELECT rp.*
+                                FROM user_server_roles usr
+                                JOIN role_permissions rp ON usr.role_id = rp.role_id
+                                WHERE usr.server_id = %s AND usr.user_id = %s
+                            """, (server_id, user_id))
+                            role_rows = await cur.fetchall()
+
+                            def _has_perm(perm):
+                                for row in role_rows:
+                                    if row.get(perm):
+                                        return True
+                                return False
+
+                            if not _has_perm('view_channels'):
+                                await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'User does not have permission to view channels'}, to=sid)
+                                return
+
+                            can_read_history = _has_perm('read_message_history')
 
                         await cur.execute(
                             "SELECT joined_at FROM server_members WHERE server_id = %s AND user_id = %s",
                             (server_id, user_id)
                         )
-                        result = await cur.fetchone()
-
-                        if not result:
-                            await addMessageToLogs(f"Server not found for get_messages, server id: {server_id}", "INFO")
+                        member_row = await cur.fetchone()
+                        if not member_row:
                             await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'Server not found'}, to=sid)
                             return
 
                         if not can_read_history:
-                            joined_at_value = result.get('joined_at')
+                            joined_at_value = member_row.get('joined_at')
                             if joined_at_value:
                                 if isinstance(joined_at_value, str):
                                     try:
@@ -410,192 +428,260 @@ async def get_messages(sid, metadata, data):
                                     joined_at = joined_at_value
 
                     if is_contact:
-                        where_clause = "contact_id = %s"
+                        where_clause = "m.contact_id = %s"
                         where_params = [contact_id]
                     else:
-                        where_clause = "server_id = %s AND channel_id = %s"
+                        where_clause = "m.server_id = %s AND m.channel_id = %s"
                         where_params = [server_id, channel_id]
-                    
+
                     if joined_at and not can_read_history:
-                        where_clause += " AND created_at >= %s"
+                        where_clause += " AND m.created_at >= %s"
                         where_params.append(joined_at)
 
-                    count_query = f"""
-                        SELECT COUNT(*) AS total
-                        FROM messages
-                        WHERE {where_clause}
-                    """
-                    await cur.execute(count_query, where_params)
-                    total_count = (await cur.fetchone())['total']
+                    async def fetch_count():
+                        async with config.pool.acquire() as c:
+                            async with c.cursor(aiomysql.DictCursor) as cur:
+                                await cur.execute(
+                                    f"SELECT COUNT(*) AS total FROM messages m WHERE {where_clause}",
+                                    where_params
+                                )
+                                return (await cur.fetchone())['total']
 
-                    messages_params = where_params + [limit, offset]
-                    messages_query = f"""
-                        SELECT * FROM (
-                            SELECT 
-                                m.id, m.message, m.sent_by, m.sent_by_bot, m.created_at, m.updated_at, m.edited, 
-                                m.server_id, m.channel_id, m.contact_id,
-                                m.parent_message_id, m.assets, m.command, m.command_user_id, m.embed,
-                                u.username, u.nickname AS display_name, u.profile_picture, u.is_staff AS staff,
-                                (m.sent_by_bot IS NOT NULL) AS bot_message
-                            FROM messages m
-                            LEFT JOIN users u ON m.sent_by = u.id
-                            LEFT JOIN bots b ON m.sent_by_bot = b.id
-                            WHERE {where_clause}
-                        ) AS combined_messages
-                        ORDER BY created_at DESC
-                        LIMIT %s OFFSET %s
-                    """
-                    await cur.execute(messages_query, messages_params)
-                    messages = list(await cur.fetchall())
-                    messages.reverse()
-                    
+                    async def fetch_messages():
+                        async with config.pool.acquire() as c:
+                            async with c.cursor(aiomysql.DictCursor) as cur:
+                                await cur.execute(f"""
+                                    SELECT
+                                        m.id, m.message, m.sent_by, m.sent_by_bot, m.created_at, m.updated_at, m.edited,
+                                        m.server_id, m.channel_id, m.contact_id,
+                                        m.parent_message_id, m.assets, m.command, m.command_user_id, m.embed,
+                                        u.username, u.nickname AS display_name, u.profile_picture,
+                                        u.is_staff AS staff, u.premium, u.premium_expires_at,
+                                        (m.sent_by_bot IS NOT NULL) AS bot_message
+                                    FROM messages m
+                                    LEFT JOIN users u ON m.sent_by = u.id
+                                    WHERE {where_clause}
+                                    ORDER BY m.created_at DESC
+                                    LIMIT %s OFFSET %s
+                                """, where_params + [limit, offset])
+                                rows = list(await cur.fetchall())
+                                rows.reverse()
+                                return rows
+
+                    total_count, messages = await asyncio.gather(fetch_count(), fetch_messages())
+
+                    if not messages:
+                        await sio_instance.sio.emit('all_messages_nocache', [], to=sid)
+                        await sio_instance.sio.emit('get_messages_response', {'success': True, 'count': 0, 'total': total_count, 'offset': offset}, to=sid)
+                        return
+
                     message_ids = [str(msg['id']) for msg in messages]
-                    if message_ids:
-                        placeholders = ','.join(['%s'] * len(message_ids))
-                        await cur.execute(f"""
-                            SELECT mr.message_id, mr.reaction, mr.user_id, mr.bot_id, mr.super_reaction
-                            FROM message_reactions mr
-                            WHERE mr.message_id IN ({placeholders})
-                        """, message_ids)
-                        reaction_rows = await cur.fetchall()
+                    placeholders = ','.join(['%s'] * len(message_ids))
 
-                        reactions_by_msg = {}
-                        for r in reaction_rows:
-                            reactions_by_msg.setdefault(r['message_id'], []).append(r)
+                    async def fetch_reactions():
+                        async with config.pool.acquire() as c:
+                            async with c.cursor(aiomysql.DictCursor) as cur:
+                                await cur.execute(
+                                    f"SELECT message_id, reaction, user_id, bot_id, super_reaction FROM message_reactions WHERE message_id IN ({placeholders})",
+                                    message_ids
+                                )
+                                return await cur.fetchall()
 
-                        for msg in messages:
-                            if isinstance(msg.get('created_at'), datetime):
-                                msg['created_at'] = msg['created_at'].astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
-                            else:
-                                msg['created_at'] = None
+                    parent_ids = list({str(msg['parent_message_id']) for msg in messages if msg.get('parent_message_id')})
 
-                            if isinstance(msg.get('updated_at'), datetime):
-                                msg['updated_at'] = msg['updated_at'].astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
-                            else:
-                                msg['updated_at'] = None
-
-                            if msg.get('assets'):
-                                try:
-                                    msg['assets'] = json.loads(msg['assets'])
-                                except Exception:
-                                    msg['assets'] = []
-                            else:
-                                msg['assets'] = []
-
-                            premium = False
-                            if not msg['bot_message']:
-                                premium = await get_user_premium_status(cur, msg['sent_by'])
-
-                            if msg['bot_message']:
-                                await cur.execute("SELECT name, profile_picture FROM bots WHERE id = %s LIMIT 1", (msg['sent_by_bot'],))
-                                bot_row = await cur.fetchone()
-                                sender_info = {
-                                    'username': bot_row['name'] if bot_row else None,
-                                    'display_name': None,
-                                    'profile_picture': bot_row['profile_picture'] if bot_row else None,
-                                    'staff': False,
-                                    'premium': False
-                                }
-                            else:
-                                sender_info = {
-                                    'username': msg.pop('username', None),
-                                    'display_name': msg.pop('display_name', None),
-                                    'profile_picture': msg.pop('profile_picture', None),
-                                    'staff': msg.pop('staff', None),
-                                    'premium': premium
-                                }
-                            msg['sender_info'] = sender_info
-
-                            parent_id = msg.pop('parent_message_id', None)
-                            parent_info = None
-                            if parent_id:
-                                await cur.execute("""
-                                    SELECT m.id, m.message, m.sent_by, m.sent_by_bot, u.username AS user_name, b.name AS bot_name
+                    async def fetch_parents():
+                        if not parent_ids:
+                            return []
+                        ph = ','.join(['%s'] * len(parent_ids))
+                        async with config.pool.acquire() as c:
+                            async with c.cursor(aiomysql.DictCursor) as cur:
+                                await cur.execute(f"""
+                                    SELECT m.id, m.message, m.sent_by, m.sent_by_bot,
+                                           u.username AS user_name, b.name AS bot_name
                                     FROM messages m
                                     LEFT JOIN users u ON m.sent_by = u.id
                                     LEFT JOIN bots b ON m.sent_by_bot = b.id
-                                    WHERE m.id = %s
-                                    LIMIT 1
-                                """, (parent_id,))
-                                parent_msg = await cur.fetchone()
-                                if parent_msg:
-                                    parent_info = {
-                                        'user_id': parent_msg['sent_by'] if parent_msg['sent_by'] else parent_msg['sent_by_bot'],
-                                        'message_id': parent_msg['id'],
-                                        'message_preview': (parent_msg['message'][:100] + '...') if len(parent_msg['message']) > 100 else parent_msg['message'],
-                                        'username': parent_msg['user_name'] if parent_msg['user_name'] else parent_msg['bot_name']
-                                    }
-                            msg['parent_message_info'] = parent_info
+                                    WHERE m.id IN ({ph})
+                                """, parent_ids)
+                                return await cur.fetchall()
 
-                            command_user_id = msg.pop('command_user_id', None)
-                            command_info = None
-                            if command_user_id:
-                                await cur.execute("""
-                                    SELECT u.username
-                                    FROM users u
-                                    WHERE u.id = %s
-                                    LIMIT 1
-                                """, (command_user_id,))
-                                command_user = await cur.fetchone()
-                                if command_user:
-                                    command_info = {
-                                        'command': msg.pop('command'),
-                                        'username': command_user['username']
-                                    }
-                            msg['command_info'] = command_info
-                            
-                            reactions = []
-                            for reaction_row in reactions_by_msg.get(str(msg['id']), []):
-                                reaction_user_info = None
-                                if reaction_row['user_id']:
-                                    await cur.execute(
-                                        "SELECT username, nickname AS display_name, profile_picture FROM users WHERE id = %s LIMIT 1",
-                                        (reaction_row['user_id'],)
-                                    )
-                                    user_row = await cur.fetchone()
-                                    if user_row:
-                                        reaction_user_info = {
-                                            'username': user_row['username'],
-                                            'display_name': user_row['display_name'],
-                                            'profile_picture': user_row['profile_picture']
-                                        }
-                                elif reaction_row['bot_id']:
-                                    await cur.execute(
-                                        "SELECT name AS username, profile_picture FROM bots WHERE id = %s LIMIT 1",
-                                        (reaction_row['bot_id'],)
-                                    )
-                                    bot_row = await cur.fetchone()
-                                    if bot_row:
-                                        reaction_user_info = {
-                                            'username': bot_row['username'],
-                                            'display_name': None,
-                                            'profile_picture': bot_row['profile_picture']
-                                        }
+                    bot_ids = list({str(msg['sent_by_bot']) for msg in messages if msg.get('sent_by_bot')})
 
-                                reactions.append({
-                                    'reaction': reaction_row['reaction'],
-                                    'user_id': reaction_row['user_id'],
-                                    'bot_id': reaction_row['bot_id'],
-                                    'super_reaction': reaction_row['super_reaction'] == 1,
-                                    'reaction_user_info': reaction_user_info
-                                })
-                            msg['reactions'] = reactions
+                    async def fetch_bots():
+                        if not bot_ids:
+                            return []
+                        ph = ','.join(['%s'] * len(bot_ids))
+                        async with config.pool.acquire() as c:
+                            async with c.cursor(aiomysql.DictCursor) as cur:
+                                await cur.execute(f"SELECT id, name, profile_picture FROM bots WHERE id IN ({ph})", bot_ids)
+                                return await cur.fetchall()
+
+                    command_user_ids = list({str(msg['command_user_id']) for msg in messages if msg.get('command_user_id')})
+
+                    async def fetch_command_users():
+                        if not command_user_ids:
+                            return []
+                        ph = ','.join(['%s'] * len(command_user_ids))
+                        async with config.pool.acquire() as c:
+                            async with c.cursor(aiomysql.DictCursor) as cur:
+                                await cur.execute(f"SELECT id, username FROM users WHERE id IN ({ph})", command_user_ids)
+                                return await cur.fetchall()
+
+                    reaction_rows, parent_rows, bot_rows, command_user_rows = await asyncio.gather(
+                        fetch_reactions(),
+                        fetch_parents(),
+                        fetch_bots(),
+                        fetch_command_users(),
+                    )
+
+                    reaction_user_ids = list({str(r['user_id']) for r in reaction_rows if r.get('user_id')})
+                    reaction_bot_ids = list({str(r['bot_id']) for r in reaction_rows if r.get('bot_id')})
+
+                    async def fetch_reaction_users():
+                        if not reaction_user_ids:
+                            return []
+                        ph = ','.join(['%s'] * len(reaction_user_ids))
+                        async with config.pool.acquire() as c:
+                            async with c.cursor(aiomysql.DictCursor) as cur:
+                                await cur.execute(
+                                    f"SELECT id, username, nickname AS display_name, profile_picture FROM users WHERE id IN ({ph})",
+                                    reaction_user_ids
+                                )
+                                return await cur.fetchall()
+
+                    async def fetch_reaction_bots():
+                        if not reaction_bot_ids:
+                            return []
+                        ph = ','.join(['%s'] * len(reaction_bot_ids))
+                        async with config.pool.acquire() as c:
+                            async with c.cursor(aiomysql.DictCursor) as cur:
+                                await cur.execute(
+                                    f"SELECT id, name AS username, profile_picture FROM bots WHERE id IN ({ph})",
+                                    reaction_bot_ids
+                                )
+                                return await cur.fetchall()
+
+                    r_users, r_bots = await asyncio.gather(fetch_reaction_users(), fetch_reaction_bots())
+
+                    now = datetime.now(timezone.utc)
+
+                    def _is_premium(row):
+                        if not row.get('premium'):
+                            return False
+                        exp = row.get('premium_expires_at')
+                        if exp is None:
+                            return True
+                        if isinstance(exp, str):
+                            exp = parser.parse(exp)
+                        if exp.tzinfo is None:
+                            exp = exp.replace(tzinfo=timezone.utc)
+                        return exp > now
+
+                    bots_by_id = {str(r['id']): r for r in bot_rows}
+                    parents_by_id = {str(r['id']): r for r in parent_rows}
+                    cmd_users_by_id = {str(r['id']): r for r in command_user_rows}
+                    r_users_by_id = {str(r['id']): r for r in r_users}
+                    r_bots_by_id = {str(r['id']): r for r in r_bots}
+
+                    reactions_by_msg = {}
+                    for r in reaction_rows:
+                        reactions_by_msg.setdefault(str(r['message_id']), []).append(r)
+
+                    for msg in messages:
+                        for field in ('created_at', 'updated_at'):
+                            v = msg.get(field)
+                            if isinstance(v, datetime):
+                                msg[field] = v.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+                            else:
+                                msg[field] = None
+
+                        if msg.get('assets'):
+                            try:
+                                msg['assets'] = json.loads(msg['assets'])
+                            except Exception:
+                                msg['assets'] = []
+                        else:
+                            msg['assets'] = []
+
+                        if msg['bot_message']:
+                            bot = bots_by_id.get(str(msg['sent_by_bot']), {})
+                            msg['sender_info'] = {
+                                'username': bot.get('name'),
+                                'display_name': None,
+                                'profile_picture': bot.get('profile_picture'),
+                                'staff': False,
+                                'premium': False,
+                            }
+                        else:
+                            msg['sender_info'] = {
+                                'username': msg.pop('username', None),
+                                'display_name': msg.pop('display_name', None),
+                                'profile_picture': msg.pop('profile_picture', None),
+                                'staff': msg.pop('staff', None),
+                                'premium': _is_premium(msg),
+                            }
+
+                        msg.pop('premium', None)
+                        msg.pop('premium_expires_at', None)
+
+                        parent_id = msg.pop('parent_message_id', None)
+                        parent_info = None
+                        if parent_id:
+                            p = parents_by_id.get(str(parent_id))
+                            if p:
+                                preview = p['message'] or ''
+                                parent_info = {
+                                    'user_id': p['sent_by'] if p['sent_by'] else p['sent_by_bot'],
+                                    'message_id': p['id'],
+                                    'message_preview': (preview[:100] + '...') if len(preview) > 100 else preview,
+                                    'username': p['user_name'] if p['user_name'] else p['bot_name'],
+                                }
+                        msg['parent_message_info'] = parent_info
+
+                        command_user_id = msg.pop('command_user_id', None)
+                        command_info = None
+                        if command_user_id:
+                            cu = cmd_users_by_id.get(str(command_user_id))
+                            if cu:
+                                command_info = {
+                                    'command': msg.pop('command', None),
+                                    'username': cu['username'],
+                                }
+                        msg.pop('command', None)
+                        msg['command_info'] = command_info
+
+                        msg['reactions'] = [
+                            {
+                                'reaction': r['reaction'],
+                                'user_id': r['user_id'],
+                                'bot_id': r['bot_id'],
+                                'super_reaction': r['super_reaction'] == 1,
+                                'reaction_user_info': (
+                                    r_users_by_id.get(str(r['user_id'])) if r.get('user_id')
+                                    else r_bots_by_id.get(str(r['bot_id']))
+                                ),
+                            }
+                            for r in reactions_by_msg.get(str(msg['id']), [])
+                        ]
 
                     await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
-                    await addMessageToLogs(f"Emitted all_messages to {user_id}, Sent {len(messages)} messages to {user_id}", "INFO")
-
-                    if is_contact:
-                        await update_cached_messages(contact_id=contact_id, messages=messages, offset=offset, limit=limit)
-                    else:
-                        await update_cached_messages(server_id=server_id, channel_id=channel_id, messages=messages, offset=offset, limit=limit)
-
                     await sio_instance.sio.emit(
                         'get_messages_response',
                         {'success': True, 'count': len(messages), 'total': total_count, 'offset': offset},
                         to=sid
                     )
-                    await addMessageToLogs(f"get_messages_response emitted to {user_id}", "INFO")
-                
+
+                    async def _update_cache():
+                        try:
+                            if is_contact:
+                                await update_cached_messages(contact_id=contact_id, messages=messages, offset=offset, limit=limit)
+                            else:
+                                await update_cached_messages(server_id=server_id, channel_id=channel_id, messages=messages, offset=offset, limit=limit)
+                        except Exception:
+                            pass
+
+                    asyncio.create_task(_update_cache())
+
         except Exception as e:
             await addMessageToLogs(f"get_messages send_db error: {e}", "ERROR")
 

@@ -29,7 +29,9 @@ async def get_db_pool(retries=30, delay=2):
                 autocommit=True,
                 charset='utf8mb4',
                 maxsize=20,
-                connect_timeout=5
+                connect_timeout=5,
+                minsize=5,
+                pool_recycle=3600
             )
             return _pool
         except aiomysql.OperationalError as e:

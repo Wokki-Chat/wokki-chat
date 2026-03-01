@@ -344,8 +344,9 @@ async def get_user_connections(cur, user_id):
 
 async def get_user_info_from_id(cur, user_id, load_widgets=True):
     query = """
-        SELECT u.id, u.username, u.status, u.profile_picture, u.created_at, u.bio, u.profile_color_primary, u.profile_color_accent, u.nickname, u.profile_banner,
-               t.tag_name, t.tag_icon, t.created_at
+        SELECT u.id, u.username, u.status, u.profile_picture, u.created_at, u.bio, 
+            u.profile_color_primary, u.profile_color_accent, u.nickname, u.profile_banner,
+            t.tag_name, t.tag_icon, t.created_at AS tag_created_at
         FROM users u
         LEFT JOIN tags t ON u.id = t.user_id
         WHERE u.id = %s
@@ -384,9 +385,9 @@ async def get_user_info_from_id(cur, user_id, load_widgets=True):
             user["tags"].append({
                 "tag_name": row["tag_name"],
                 "tag_icon": row["tag_icon"],
-                "created_at": row["created_at"].isoformat() if row["created_at"] else None
+                "created_at": row["tag_created_at"].isoformat() if row["tag_created_at"] else None
             })
-    
+            
     if load_widgets:
         asyncio.create_task(broadcast_widgets(resolved_user_id))
 
