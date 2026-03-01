@@ -3,14 +3,13 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Feb 17, 2026 at 11:26 AM
+-- Generation Time: Mar 01, 2026 at 12:00 PM
 -- Server version: 10.11.14-MariaDB-0+deb12u2
 -- PHP Version: 8.2.29
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
-
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -278,7 +277,7 @@ CREATE TABLE `messages` (
   `command_user_id` varchar(255) DEFAULT NULL,
   `embed` longtext DEFAULT NULL,
   `contact_id` char(36) DEFAULT NULL
-) ;
+);
 
 -- --------------------------------------------------------
 
@@ -293,7 +292,7 @@ CREATE TABLE `message_reactions` (
   `super_reaction` tinyint(1) DEFAULT 0,
   `user_id` int(11) DEFAULT NULL,
   `bot_id` char(36) DEFAULT NULL
-) ;
+);
 
 -- --------------------------------------------------------
 
@@ -308,6 +307,58 @@ CREATE TABLE `notifications` (
   `channel_id` char(36) DEFAULT NULL,
   `contact_id` char(36) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `oauth_clients`
+--
+
+CREATE TABLE `oauth_clients` (
+  `id` char(36) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `client_id` char(36) NOT NULL,
+  `client_secret` varchar(255) NOT NULL,
+  `bot_id` char(36) NOT NULL,
+  `grant_types` varchar(255) NOT NULL DEFAULT 'authorization_code',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `revoked_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `oauth_client_redirect_uris`
+--
+
+CREATE TABLE `oauth_client_redirect_uris` (
+  `id` char(36) NOT NULL,
+  `client_id` char(36) NOT NULL,
+  `uri` varchar(2048) NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `oauth_authorization_codes`
+--
+
+CREATE TABLE `oauth_authorization_codes` (
+  `id` char(36) NOT NULL,
+  `code` varchar(255) NOT NULL,
+  `client_id` char(36) NOT NULL,
+  `user_id` char(36) NOT NULL,
+  `redirect_uri` varchar(2048) NOT NULL,
+  `scopes` varchar(1024) DEFAULT NULL,
+  `code_challenge` varchar(255) DEFAULT NULL,
+  `code_challenge_method` varchar(10) DEFAULT NULL,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -485,302 +536,186 @@ CREATE TABLE `user_tokens` (
   `refresh_token` varchar(512) NOT NULL,
   `access_token_expires_at` datetime NOT NULL,
   `refresh_token_expires_at` datetime NOT NULL,
-  `created_at` datetime DEFAULT current_timestamp()
+  `created_at` datetime DEFAULT current_timestamp(),
+  `client_id` char(36) DEFAULT NULL,
+  `scopes` varchar(1024) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Indexes for dumped tables
 --
 
---
--- Indexes for table `assets`
---
 ALTER TABLE `assets`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `bots`
---
 ALTER TABLE `bots`
   ADD PRIMARY KEY (`id`),
   ADD KEY `created_by` (`created_by`);
 
---
--- Indexes for table `bot_commands`
---
 ALTER TABLE `bot_commands`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `unique_command_per_bot` (`bot_id`,`command`) USING HASH;
 
---
--- Indexes for table `channels`
---
 ALTER TABLE `channels`
   ADD PRIMARY KEY (`channel_id`),
   ADD KEY `channel_group_id` (`channel_group_id`);
 
---
--- Indexes for table `channel_groups`
---
 ALTER TABLE `channel_groups`
   ADD PRIMARY KEY (`channel_group_id`);
 
---
--- Indexes for table `contacts`
---
 ALTER TABLE `contacts`
   ADD PRIMARY KEY (`contact_id`);
 
---
--- Indexes for table `contact_requests`
---
 ALTER TABLE `contact_requests`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `contact_users`
---
 ALTER TABLE `contact_users`
   ADD PRIMARY KEY (`contact_id`,`user_id`);
 
---
--- Indexes for table `direct_messages`
---
 ALTER TABLE `direct_messages`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_from_id` (`from_id`),
   ADD KEY `fk_to_id` (`to_id`),
   ADD KEY `fk_parent_message_id` (`parent_message_id`);
 
---
--- Indexes for table `email_verification_codes`
---
 ALTER TABLE `email_verification_codes`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`);
 
---
--- Indexes for table `friends`
---
 ALTER TABLE `friends`
   ADD PRIMARY KEY (`user_id`,`friend_id`),
   ADD KEY `fk_friend` (`friend_id`);
 
---
--- Indexes for table `ideas`
---
 ALTER TABLE `ideas`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_ideas_github_issue_number` (`github_issue_number`);
 
---
--- Indexes for table `idea_votes`
---
 ALTER TABLE `idea_votes`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `invites`
---
 ALTER TABLE `invites`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `code` (`code`);
 
---
--- Indexes for table `Kudos`
---
 ALTER TABLE `Kudos`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `maintenance`
---
 ALTER TABLE `maintenance`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `messages`
---
 ALTER TABLE `messages`
   ADD PRIMARY KEY (`id`),
   ADD KEY `sent_by` (`sent_by`),
   ADD KEY `fk_parent_message` (`parent_message_id`),
   ADD KEY `fk_sent_by_bot` (`sent_by_bot`);
 
---
--- Indexes for table `message_reactions`
---
 ALTER TABLE `message_reactions`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `notifications`
---
 ALTER TABLE `notifications`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `profile_widgets`
---
+ALTER TABLE `oauth_clients`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `client_id` (`client_id`),
+  ADD KEY `idx_client_id` (`client_id`),
+  ADD KEY `idx_bot_id` (`bot_id`);
+
+ALTER TABLE `oauth_client_redirect_uris`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_client_id` (`client_id`);
+
+ALTER TABLE `oauth_authorization_codes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `code` (`code`),
+  ADD KEY `idx_code` (`code`),
+  ADD KEY `idx_client_id` (`client_id`);
+
 ALTER TABLE `profile_widgets`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `role_permissions`
---
 ALTER TABLE `role_permissions`
   ADD PRIMARY KEY (`role_id`);
 
---
--- Indexes for table `servers`
---
 ALTER TABLE `servers`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `server_members`
---
 ALTER TABLE `server_members`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `server_roles`
---
 ALTER TABLE `server_roles`
   ADD PRIMARY KEY (`role_id`);
 
---
--- Indexes for table `tags`
---
 ALTER TABLE `tags`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `user_id` (`user_id`,`tag_name`);
 
---
--- Indexes for table `users`
---
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `email` (`email`),
   ADD UNIQUE KEY `username` (`username`) USING HASH;
 
---
--- Indexes for table `user_connections`
---
 ALTER TABLE `user_connections`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `unique_user_connection` (`user_id`,`connection_user_id`,`connection_user_name`);
 
---
--- Indexes for table `user_server_roles`
---
 ALTER TABLE `user_server_roles`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `user_tokens`
---
 ALTER TABLE `user_tokens`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `idx_client_id` (`client_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
 --
 
---
--- AUTO_INCREMENT for table `assets`
---
 ALTER TABLE `assets`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `bot_commands`
---
 ALTER TABLE `bot_commands`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `contact_requests`
---
 ALTER TABLE `contact_requests`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `email_verification_codes`
---
 ALTER TABLE `email_verification_codes`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `idea_votes`
---
 ALTER TABLE `idea_votes`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `invites`
---
 ALTER TABLE `invites`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `Kudos`
---
 ALTER TABLE `Kudos`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `maintenance`
---
 ALTER TABLE `maintenance`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `message_reactions`
---
 ALTER TABLE `message_reactions`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `profile_widgets`
---
 ALTER TABLE `profile_widgets`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `server_members`
---
 ALTER TABLE `server_members`
   MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `tags`
---
 ALTER TABLE `tags`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `users`
---
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `user_connections`
---
 ALTER TABLE `user_connections`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `user_server_roles`
---
 ALTER TABLE `user_server_roles`
   MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `user_tokens`
---
 ALTER TABLE `user_tokens`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
@@ -788,44 +723,33 @@ ALTER TABLE `user_tokens`
 -- Constraints for dumped tables
 --
 
---
--- Constraints for table `bots`
---
 ALTER TABLE `bots`
   ADD CONSTRAINT `bots_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
 
---
--- Constraints for table `channels`
---
 ALTER TABLE `channels`
   ADD CONSTRAINT `channels_ibfk_1` FOREIGN KEY (`channel_group_id`) REFERENCES `channel_groups` (`channel_group_id`);
 
---
--- Constraints for table `direct_messages`
---
 ALTER TABLE `direct_messages`
   ADD CONSTRAINT `fk_from_id` FOREIGN KEY (`from_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `fk_parent_message_id` FOREIGN KEY (`parent_message_id`) REFERENCES `direct_messages` (`id`),
   ADD CONSTRAINT `fk_to_id` FOREIGN KEY (`to_id`) REFERENCES `users` (`id`);
 
---
--- Constraints for table `email_verification_codes`
---
 ALTER TABLE `email_verification_codes`
   ADD CONSTRAINT `email_verification_codes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
---
--- Constraints for table `friends`
---
 ALTER TABLE `friends`
   ADD CONSTRAINT `fk_friend` FOREIGN KEY (`friend_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
---
--- Constraints for table `user_tokens`
---
+ALTER TABLE `oauth_client_redirect_uris`
+  ADD CONSTRAINT `oauth_client_redirect_uris_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `oauth_clients` (`client_id`) ON DELETE CASCADE;
+
+ALTER TABLE `oauth_authorization_codes`
+  ADD CONSTRAINT `oauth_authorization_codes_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `oauth_clients` (`client_id`) ON DELETE CASCADE;
+
 ALTER TABLE `user_tokens`
-  ADD CONSTRAINT `user_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `user_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `user_tokens_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `oauth_clients` (`client_id`) ON DELETE SET NULL;
 
 COMMIT;
 
