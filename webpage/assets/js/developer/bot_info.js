@@ -1,16 +1,130 @@
+import * as jspt from "https://cdn.wokki20.nl/content/jspt-v2.1.0/jspt.module.js";
+import { Sanitizer, TextareaFormatter } from "../modules/global/sanitization.js";
 function initBotInfo() {
-	const el = document.querySelector('wchat-allowed-scripts');
-	const scripts = el.getAttribute('value').split(';');
-	if (!scripts.includes('developer/bot_info.js')) return;
+    const el = document.querySelector('wchat-allowed-scripts');
+    const scripts = el.getAttribute('value').split(';');
+    if (!scripts.includes('developer/bot_info.js')) return;
 
     const profilePicturePreview = document.querySelector(".profile-picture-preview");
+    const bot_id = document.getElementById("bot-id").getAttribute("value");
+    const access_token = document.getElementById("access-token").getAttribute("value");
 
-    let profilePictureChanged = false;
+    const textareaFormatter = new TextareaFormatter();
+
+    const textarea = document.getElementById("message-input");
+    const preview = document.getElementById("message-input-bg");
+
     let newProfilePictureFile = null;
-    let originalBotName = null;
-    let originalBotBio = null;
+    let originalBotName = document.getElementById("name").value;
+    let originalBotBio = textarea ? textarea.innerText : document.getElementById("bio").value;
+    let originalProfilePicture = profilePicturePreview.src;
 
-    let wrapper = profilePicturePreview.parentElement;
+    const minHeight = 18;
+
+    if (textarea) {
+        const maxHeight = 250;
+        const warningThreshold = 200;
+        const maxChars = 200;
+
+        const messageInputWrapper = document.querySelector('.message-input-wrapper');
+
+        const maxMessageLengthEl = document.querySelector('.max-message-length');
+        const maxCharactersLeftEl = document.querySelector('.max-characters-left');
+
+        document.querySelector(".input-container-2").addEventListener("click", () => textarea.focus());
+        
+        const inputContainer = document.querySelector(".input-container-2");
+
+        const updateHeight = () => {
+            let newHeight = Math.min(textarea.scrollHeight, maxHeight);
+            messageInputWrapper.style.height = newHeight + 'px';
+            inputContainer.style.minHeight = newHeight + 'px';
+        };
+
+        const updateCharsLeft = () => {
+            const charsLeft = maxChars - textarea.innerText.length;
+            if (charsLeft <= warningThreshold) {
+                maxMessageLengthEl.style.display = 'flex';
+                maxCharactersLeftEl.textContent = charsLeft;
+                maxCharactersLeftEl.classList.toggle('debt', charsLeft < 0);
+            } else {
+                maxMessageLengthEl.style.display = 'none';
+                maxCharactersLeftEl.classList.remove('debt');
+            }
+        };
+
+        textarea.addEventListener('input', (e) => {
+            if (e.target !== textarea) return;
+
+            if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
+                textarea.innerHTML = '';
+            }
+
+            updateHeight();
+            updateCharsLeft();
+
+            preview.innerHTML = textareaFormatter.format(textarea.innerText);
+        });
+
+        textarea.addEventListener('input', (e) => {
+            if (e.target !== textarea) return;
+
+            if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
+                textarea.innerHTML = '';;
+            }
+
+            updateHeight();
+            updateCharsLeft();
+
+            preview.innerHTML = textareaFormatter.format(textarea.innerText);
+        });
+
+        textarea.addEventListener('paste', (e) => {
+            e.preventDefault();
+
+            const text = e.clipboardData.getData('text/plain');
+
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            selection.deleteFromDocument();
+            selection.getRangeAt(0).insertNode(document.createTextNode(text));
+
+            selection.collapseToEnd();
+
+            textarea.dispatchEvent(new Event('input'));
+        });
+
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+
+                const selection = window.getSelection();
+                if (!selection.rangeCount) return;
+
+                const range = selection.getRangeAt(0);
+                range.deleteContents();
+
+                const textNode = document.createTextNode('\n\n');
+                range.insertNode(textNode);
+
+                range.setStartAfter(textNode);
+                range.setEndAfter(textNode);
+                selection.removeAllRanges();
+                selection.addRange(range);
+
+                textarea.dispatchEvent(new Event('input'));
+            }
+        });
+
+        textarea.addEventListener("input", () => {
+            if (botChanged()) showSaveResetButtons();
+            else document.querySelector(".unsaved-changes-container")?.remove();
+        });
+
+        updateHeight();
+        updateCharsLeft();
+        preview.innerHTML = textareaFormatter.format(textarea.innerText);
+    }
 
     const fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -25,39 +139,154 @@ function initBotInfo() {
     fileInput.addEventListener("change", () => {
         const file = fileInput.files[0];
         if (!file) {
-            profilePicturePreview.src = profile_picture;
+            profilePicturePreview.src = originalProfilePicture;
             return;
         }
 
         const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
-
         if (!allowedTypes.includes(file.type)) {
-            Toastify({
-            text: "File type not allowed. Please upload a valid image file.",
-            className: "copy-code-failed",
-            duration: 3000,
-            close: true,
-            gravity: "bottom",
-            position: "right",
-            style: {
-                background: "var(--clr-error-a0)",
-                boxShadow: "none",
-                borderRadius: "12px"
-            }
-            }).showToast();
+            jspt.makeToast({
+                message: "File type not allowed. Please upload a valid image file.",
+                style: "default-error",
+                duration: 3000
+            });
             return;
         }
 
         const reader = new FileReader();
         reader.onload = e => {
             profilePicturePreview.src = e.target.result;
+            profilePicturePreview.dataset.tempSrc = e.target.result;
         };
         reader.readAsDataURL(file);
 
         newProfilePictureFile = file;
-        profilePictureChanged = true;
+        showSaveResetButtons();
     });
-        
+
+    const botChanged = () => {
+        return document.getElementById("name").value !== originalBotName ||
+            textarea.innerText !== originalBotBio ||
+            !!profilePicturePreview.dataset.tempSrc;
+    };
+
+    const showSaveResetButtons = () => {
+        let container = document.querySelector(".unsaved-changes-container");
+        if (!container) {
+            container = document.createElement("div");
+            container.className = "unsaved-changes-container";
+
+            const message = document.createElement("span");
+            message.className = "unsaved-changes-message";
+            message.textContent = "You have unsaved changes. Please save or reset before leaving.";
+
+            const buttonsDiv = document.createElement("div");
+            buttonsDiv.className = "unsaved-changes-buttons";
+
+            const resetBtn = document.createElement("button");
+            resetBtn.textContent = "Reset";
+            resetBtn.className = "link reset-account-changes-button";
+
+            const saveBtn = document.createElement("button");
+            saveBtn.textContent = "Save";
+            saveBtn.className = "button-primary-filled";
+
+            buttonsDiv.appendChild(resetBtn);
+            buttonsDiv.appendChild(saveBtn);
+            container.appendChild(message);
+            container.appendChild(buttonsDiv);
+            document.querySelector(".content").appendChild(container);
+
+            resetBtn.addEventListener("click", () => {
+                document.getElementById("name").value = originalBotName;
+                if (textarea) textarea.innerText = originalBotBio;
+                if (preview) preview.innerHTML = textareaFormatter.format(originalBotBio);
+                if (profilePicturePreview.dataset.tempSrc) {
+                    profilePicturePreview.src = originalProfilePicture;
+                    delete profilePicturePreview.dataset.tempSrc;
+                }
+                newProfilePictureFile = null;
+                container.remove();
+            });
+
+            saveBtn.addEventListener("click", () => {
+                const botName = document.getElementById("name").value;
+                const botBio = textarea ? textarea.innerText : document.getElementById("bio").value;
+
+                if (botName === "") {
+                    jspt.makeToast({
+                        message: "Please enter a bot name.",
+                        style: "default-error",
+                        duration: 3000
+                    });
+                    return;
+                }
+
+                const formData = new FormData();
+                if (profilePicturePreview.dataset.tempSrc) {
+                    formData.append("profile_picture", newProfilePictureFile);
+                }
+                if (botName !== originalBotName) {
+                    formData.append("bot_name", botName);
+                }
+                if (botBio !== originalBotBio) {
+                    formData.append("bot_bio", botBio);
+                }
+                formData.append("bot_id", bot_id);
+
+                fetch("/app/update_bot", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${access_token}`
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        originalBotName = botName;
+                        originalBotBio = botBio;
+                        if (profilePicturePreview.dataset.tempSrc) {
+                            originalProfilePicture = profilePicturePreview.src;
+                            delete profilePicturePreview.dataset.tempSrc;
+                        }
+                        newProfilePictureFile = null;
+                        container.remove();
+                        jspt.makeToast({
+                            message: "Bot info updated successfully.",
+                            style: "default",
+                            duration: 3000
+                        });
+                    } else {
+                        throw new Error(data.message || "Update failed");
+                    }
+                })
+                .catch(() => {
+                    jspt.makeToast({
+                        message: "Failed to update bot info.",
+                        style: "default-error",
+                        duration: 3000
+                    });
+                });
+            });
+        }
+    };
+
+    document.getElementById("name").addEventListener("input", () => {
+        if (botChanged()) showSaveResetButtons();
+        else document.querySelector(".unsaved-changes-container")?.remove();
+    });
+
+
+    const copyBotIdBtn = document.getElementById("copy-id-btn");
+    copyBotIdBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText(bot_id);
+        jspt.makeToast({
+            message: "Bot ID copied to clipboard.",
+            style: "default",
+            duration: 3000
+        });
+    });
 
     const showTokenBtn = document.getElementById("show-btn");
     const copyTokenBtn = document.getElementById("copy-btn");
@@ -69,135 +298,33 @@ function initBotInfo() {
             document.getElementById("bot-token").type = "password";
             showTokenBtn.innerText = "Show Token";
             tokenShowing = false;
-            return;
-        } else if (!tokenShowing) {
+        } else {
             document.getElementById("bot-token").type = "text";
             showTokenBtn.innerText = "Hide Token";
             tokenShowing = true;
-            return;
         }
     });
-
 
     copyTokenBtn.addEventListener("click", () => {
         const token = document.getElementById("bot-token").value;
         navigator.clipboard.writeText(token).then(() => {
-            Toastify({
-            text: "Token copied to clipboard!",
-            className: "copy-code-success",
-            duration: 3000,
-            close: true,
-            gravity: "bottom",
-            position: "right",
-            style: {
-                background: "var(--clr-popup-a10)",
-                boxShadow: "none",
-                borderRadius: "12px"
-            }
-            }).showToast();
+            jspt.makeToast({
+                message: "Token copied to clipboard!",
+                style: "default",
+                duration: 3000
+            });
         });
     });
 
     copyInviteLinkBtn.addEventListener("click", () => {
         const inviteLink = document.getElementById("bot-invite").value;
         navigator.clipboard.writeText(inviteLink).then(() => {
-            Toastify({
-            text: "Invite link copied to clipboard!",
-            className: "copy-code-success",
-            duration: 3000,
-            close: true,
-            gravity: "bottom",
-            position: "right",
-            style: {
-                background: "var(--clr-popup-a10)",
-                boxShadow: "none",
-                borderRadius: "12px"
-            }
-            }).showToast();
+            jspt.makeToast({
+                message: "Invite link copied to clipboard.",
+                style: "default",
+                duration: 3000
+            });
         });
-    })
-
-    const saveChangesBtn = document.getElementById("save-bot-button");
-
-    saveChangesBtn.addEventListener("click", () => {
-        const botName = document.getElementById("name").value;
-        const botBio = document.getElementById("bio").value;
-
-        if (botName === "") {
-            Toastify({
-                text: "Please enter a bot name.",
-                className: "copy-code-failed",
-                duration: 3000,
-                close: true,
-                gravity: "bottom",
-                position: "right",
-                style: {
-                    background: "var(--clr-error-a0)",
-                    boxShadow: "none",
-                    borderRadius: "12px"
-                }
-            }).showToast();
-            return;
-        }
-
-        if (botName === originalBotName && !profilePictureChanged && botBio === originalBotBio) {
-            return;
-        }
-
-        const formData = new FormData();
-        if (profilePictureChanged) {
-            formData.append("profile_picture", newProfilePictureFile);
-        }
-        if (botName !== originalBotName) {
-            formData.append("bot_name", botName);
-        }
-        if (botBio !== originalBotBio) {
-            formData.append("bot_bio", botBio);
-        }
-        formData.append("bot_id", bot_id);
-
-        fetch("/app/update_bot", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${access_token}`
-            },
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === "success") {
-                Toastify({
-                    text: "Bot updated successfully!",
-                    className: "copy-code-success",
-                    duration: 3000,
-                    close: true,
-                    gravity: "bottom",
-                    position: "right",
-                    style: {
-                        background: "var(--clr-popup-a10)",
-                        boxShadow: "none",
-                        borderRadius: "12px"
-                    }
-                }).showToast();
-                window.location.reload();
-            }
-        })
-        .catch(err => {
-            Toastify({
-                text: "Something went wrong!",
-                className: "copy-code-failed",
-                duration: 3000,
-                close: true,
-                gravity: "bottom",
-                position: "right",
-                style: {
-                    background: "var(--clr-error-a0)",
-                    boxShadow: "none",
-                    borderRadius: "12px"
-                }
-            }).showToast();
-        });
-
     });
 }
 if (typeof window.swup !== "undefined") {

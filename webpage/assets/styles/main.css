@@ -4090,7 +4090,7 @@ ul {
     color: var(--clr-text-a0);
     border-radius: 10px;
     background-color: var(--clr-input-bg-dark);
-    border: 1px solid var(--clr-text-a50);
+    border: 1px solid var(--clr-input-border-bg-dark);
     user-select: none;
     position: absolute;
     bottom: 0px;
