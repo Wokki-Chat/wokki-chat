@@ -1,5 +1,6 @@
 <?php
 include 'config.php';
+include 'allowed_scopes.php';
 
 error_reporting(-1);
 ini_set('display_errors', '1');
@@ -49,6 +50,15 @@ if ($response_type !== 'code') {
 	http_response_code(400);
 	echo 'Unsupported response_type.';
 	exit;
+}
+
+if ($scopes) {
+	$requested_scopes = array_filter(explode(' ', $scopes));
+	if (!validate_scopes($requested_scopes)) {
+		http_response_code(400);
+		echo 'One or more requested scopes are invalid.';
+		exit;
+	}
 }
 
 $stmt = $mysqli->prepare("SELECT * FROM oauth_clients WHERE client_id = ? AND is_active = 1 AND revoked_at IS NULL");
@@ -176,9 +186,10 @@ $form_action = 'authorize?' . htmlspecialchars(http_build_query(['client_id' => 
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Authorize <?= htmlspecialchars($display_name) ?></title>
+	<title>Wokki Chat - Authorize <?= htmlspecialchars($display_name) ?></title>
 	<link rel="stylesheet" href="assets/styles/main.css">
 	<link rel="icon" type="image/x-icon" href="favicon.ico">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
 <body>
 	<div class="login-bg">
@@ -206,7 +217,31 @@ $form_action = 'authorize?' . htmlspecialchars(http_build_query(['client_id' => 
 
 			<p class="authorize-description"><?= htmlspecialchars($display_name) ?> wants to access your account.</p>
 			<?php if ($scopes): ?>
-				<p class="authorize-scopes">Requested scopes: <strong><?= htmlspecialchars($scopes) ?></strong></p>
+				<?php
+					$requested_scopes = array_filter(explode(' ', $scopes));
+				?>
+				<div class="authorize-scopes">
+					<p class="authorize-scopes-label">This app will be able to:</p>
+					<ul class="authorize-scopes-list">
+						<?php foreach ($requested_scopes as $scope): ?>
+							<?php if (isset($scope_descriptions[$scope])): ?>
+								<li class="authorize-scope-item">
+									<span class="scope-icon"><?= $scope_descriptions[$scope][1] ?></span>
+									<span class="scope-text"><?= htmlspecialchars($scope_descriptions[$scope][0]) ?></span>
+									<?php if (isset(SCOPE_EXPANSIONS[$scope])): ?>
+										<ul class="authorize-scope-children">
+											<?php foreach (SCOPE_EXPANSIONS[$scope] as $child): ?>
+												<?php if (isset($scope_descriptions[$child])): ?>
+													<li><?= htmlspecialchars($scope_descriptions[$child][0]) ?></li>
+												<?php endif; ?>
+											<?php endforeach; ?>
+										</ul>
+									<?php endif; ?>
+								</li>
+							<?php endif; ?>
+						<?php endforeach; ?>
+					</ul>
+				</div>
 			<?php endif; ?>
 
 			<div class="user-switcher" id="userSwitcher">

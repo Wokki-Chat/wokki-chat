@@ -64,19 +64,9 @@ function initBotInfo() {
             updateCharsLeft();
 
             preview.innerHTML = textareaFormatter.format(textarea.innerText);
-        });
-
-        textarea.addEventListener('input', (e) => {
-            if (e.target !== textarea) return;
-
-            if (textarea.textContent.trim() === '' && textarea.innerHTML !== '') {
-                textarea.innerHTML = '';;
-            }
-
-            updateHeight();
-            updateCharsLeft();
-
-            preview.innerHTML = textareaFormatter.format(textarea.innerText);
+            
+            if (botChanged()) showSaveResetButtons();
+            else document.querySelector(".unsaved-changes-container")?.remove();
         });
 
         textarea.addEventListener('paste', (e) => {
@@ -104,11 +94,14 @@ function initBotInfo() {
                 const range = selection.getRangeAt(0);
                 range.deleteContents();
 
-                const textNode = document.createTextNode('\n\n');
-                range.insertNode(textNode);
+                const br1 = document.createElement('br');
+                const br2 = document.createElement('br');
+                
+                range.insertNode(br2);
+                range.insertNode(br1);
 
-                range.setStartAfter(textNode);
-                range.setEndAfter(textNode);
+                range.setStartAfter(br1);
+                range.setEndAfter(br1);
                 selection.removeAllRanges();
                 selection.addRange(range);
 
@@ -165,11 +158,13 @@ function initBotInfo() {
     });
 
     const botChanged = () => {
+        const currentBio = textarea ? textarea.innerText.replace(/\n+/g, '\n').trim() : '';
+        const originalBioNormalized = originalBotBio.replace(/\n+/g, '\n').trim();
+        
         return document.getElementById("name").value !== originalBotName ||
-            textarea.innerText !== originalBotBio ||
+            currentBio !== originalBioNormalized ||
             !!profilePicturePreview.dataset.tempSrc;
     };
-
     const showSaveResetButtons = () => {
         let container = document.querySelector(".unsaved-changes-container");
         if (!container) {
@@ -285,45 +280,6 @@ function initBotInfo() {
             message: "Bot ID copied to clipboard.",
             style: "default",
             duration: 3000
-        });
-    });
-
-    const showTokenBtn = document.getElementById("show-btn");
-    const copyTokenBtn = document.getElementById("copy-btn");
-    const copyInviteLinkBtn = document.getElementById("copy-invite-btn");
-
-    let tokenShowing = false;
-    showTokenBtn.addEventListener("click", () => {
-        if (tokenShowing) {
-            document.getElementById("bot-token").type = "password";
-            showTokenBtn.innerText = "Show Token";
-            tokenShowing = false;
-        } else {
-            document.getElementById("bot-token").type = "text";
-            showTokenBtn.innerText = "Hide Token";
-            tokenShowing = true;
-        }
-    });
-
-    copyTokenBtn.addEventListener("click", () => {
-        const token = document.getElementById("bot-token").value;
-        navigator.clipboard.writeText(token).then(() => {
-            jspt.makeToast({
-                message: "Token copied to clipboard!",
-                style: "default",
-                duration: 3000
-            });
-        });
-    });
-
-    copyInviteLinkBtn.addEventListener("click", () => {
-        const inviteLink = document.getElementById("bot-invite").value;
-        navigator.clipboard.writeText(inviteLink).then(() => {
-            jspt.makeToast({
-                message: "Invite link copied to clipboard.",
-                style: "default",
-                duration: 3000
-            });
         });
     });
 }

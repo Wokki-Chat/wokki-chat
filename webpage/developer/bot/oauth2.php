@@ -1,16 +1,12 @@
 <?php
-include '../app/config.php';
-include '../global.php';
-$access_token = $_COOKIE['access_token'] ?? null;
+include '../../app/config.php';
+include '../../global.php';
+$access_token = $_COOKIE['access_token'];
 
-if (empty($access_token)) {
-    header('Location: /login?redirect=/developer/docs/oauth2');
+if (!$access_token) {
+    header('Location: /login?redirect=/developer/bots');
     exit;
 }
-
-header("Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
 
 $stmt = $mysqli->prepare("SELECT user_id FROM user_tokens WHERE access_token = ?");
 $stmt->bind_param("s", $access_token);
@@ -38,12 +34,27 @@ if ($result->num_rows > 0) {
 }
 $stmt->close();
 
-$botsStmt = $mysqli->prepare("SELECT id, name, profile_picture FROM bots WHERE created_by = ?");
-$botsStmt->bind_param("i", $user_id);
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$segments = explode('/', trim($path, '/'));
+
+$bot_id = $_GET['bot_id'] ?? null;
+
+if (!$bot_id) {
+    header('Location: /developer/bots');
+    exit;
+}
+
+$botsStmt = $mysqli->prepare("SELECT name, profile_picture, bot_token, bio FROM bots WHERE id = ?");
+$botsStmt->bind_param("s", $bot_id);
 $botsStmt->execute();
 $botsResult = $botsStmt->get_result();
-$bots = $botsResult->fetch_all(MYSQLI_ASSOC);
+$bot = $botsResult->fetch_assoc();
 $botsStmt->close();
+
+if (!$bot) {
+    header('Location: /developer/bots');
+    exit;
+}
 
 ?>
 <!DOCTYPE html>
@@ -51,15 +62,16 @@ $botsStmt->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wokki Chat Developer Portal - Bots</title>
-    <link rel="stylesheet" href="../assets/styles/developer/main.css">
+    <title>Wokki Chat Developer Portal - Oauth 2.0</title>
+    <link rel="stylesheet" href="/assets/styles/developer/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
 </head>
 <body>
     <div class="header">
         <div class="logo">
-            <img src="../assets/images/logo-purple.png" alt="Wokki Chat Logo">
+            <img src="/assets/images/logo-purple.png" alt="Wokki Chat Logo">
             <p>For Developers</p>
         </div>
         <div class="top-bar-profile" id="top-bar-profile">
@@ -69,43 +81,35 @@ $botsStmt->close();
     </div>
     <div class="content" id="app">
         <div class="sidebar">
-            <a class="sidebar-item" href="/developer/portal">
-                <span class="material-symbols-rounded sidebar-item-icon">home</span>
-                <span class="sidebar-item-text">Portal</span>
+            <a class="sidebar-back-button" href="/developer/bots">
+                <span class="material-symbols-rounded sidebar-item-icon">arrow_back</span>
+                <span class="sidebar-item-text">Back to Bots</span>
             </a>
-            <a class="sidebar-item active" href="/developer/bots">
-                <span class="material-symbols-rounded sidebar-item-icon">smart_toy</span>
-                <span class="sidebar-item-text">Bots</span>
+            <a class="sidebar-item" href="/developer/bot/<?php echo $bot_id; ?>/information">
+                <span class="material-symbols-rounded sidebar-item-icon">info</span>
+                <span class="sidebar-item-text">Bot Information</span>
             </a>
-            <a class="sidebar-item" href="/developer/docs">
-                <span class="material-symbols-rounded sidebar-item-icon">book_2</span>
-                <span class="sidebar-item-text">Documentation</span>
+            <a class="sidebar-item" href="/developer/bot/<?php echo $bot_id; ?>/installation">
+                <span class="material-symbols-rounded sidebar-item-icon">download</span>
+                <span class="sidebar-item-text">Installation</span>
+            </a>
+            <a class="sidebar-item active" href="/developer/bot/<?php echo $bot_id; ?>/oauth2">
+                <span class="material-symbols-rounded sidebar-item-icon">key</span>
+                <span class="sidebar-item-text">OAuth2</span>
             </a>
         </div>
-        <h1 class="content-title">Bots</h1>
-        <p class="content-description">Manage and create bots to enhance your Wokki Chat experience.</p>
-        <h3>Your Bots:</h3>
-        <div class="developer-bots">
-            <?php
-            foreach ($bots as $bot) {
-                echo '
-                <a class="developer-bot" href="/developer/bot/' . $bot['id'] . '/information">
-                    <img class="developer-bot-profile-picture" src="' . $bot['profile_picture'] . '" alt="' . $bot['name'] . '">
-                    <p class="developer-bot-name">' . $bot['name'] . '</p>
-                </a>';
-            }       
-            ?>
-            <div class="developer-bot" id="add-bot">
-                <div class="add-bot-container"><span class="material-symbols-rounded add-bot">add</span></div>
-                <p class="developer-bot-name">Create New Bot</p>
-            </div>
+        <h1 class="content-title">OAuth2</h1>
+        <p class="content-description">Allow people to authorize using Wokki Chat by using OAuth2.</p>
+        <div class="developer-bot-profile">
+            
         </div>
-        <wchat-allowed-scripts value="developer/bots.js;"></wchat-allowed-scripts>
+        <wchat-allowed-scripts value="developer/oauth2.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="user-id" value="<?php echo $user_id; ?>"></wchat-data>
-        <wchat-data id="page" value="/developer/bots"></wchat-data>
+        <wchat-data id="bot-id" value="<?php echo $bot_id; ?>"></wchat-data>
+        <wchat-data id="page" value="/developer/bot/<?php echo $bot_id; ?>/oauth2"></wchat-data>
     </div>
-    <script src="/assets/js/developer/bots.js"></script>
+    <script src="/assets/js/developer/oauth2.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
     <script type="module" data-swup-ignore-script>
         import Swup from "https://unpkg.com/swup@4?module";

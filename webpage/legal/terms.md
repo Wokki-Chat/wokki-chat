@@ -28,31 +28,33 @@ Users under the required age must have parental or guardian consent. By creating
 
 - By enabling Spotify, Wokki Chat stores your access token, refresh token, user ID, username, user URI, and profile image.  
 - Tokens are only used to display your currently playing music.  
-- Using Spotify integration means you agree to Spotify’s privacy policies.
+- Using Spotify integration means you agree to Spotify's privacy policies.
 
 ### GitHub
 
 - By connecting GitHub, Wokki Chat stores your access token, username, user ID, and profile image.  
 - Tokens are used solely to display commit activity on your profile.  
-- Using GitHub integration means you agree to GitHub’s privacy policies.
+- Using GitHub integration means you agree to GitHub's privacy policies.
 
 ### Chat
 
 - By connecting **Chat** ([Jona Zwetsloot](https://chat.jonazwetsloot.nl/)), Wokki Chat stores username, user URL, profile image, and necessary Chat data.  
-- Using Chat integration means you agree to Chat’s privacy policies.  
+- Using Chat integration means you agree to Chat's privacy policies.  
 
 ## 6. Prohibited Activities
 
 - Attempting to hack, reverse-engineer, or exploit Wokki Chat unless authorized.  
 - Sharing malware, spam, phishing content, or harmful material.  
-- Advertising or claiming ownership of Wokki Chat except by the official owner (wokki20).  
-- Using bots or automated scripts without permission.
+- Impersonating staff or falsely claiming ownership of Wokki Chat.
+- Using unauthorized bots, automated scripts, selfbots, or userbots that circumvent official systems.
+- Creating or operating automated accounts that mimic human behavior or mask their bot status.
+- **Authorized bots**: Bots created using the official bot library and documentation ([https://chat.wokki20.nl/developer/docs/](https://chat.wokki20.nl/developer/docs/)) are permitted and will be clearly marked as bots within the app.
 
 ## 7. Termination of Use
 
 - Wokki Chat may suspend or terminate accounts violating these Terms or acting maliciously.  
 - Terminated users may be prohibited from returning.  
-- Termination does not limit Wokki Chat’s right to retain data for legal, security, or administrative purposes.
+- Termination does not limit Wokki Chat's right to retain data for legal, security, or administrative purposes.
 
 ## 8. Intellectual Property
 
@@ -61,7 +63,7 @@ Users under the required age must have parental or guardian consent. By creating
 
 ## 9. Liability
 
-- Wokki Chat is provided “as-is” and does not guarantee uninterrupted or error-free service.  
+- Wokki Chat is provided "as-is" and does not guarantee uninterrupted or error-free service.  
 - The platform is not liable for losses, damages, or issues arising from use or reliance on the platform or integrations.
 
 ## 10. Modifications to Terms

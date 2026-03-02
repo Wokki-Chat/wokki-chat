@@ -13,8 +13,11 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^bot/([a-zA-Z0-9\-]+)$ /developer/bot/$1/information [R=301,L]
 RewriteRule ^bot/([a-zA-Z0-9\-]+)/information$ bot/information.php?bot_id=$1 [QSA,L]
 RewriteRule ^bot/([a-zA-Z0-9\-]+)/installation$ bot/installation.php?bot_id=$1 [QSA,L]
+RewriteRule ^bot/([a-zA-Z0-9\-]+)/oauth2$ bot/oauth2.php?bot_id=$1 [QSA,L]
 
 RewriteRule ^docs/python(/.*)?$ docs/python/serve.php [QSA,L]
+RewriteRule ^docs/oauth2(/.*)?$ docs/oauth2/serve.php [QSA,L]
+
 RewriteRule ^docs docs/docs.php [QSA,L]
 
 # Rewrite URLs for .html files

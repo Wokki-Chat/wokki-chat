@@ -93,6 +93,10 @@ if (!$bot) {
                 <span class="material-symbols-rounded sidebar-item-icon">download</span>
                 <span class="sidebar-item-text">Installation</span>
             </a>
+            <a class="sidebar-item" href="/developer/bot/<?php echo $bot_id; ?>/oauth2">
+                <span class="material-symbols-rounded sidebar-item-icon">key</span>
+                <span class="sidebar-item-text">OAuth2</span>
+            </a>
         </div>
         <h1 class="content-title"><?php echo htmlspecialchars($bot['name']); ?></h1>
         <p class="content-description">Here you'll find the general information regarding your bot.</p>
@@ -115,7 +119,7 @@ if (!$bot) {
                     <p class="label-desc">Describe your bot in a few words.</p>
                     <div class="input-container-2 input-container-2-inline">
                         <div class="textarea-container">
-                            <div class="message-input-wrapper">
+                            <div class="message-input-wrapper" style="min-height: 100px;">
                                 <div class="message-input-bg" id="message-input-bg"><?php echo $bot['bio'] ? htmlspecialchars($bot['bio']) : ''; ?></div>
                                 <div class="message-input" id="message-input" contenteditable="true"><?php echo $bot['bio'] ? htmlspecialchars($bot['bio']) : ''; ?></div>
                             </div>
@@ -129,19 +133,6 @@ if (!$bot) {
                     <span class="item-text"><?php echo htmlspecialchars($bot_id); ?></span>
                     <div class="bot-token-buttons">
                         <button class="button-primary-filled" id="copy-id-btn">Copy</button>
-                    </div>
-                    <br>
-                    <label for="bot-token">Bot Token:</label>
-                    <input type="password" id="bot-token" name="bot-token" class="input-text-dark-bg w270" value="<?php echo $bot['bot_token']; ?>" readonly>
-                    <div class="bot-token-buttons">
-                        <button class="button-primary-filled" id="show-btn">Show Token</button>
-                        <button class="button-primary-filled" id="copy-btn">Copy Token</button>
-                    </div>
-                    <br>
-                    <label for="bot-invite">Bot Invite:</label>
-                    <input type="text" id="bot-invite" name="bot-invite" class="input-text-dark-bg w270" value="https://chat.wokki20.nl/bot/invite/<?php echo $bot_id; ?>" readonly>
-                    <div class="bot-token-buttons">
-                        <button class="button-primary-filled" id="copy-invite-btn">Copy Invite</button>
                     </div>
                 </div>
             </div>

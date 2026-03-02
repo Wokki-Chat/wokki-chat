@@ -93,21 +93,42 @@ if (!$bot) {
                 <span class="material-symbols-rounded sidebar-item-icon">download</span>
                 <span class="sidebar-item-text">Installation</span>
             </a>
+            <a class="sidebar-item" href="/developer/bot/<?php echo $bot_id; ?>/oauth2">
+                <span class="material-symbols-rounded sidebar-item-icon">key</span>
+                <span class="sidebar-item-text">OAuth2</span>
+            </a>
         </div>
         <h1 class="content-title">Installation</h1>
         <p class="content-description">Here you can find the installation instructions for your bot.</p>
-        <div class="developer-bot-profile">
-            
+        <div class="developer-bot-installation">
+            <div class="installation-item">
+                <h2 class="installation-item-title">Bot Installation</h2>
+                <p class="installation-item-description">Copy the bot invite link below to invite the bot to your server, use the bot token in your bot configuration.</p>
+                <label for="bot-token">Bot Token:</label>
+                <div class="bot-token">
+                    <input type="password" id="bot-token" name="bot-token" class="input-text-dark-bg w400" value="<?php echo $bot['bot_token']; ?>" readonly>
+                    <div class="bot-token-buttons">
+                        <button class="button-primary-filled" id="show-btn">Show Token</button>
+                        <button class="button-primary-filled" id="copy-btn">Copy Token</button>
+                    </div>
+                </div>
+                <br>
+                <label for="bot-invite">Bot Invite:</label>
+                <div class="bot-token">
+                    <input type="text" id="bot-invite" name="bot-invite" class="input-text-dark-bg w400" value="https://chat.wokki20.nl/bot/invite/<?php echo $bot_id; ?>" readonly>
+                    <div class="bot-token-buttons">
+                        <button class="button-primary-filled" id="copy-invite-btn">Copy Invite</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <wchat-allowed-scripts value="developer/bot_info.js;"></wchat-allowed-scripts>
+        <wchat-allowed-scripts value="developer/bot_installation.js;"></wchat-allowed-scripts>
         <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
         <wchat-data id="user-id" value="<?php echo $user_id; ?>"></wchat-data>
         <wchat-data id="bot-id" value="<?php echo $bot_id; ?>"></wchat-data>
-        <wchat-data id="orignal-bot-name" value="<?php echo htmlspecialchars($bot['name']); ?>"></wchat-data>
-        <wchat-data id="orignal-bot-bio" value="<?php echo htmlspecialchars($bot['bio']); ?>"></wchat-data>
-        <wchat-data id="page" value="/developer/bot/<?php echo $bot_id; ?>/information"></wchat-data>
+        <wchat-data id="page" value="/developer/bot/<?php echo $bot_id; ?>/installation"></wchat-data>
     </div>
-    <script src="/assets/js/developer/bot_info.js" type="module"></script>
+    <script src="/assets/js/developer/bot_installation.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
     <script type="module" data-swup-ignore-script>
         import Swup from "https://unpkg.com/swup@4?module";
