@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Mar 01, 2026 at 12:00 PM
+-- Generation Time: Mar 02, 2026 at 12:00 PM
 -- Server version: 10.11.14-MariaDB-0+deb12u2
 -- PHP Version: 8.2.29
 
@@ -198,6 +198,8 @@ CREATE TABLE `ideas` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `image_path` varchar(512) DEFAULT NULL,
   `status` enum('voting','planned','implemented') DEFAULT 'voting',
+  `type` enum('idea','bug','api_request') DEFAULT 'idea',
+  `is_private` tinyint(1) DEFAULT 0,
   `github_issue_number` int(11) DEFAULT NULL,
   `github_issue_node_id` varchar(100) DEFAULT NULL,
   `github_project_item_id` varchar(100) DEFAULT NULL,
@@ -588,7 +590,9 @@ ALTER TABLE `friends`
 
 ALTER TABLE `ideas`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_ideas_github_issue_number` (`github_issue_number`);
+  ADD KEY `idx_ideas_github_issue_number` (`github_issue_number`),
+  ADD KEY `idx_ideas_type` (`type`),
+  ADD KEY `idx_ideas_status` (`status`);
 
 ALTER TABLE `idea_votes`
   ADD PRIMARY KEY (`id`);

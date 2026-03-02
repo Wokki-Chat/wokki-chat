@@ -46,7 +46,12 @@ if ($logged_in) {
     $param = json_encode(['user_id' => (int)$user_id]);
 }
 
-$ideasStmt = $mysqli->prepare("SELECT * FROM ideas");
+if ($is_developer === 'true') {
+    $ideasStmt = $mysqli->prepare("SELECT * FROM ideas");
+} else {
+    $ideasStmt = $mysqli->prepare("SELECT * FROM ideas WHERE is_private = 0 OR user_id = ?");
+    $ideasStmt->bind_param("i", $user_id);
+}
 $ideasStmt->execute();
 $ideasResult = $ideasStmt->get_result();
 
@@ -140,6 +145,7 @@ function render_idea($idea) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wokki Chat - Ideas</title>
     <link rel="stylesheet" href="/assets/styles/ideas.css">
+    <link rel="stylesheet" href="/assets/styles/ideas_additional.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="stylesheet" href="https://cdn.wokki20.nl/content/jspt-v2.1.0/jspt.css">
 </head>
@@ -151,7 +157,7 @@ function render_idea($idea) {
         <div class="top-bar-right">
             <?php if ($logged_in) { ?>
             <div class="top-bar-add-idea">
-                <button class="button-primary-filled top-bar-add-idea-button" id="add-idea-btn"><span class="material-symbols-rounded">add</span>New Idea</button>
+                <button class="button-primary-filled top-bar-add-idea-button" id="add-idea-btn"><span class="material-symbols-rounded">add</span>New Submission</button>
             </div>
             <div class="top-bar-divider"></div>
             <div class="top-bar-profile" id="top-bar-profile">
@@ -189,29 +195,55 @@ function render_idea($idea) {
             <span class="material-symbols-rounded tab-icon">rocket_launch</span>
             <p class="tab-text">Implemented</p>
         </div>
+        <div class="tab" id="bugs">
+            <span class="material-symbols-rounded tab-icon bug-icon">bug_report</span>
+            <p class="tab-text">Bugs</p>
+        </div>
+        <?php if ($is_developer === 'true') { ?>
+        <div class="tab" id="api-requests">
+            <span class="material-symbols-rounded tab-icon api-icon">api</span>
+            <p class="tab-text">API Requests</p>
+        </div>
+        <?php } ?>
     </div>
     <div class="ideas">
         <div class="ideas-voting" id="ideas-voting">
             <div class="ideas-voting-content">
                 <?php foreach ($ideas as $idea) {
-                    if ($idea['status'] === 'voting') echo render_idea($idea);
+                    if ($idea['status'] === 'voting' && $idea['type'] === 'idea') echo render_idea($idea);
                 } ?>
             </div>
         </div>
         <div class="ideas-planned" id="ideas-planned">
             <div class="ideas-planned-content">
                 <?php foreach ($ideas as $idea) {
-                    if ($idea['status'] === 'planned') echo render_idea($idea);
+                    if ($idea['status'] === 'planned' && $idea['type'] === 'idea') echo render_idea($idea);
                 } ?>
             </div>
         </div>
         <div class="ideas-implemented" id="ideas-implemented">
             <div class="ideas-implemented-content">
                 <?php foreach ($ideas as $idea) {
-                    if ($idea['status'] === 'implemented') echo render_idea($idea);
+                    if ($idea['status'] === 'implemented' && $idea['type'] === 'idea') echo render_idea($idea);
                 } ?>
             </div>
         </div>
+        <div class="ideas-bugs" id="ideas-bugs">
+            <div class="ideas-bugs-content">
+                <?php foreach ($ideas as $idea) {
+                    if ($idea['type'] === 'bug') echo render_idea($idea);
+                } ?>
+            </div>
+        </div>
+        <?php if ($is_developer === 'true') { ?>
+        <div class="ideas-api-requests" id="ideas-api-requests">
+            <div class="ideas-api-requests-content">
+                <?php foreach ($ideas as $idea) {
+                    if ($idea['type'] === 'api_request') echo render_idea($idea);
+                } ?>
+            </div>
+        </div>
+        <?php } ?>
     </div>
     <wchat-data id="is_developer" value="<?php echo $is_developer; ?>"></wchat-data>
     <wchat-data id="is_staff" value="<?php echo htmlspecialchars($is_staff, ENT_QUOTES, 'UTF-8'); ?>"></wchat-data>

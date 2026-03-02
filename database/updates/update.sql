@@ -82,3 +82,7 @@ ADD INDEX `idx_client_id` (`client_id`);
 
 ALTER TABLE `user_tokens`
 ADD FOREIGN KEY (`client_id`) REFERENCES `oauth_clients`(`id`) ON DELETE SET NULL;
+
+-- 3/2/2026
+ALTER TABLE ideas ADD COLUMN type ENUM('idea', 'bug', 'api_request') DEFAULT 'idea' AFTER status;
+ALTER TABLE ideas ADD COLUMN is_private BOOLEAN DEFAULT FALSE AFTER type;
