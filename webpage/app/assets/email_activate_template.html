@@ -3,56 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Verification</title>
+    <title>Verify your email</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            background-color: #f2f2f2;
+            font-family: Arial, sans-serif;
+            color: #333333;
         }
+
+        .wrapper {
+            padding: 32px 16px;
+        }
+
         .container {
-            max-width: 600px;
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            margin: auto;
+            max-width: 560px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 14px;
+            overflow: hidden;
         }
-        h2 {
-            color: #333;
+
+        .header {
+            padding: 24px;
+            background: linear-gradient(135deg, #996df7, #b691fa);
+            color: #ffffff;
         }
-        p {
-            color: #555;
+
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
         }
+
+        .content {
+            padding: 28px;
+        }
+
+        .content p {
+            margin: 0 0 16px;
+            line-height: 1.6;
+            color: #4d4d4d;
+        }
+
         .button {
             display: inline-block;
-            padding: 10px 20px;
-            background-color: #007BFF;
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #895bf5;
             color: #ffffff;
             text-decoration: none;
-            border-radius: 5px;
-            margin-top: 10px;
+            border-radius: 9px;
+            font-size: 16px;
+            font-weight: 600;
+            border: 1px solid #b691fa;
         }
+
+        .button:hover {
+            background-color: #996df7;
+        }
+
+        .divider {
+            height: 1px;
+            background-color: #e5e5e5;
+            margin: 32px 0;
+        }
+
         .footer {
+            padding: 20px 28px 28px;
             font-size: 12px;
-            color: #777;
-            margin-top: 20px;
+            color: #808080;
             text-align: center;
+        }
+
+        .footer a {
+            color: #895bf5;
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Account activation</h2>
-        <p>To verify your email, please click the button below to proceed.</p>
-        <a href="{{activate_link}}" class="button">Verify Email</a>
-        <p>If you did not request this, please ignore this email. Someone else may have entered your email address by mistake.</p>
-        <p>If you suspect any weird activity, please <a href="{{support_link}}">contact support</a>.</p>
-        <div class="footer">
-            <p>Remember, we will never ask for your password.</p>
-            <br>
-            <p>Best regards,<br>The wokki20 Chat Team</p>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <h1>Activate your account</h1>
+            </div>
+
+            <div class="content">
+                <p>
+                    You're almost in. Click the button below to verify your email
+                    and activate your Wokki Chat account.
+                </p>
+
+                <a href="{{activate_link}}" class="button">
+                    Verify email
+                </a>
+
+                <div class="divider"></div>
+
+                <p>
+                    Didn’t sign up? You can safely ignore this email.
+                    If something feels off, please
+                    <a href="{{support_link}}">contact support</a>.
+                </p>
+            </div>
+
+            <div class="footer">
+                <p>
+                    We’ll never ask for your password. Ever.
+                </p>
+                <p>
+                    The Wokki Chat Team
+                </p>
+            </div>
         </div>
     </div>
 </body>
