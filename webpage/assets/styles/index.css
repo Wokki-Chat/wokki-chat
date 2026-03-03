@@ -1,5 +1,11 @@
 @import url('colors.css');
 @import url('https://fonts.googleapis.com/css2?family=Commissioner:wght@100..900&display=swap');
+@import url('./global/base.css');
+@import url('./global/animations.css');
+@import url('./global/typography.css');
+
+@import url('./components/buttons.css');
+@import url('./components/inputs.css');
 
 body {
     font-family: "Inter", sans-serif;

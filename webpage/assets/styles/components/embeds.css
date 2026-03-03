@@ -1,0 +1,49 @@
+/* Embed Items */
+
+.embed {
+  border-left: 4px solid var(--clr-primary-a0);
+  padding: 10px;
+  margin-bottom: 8px;
+  background: var(--clr-input-border-bg-dark);
+  border-radius: 6px;
+}
+
+.embed-title {
+  margin: 0 0 5px 0;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.embed-description {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+}
+
+.embed-fields {
+  margin-bottom: 10px;
+}
+
+.embed-field {
+  font-size: 15px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.embed-components {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.embed-button-row {
+  display: flex;
+  gap: 6px;
+}
+
+.embed-footer {
+  margin-top: 10px;
+  opacity: 0.7;
+  margin-bottom: 0px;
+}

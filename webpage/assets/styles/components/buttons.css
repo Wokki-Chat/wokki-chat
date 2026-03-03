@@ -1,0 +1,71 @@
+.button-primary-filled {
+    background-color: var(--clr-primary-a0);
+    color: var(--clr-text-white-a0);
+    border: 1px solid var(--clr-primary-a30);
+    border-radius: 9px;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: inherit;
+}
+
+.button-primary-filled:hover {
+    background-color: var(--clr-primary-a10);
+}
+
+.button-primary-filled:disabled {
+    opacity: 0.7;
+    background-color: var(--clr-primary-a0);
+    cursor: not-allowed;
+}
+
+.button-primary-outline {
+    background-color: transparent;
+    color: var(--clr-text-a0);
+    border: 1px solid var(--clr-primary-a0);
+    border-radius: 9px;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: inherit;
+}
+
+.button-primary-outline:hover {
+    background-color: var(--clr-primary-a10);
+}
+
+.button-secondary-filled {
+    background-color: var(--clr-secondary-a0);
+    color: var(--clr-text-a0);
+    border: none;
+    border-radius: 9px;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.button-secondary-filled:hover {
+    background-color: var(--clr-secondary-a10);
+}
+
+.button-secondary-outline {
+    background-color: transparent;
+    color: var(--clr-text-a0);
+    border: 1px solid var(--clr-secondary-a0);
+    border-radius: 9px;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.button-secondary-outline:hover {
+    background-color: var(--clr-secondary-a10);
+}

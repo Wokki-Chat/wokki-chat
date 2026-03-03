@@ -11,8 +11,8 @@ import asyncio
 
 async def verify_access_token(cur, access_token):
     await cur.execute(
-        'SELECT user_id, access_token_expires_at FROM user_tokens WHERE access_token = %s',
-        (access_token,)
+        'SELECT user_id, access_token_expires_at FROM user_tokens WHERE access_token = %s AND (client_id IS NULL OR client_id = %s)',
+        (access_token, "wchat-app")
     )
     row = await cur.fetchone()
 

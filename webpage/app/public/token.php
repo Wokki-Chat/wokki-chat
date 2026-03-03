@@ -1,6 +1,6 @@
 <?php
 include 'config.php';
-include 'allowed_scopes.php';
+include '_scopes.php';
 
 error_reporting(-1);
 ini_set('display_errors', '1');

@@ -1,0 +1,307 @@
+/* Premium, and other modal styles */
+.premium-popup,
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.premium-popup-content,
+.modal-content {
+    width: 400px;
+    background-color: var(--clr-popup-a0);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid var(--clr-popup-a20);
+}
+
+.premium-popup-icon {
+    font-size: 48px;
+    color: var(--clr-text-a0);
+}
+
+.premium-popup-icon-icon {
+    font-size: 48px !important;
+    color: var(--clr-text-a0);
+    font-variation-settings: 
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    ;
+}
+
+.modal-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.close-modal-btn {
+    cursor: pointer;
+    user-select: none;
+    color: var(--clr-text-a30);
+    font-size: 24px;
+    font-variation-settings:
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+}
+
+.modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.create-category-form,
+.create-channel-form,
+.leave-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Image Viewer */
+.image-viewer-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.image-viewer-popup-image {
+    animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 100vw;
+    max-height: 100vh;
+    user-select: none;
+}
+
+.image-viewer-popup-options {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    display: flex;
+    gap: 5px;
+    transition: all 0.2s ease;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--clr-popup-a10);
+    border: 1px solid var(--clr-popup-a20);
+    border-radius: 10px;
+    padding: 5px;
+    z-index: 1;
+    font-variation-settings:
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+}
+
+.image-viewer-popup-option {
+    color: var(--clr-text-a30);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    padding: 5px;
+}
+
+.image-viewer-popup-option:hover {
+    background-color: var(--clr-popup-a20);
+    color: var(--clr-text-a0);
+}
+
+.image-viewer-popup-option-icon {
+    font-size: 25px !important;
+    font-variation-settings:
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+}
+
+.image-viewer-popup-option-text {
+    display: none;  
+    position: absolute;
+    top: 90%;
+    left: 50%;
+    transform: translate(-50%);
+    background-color: var(--clr-popup-a20);
+    color: var(--clr-text-a0);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 16px;
+    white-space: nowrap;
+}
+
+.image-viewer-popup-option:hover .image-viewer-popup-option-text {
+    display: block;
+    animation: pop-in-image-viewer 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.magnifier-circle {
+    position: fixed;
+    pointer-events: none;
+    border-radius: 50%;
+    overflow: hidden;
+    width: 150px;
+    height: 150px;
+    border: 2px solid var(--clr-popup-a30);
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    z-index: 9999;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    background-color: #000;
+}
+
+/* JSPT Popup Styles */
+.popup-container#server-settings-popup,
+.popup-container#user-profile-popup,
+.popup-container#update_popup {
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+}
+
+.popup-container#update_popup .popup {
+    max-width: 700px !important;
+}
+
+.popup-container#update_popup .popup .popup-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 600px !important;
+    overflow-y: auto !important;
+}
+
+.popup-container#update_popup .popup .popup-content div {
+    margin: 0;
+    font-size: 16px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.popup-container#user-profile-popup .popup-content {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+}
+
+.popup-container#user-profile-popup .user-info-profile-popup-static .user-info-profile-popup-profile-picture-username-status {
+    height: max-content !important;
+}
+
+.popup-container#user-profile-popup .user-info-profile-popup-static .dm-info-container {
+    height: 100% !important;
+}
+
+.popup-container#user-profile-popup .popup {
+    min-width: 520px;
+}
+
+.popup-container#server-settings-popup .popup-content,
+.popup-container#server-settings-popup .popup {
+    padding: unset !important;
+    overflow: hidden;
+    min-width: 70%;
+}
+
+.popup-container#server-settings-popup .popup-header {
+    display: none !important;
+}
+
+.popup-container#server-settings-popup .settings-content {
+    width: 100% !important;
+}
+
+.popup-container#server-settings-popup .settings-tabs {
+    position: static;
+    background-color: var(--clr-surface-a0);
+    border-radius: 0px;
+    height: calc(100vh - 60px);
+}
+.popup-container#server-settings-popup .setting-page {
+    width: calc(100% - 250px - 20px);
+    position: static;
+    height: calc(100vh - 60px);
+    padding: 0px 20px;
+    margin-left: unset;
+    display: flex;
+    align-items: center;
+}
+
+.popup-container#server-settings-popup .settings-tab {
+    background-color: var(--clr-popup-a0);
+}
+.popup-container#server-settings-popup .settings-tab.active,
+.popup-container#server-settings-popup .settings-tab:hover {
+    background-color: var(--clr-popup-a20);
+}
+
+.popup-container#server-settings-popup .textarea-container {
+    min-height: 30px;
+}
+
+.popup-container#server-settings-popup .settings-page-title {
+    justify-self: center;
+}
+
+/* Disclaimer for update info popup */
+.ai-disclaimer {
+    font-size: 12px;
+    color: var(--clr-text-a30);
+}
+
+/* More popup items */
+.popup-text {
+    font-size: 18px;
+    margin: 0px;
+    color: var(--clr-text-a0);
+}
+
+.popup-subtext {
+    font-size: 14px;
+    margin: 0px;
+    color: var(--clr-text-a30);
+}
+
+.popup {
+    background-color: var(--clr-popup-a0) !important;
+    color: var(--clr-text-a0) !important;
+    border-color: var(--clr-popup-a10) !important;
+}
+
+.popup-header {
+    border-color: var(--clr-popup-a10) !important;
+}

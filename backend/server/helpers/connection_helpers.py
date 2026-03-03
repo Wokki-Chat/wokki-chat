@@ -57,7 +57,6 @@ async def handle_connect(sid, environ):
             if access_token:
                 user_id = await verify_access_token(cur, access_token)
                 if not user_id:
-                    await addMessageToLogs(f"Invalid access_token for sid {sid}", "INFO")
                     await sio_instance.sio.disconnect(sid)
                     return
 

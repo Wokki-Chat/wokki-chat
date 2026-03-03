@@ -1,0 +1,194 @@
+/* Settings dropdown */
+.settings-dropdown {
+    position: absolute;
+    top: calc(55px + 5px);
+    right: 15px;
+    width: 220px;
+    height: auto;
+    background-color: var(--clr-popup-a10);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    display: none;
+    flex-direction: column;
+    z-index: 1;
+    border: 1px solid var(--clr-popup-a20);
+}
+
+.settings-dropdown.show {
+    display: flex;
+    animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.settings-dropdown-content {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 5px;
+}
+
+.settings-dropdown-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 9px;
+    font-size: 14px;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.settings-dropdown-item.danger {
+    color: var(--clr-danger) !important;
+}
+
+.settings-dropdown-item:hover {
+    background: var(--clr-popup-a30);
+}
+
+.settings-dropdown-item p {
+    margin: 0px;
+    font-weight: var(--font-weight-semibold);
+}
+
+.settings-dropdown-item span {
+    color: var(--clr-text-a30);
+    font-size: 24px;
+    font-variation-settings:
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+}
+
+.settings-dropdown-item.danger span {
+    color: var(--clr-danger) !important;
+}
+
+.settings-dropdown .divider {
+    width: calc(100% - 20px) !important;;
+}
+
+/* Emoji Picker Dropdown */
+.emoji-picker-dropdown {
+	position: absolute;
+	left: 0;
+	width: 500px;
+	height: 350px;
+	background: var(--clr-popup-a0);
+	border: 1px solid var(--clr-popup-a10);
+	border-radius: 8px;
+	box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+	overflow: hidden;
+	z-index: 1000;
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	display: flex;
+    flex-direction: row;
+}
+
+.emoji-picker-sidebar {
+	width: 44px;
+	background: var(--clr-popup-a10);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 6px 0;
+	gap: 6px;
+	border-right: 1px solid var(--clr-popup-a20);
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.emoji-picker-group-btn {
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	padding: 6px;
+	border-radius: 6px;
+	color: var(--clr-text-a20);
+	transition: background 0.2s, color 0.2s;
+}
+
+.emoji-picker-group-btn.active,
+.emoji-picker-group-btn:hover {
+	background: var(--clr-popup-a30);
+	color: var(--clr-text-a0);
+}
+
+.emoji-picker-content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+.emoji-picker-search {
+	width: 100%;
+	padding: 8px 12px;
+	border: none;
+	outline: none;
+	background: var(--clr-popup-a10);
+	color: var(--clr-text-a0);
+	font-size: 14px;
+	box-sizing: border-box;
+}
+
+.emoji-picker-search::placeholder {
+	color: var(--clr-text-a20);
+}
+
+.emoji-picker-list {
+	flex: 1;
+	padding: 8px;
+	overflow-y: auto;
+	scrollbar-width: thin;
+}
+
+.emoji-picker-list::-webkit-scrollbar {
+	width: 8px;
+}
+
+.emoji-picker-list::-webkit-scrollbar-thumb {
+	border-radius: 4px;
+}
+
+.emoji-picker-group-title {
+	font-size: 12px;
+	color: var(--clr-text-a40);
+	margin: 6px 4px;
+	text-transform: capitalize;
+}
+
+.emoji-picker-grid {
+    padding: 8px;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+	gap: 6px;
+	margin-bottom: 6px;
+}
+
+.emoji-picker-item {
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	font-size: 20px;
+	padding: 6px;
+	border-radius: 6px;
+	transition: background 0.2s ease-in-out, transform 0.1s ease-in-out;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.emoji-picker-item:hover,
+.emoji-picker-item:focus {
+	background: var(--clr-popup-a20);
+	transform: scale(1.2);
+	outline: none;
+}
+
+.emoji-picker-item .emoji {
+    width: 20px !important;
+    height: 20px !important;
+}
