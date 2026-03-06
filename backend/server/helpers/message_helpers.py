@@ -42,15 +42,15 @@ async def send_message(sid, metadata, data):
         }, to=sid)
         return
 
-    if not message:
-        await addMessageToLogs(f"Missing message content for send_message", "INFO")
+    if not message and not embed:
+        await addMessageToLogs(f"Missing message content and embed for send_message", "INFO")
         await sio_instance.sio.emit('send_message_response', {
             'success': False, 
-            'error': 'Missing required field: message', 
+            'error': 'Must provide either message or embed', 
             'req_id': req_id
         }, to=sid)
         return
-
+    
     message_id = str(uuid.uuid4())
 
     async with config.pool.acquire() as conn:

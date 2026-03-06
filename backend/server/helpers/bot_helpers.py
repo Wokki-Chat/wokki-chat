@@ -24,7 +24,6 @@ def validate_single_embed(embed):
     if not isinstance(embed, dict):
         return False
     
-    
     title = embed.get('title')
     if title is not None and not isinstance(title, str):
         return False
