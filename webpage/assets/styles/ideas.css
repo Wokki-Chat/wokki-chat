@@ -746,3 +746,123 @@ h2 {
     font-size: 14px;
     color: var(--clr-text-a30);
 }
+.type-selection {
+    max-width: 600px !important;
+}
+
+.type-selection-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.type-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    background-color: var(--clr-popup-a10);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.type-option:hover {
+    background-color: var(--clr-popup-a20);
+    border-color: var(--clr-primary-a0);
+    transform: translateY(-2px);
+}
+
+.type-option-icon {
+    font-size: 48px !important;
+    color: var(--clr-primary-a0);
+    margin-bottom: 10px;
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+}
+
+.type-option h3 {
+    font-size: 16px;
+    font-weight: var(--font-weight-semibold);
+    margin: 8px 0 4px 0;
+    color: var(--clr-text-a0);
+}
+
+.type-option p {
+    font-size: 13px;
+    color: var(--clr-text-a30);
+    text-align: center;
+    margin: 0;
+}
+
+.private-notice {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background-color: var(--clr-popup-a10);
+    border-radius: 8px;
+    border-left: 3px solid var(--clr-primary-a0);
+    margin-bottom: 15px;
+}
+
+.private-notice span {
+    color: var(--clr-primary-a0);
+    font-size: 20px;
+}
+
+.private-notice p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--clr-text-a20);
+}
+
+.modal-title-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modal-badges {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+}
+
+.type-badge {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: var(--clr-popup-a10);
+    color: var(--clr-text-a20);
+    font-weight: var(--font-weight-semibold);
+}
+
+.private-badge {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: rgba(255, 152, 0, 0.15);
+    color: rgb(255, 152, 0);
+    font-weight: var(--font-weight-semibold);
+}
+
+.private-badge span {
+    font-size: 14px !important;
+}
+
+.tab .bug-icon {
+    color: #d73a4a;
+}
+
+.tab .api-icon {
+    color: #0e8a16;
+}

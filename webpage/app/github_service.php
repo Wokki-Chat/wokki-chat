@@ -186,23 +186,40 @@ class GitHubService {
         ', ['owner' => $this->owner, 'number' => $this->projectNumber]);
     }
 
-    public function ensureIdeaLabelExists(): void {
+    public function ensureLabelsExist(): void {
         $labels = $this->request('GET', "https://api.github.com/repos/{$this->owner}/{$this->repo}/labels");
-        foreach ($labels as $label) {
-            if ($label['name'] === 'idea') return;
+        $existingLabels = array_column($labels, 'name');
+
+        $requiredLabels = [
+            ['name' => 'idea', 'color' => '7c3aed', 'description' => 'Feature idea submitted via Wokki Chat'],
+            ['name' => 'bug', 'color' => 'd73a4a', 'description' => 'Bug report submitted via Wokki Chat'],
+            ['name' => 'api-request', 'color' => '0e8a16', 'description' => 'API endpoint request submitted via Wokki Chat'],
+        ];
+
+        foreach ($requiredLabels as $label) {
+            if (!in_array($label['name'], $existingLabels)) {
+                $this->request('POST', "https://api.github.com/repos/{$this->owner}/{$this->repo}/labels", $label);
+            }
         }
-        $this->request('POST', "https://api.github.com/repos/{$this->owner}/{$this->repo}/labels", [
-            'name' => 'idea',
-            'color' => '7c3aed',
-            'description' => 'Feature idea submitted via Wokki'
-        ]);
     }
 
-    public function createIssue(string $title, string $body): array {
+    public function ensureIdeaLabelExists(): void {
+        $this->ensureLabelsExist();
+    }
+
+    public function createIssue(string $title, string $body, string $type = 'idea'): array {
+        $labelMap = [
+            'idea' => 'idea',
+            'bug' => 'bug',
+            'api_request' => 'api-request'
+        ];
+
+        $label = $labelMap[$type] ?? 'idea';
+
         $response = $this->request('POST', "https://api.github.com/repos/{$this->owner}/{$this->repo}/issues", [
             'title' => $title,
             'body' => $body,
-            'labels' => ['idea']
+            'labels' => [$label]
         ]);
         return [
             'number' => $response['number'] ?? null,

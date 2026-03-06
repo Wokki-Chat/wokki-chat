@@ -26,11 +26,19 @@ function change_page(new_page) {
     document.getElementById("voting").classList.remove("active");
     document.getElementById("planned").classList.remove("active");
     document.getElementById("implemented").classList.remove("active");
+    document.getElementById("bugs").classList.remove("active");
+    if (is_developer === 'true') {
+        document.getElementById("api-requests").classList.remove("active");
+    }
     document.getElementById(new_page).classList.add("active");
 
     document.getElementById("ideas-voting").style.display = "none";
     document.getElementById("ideas-planned").style.display = "none";
     document.getElementById("ideas-implemented").style.display = "none";
+    document.getElementById("ideas-bugs").style.display = "none";
+    if (is_developer === 'true') {
+        document.getElementById("ideas-api-requests").style.display = "none";
+    }
     document.getElementById("ideas-" + new_page).style.display = "block";
 }
 
@@ -39,34 +47,135 @@ window.addEventListener("load", () => change_page("voting"));
 document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => change_page(tab.id)));
 
 const addIdeaBtn = document.getElementById("add-idea-btn");
-if (addIdeaBtn) addIdeaBtn.addEventListener("click", newIdeaModal);
+if (addIdeaBtn) addIdeaBtn.addEventListener("click", showTypeSelectionModal);
 
-function newIdeaModal() {
+function showTypeSelectionModal() {
+    let modalHtml = `
+    <div class="modal" id="type-selection-modal">
+        <div class="modal-content type-selection">
+            <div class="modal-header">
+                <h2 class="modal-title">What would you like to submit?</h2>
+                <span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
+            </div>
+            <div class="modal-body">
+                <div class="type-selection-options">
+                    <div class="type-option" data-type="idea">
+                        <span class="material-symbols-rounded type-option-icon">lightbulb</span>
+                        <h3>Feature Idea</h3>
+                        <p>Suggest a new feature or improvement</p>
+                    </div>
+                    <div class="type-option" data-type="bug">
+                        <span class="material-symbols-rounded type-option-icon">bug_report</span>
+                        <h3>Bug Report</h3>
+                        <p>Report an issue or problem</p>
+                    </div>
+                    <div class="type-option" data-type="api_request">
+                        <span class="material-symbols-rounded type-option-icon">api</span>
+                        <h3>API Request</h3>
+                        <p>Request a new API endpoint (private)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+    const modal = document.getElementById("type-selection-modal");
+    const modalCloseBtn = document.getElementById("close-modal-btn");
+    modalCloseBtn.addEventListener("click", () => modal.remove());
+
+    modal.querySelectorAll(".type-option").forEach(option => {
+        option.addEventListener("click", () => {
+            const type = option.dataset.type;
+            modal.remove();
+            showSubmissionForm(type);
+        });
+    });
+}
+
+function showSubmissionForm(type) {
+    let formContent = '';
+    let title = '';
+
+    if (type === 'idea') {
+        title = 'New Feature Idea';
+        formContent = `
+            <label for="idea-image">Idea Image:</label>
+            <span class="upload-description">Image is optional but helps the idea stand out. Image dimensions must be at least 50x50px.</span>
+            <label for="idea-image" id="icon-preview" class="icon-preview">
+                <span class="material-symbols-rounded upload-icon">add</span>
+            </label>
+            <input type="file" id="idea-image" name="idea-image" accept="image/jpeg,image/png,image/gif" class="input-file-dark-bg file-input" style="display: none;">
+            <label for="title" style="margin-top: 15px;">Title:</label>
+            <input type="text" id="title" name="title" class="input-text-dark-bg w270" required maxlength="50" placeholder="Title (up to 50 characters)">
+            <label for="description" style="margin-top: 15px;">Description:</label>
+            <textarea id="description" name="description" class="input-text-dark-bg w270" style="height: 40%;" required placeholder="Description (up to 500 characters, markdown supported)" maxlength="500"></textarea>
+        `;
+    } else if (type === 'bug') {
+        title = 'Report a Bug';
+        formContent = `
+            <label for="title">Bug Title:</label>
+            <input type="text" id="title" name="title" class="input-text-dark-bg w270" required maxlength="50" placeholder="Brief summary of the bug">
+            
+            <label for="bug-issue" style="margin-top: 15px;">What is the issue?</label>
+            <textarea id="bug-issue" name="bug-issue" class="input-text-dark-bg w270" required placeholder="Describe the problem you're experiencing" maxlength="500"></textarea>
+            
+            <label for="bug-expected" style="margin-top: 15px;">What did you expect would happen?</label>
+            <textarea id="bug-expected" name="bug-expected" class="input-text-dark-bg w270" required placeholder="Describe the expected behavior" maxlength="500"></textarea>
+            
+            <label for="bug-actual" style="margin-top: 15px;">What actually happened?</label>
+            <textarea id="bug-actual" name="bug-actual" class="input-text-dark-bg w270" required placeholder="Describe what actually happened" maxlength="500"></textarea>
+            
+            <label for="bug-extra" style="margin-top: 15px;">Any extra information (optional):</label>
+            <textarea id="bug-extra" name="bug-extra" class="input-text-dark-bg w270" placeholder="Browser, OS, steps to reproduce, etc." maxlength="500"></textarea>
+            
+            <label for="idea-image" style="margin-top: 15px;">Screenshot (optional):</label>
+            <span class="upload-description">Upload a screenshot to help illustrate the issue.</span>
+            <label for="idea-image" id="icon-preview" class="icon-preview">
+                <span class="material-symbols-rounded upload-icon">add</span>
+            </label>
+            <input type="file" id="idea-image" name="idea-image" accept="image/jpeg,image/png,image/gif" class="input-file-dark-bg file-input" style="display: none;">
+        `;
+    } else if (type === 'api_request') {
+        title = 'Request API Endpoint';
+        formContent = `
+            <div class="private-notice">
+                <span class="material-symbols-rounded">lock</span>
+                <p>This request will be private - only you and developers can see it.</p>
+            </div>
+            
+            <label for="title">Request Title:</label>
+            <input type="text" id="title" name="title" class="input-text-dark-bg w270" required maxlength="50" placeholder="What API endpoint do you need?">
+            
+            <label for="api-endpoint" style="margin-top: 15px;">Proposed Endpoint Path:</label>
+            <input type="text" id="api-endpoint" name="api-endpoint" class="input-text-dark-bg w270" required placeholder="e.g., /api/v1/users/profile" maxlength="200">
+            
+            <label for="api-purpose" style="margin-top: 15px;">What is the purpose?</label>
+            <textarea id="api-purpose" name="api-purpose" class="input-text-dark-bg w270" required placeholder="Explain why you need this endpoint" maxlength="500"></textarea>
+            
+            <label for="description" style="margin-top: 15px;">Expected Behavior:</label>
+            <textarea id="description" name="description" class="input-text-dark-bg w270" required placeholder="Describe what the endpoint should do, what data it should return, etc." maxlength="1000"></textarea>
+        `;
+    }
+
     let modalHtml = `
     <div class="modal" id="new-idea-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">New Idea</h2>
+                <h2 class="modal-title">${title}</h2>
                 <span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
             </div>
             <div class="modal-body">
-                <form id="new-idea-form" class="new-idea-form">
-                    <label for="idea-image">Idea Image:</label>
-                    <span class="upload-description">Image is optional but helps the idea stand out. Image dimensions must be at least 50x50px.</span>
-                    <label for="idea-image" id="icon-preview" class="icon-preview">
-                        <span class="material-symbols-rounded upload-icon">add</span>
-                    </label>
-                    <input type="file" id="idea-image" name="idea-image" accept="image/jpeg,image/png,image/gif" class="input-file-dark-bg file-input" style="display: none;">
-                    <label for="title" style="margin-top: 15px;">Title:</label>
-                    <input type="text" id="title" name="title" class="input-text-dark-bg w270" required maxlength="50" placeholder="Title (up to 50 characters)">
-                    <label for="description" style="margin-top: 15px;">Description:</label>
-                    <textarea id="description" name="description" class="input-text-dark-bg w270" style="height: 40%;" required placeholder="Description (up to 500 characters, markdown supported)" maxlength="500"></textarea>
-                    <button type="submit" class="button-primary-filled">Submit</button>
+                <form id="new-idea-form" class="new-idea-form" data-type="${type}">
+                    ${formContent}
+                    <button type="submit" class="button-primary-filled" style="margin-top: 15px;">Submit</button>
                 </form>
             </div>
         </div>
     </div>
-  `;
+    `;
 
     document.body.insertAdjacentHTML("beforeend", modalHtml);
 
@@ -77,39 +186,59 @@ function newIdeaModal() {
     const ideaImageInput = document.getElementById("idea-image");
     const iconPreview = document.getElementById("icon-preview");
 
-    ideaImageInput.addEventListener("change", () => {
-        const file = ideaImageInput.files[0];
-        if (file && file.type.startsWith("image/")) {
-            const img = new Image();
-            img.onload = () => {
-                if (img.width < 50 || img.height < 50) {
-                    jspt.makeToast({ message: "Image dimensions must be at least 50x50px.", type: "default-error", duration: 5000, close_on_click: true });
-                    ideaImageInput.value = "";
-                    iconPreview.innerHTML = `<span class="material-symbols-rounded upload-icon">add</span>`;
-                } else {
-                    iconPreview.innerHTML = `<img src="${img.src}" alt="Idea Icon" style="width: 100%; height: 100%; object-fit: cover;">`;
-                }
-            };
-            const reader = new FileReader();
-            reader.onload = e => { img.src = e.target.result; };
-            reader.readAsDataURL(file);
-        } else {
-            iconPreview.innerHTML = `<span class="material-symbols-rounded upload-icon">add</span>`;
-        }
-    });
+    if (ideaImageInput && iconPreview) {
+        ideaImageInput.addEventListener("change", () => {
+            const file = ideaImageInput.files[0];
+            if (file && file.type.startsWith("image/")) {
+                const img = new Image();
+                img.onload = () => {
+                    if (img.width < 50 || img.height < 50) {
+                        jspt.makeToast({ message: "Image dimensions must be at least 50x50px.", type: "default-error", duration: 5000, close_on_click: true });
+                        ideaImageInput.value = "";
+                        iconPreview.innerHTML = `<span class="material-symbols-rounded upload-icon">add</span>`;
+                    } else {
+                        iconPreview.innerHTML = `<img src="${img.src}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    }
+                };
+                const reader = new FileReader();
+                reader.onload = e => { img.src = e.target.result; };
+                reader.readAsDataURL(file);
+            } else {
+                iconPreview.innerHTML = `<span class="material-symbols-rounded upload-icon">add</span>`;
+            }
+        });
+    }
 
-    const createChannelForm = document.getElementById("new-idea-form");
-    createChannelForm.addEventListener("submit", (event) => {
+    const form = document.getElementById("new-idea-form");
+    form.addEventListener("submit", (event) => {
         event.preventDefault();
-        const title = document.getElementById("title").value;
-        const ideaImageFile = ideaImageInput.files[0];
-        const description = document.getElementById("description").value;
-
+        
         const formData = new FormData();
-        formData.append("title", title);
-        formData.append("description", description);
+        formData.append("type", type);
+        formData.append("title", document.getElementById("title").value);
 
-        if (ideaImageFile) formData.append("image", ideaImageFile);
+        if (type === 'idea') {
+            formData.append("description", document.getElementById("description").value);
+            if (ideaImageInput.files[0]) formData.append("image", ideaImageInput.files[0]);
+        } else if (type === 'bug') {
+            const bugIssue = document.getElementById("bug-issue").value;
+            const bugExpected = document.getElementById("bug-expected").value;
+            const bugActual = document.getElementById("bug-actual").value;
+            const bugExtra = document.getElementById("bug-extra").value;
+            
+            formData.append("bug_issue", bugIssue);
+            formData.append("bug_expected", bugExpected);
+            formData.append("bug_actual", bugActual);
+            formData.append("bug_extra", bugExtra);
+            
+            formData.append("description", `Issue: ${bugIssue}\nExpected: ${bugExpected}\nActual: ${bugActual}\nExtra: ${bugExtra}`);
+            
+            if (ideaImageInput.files[0]) formData.append("image", ideaImageInput.files[0]);
+        } else if (type === 'api_request') {
+            formData.append("api_endpoint", document.getElementById("api-endpoint").value);
+            formData.append("api_purpose", document.getElementById("api-purpose").value);
+            formData.append("description", document.getElementById("description").value);
+        }
 
         fetch("/app/add_idea", {
             method: "POST",
@@ -118,14 +247,14 @@ function newIdeaModal() {
         })
         .then((response) => response.json())
         .then(() => {
-            jspt.makeToast({ message: "Idea created!", type: "default", duration: 5000, close_on_click: true });
+            jspt.makeToast({ message: "Submitted successfully!", type: "default", duration: 5000, close_on_click: true });
+            setTimeout(() => window.location.reload(), 1000);
         })
         .catch(() => {
-            jspt.makeToast({ message: "Failed to create idea", type: "default-error", duration: 5000, close_on_click: true });
+            jspt.makeToast({ message: "Failed to submit", type: "default-error", duration: 5000, close_on_click: true });
         })
         .finally(() => modal.remove());
     });
-
 }
 
 function formatDate(created_at) {
@@ -254,11 +383,20 @@ async function showIdea(id) {
     const initialAssignees = idea.github_assignees || [];
     const assigneesHtml = initialAssignees.length > 0 ? renderAssignees(initialAssignees) : '<div id="idea-assignees-section"></div>';
 
+    const typeLabel = idea.type === 'bug' ? '🐛 Bug Report' : (idea.type === 'api_request' ? '🔌 API Request' : '💡 Feature Idea');
+    const privateLabel = idea.is_private ? '<span class="private-badge"><span class="material-symbols-rounded">lock</span>Private</span>' : '';
+
     let modalHtml = `
     <div class="modal" id="new-idea-modal">
         <div class="modal-content" style="overflow-y: scroll; width: auto;">
             <div class="modal-header">
-                <h2 class="modal-title">${idea.title}</h2>
+                <div class="modal-title-container">
+                    <h2 class="modal-title">${idea.title}</h2>
+                    <div class="modal-badges">
+                        <span class="type-badge">${typeLabel}</span>
+                        ${privateLabel}
+                    </div>
+                </div>
                 <span class="close-modal-btn material-symbols-rounded" id="close-modal-btn">close</span>
             </div>
             <div class="modal-body">
@@ -273,6 +411,7 @@ async function showIdea(id) {
                 <div class="developer-info" style="display: flex; flex-direction: column; align-items: flex-start; margin-top: 10px;">
                     <p class="idea-id" style="margin: 0;">ID: ${idea.id}</p>
                     <p class="idea-channel-id" style="margin: 0;">Status: ${idea.status}</p>
+                    <p class="idea-type" style="margin: 0;">Type: ${idea.type}</p>
                 </div>` : ''}
                 <div id="idea-assignees-section">${assigneesHtml}</div>
                 <div class="idea-actions">

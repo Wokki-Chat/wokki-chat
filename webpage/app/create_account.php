@@ -176,7 +176,7 @@ function sendVerificationEmail($email, $activatecode, $user_id, $mail_password) 
             . $activatecode . '&user_id=' . $user_id;
 
         $htmlTemplate = str_replace('{{activate_link}}', $activationLink, $htmlTemplate);
-        $htmlTemplate = str_replace('{{support_link}}', 'mailto:info@wokki20.nl', $htmlTemplate);
+        $htmlTemplate = str_replace('{{support_link}}', 'mailto:support@cm.wokki20.nl', $htmlTemplate);
 
         $mail->Body = $htmlTemplate;
 
