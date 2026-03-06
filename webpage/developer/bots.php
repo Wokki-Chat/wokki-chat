@@ -1,10 +1,10 @@
 <?php
 include '../app/config.php';
 include '../global.php';
-$access_token = $_COOKIE['access_token'];
+$access_token = $_COOKIE['access_token'] ?? null;
 
-if (!$access_token) {
-    header('Location: /login?redirect=/developer/bots');
+if (empty($access_token)) {
+    header('Location: /login?redirect=/developer/docs/oauth2');
     exit;
 }
 
@@ -54,7 +54,7 @@ $botsStmt->close();
     <title>Wokki Chat Developer Portal - Bots</title>
     <link rel="stylesheet" href="../assets/styles/developer/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
     <div class="header">

@@ -162,6 +162,54 @@ async def delete_cached_message(server_id: str = None, channel_id: str = None, c
             await redis_client.lrem(key, 0, msg)
             break
         
+async def update_cached_messages(
+    server_id: str = None,
+    channel_id: str = None,
+    contact_id: str = None,
+    messages: list = None,
+    offset: int = 0,
+    limit: int = 25,
+):
+    if contact_id:
+        key = f"contact_messages:{contact_id}"
+    elif server_id and channel_id:
+        key = f"channel_messages:{server_id}:{channel_id}"
+    else:
+        return
+
+    if not messages:
+        return
+
+    if offset == 0:
+        pipe = redis_client.pipeline()
+        pipe.delete(key)
+        for msg in messages:
+            pipe.rpush(key, json.dumps(msg, default=str))
+        pipe.expire(key, 300)
+        await pipe.execute()
+    else:
+        cached_raw = await redis_client.lrange(key, 0, -1)
+        updates = {msg['id']: msg for msg in messages}
+        merged = []
+        seen_ids = set()
+
+        for raw in cached_raw:
+            item = json.loads(raw)
+            mid = item.get('id')
+            merged.append(updates.get(mid, item))
+            seen_ids.add(mid)
+
+        for msg in messages:
+            if msg['id'] not in seen_ids:
+                merged.append(msg)
+
+        pipe = redis_client.pipeline()
+        pipe.delete(key)
+        for msg in merged:
+            pipe.rpush(key, json.dumps(msg, default=str))
+        pipe.expire(key, 300)
+        await pipe.execute()
+        
 async def get_cached_users(server_id: str = None, contact_id: str = None):
     if contact_id:
         key = f"contact_users:{contact_id}"

@@ -1,0 +1,38 @@
+PUBLIC API FOR WOKKI CHAT
+==========
+
+Base URL: https://api-chat.wokki20.nl
+
+All responses are JSON. Errors return: {"error": <code>, "message": "<reason>"}
+
+Full documentation: https://chat.wokki20.nl/developer/docs/oauth2/
+
+
+AUTHENTICATION
+--------------
+
+This API uses OAuth 2.0. Include your access token in the Authorization header:
+
+  Authorization: Bearer <your_access_token>
+
+
+ENDPOINTS
+---------
+
+GET /help
+    This page. No authentication required.
+
+GET /authorize
+    Authorization page. Lets users log in and approve access, in exchange for an authorization code.
+    User authentication required.
+
+POST /token
+    Token endpoint. Exchange authorization codes for access/refresh tokens, or refresh expired tokens.
+    Client authentication required (client_id + client_secret).
+
+
+NOTES
+-----
+- All responses use Content-Type: application/json, except the help page
+- Standard HTTP status codes are used throughout
+- Authentication is required on all endpoints unless stated otherwise

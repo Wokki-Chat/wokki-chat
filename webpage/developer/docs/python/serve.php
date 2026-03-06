@@ -1,10 +1,10 @@
 <?php
 include '../../../app/config.php';
 include '../../../global.php';
-$access_token = $_COOKIE['access_token'];
+$access_token = $_COOKIE['access_token'] ?? null;
 
-if (!$access_token) {
-    header('Location: /login?redirect=/developer/docs');
+if (empty($access_token)) {
+    header('Location: /login?redirect=/developer/docs/oauth2');
     exit;
 }
 

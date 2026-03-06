@@ -1,0 +1,56 @@
+RewriteEngine On
+AcceptPathInfo On
+
+Options -Indexes
+
+RewriteRule ^help/?$ /help.txt [L]
+
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+SetEnvIf X-Forwarded-Proto "https" HTTPS=on
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^([^\.]+)$ $1.html [NC,L]
+
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
+
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.txt -f
+RewriteRule ^([^\.]+)$ $1.txt [NC,L]
+
+DirectoryIndex help.txt
+
+<Files "config.php">
+    Order Allow,Deny
+    Deny from all
+    Require user root
+</Files>
+
+ErrorDocument 400 '{"error":400,"message":"Bad Request"}'
+ErrorDocument 401 '{"error":401,"message":"Unauthorized"}'
+ErrorDocument 403 '{"error":403,"message":"Forbidden"}'
+ErrorDocument 404 '{"error":404,"message":"Not Found"}'
+ErrorDocument 405 '{"error":405,"message":"Method Not Allowed"}'
+ErrorDocument 429 '{"error":429,"message":"Too Many Requests"}'
+ErrorDocument 500 '{"error":500,"message":"Internal Server Error"}'
+ErrorDocument 502 '{"error":502,"message":"Bad Gateway"}'
+ErrorDocument 503 '{"error":503,"message":"Service Unavailable"}'
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.txt$">
+        Header always set Content-Type "text/plain; charset=UTF-8"
+    </FilesMatch>
+
+    <FilesMatch "\.html?$">
+        Header always set Content-Type "text/html; charset=UTF-8"
+    </FilesMatch>
+
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

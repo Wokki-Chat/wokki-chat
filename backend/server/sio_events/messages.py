@@ -1,5 +1,9 @@
 from server.sio_instance import sio
-from server.helpers.message_helpers import send_message, get_messages, get_message_by_id, delete_message, add_reaction
+from server.helpers.message_helpers import send_message, get_messages, get_message_by_id, delete_message, add_reaction, edit_message
+
+@sio.safe('edit_message')
+async def handle_edit_message(sid, data):
+    await edit_message(sid, data)
 
 @sio.safe("send_message")
 async def handle_send_message(sid, data):

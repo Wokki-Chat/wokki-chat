@@ -1,0 +1,129 @@
+/* Media Player */
+.custom-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--clr-popup-a0);
+  border: 1px solid var(--clr-popup-a10);
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  color: white;
+  position: relative;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.custom-player .seek-bar {
+  flex: 1;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--clr-input-border-bg-dark);
+  margin: 0;
+}
+
+
+.custom-player .seek-bar::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+}
+
+.custom-player .seek-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+  cursor: default;
+  border: none;
+  margin-top: 0;
+}
+
+.custom-player .seek-bar::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--clr-input-border-bg-dark);
+}
+
+.custom-player .seek-bar::-moz-range-progress {
+  background-color: var(--clr-primary-a0);
+  height: 6px;
+  border-radius: 3px;
+}
+
+.custom-player .seek-bar::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.custom-player .play-pause {
+  cursor: pointer;
+  font-size: 24px !important;
+  user-select: none;
+  color: var(--clr-text-a30);
+  transition: all 0.3s ease;
+  font-variation-settings:
+      'FILL' 1,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 24
+}
+
+.custom-player .play-pause:hover {
+  color: var(--clr-text-a0);
+}
+
+.time-left-current {
+    user-select: none;
+    display: flex;
+    gap: 4px;
+    white-space: nowrap;
+    font-feature-settings: "tnum";
+}
+
+.player-options {
+    display: none;
+    position: absolute;
+    flex-direction: row;
+    top: -10px;
+    right: -10px;
+    background-color: var(--clr-popup-a10);
+    border-radius: 9px;
+    padding: 2px 5px;
+    z-index: 1;
+}
+
+.custom-player:hover .player-options,
+.player-options:hover {
+    display: flex;
+}
+
+.player-option {
+    cursor: pointer;
+    user-select: none;
+    color: var(--clr-text-a30);
+    font-size: 20px !important;
+    border-radius: 5px;
+    transform: scale(0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-variation-settings:
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+}
+
+.player-option:hover {
+    color: var(--clr-text-a0);
+    transform: scale(1);
+    background-color: var(--clr-popup-a20);
+}

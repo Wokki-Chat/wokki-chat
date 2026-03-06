@@ -1,10 +1,10 @@
 <?php
 include '../../app/config.php';
 include '../../global.php';
-$access_token = $_COOKIE['access_token'];
+$access_token = $_COOKIE['access_token'] ?? null;
 
-if (!$access_token) {
-    header('Location: /login?redirect=/developer/docs');
+if (empty($access_token)) {
+    header('Location: /login?redirect=/developer/docs/oauth2');
     exit;
 }
 
@@ -80,11 +80,23 @@ $stmt->close();
         <h2 class="content-subtitle">Docs</h2>
         <div class="sdk-container" id="docs">
             <div class="sdk-card">
+                <img src="/assets/icons/svg/globe.svg" alt="API Icon">
+                <div class="card-title-buttons">
+                    <p class="card-title">OAuth 2.0 API - Docs</p>
+                    <div class="card-buttons">
+                        <a class="card-button" href="/developer/docs/oauth2">
+                            <p>Open Docs</p>
+                            <span class="material-symbols-rounded">link</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="sdk-card">
                 <img src="/assets/icons/svg/python.svg" alt="Python Icon">
                 <div class="card-title-buttons">
                     <p class="card-title">Python Bot SDK - Docs</p>
                     <div class="card-buttons">
-                        <a class="card-button" href="https://chat.wokki20.nl/developer/docs/python">
+                        <a class="card-button" href="/developer/docs/python">
                             <p>Open Docs</p>
                             <span class="material-symbols-rounded">link</span>
                         </a>

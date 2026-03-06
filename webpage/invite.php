@@ -163,5 +163,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error_message) {
             <?php endif; ?>
         </div>
     </div>
+    <script src="/assets/js/login.js"></script>
 </body>
 </html>

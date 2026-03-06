@@ -442,6 +442,34 @@ export class Sanitizer {
             el.textContent = formatted;
         });
     }
+
+    formatDate(created_at) {
+        const now = new Date();
+        const date = new Date(created_at);
+        const diffMs = now - date;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 7) {
+            return date.toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+            });
+        }
+
+        if (diffDays === 1) {
+            return `Yesterday at ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+        }
+
+        if (diffDays >= 2) {
+            return `${diffDays} days ago at ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+        }
+
+        return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    }
+
 }
 
 export class TextareaFormatter extends Sanitizer {
@@ -450,8 +478,8 @@ export class TextareaFormatter extends Sanitizer {
         this.textarea = textarea;
     }
 
-    cleanMsg() {
-        const clone = this.textarea.cloneNode(true);
+    cleanMsg(textarea) {
+        const clone = textarea.cloneNode(true);
 
         clone.querySelectorAll("a.user-link").forEach(a => {
             const username = a.textContent.replace("@", "");
@@ -464,29 +492,73 @@ export class TextareaFormatter extends Sanitizer {
 
     format(text) {
         const escaped = this.escapeHtml(text);
+        const matches = [];
 
-        return escaped
-            .replace(/(\\)?\*\*(.+?)\*\*/g, (match, esc, content, offset) => {
-                if (esc) return `<span class="md-escape">\\</span>**${content}**`;
-                if (this.isInShortcode(escaped, offset)) return match;
-                return `<span class="md-bold"><span class="md-syntax">**</span><b>${content}</b><span class="md-syntax">**</span></span>`;
-            })
+        const patterns = [
+            { regex: /(\\)?\*\*(.+?)\*\*/g, type: 'bold' },
+            { regex: /(\\)?([*_])([^*_]+?)\2/g, type: 'italic' },
+            { regex: /(\\)?~~(.+?)~~/g, type: 'strike' }
+        ];
 
-            .replace(/(\\)?([*_])([^*_]+?)\2/g, (match, esc, wrap, content, offset) => {
-                if (esc) return `<span class="md-escape">\\</span>${wrap}${content}${wrap}`;
-                if (this.isInShortcode(escaped, offset)) return match;
-                const before = escaped[offset - 1] || ' ';
-                const after = escaped[offset + match.length] || ' ';
-                if (/\w/.test(before) && /\w/.test(after)) return match;
-                if (content.includes(wrap)) return match;
-                return `<span class="md-italic"><span class="md-syntax">${wrap}</span><i>${content}</i><span class="md-syntax">${wrap}</span></span>`;
-            })
+        patterns.forEach(({ regex, type }) => {
+            let match;
+            while ((match = regex.exec(escaped)) !== null) {
+                const offset = match.index;
+                if (this.isInShortcode(escaped, offset)) continue;
+                
+                if (type === 'italic') {
+                    const before = escaped[offset - 1] || ' ';
+                    const after = escaped[offset + match[0].length] || ' ';
+                    if (/\w/.test(before) && /\w/.test(after)) continue;
+                    if (match[3] && match[3].includes(match[2])) continue;
+                }
 
-            .replace(/(\\)?~~(.+?)~~/g, (match, esc, content, offset) => {
-                if (esc) return `<span class="md-escape">\\</span>~~${content}~~`;
-                if (this.isInShortcode(escaped, offset)) return match;
-                return `<span class="md-strike"><span class="md-syntax">~~</span><del>${content}</del><span class="md-syntax">~~</span></span>`;
+                matches.push({
+                    start: offset,
+                    end: offset + match[0].length,
+                    match: match[0],
+                    groups: match,
+                    type
+                });
+            }
+        });
+
+        matches.sort((a, b) => a.start - b.start);
+
+        const filtered = matches.filter((m, i) => {
+            return !matches.some((other, j) => {
+                if (i === j) return false;
+                return other.start < m.start && other.end > m.end;
             });
+        });
+
+        let result = '';
+        let lastIndex = 0;
+
+        filtered.forEach(m => {
+            result += escaped.slice(lastIndex, m.start);
+            
+            const [match, esc, ...groups] = m.groups;
+            
+            if (esc) {
+                result += `<span class="md-escape">\\</span>` + match.slice(1);
+            } else if (m.type === 'bold') {
+                const content = groups[0];
+                result += `<span class="md-bold"><span class="md-syntax">**</span><b>${content}</b><span class="md-syntax">**</span></span>`;
+            } else if (m.type === 'italic') {
+                const wrap = groups[0];
+                const content = groups[1];
+                result += `<span class="md-italic"><span class="md-syntax">${wrap}</span><i>${content}</i><span class="md-syntax">${wrap}</span></span>`;
+            } else if (m.type === 'strike') {
+                const content = groups[0];
+                result += `<span class="md-strike"><span class="md-syntax">~~</span><del>${content}</del><span class="md-syntax">~~</span></span>`;
+            }
+            
+            lastIndex = m.end;
+        });
+
+        result += escaped.slice(lastIndex);
+        return result;
     }
 
     caret_end(textarea) {

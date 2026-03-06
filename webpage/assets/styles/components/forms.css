@@ -1,0 +1,66 @@
+/* Login and Register Forms */
+.login-form,
+.register-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+.login-form-content,
+.register-form-content {
+    background-color: var(--clr-popup-a0);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 2px 3px 4px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+}
+
+.register-form-content p {
+    margin: 0px;
+}
+
+/* Background Images for login and other forms */
+.login-bg {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.bg-img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+.bg-img.visible {
+    opacity: 1;
+}
+
+/* Helper for a 270px width because I wanted to replicate tailwind or something */
+.w270 {
+    width: calc(100% - 30px) !important;
+    min-width: 270px !important;
+}
+
+/* Error and Success messages for forms */
+.error-message,
+.success-message {
+    background-color: var(--clr-error-a0);
+    color: var(--clr-text-a0);
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: -20px;
+    display: none;
+}
+
+.success-message {
+    background-color: var(--clr-success-a0);
+}

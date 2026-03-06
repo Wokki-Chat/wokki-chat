@@ -48,7 +48,7 @@ function initServer() {
 
 	const uploadContainer = document.querySelector(".input-container-2 .file-upload-container");
 
-	const messageHandler = new MessageHandler({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket, messageContainer: messageContainer, textarea: textarea, channels: channels, uploadContainer: uploadContainer });
+	const messageHandler = new MessageHandler({ user_id: user_id, channel_id: channel_id, server_id: server_id, access_token: access_token, socket: socket, messageContainer: messageContainer, textarea: textarea, channels: channels, uploadContainer: uploadContainer, premium: premium });
 
 	const userRenderer = new UserRenderer({ user_id, access_token, userListContainer: document.querySelector(".users") });
 
@@ -189,6 +189,10 @@ function initServer() {
 		if (isAtBottom) {
 			messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
 		}
+	});
+
+	socket.on("update_message", (message) => {
+		messageHandler.update(message);
 	});
 
 	socket.on("message_deleted", (message_id) => {
@@ -448,20 +452,6 @@ function initServer() {
 	socket.on("connect_error", (err) => console.error("Connection error:", err));
 	socket.on("error", (err) => console.error("Socket error:", err));
 	socket.on("disconnect", (reason) => console.warn("Socket disconnected:", reason));
-
-	socket.on("update_message", async ({id, message, embed, updated_at}) => {
-		const messageEl = document.querySelector(`.message[data-message-id="${id}"]`);
-		if (!messageEl) return;
-		
-		if (message) {
-			messageEl.querySelector(".message-text").innerHTML = await sanitizer.sanitizeMsg(message, usersList, user_id, channels, server_id);
-			hydrateInvites(messageEl);
-			hydrateSpotifyTracks(messageEl);
-		}
-		if (embed) {
-			messageEl.querySelector(".embeds-container").innerHTML = await Embeds({ embeds: embed });
-		}
-	});
 
 	const typingUsers = new Set();
 

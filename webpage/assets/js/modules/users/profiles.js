@@ -219,7 +219,7 @@ export class UserPopupManager {
             customStyle = true;
         }
         let userBio = await this.sanitizer.sanitizeMrk(user.bio);
-        if (userBio.length > 55) {
+        if (userBio.length > 55 && !user.bot) {
             userBio = userBio.slice(0, 55) + '<span class="cutoff">...</span>';
         }
         userBio = await emojis.replaceText(userBio);
@@ -574,7 +574,9 @@ export class StaticProfileManager extends UserPopupManager {
         }
 
         let userBio = user.bio ? await this.sanitizer.sanitizeMrk(user.bio) : '';
-        if (userBio.length > 55) userBio = userBio.slice(0, 55) + '<span class="cutoff">...</span>';
+        if (!user.bot) {
+            if (userBio.length > 55) userBio = userBio.slice(0, 55) + '<span class="cutoff">...</span>';
+        }
         userBio = await emojis.replaceText(userBio);
 
         const container = document.createElement("div");

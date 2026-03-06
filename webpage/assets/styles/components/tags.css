@@ -1,0 +1,61 @@
+/* Premium, bot, and staff tags */
+.premium-tag,
+.bot-tag,
+.staff-tag {
+    background-color: var(--clr-popup-a20);
+    color: var(--clr-text-a0);
+    border-radius: 5px;
+    padding: 2px 5px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+    font-size: 12px !important;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+    font-variation-settings: 
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    ;
+    user-select: none;
+}
+
+.premium-tag img,
+.bot-tag img,
+.staff-tag img {
+    width: 17px;
+    height: 17px;
+    object-fit: cover;
+}
+
+.premium-tag-tooltip,
+.staff-tag-tooltip {
+    display: none;
+}
+
+.premium-tag:hover .premium-tag-tooltip,
+.staff-tag:hover .staff-tag-tooltip {
+    display: block;
+    position: absolute;
+    background-color: var(--clr-popup-a10);
+    color: var(--clr-text-a0);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 16px;
+    white-space: nowrap;
+    animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    bottom: 40px;
+}
+
+
+.bot-tag {
+    background-color: var(--clr-primary-a0);
+}
+
+.premium-tag span,
+.bot-tag span,
+.staff-tag span {
+    font-size: 16px !important;
+}

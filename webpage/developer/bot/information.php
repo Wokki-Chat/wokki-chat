@@ -66,6 +66,7 @@ if (!$bot) {
     <link rel="stylesheet" href="/assets/styles/developer/main.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="https://cdn.wokki20.nl/dynamic/jspt/jspt.css">
 </head>
 <body>
     <div class="header">
@@ -88,36 +89,52 @@ if (!$bot) {
                 <span class="material-symbols-rounded sidebar-item-icon">info</span>
                 <span class="sidebar-item-text">Bot Information</span>
             </a>
+            <a class="sidebar-item" href="/developer/bot/<?php echo $bot_id; ?>/installation">
+                <span class="material-symbols-rounded sidebar-item-icon">download</span>
+                <span class="sidebar-item-text">Installation</span>
+            </a>
+            <a class="sidebar-item" href="/developer/bot/<?php echo $bot_id; ?>/oauth2">
+                <span class="material-symbols-rounded sidebar-item-icon">key</span>
+                <span class="sidebar-item-text">OAuth2</span>
+            </a>
         </div>
         <h1 class="content-title"><?php echo htmlspecialchars($bot['name']); ?></h1>
         <p class="content-description">Here you'll find the general information regarding your bot.</p>
         <div class="developer-bot-profile">
-            <div class="developer-bot-profile-picture-preview-container">
-                <img src="<?php echo $bot['profile_picture']; ?>" alt="Profile Picture" class="profile-picture-preview">
-                <span class="hover-text material-symbols-rounded">upload</span>
+            <div class="developer-bot-profile-picture-container">
+                <label style="margin-bottom: 10px;">Bot Picture</label>
+                <div class="developer-bot-profile-picture-preview-container">
+                    <img src="<?php echo $bot['profile_picture']; ?>" alt="Profile Picture" class="profile-picture-preview">
+                    <span class="hover-text material-symbols-rounded">upload</span>
+                </div>
+                <p class="label-desc"><b>Aspect Ratio:</b> 1:1</p>
+                <p class="label-desc"><b>File Types:</b> PNG, GIF, JPG, WEBP</p>
             </div>
             <div class="developer-bot-profile-info">
                 <div class="developer-bot-profile-info-container">
-                    <label for="name">Name:</label>
+                    <label for="name">Name</label>
                     <input type="text" id="name" name="name" class="input-text-dark-bg w270" value="<?php echo htmlspecialchars($bot['name']); ?>">
                     <br>
-                    <label for="bio">Bio:</label>
-                    <input type="text" id="bio" name="bio" class="input-text-dark-bg w270" value="<?php echo htmlspecialchars($bot['bio']); ?>" placeholder="Give your bot a short bio">
-                    <br>
-                    <label for="bot-token">Bot Token:</label>
-                    <input type="password" id="bot-token" name="bot-token" class="input-text-dark-bg w270" value="<?php echo $bot['bot_token']; ?>" readonly>
-                    <div class="bot-token-buttons">
-                        <button class="button-primary-filled" id="show-btn">Show Token</button>
-                        <button class="button-primary-filled" id="copy-btn">Copy Token</button>
+                    <label for="bio">Bio</label>
+                    <p class="label-desc">Describe your bot in a few words.</p>
+                    <div class="input-container-2 input-container-2-inline">
+                        <div class="textarea-container">
+                            <div class="message-input-wrapper" style="min-height: 100px;">
+                                <div class="message-input-bg" id="message-input-bg"><?php echo $bot['bio'] ? htmlspecialchars($bot['bio']) : ''; ?></div>
+                                <div class="message-input" id="message-input" contenteditable="true"><?php echo $bot['bio'] ? htmlspecialchars($bot['bio']) : ''; ?></div>
+                            </div>
+                        </div>
+                        <div class="max-message-length">
+                            <p class="max-characters-left"></p>
+                        </div>
                     </div>
                     <br>
-                    <label for="bot-invite">Bot Invite:</label>
-                    <input type="text" id="bot-invite" name="bot-invite" class="input-text-dark-bg w270" value="https://chat.wokki20.nl/bot/invite/<?php echo $bot_id; ?>" readonly>
+                    <label for="bot-token">Bot ID</label>
+                    <span class="item-text"><?php echo htmlspecialchars($bot_id); ?></span>
                     <div class="bot-token-buttons">
-                        <button class="button-primary-filled" id="copy-invite-btn">Copy Invite</button>
+                        <button class="button-primary-filled" id="copy-id-btn">Copy</button>
                     </div>
                 </div>
-                <button class="button-primary-filled" id="save-bot-button">Save Bot</button>
             </div>
         </div>
         <wchat-allowed-scripts value="developer/bot_info.js;"></wchat-allowed-scripts>
@@ -128,7 +145,7 @@ if (!$bot) {
         <wchat-data id="orignal-bot-bio" value="<?php echo htmlspecialchars($bot['bio']); ?>"></wchat-data>
         <wchat-data id="page" value="/developer/bot/<?php echo $bot_id; ?>/information"></wchat-data>
     </div>
-    <script src="/assets/js/developer/bot_info.js"></script>
+    <script src="/assets/js/developer/bot_info.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
     <script type="module" data-swup-ignore-script>
         import Swup from "https://unpkg.com/swup@4?module";

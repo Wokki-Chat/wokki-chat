@@ -65,7 +65,8 @@ function initDm() {
         messageContainer: messageContainer, 
         contact_id: contact_id, 
         textarea: textarea,
-        uploadContainer: uploadContainer
+        uploadContainer: uploadContainer,
+        premium: premium
     });
 
     let typing = false;
