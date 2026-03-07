@@ -250,7 +250,7 @@ async def handle_delayed_disconnect(user_id, disconnect_token):
 
     await redis_client.delete(disconnect_key)
 
-@auth_required(server_required=True, allow_bots=False)
+@auth_required(server_or_contact_required=True, allow_bots=False)
 async def change_room(sid, metadata, data):
     user_id = metadata.get('account_id')
     new_server_id = data.get('server_id')

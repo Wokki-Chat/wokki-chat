@@ -44,19 +44,31 @@ async def verify_access_token(cur, access_token):
     await addMessageToLogs(f"verify_access_token: valid for user {user_id}, expires at {expires_at}", "INFO")
     return user_id
 
-def auth_required(server_required = True, allow_bots = True): # problem: it doesn't send correct name upon error!
-    from server.helpers.server_helpers import is_user_in_server
+def auth_required(server_or_contact_required = True, allow_contact = True, allow_bots = True):
     """
-    Decorator to validate tokens.
+    Decorator to validate tokens and common inputs.
+
+    Notes:
     1. Input function must be async.
-    2. Passes `metadata` containing `is_bot`, `server_id` and `account_id` (user/bot id) into the input function.
+    2. Passes `metadata` into the input function.
+
+    Warning: server_or_contact_required must be `True` to receive
+    valid server, channel and/or contact ids in the metadata!
     """
     def decorator(func):
         @wraps(func)
         async def wrapper(sid, data, *args, **kwargs):
+            from server.helpers.server_helpers import is_user_in_server, server_permissions
+            from server.helpers.friend_helpers import inContact
+
             bot_token = data.get('bot_token')
             access_token = data.get('access_token')
             server_id = data.get('server_id')
+            contact_id = data.get('contact_id')
+            req_id = data.get('req_id')
+
+            is_contact = False
+            is_channel = False
 
             is_bot = False
             account_id = None
@@ -67,50 +79,103 @@ def auth_required(server_required = True, allow_bots = True): # problem: it does
                         if not allow_bots:
                             await addMessageToLogs("Bots not allowed", "INFO")
                             await sio_instance.sio.emit(
-                                'error', {'success': False, 'error': 'Bots not allowed'}, to=sid
+                                'error', {'success': False, 'error': 'Bots not allowed', 'req_id': req_id}, to=sid
                             )
                             return
+                        
                         bot_id = await verify_bot_token(cur, bot_token)
                         if not bot_id:
                             await addMessageToLogs(f"Invalid bot token, bot token: {bot_token}", "INFO")
                             await sio_instance.sio.emit(
-                                'error', {'success': False, 'error': 'Invalid bot token'}, to=sid
+                                'error', {'success': False, 'error': 'Invalid bot token', 'req_id': req_id}, to=sid
                             )
                             return
-                        if server_required and not await is_bot_in_server(cur, bot_id, server_id):
-                            await addMessageToLogs(f"Bot not in server, bot id: {bot_id}, server id: {server_id}", "INFO")
-                            await sio_instance.sio.emit(
-                                'error', {'success': False, 'error': 'Bot not in server'}, to=sid
-                            )
-                            return
+                        
+                        if server_id and server_or_contact_required:
+                            if not await is_bot_in_server(cur, bot_id, server_id):
+                                await addMessageToLogs(f"Bot not in server, bot id: {bot_id}, server id: {server_id}", "INFO")
+                                await sio_instance.sio.emit(
+                                    'error', {'success': False, 'error': 'Bot not in server', 'req_id': req_id}, to=sid
+                                )
+                                return
+                            
+                            if not await server_permissions(cur, bot_id, server_id, 'send_messages'):
+                                await addMessageToLogs(f"Bot does not have permission to send messages for send_message for bot id: {bot_id}", "INFO")
+                                await sio_instance.sio.emit('send_message_response', {
+                                    'success': False, 
+                                    'error': 'Bot does not have permission to send messages', 
+                                    'req_id': req_id
+                                }, to=sid)
+                                return
+                            
+                            data['contact_id'] = None
+                            is_channel = True
+                        
                         is_bot = True
                         account_id = bot_id
                     else:
                         if not access_token:
                             await addMessageToLogs("Missing access token", "INFO")
                             await sio_instance.sio.emit(
-                                'error', {'success': False, 'error': 'Missing access token'}, to=sid
+                                'error', {'success': False, 'error': 'Missing access token', 'req_id': req_id}, to=sid
                             )
                             return
+                        
                         user_id = await verify_access_token(cur, access_token)
                         if not user_id:
                             await addMessageToLogs(f"Invalid access token, access token: {access_token}", "INFO")
                             await sio_instance.sio.emit(
-                                'error', {'success': False, 'error': 'Invalid access token'}, to=sid
+                                'error', {'success': False, 'error': 'Invalid access token', 'req_id': req_id}, to=sid
                             )
                             return
-                        if server_required and server_id and not await is_user_in_server(cur, user_id, server_id) :
-                            await addMessageToLogs(f"User not in server, user id: {user_id}, server id: {server_id}", "INFO")
-                            await sio_instance.sio.emit(
-                                'error', {'success': False, 'error': 'User not in server'}, to=sid
-                            )
-                            return
+                        
+                        if server_id and server_or_contact_required:
+                            if not await is_user_in_server(cur, user_id, server_id):
+                                await addMessageToLogs(f"User not in server, user id: {user_id}, server id: {server_id}", "INFO")
+                                await sio_instance.sio.emit(
+                                    'error', {'success': False, 'error': 'User not in server', 'req_id': req_id}, to=sid
+                                )
+                                return
+                            
+                            if not await server_permissions(cur, user_id, server_id, 'send_messages'):
+                                await addMessageToLogs(f"User does not have permission to send messages for send_message for user id: {user_id}", "INFO")
+                                await sio_instance.sio.emit('send_message_response', {
+                                    'success': False, 
+                                    'error': 'User does not have permission to send messages', 
+                                    'req_id': req_id
+                                }, to=sid)
+                                return
+                            
+                            data['contact_id'] = None
+                            is_channel = True
+
+                        if contact_id and server_or_contact_required and allow_contact:
+                            if not await inContact(cur, user_id, contact_id):
+                                await addMessageToLogs(f"User is not in contact for send_message, user id: {user_id}, contact id: {contact_id}", "INFO")
+                                await sio_instance.sio.emit('send_message_response', {
+                                    'success': False, 
+                                    'error': 'User is not in contact', 
+                                    'req_id': req_id
+                                }, to=sid)
+                                return
+                            
+                            data['server_id'] = None
+                            is_contact = True
+                        
                         account_id = user_id
+
+            if server_or_contact_required and not (is_contact or is_channel) or (is_contact and is_channel):
+                await addMessageToLogs(f"Invalid message target for send_message", "INFO")
+                await sio_instance.sio.emit('send_message_response', {
+                    'success': False, 
+                    'error': 'Must specify either contact_id OR (server_id AND channel_id)',
+                    'req_id': req_id
+                }, to=sid)
+                return
 
             metadata = {
                 'is_bot': is_bot,
-                'account_id': account_id,
-                'server_id': server_id
+                'account_id': account_id
             }
             return await func(sid, metadata, data, *args, **kwargs)
         return wrapper
@@ -498,4 +563,3 @@ async def is_user_developer(cur, user_id):
     await cur.execute("SELECT is_developer, is_staff FROM users WHERE id = %s", (user_id,))
     row = await cur.fetchone()
     return row["is_developer"] == 1
-

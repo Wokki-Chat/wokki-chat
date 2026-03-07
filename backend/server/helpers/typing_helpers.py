@@ -5,7 +5,7 @@ import aiomysql
 import server.config as config
 from server.helpers.logs import addMessageToLogs
 
-@auth_required(server_required=True, allow_bots=False)
+@auth_required(server_or_contact_required=True, allow_bots=False)
 async def typing(sid, metadata, data):
     typing_state = data.get('typing')
     channel_id = data.get('channel_id')

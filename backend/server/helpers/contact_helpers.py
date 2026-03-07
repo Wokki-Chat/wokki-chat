@@ -7,7 +7,7 @@ import server.config as config
 import asyncio
 from server.helpers.user_helpers import get_user_info_from_id
             
-@auth_required(server_required=False, allow_bots=False)
+@auth_required(server_or_contact_required=False, allow_bots=False)
 async def get_contact_users(sid, metadata, data):
     contact_id = data.get('contact_id')
     user_id = metadata.get('account_id')

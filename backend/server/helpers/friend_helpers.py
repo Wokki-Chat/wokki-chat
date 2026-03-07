@@ -5,7 +5,7 @@ import server.config as config
 from server.helpers.logs import addMessageToLogs
 import uuid
 
-@auth_required(server_required=False, allow_bots=False)
+@auth_required(server_or_contact_required=False, allow_bots=False)
 async def send_friend_request(sid, metadata, data):
     friend_username = data.get('friend_username')
     user_id = metadata.get('account_id')
@@ -75,7 +75,7 @@ async def inContact(cur, user_id, contact_id):
     """, (user_id, contact_id))
     return await cur.fetchone() is not None
    
-@auth_required(server_required=False, allow_bots=False)
+@auth_required(server_or_contact_required=False, allow_bots=False)
 async def accept_friend_request(sid, metadata, data):
     requested_friend_id = data.get('requested_friend_id')
     user_id = metadata.get('account_id')
@@ -128,7 +128,7 @@ async def accept_friend_request(sid, metadata, data):
                 await addMessageToLogs(f"Error accepting friend request: {e}", "ERROR")
                 await sio_instance.sio.emit('accept_friend_request_response', {'success': False, 'msg': 'Internal error'}, to=sid)
 
-@auth_required(server_required=False, allow_bots=False)
+@auth_required(server_or_contact_required=False, allow_bots=False)
 async def pending_friend_requests(sid, metadata, data):
     user_id = metadata.get('account_id')
 
@@ -146,7 +146,7 @@ async def pending_friend_requests(sid, metadata, data):
             await sio_instance.sio.emit('pending_friend_requests', {'friend_requests': friend_requests}, to=sid)
 
             
-@auth_required(server_required=False, allow_bots=False)
+@auth_required(server_or_contact_required=False, allow_bots=False)
 async def outgoing_friend_requests(sid, metadata, data):
     user_id = metadata.get('account_id')
 
@@ -164,7 +164,7 @@ async def outgoing_friend_requests(sid, metadata, data):
             await sio_instance.sio.emit('outgoing_friend_requests', {'outgoing_friend_requests': outgoing_requests}, to=sid)
 
             
-@auth_required(server_required=False, allow_bots=False)
+@auth_required(server_or_contact_required=False, allow_bots=False)
 async def cancel_outgoing_friend_request(sid, metadata, data):
     friend_id = data.get('friend_id')
     user_id = metadata.get('account_id')
@@ -190,7 +190,7 @@ async def cancel_outgoing_friend_request(sid, metadata, data):
                 await sio_instance.sio.emit('cancel_outgoing_friend_request_response', {'success': False, 'msg': 'Error'}, to=sid)
 
 
-@auth_required(server_required=False, allow_bots=False)
+@auth_required(server_or_contact_required=False, allow_bots=False)
 async def deny_friend_request(sid, metadata, data):
     friend_id = data.get('friend_id')
     user_id = metadata.get('account_id')

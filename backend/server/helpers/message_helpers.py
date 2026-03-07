@@ -2,8 +2,7 @@ from datetime import datetime, timezone
 import json
 from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, update_cached_messages, delete_cached_message, get_command_id
 from server.helpers.user_helpers import get_user_premium_status, auth_required
-from server.helpers.server_helpers import server_permissions, is_user_in_server, is_bot_in_server
-from server.helpers.friend_helpers import inContact
+from server.helpers.server_helpers import is_user_in_server, is_bot_in_server
 import aiomysql
 import uuid
 import server.sio_instance as sio_instance
@@ -14,7 +13,7 @@ import asyncio
 from server.helpers.bot_helpers import validate_embed
 from dateutil import parser
 
-@auth_required(server_required=True, allow_bots=True)
+@auth_required(server_or_contact_required=True, allow_bots=True)
 async def send_message(sid, metadata, data):
     message = data.get('message')
     server_id = data.get('server_id')
@@ -29,18 +28,6 @@ async def send_message(sid, metadata, data):
 
     is_bot = metadata.get('is_bot', False)
     account_id = metadata.get('account_id')
-
-    is_contact = bool(contact_id)
-    is_channel = bool(server_id and channel_id)
-
-    if not (is_contact or is_channel) or (is_contact and is_channel):
-        await addMessageToLogs(f"Invalid message target for send_message", "INFO")
-        await sio_instance.sio.emit('send_message_response', {
-            'success': False, 
-            'error': 'Must specify either contact_id OR (server_id AND channel_id)', 
-            'req_id': req_id
-        }, to=sid)
-        return
 
     if not message and not embed:
         await addMessageToLogs(f"Missing message content and embed for send_message", "INFO")
@@ -57,26 +44,6 @@ async def send_message(sid, metadata, data):
         async with conn.cursor(aiomysql.DictCursor) as cur:
             now = datetime.now(timezone.utc)
             timestamps = message_timestamps[account_id]
-            
-            if not is_bot:
-                if is_contact:
-                    if not await inContact(cur, account_id, contact_id):
-                        await addMessageToLogs(f"User is not in contact for send_message, user id: {account_id}, contact id: {contact_id}", "INFO")
-                        await sio_instance.sio.emit('send_message_response', {
-                            'success': False, 
-                            'error': 'User is not in contact', 
-                            'req_id': req_id
-                        }, to=sid)
-                        return
-                else:
-                    if not await server_permissions(cur, account_id, server_id, 'send_messages'):
-                        await addMessageToLogs(f"User does not have permission to send messages for send_message for user id: {account_id}", "INFO")
-                        await sio_instance.sio.emit('send_message_response', {
-                            'success': False, 
-                            'error': 'User does not have permission to send messages', 
-                            'req_id': req_id
-                        }, to=sid)
-                        return
             
             while timestamps and (now - timestamps[0]).total_seconds() > TIME_WINDOW_SECONDS:
                 timestamps.popleft()
@@ -232,9 +199,9 @@ async def send_message(sid, metadata, data):
                     sent_by, 
                     sent_by_bot, 
                     timestamp, 
-                    server_id if is_channel else None, 
-                    channel_id if is_channel else None, 
-                    contact_id if is_contact else None,
+                    server_id if not contact_id else None, 
+                    channel_id if not contact_id else None, 
+                    contact_id if contact_id else None,
                     command if is_bot else None,
                     command_user_id if is_bot else None, 
                     embed_str if is_bot else None, 
@@ -243,7 +210,7 @@ async def send_message(sid, metadata, data):
                 )
             )
             
-            if is_contact:
+            if contact_id:
                 await cur.execute(
                     'UPDATE contacts SET last_message_sent = %s WHERE contact_id = %s',
                     (timestamp, contact_id)
@@ -254,7 +221,7 @@ async def send_message(sid, metadata, data):
                 await addMessageToLogs(f"Inserted bot message for bot id: {account_id}", "INFO")
             else:
                 await addMessageToLogs(f"Inserted message for user id: {account_id}", "INFO")
-                if is_channel:
+                if not contact_id:
                     await addKudos(cur, account_id, 1, message, server_id, channel_id)
 
             await conn.commit()
@@ -267,9 +234,9 @@ async def send_message(sid, metadata, data):
         'bot_message': 1 if is_bot else 0,
         'message': message,
         'created_at': timestamp.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z'),
-        'server_id': server_id if is_channel else None,
-        'channel_id': channel_id if is_channel else None,
-        'contact_id': contact_id if is_contact else None,
+        'server_id': server_id if not contact_id else None,
+        'channel_id': channel_id if not contact_id else None,
+        'contact_id': contact_id if contact_id else None,
         'sent_by': account_id if not is_bot else None,
         'sent_by_bot': account_id if is_bot else None,
         'assets': json.loads(assets_json) if assets_json else [],
@@ -300,12 +267,12 @@ async def send_message(sid, metadata, data):
             'username': command_username
         }
 
-    if is_contact:
+    if contact_id:
         await cache_message(contact_id=contact_id, message=message_response)
     else:
         await cache_message(server_id=server_id, channel_id=channel_id, message=message_response)
 
-    if is_contact:
+    if contact_id:
         await sio_instance.sio.emit('new_message', message_response, room=f"contact:{contact_id}")
         await addMessageToLogs(f"new_message emitted for contact_id: {contact_id}", "INFO")
         
@@ -334,20 +301,13 @@ async def send_message(sid, metadata, data):
     }, to=sid)
     await addMessageToLogs(f"send_message_response emitted for sid: {sid}", "INFO")
 
-@auth_required(server_required=True, allow_bots=False)
+@auth_required(server_or_contact_required=True, allow_bots=True)
 async def get_messages(sid, metadata, data):
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
     contact_id = data.get('contact_id')
     offset = data.get('offset', 0)
     user_id = metadata.get('account_id')
-
-    is_contact = bool(contact_id)
-    is_channel = bool(server_id and channel_id)
-
-    if not (is_contact or is_channel):
-        await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
-        return
 
     try:
         offset = int(offset)
@@ -358,7 +318,7 @@ async def get_messages(sid, metadata, data):
 
     limit = 25
 
-    if is_contact:
+    if contact_id:
         cached_messages = await get_cached_messages(contact_id=contact_id, offset=offset, limit=limit)
     else:
         cached_messages = await get_cached_messages(server_id=server_id, channel_id=channel_id, offset=offset, limit=limit)
@@ -374,12 +334,7 @@ async def get_messages(sid, metadata, data):
                     joined_at = None
                     can_read_history = True
 
-                    if is_contact:
-                        if not await inContact(cur, user_id, contact_id):
-                            await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'User is not in contact'}, to=sid)
-                            return
-
-                    else:
+                    if not contact_id:
                         await cur.execute(
                             "SELECT created_by FROM servers WHERE id = %s AND created_by = %s AND server_type = 'normal'",
                             (server_id, user_id)
@@ -427,7 +382,7 @@ async def get_messages(sid, metadata, data):
                                 else:
                                     joined_at = joined_at_value
 
-                    if is_contact:
+                    if contact_id:
                         where_clause = "m.contact_id = %s"
                         where_params = [contact_id]
                     else:
@@ -673,7 +628,7 @@ async def get_messages(sid, metadata, data):
 
                     async def _update_cache():
                         try:
-                            if is_contact:
+                            if contact_id:
                                 await update_cached_messages(contact_id=contact_id, messages=messages, offset=offset, limit=limit)
                             else:
                                 await update_cached_messages(server_id=server_id, channel_id=channel_id, messages=messages, offset=offset, limit=limit)
@@ -688,7 +643,7 @@ async def get_messages(sid, metadata, data):
     asyncio.create_task(send_db())
     await sio_instance.sio.emit('get_messages_response', {'success': True, 'offset': offset, 'count': len(cached_messages)}, to=sid)
 
-@auth_required(server_required=True, allow_bots=False)
+@auth_required(server_or_contact_required=True, allow_bots=True)
 async def get_message_by_id(sid, metadata, data):
     message_id = data.get('message_id')
     server_id = data.get('server_id')
@@ -703,12 +658,7 @@ async def get_message_by_id(sid, metadata, data):
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            if contact_id is not None:
-                if not await inContact(cur, user_id, contact_id):
-                    await addMessageToLogs(f"User {user_id} not in contact {contact_id}", "INFO")
-                    await sio_instance.sio.emit('message_by_id', None, to=sid)
-                    return
-                
+            if contact_id:
                 await cur.execute("""
                     SELECT m.id, m.message, m.sent_by, m.sent_by_bot, u.username AS user_name, b.name AS bot_name, m.created_at
                     FROM messages m
@@ -749,7 +699,7 @@ async def get_message_by_id(sid, metadata, data):
             await sio_instance.sio.emit('message_by_id', message, to=sid)
             await addMessageToLogs(f"Emitted message_by_id to {user_id}", "INFO")
 
-@auth_required(server_required=True, allow_bots=True)
+@auth_required(server_or_contact_required=True, allow_bots=True)
 async def delete_message(sid, metadata, data):
     message_id = data.get('message_id')
     contact_id = data.get('contact_id')
@@ -771,16 +721,7 @@ async def delete_message(sid, metadata, data):
             server_id = None
             channel_id = None
 
-            if contact_id:
-                if not await inContact(cur, account_id, contact_id):
-                    await sio_instance.sio.emit(
-                        'message_deleted',
-                        {'success': False, 'error': 'User not in contact', 'req_id': req_id},
-                        to=sid
-                    )
-                    await addMessageToLogs(f"User {account_id} not in contact {contact_id}", "INFO")
-                    return
-            else:
+            if not contact_id:
                 if is_bot:
                     await cur.execute(
                         "SELECT server_id, channel_id FROM messages WHERE id = %s AND sent_by_bot = %s",
@@ -838,7 +779,7 @@ async def delete_message(sid, metadata, data):
             )
             await addMessageToLogs(f"Emitted message_deleted to {room}", "INFO")
 
-@auth_required(server_required=True, allow_bots=True)
+@auth_required(server_or_contact_required=True, allow_bots=True)
 async def add_reaction(sid, metadata, data):
     message_id = data.get('message_id')
     req_id = data.get('req_id')
@@ -874,12 +815,7 @@ async def add_reaction(sid, metadata, data):
             server_id = message_info['server_id']
             contact_id = message_info['contact_id']
 
-            if contact_id:
-                if not await inContact(cur, account_id, contact_id):
-                    await respond({'success': False, 'error': f'User not in contact, contact id: {contact_id}', 'req_id': req_id})
-                    await addMessageToLogs(f"User not in contact for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
-                    return
-            else:
+            if not contact_id:
                 if is_bot:
                     if not await is_bot_in_server(cur, account_id, server_id):
                         await respond({'success': False, 'error': f'Bot not in server, server id: {server_id}', 'req_id': req_id})
@@ -947,15 +883,16 @@ async def add_reaction(sid, metadata, data):
                 )
                 await addMessageToLogs(f"Added reaction {reaction} to message {message_id} by user {account_id}", "INFO")
 
-@auth_required(server_required=True, allow_bots=True)
+@auth_required(server_or_contact_required=True, allow_bots=True)
 async def edit_message(sid, metadata, data):
+    server_id = data.get('server_id')
     message_id = data.get('message_id')
     message = data.get('message')
     embed = data.get('embed')
     req_id = data.get('req_id')
+    
     account_id = metadata.get('account_id')
     is_bot = metadata.get('is_bot')
-    server_id = metadata.get('server_id')
     
     if is_bot:
         if not all([(message or embed), message_id]):
