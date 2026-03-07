@@ -1,6 +1,7 @@
 // modules/servers/settings.js
 // Module description: This module helps with managing server settings.
 import { Sanitizer } from "../global/sanitization.js";
+import * as jspt from "https://cdn.wokki20.nl/content/jspt-v2.1.0/jspt.module.js";
 
 export default class SettingsManager {
     constructor() {
@@ -155,18 +156,12 @@ export default class SettingsManager {
         });
 
         const closeBtn = popupEl.querySelector(".close-settings-container");
-        closeBtn.addEventListener("click", () => jspt.closePopup("server-settings-popup"));
+        closeBtn.addEventListener("click", () => jspt.closePopup({custom_id: "server-settings-popup"}));
 
         document.addEventListener("keydown", (e) => {
             if (e.key === "Escape") {
                 const popup = document.getElementById("server-settings-popup");
-                if (popup) jspt.closePopup("server-settings-popup");
-            }
-        });
-
-        popupEl.addEventListener("click", (e) => {
-            if (!e.target.closest(".popup")) {
-                jspt.closePopup("server-settings-popup");
+                if (popup) jspt.closePopup({custom_id: "server-settings-popup"});
             }
         });
     }

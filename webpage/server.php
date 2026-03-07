@@ -775,21 +775,21 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
             </div>
         <?php endif; ?>
         <wchat-allowed-scripts value="server.js;"></wchat-allowed-scripts>
-        <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token); ?>"></wchat-data>
-        <wchat-data id="server-id" value="<?php echo htmlspecialchars($server_id); ?>"></wchat-data>
-        <wchat-data id="channel-id" value="<?php echo htmlspecialchars($channel_id); ?>"></wchat-data>
-        <wchat-data id="channel-name" value="<?php echo htmlspecialchars($channel['channel_name']); ?>"></wchat-data>
-        <wchat-data id="channel-type" value="<?php echo htmlspecialchars($channel['channel_type']); ?>"></wchat-data>
-        <wchat-data id="channels" value="<?php echo htmlspecialchars(json_encode($channels_for_markdown)); ?>"></wchat-data>
-        <wchat-data id="channel-groups" value="<?php echo htmlspecialchars(json_encode($channel_groups)); ?>"></wchat-data>
-        <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id); ?>"></wchat-data>
-        <wchat-data id="premium" value="<?php echo htmlspecialchars(json_encode($premium_active)); ?>"></wchat-data>
-        <wchat-data id="is-in-server" value="<?php echo htmlspecialchars(json_encode($is_in_server)); ?>"></wchat-data>
-        <wchat-data id="username-text" value="<?php echo htmlspecialchars($username); ?>"></wchat-data>
-        <wchat-data id="profile-picture-url" value="<?php echo htmlspecialchars($profile_picture); ?>"></wchat-data>
-        <wchat-data id="permissions" value="<?php echo htmlspecialchars(json_encode($finalPermissions)); ?>"></wchat-data>
-        <wchat-data id="server-name" value="<?php echo htmlspecialchars($serverInfo['name']); ?>"></wchat-data>
-        <wchat-data id="server-description" value="<?php echo htmlspecialchars($serverInfo['description']); ?>"></wchat-data>
+        <wchat-data id="access-token" value="<?php echo htmlspecialchars($access_token ?? ''); ?>"></wchat-data>
+        <wchat-data id="server-id" value="<?php echo htmlspecialchars($server_id ?? ''); ?>"></wchat-data>
+        <wchat-data id="channel-id" value="<?php echo htmlspecialchars($channel_id ?? ''); ?>"></wchat-data>
+        <wchat-data id="channel-name" value="<?php echo htmlspecialchars($channel['channel_name'] ?? ''); ?>"></wchat-data>
+        <wchat-data id="channel-type" value="<?php echo htmlspecialchars($channel['channel_type'] ?? ''); ?>"></wchat-data>
+        <wchat-data id="channels" value="<?php echo htmlspecialchars(json_encode($channels_for_markdown ?? '')); ?>"></wchat-data>
+        <wchat-data id="channel-groups" value="<?php echo htmlspecialchars(json_encode($channel_groups ?? '')); ?>"></wchat-data>
+        <wchat-data id="user-id" value="<?php echo htmlspecialchars($user_id ?? ''); ?>"></wchat-data>
+        <wchat-data id="premium" value="<?php echo htmlspecialchars(json_encode($premium_active ?? '')); ?>"></wchat-data>
+        <wchat-data id="is-in-server" value="<?php echo htmlspecialchars(json_encode($is_in_server ?? '')); ?>"></wchat-data>
+        <wchat-data id="username-text" value="<?php echo htmlspecialchars($username ?? ''); ?>"></wchat-data>
+        <wchat-data id="profile-picture-url" value="<?php echo htmlspecialchars($profile_picture ?? ''); ?>"></wchat-data>
+        <wchat-data id="permissions" value="<?php echo htmlspecialchars(json_encode($finalPermissions ?? '')); ?>"></wchat-data>
+        <wchat-data id="server-name" value="<?php echo htmlspecialchars($serverInfo['name'] ?? ''); ?>"></wchat-data>
+        <wchat-data id="server-description" value="<?php echo htmlspecialchars($serverInfo['description'] ?? ''); ?>"></wchat-data>
     </main>
     <script src="/assets/js/socket.js" data-swup-ignore-script></script>
     <script type="module" data-swup-ignore-script>
@@ -811,9 +811,10 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" data-swup-ignore-script></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" data-swup-ignore-script></script>
-    <script src="/assets/js/create_server.js" data-swup-ignore-script></script>
     <script src="/assets/js/globalFunctions.js"></script>
     <script src="/assets/js/server.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
+    
+    <script src="/assets/js/create_server.js" type="module"></script>
 </body>
 </html>

@@ -573,5 +573,7 @@ function getUserMedia($mysqli, $user_id) {
     <script src="/assets/js/globalFunctions.js" data-swup-ignore-script></script>
     <script src="/assets/js/settings.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
+    
+    <script src="/assets/js/create_server.js" type="module"></script>
 </body>
 </html>

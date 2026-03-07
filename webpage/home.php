@@ -344,11 +344,12 @@ $_SESSION['last_page'] = $_SERVER['REQUEST_URI'];
         });
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-    <script src="/assets/js/create_server.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/assets/js/notifiers.js"></script>
     <script src="/assets/js/globalFunctions.js"></script>
     <script src="/assets/js/home.js" type="module"></script>
     <script src="/assets/js/load_scripts.js"></script>
+    
+    <script src="/assets/js/create_server.js" type="module"></script>
 </body>
 </html>
