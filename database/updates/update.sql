@@ -101,3 +101,7 @@ CREATE TABLE `channel_permission_overrides` (
     UNIQUE KEY `uq_channel_role_perm` (`channel_id`, `role_id`, `permission`),
     FOREIGN KEY (`channel_id`) REFERENCES `channels`(`channel_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 3/7/2026 roles index
+ALTER TABLE `server_roles` ADD COLUMN `role_index` INT NOT NULL DEFAULT 0;
+ALTER TABLE `channel_permission_overrides` ADD COLUMN `role_index` INT NULL;

@@ -617,18 +617,896 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'return_code' => 78
         ]);
         exit;
+    } else if ($action === 'get_roles') {
+        if (!isset($_POST['server_id'])) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Missing required fields',
+                'missing_fields' => ['server_id'],
+                'return_code' => 79
+            ]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+
+        $stmt = $mysqli->prepare("SELECT created_by FROM servers WHERE id = ?");
+        $stmt->bind_param("s", $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $server_row = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$server_row) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Server not found',
+                'return_code' => 80
+            ]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?");
+        $stmt->bind_param("si", $server_id, $user_id);
+        $stmt->execute();
+        $member_result = $stmt->get_result();
+        $stmt->close();
+
+        if ($member_result->num_rows === 0) {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'You are not a member of this server',
+                'return_code' => 81
+            ]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("
+            SELECT sr.role_id, sr.role_name, sr.role_color, sr.role_index, sr.add_on_join,
+                   rp.send_messages, rp.view_channels, rp.manage_channels, rp.manage_server,
+                   rp.manage_roles, rp.kick_members, rp.ban_members, rp.mute_members,
+                   rp.manage_groups, rp.read_message_history
+            FROM server_roles sr
+            LEFT JOIN role_permissions rp ON sr.role_id = rp.role_id
+            WHERE sr.server_id = ?
+            ORDER BY sr.role_index ASC
+        ");
+        $stmt->bind_param("s", $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $roles = [];
+        while ($row = $result->fetch_assoc()) {
+            $roles[] = $row;
+        }
+        $stmt->close();
+
+        echo json_encode([
+            'status' => 'success',
+            'roles' => $roles,
+            'return_code' => 82
+        ]);
+        exit;
+
+    } else if ($action === 'create_role') {
+        if (!isset($_POST['server_id']) || !isset($_POST['role_name'])) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Missing required fields',
+                'missing_fields' => ['server_id', 'role_name'],
+                'return_code' => 83
+            ]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+        $role_name = $_POST['role_name'];
+        $role_color = isset($_POST['role_color']) ? $_POST['role_color'] : '#ffffff';
+
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $role_color)) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Invalid role color',
+                'return_code' => 84
+            ]);
+            exit;
+        }
+
+        if (mb_strlen($role_name) > 50) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Role name must be 50 characters or fewer',
+                'return_code' => 85
+            ]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("SELECT created_by FROM servers WHERE id = ?");
+        $stmt->bind_param("s", $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $server_row = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$server_row) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Server not found',
+                'return_code' => 86
+            ]);
+            exit;
+        }
+
+        $is_owner = ($server_row['created_by'] == $user_id);
+
+        $my_max_index = 0;
+        if (!$is_owner) {
+            $stmt = $mysqli->prepare("
+                SELECT MAX(sr.role_index) as max_index
+                FROM user_server_roles usr
+                JOIN server_roles sr ON usr.role_id = sr.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ?
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $idx_row = $result->fetch_assoc();
+            $stmt->close();
+            $my_max_index = $idx_row['max_index'] ?? 0;
+
+            $stmt = $mysqli->prepare("
+                SELECT rp.manage_roles
+                FROM user_server_roles usr
+                JOIN role_permissions rp ON usr.role_id = rp.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ? AND rp.manage_roles = 1
+                LIMIT 1
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $perm_result = $stmt->get_result();
+            $stmt->close();
+
+            if ($perm_result->num_rows === 0) {
+                http_response_code(403);
+                echo json_encode([
+                    'status' => 'error',
+                    'description' => 'You do not have permission to manage roles',
+                    'return_code' => 87
+                ]);
+                exit;
+            }
+        }
+
+        $stmt = $mysqli->prepare("SELECT MAX(role_index) as max_idx FROM server_roles WHERE server_id = ?");
+        $stmt->bind_param("s", $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $max_row = $result->fetch_assoc();
+        $stmt->close();
+        $new_index = ($max_row['max_idx'] ?? -1) + 1;
+
+        if (!$is_owner && $new_index >= $my_max_index) {
+            $new_index = $my_max_index - 1;
+            if ($new_index < 0) $new_index = 0;
+        }
+
+        $new_role_id = generateUUIDv4();
+
+        $stmt = $mysqli->prepare("INSERT INTO server_roles (role_id, role_name, role_color, server_id, add_on_join, role_index) VALUES (?, ?, ?, ?, 0, ?)");
+        $stmt->bind_param("ssssi", $new_role_id, $role_name, $role_color, $server_id, $new_index);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $mysqli->prepare("INSERT INTO role_permissions (role_id, send_messages, view_channels, manage_channels, manage_server, manage_roles, kick_members, ban_members, mute_members, manage_groups, read_message_history) VALUES (?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)");
+        $stmt->bind_param("s", $new_role_id);
+        $stmt->execute();
+        $stmt->close();
+
+        echo json_encode([
+            'status' => 'success',
+            'role_id' => $new_role_id,
+            'role_index' => $new_index,
+            'return_code' => 88
+        ]);
+        exit;
+
+    } else if ($action === 'edit_role') {
+        if (!isset($_POST['server_id']) || !isset($_POST['role_id'])) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Missing required fields',
+                'missing_fields' => ['server_id', 'role_id'],
+                'return_code' => 89
+            ]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+        $role_id = $_POST['role_id'];
+
+        $stmt = $mysqli->prepare("SELECT created_by FROM servers WHERE id = ?");
+        $stmt->bind_param("s", $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $server_row = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$server_row) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Server not found',
+                'return_code' => 90
+            ]);
+            exit;
+        }
+
+        $is_owner = ($server_row['created_by'] == $user_id);
+
+        $stmt = $mysqli->prepare("SELECT role_index FROM server_roles WHERE role_id = ? AND server_id = ?");
+        $stmt->bind_param("ss", $role_id, $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $target_role = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$target_role) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Role not found',
+                'return_code' => 91
+            ]);
+            exit;
+        }
+
+        if (!$is_owner) {
+            $stmt = $mysqli->prepare("
+                SELECT MAX(sr.role_index) as max_index
+                FROM user_server_roles usr
+                JOIN server_roles sr ON usr.role_id = sr.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ?
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $idx_row = $result->fetch_assoc();
+            $stmt->close();
+            $my_max_index = $idx_row['max_index'] ?? 0;
+
+            if ($target_role['role_index'] >= $my_max_index) {
+                http_response_code(403);
+                echo json_encode([
+                    'status' => 'error',
+                    'description' => 'You cannot manage a role equal or higher than your own',
+                    'return_code' => 92
+                ]);
+                exit;
+            }
+
+            $stmt = $mysqli->prepare("
+                SELECT rp.manage_roles
+                FROM user_server_roles usr
+                JOIN role_permissions rp ON usr.role_id = rp.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ? AND rp.manage_roles = 1
+                LIMIT 1
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $perm_result = $stmt->get_result();
+            $stmt->close();
+
+            if ($perm_result->num_rows === 0) {
+                http_response_code(403);
+                echo json_encode([
+                    'status' => 'error',
+                    'description' => 'You do not have permission to manage roles',
+                    'return_code' => 93
+                ]);
+                exit;
+            }
+        }
+
+        $fields = [];
+        $params = [];
+        $types = '';
+
+        if (isset($_POST['role_name'])) {
+            if (mb_strlen($_POST['role_name']) > 50) {
+                echo json_encode([
+                    'status' => 'error',
+                    'description' => 'Role name must be 50 characters or fewer',
+                    'return_code' => 94
+                ]);
+                exit;
+            }
+            $fields[] = 'role_name = ?';
+            $params[] = $_POST['role_name'];
+            $types .= 's';
+        }
+
+        if (isset($_POST['role_color'])) {
+            if (!preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['role_color'])) {
+                echo json_encode([
+                    'status' => 'error',
+                    'description' => 'Invalid role color',
+                    'return_code' => 95
+                ]);
+                exit;
+            }
+            $fields[] = 'role_color = ?';
+            $params[] = $_POST['role_color'];
+            $types .= 's';
+        }
+
+        if (isset($_POST['add_on_join'])) {
+            $fields[] = 'add_on_join = ?';
+            $params[] = $_POST['add_on_join'] === 'true' ? 1 : 0;
+            $types .= 'i';
+        }
+
+        if (!empty($fields)) {
+            $params[] = $role_id;
+            $params[] = $server_id;
+            $types .= 'ss';
+            $sql = "UPDATE server_roles SET " . implode(', ', $fields) . " WHERE role_id = ? AND server_id = ?";
+            $stmt = $mysqli->prepare($sql);
+            $stmt->bind_param($types, ...$params);
+            $stmt->execute();
+            $stmt->close();
+        }
+
+        $perm_fields = ['send_messages', 'view_channels', 'manage_channels', 'manage_server',
+                        'manage_roles', 'kick_members', 'ban_members', 'mute_members',
+                        'manage_groups', 'read_message_history'];
+
+        $perm_updates = [];
+        $perm_params = [];
+        $perm_types = '';
+
+        foreach ($perm_fields as $pf) {
+            if (isset($_POST[$pf])) {
+                $perm_updates[] = "$pf = ?";
+                $perm_params[] = $_POST[$pf] === 'true' ? 1 : 0;
+                $perm_types .= 'i';
+            }
+        }
+
+        if (!empty($perm_updates)) {
+            $perm_params[] = $role_id;
+            $perm_types .= 's';
+            $sql = "UPDATE role_permissions SET " . implode(', ', $perm_updates) . " WHERE role_id = ?";
+            $stmt = $mysqli->prepare($sql);
+            $stmt->bind_param($perm_types, ...$perm_params);
+            $stmt->execute();
+            $stmt->close();
+        }
+
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'Role updated',
+            'return_code' => 96
+        ]);
+        exit;
+
+    } else if ($action === 'delete_role') {
+        if (!isset($_POST['server_id']) || !isset($_POST['role_id'])) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Missing required fields',
+                'missing_fields' => ['server_id', 'role_id'],
+                'return_code' => 97
+            ]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+        $role_id = $_POST['role_id'];
+
+        $stmt = $mysqli->prepare("SELECT created_by FROM servers WHERE id = ?");
+        $stmt->bind_param("s", $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $server_row = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$server_row) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Server not found',
+                'return_code' => 98
+            ]);
+            exit;
+        }
+
+        $is_owner = ($server_row['created_by'] == $user_id);
+
+        $stmt = $mysqli->prepare("SELECT role_index FROM server_roles WHERE role_id = ? AND server_id = ?");
+        $stmt->bind_param("ss", $role_id, $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $target_role = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$target_role) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Role not found',
+                'return_code' => 99
+            ]);
+            exit;
+        }
+
+        if (!$is_owner) {
+            $stmt = $mysqli->prepare("
+                SELECT MAX(sr.role_index) as max_index
+                FROM user_server_roles usr
+                JOIN server_roles sr ON usr.role_id = sr.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ?
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $idx_row = $result->fetch_assoc();
+            $stmt->close();
+            $my_max_index = $idx_row['max_index'] ?? 0;
+
+            if ($target_role['role_index'] >= $my_max_index) {
+                http_response_code(403);
+                echo json_encode([
+                    'status' => 'error',
+                    'description' => 'You cannot delete a role equal or higher than your own',
+                    'return_code' => 100
+                ]);
+                exit;
+            }
+
+            $stmt = $mysqli->prepare("
+                SELECT rp.manage_roles
+                FROM user_server_roles usr
+                JOIN role_permissions rp ON usr.role_id = rp.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ? AND rp.manage_roles = 1
+                LIMIT 1
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $perm_result = $stmt->get_result();
+            $stmt->close();
+
+            if ($perm_result->num_rows === 0) {
+                http_response_code(403);
+                echo json_encode([
+                    'status' => 'error',
+                    'description' => 'You do not have permission to manage roles',
+                    'return_code' => 101
+                ]);
+                exit;
+            }
+        }
+
+        $stmt = $mysqli->prepare("DELETE FROM role_permissions WHERE role_id = ?");
+        $stmt->bind_param("s", $role_id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $mysqli->prepare("DELETE FROM user_server_roles WHERE role_id = ?");
+        $stmt->bind_param("s", $role_id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $mysqli->prepare("DELETE FROM server_roles WHERE role_id = ? AND server_id = ?");
+        $stmt->bind_param("ss", $role_id, $server_id);
+        $stmt->execute();
+        $stmt->close();
+
+        echo json_encode([
+            'status' => 'success',
+            'description' => 'Role deleted',
+            'return_code' => 102
+        ]);
+        exit;
+
+    } else if ($action === 'assign_role') {
+        if (!isset($_POST['server_id']) || !isset($_POST['role_id']) || !isset($_POST['target_user_id'])) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Missing required fields',
+                'missing_fields' => ['server_id', 'role_id', 'target_user_id'],
+                'return_code' => 103
+            ]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+        $role_id = $_POST['role_id'];
+        $target_user_id = intval($_POST['target_user_id']);
+
+        $stmt = $mysqli->prepare("SELECT created_by FROM servers WHERE id = ?");
+        $stmt->bind_param("s", $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $server_row = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$server_row) {
+            echo json_encode(['status' => 'error', 'description' => 'Server not found', 'return_code' => 104]);
+            exit;
+        }
+
+        $is_owner = ($server_row['created_by'] == $user_id);
+
+        $stmt = $mysqli->prepare("SELECT role_index FROM server_roles WHERE role_id = ? AND server_id = ?");
+        $stmt->bind_param("ss", $role_id, $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $target_role = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$target_role) {
+            echo json_encode(['status' => 'error', 'description' => 'Role not found', 'return_code' => 105]);
+            exit;
+        }
+
+        if (!$is_owner) {
+            $stmt = $mysqli->prepare("
+                SELECT MAX(sr.role_index) as max_index
+                FROM user_server_roles usr
+                JOIN server_roles sr ON usr.role_id = sr.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ?
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $idx_row = $result->fetch_assoc();
+            $stmt->close();
+            $my_max_index = $idx_row['max_index'] ?? 0;
+
+            if ($target_role['role_index'] >= $my_max_index) {
+                http_response_code(403);
+                echo json_encode(['status' => 'error', 'description' => 'You cannot assign a role equal or higher than your own', 'return_code' => 106]);
+                exit;
+            }
+
+            $stmt = $mysqli->prepare("
+                SELECT rp.manage_roles
+                FROM user_server_roles usr
+                JOIN role_permissions rp ON usr.role_id = rp.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ? AND rp.manage_roles = 1
+                LIMIT 1
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $perm_result = $stmt->get_result();
+            $stmt->close();
+
+            if ($perm_result->num_rows === 0) {
+                http_response_code(403);
+                echo json_encode(['status' => 'error', 'description' => 'You do not have permission to manage roles', 'return_code' => 107]);
+                exit;
+            }
+        }
+
+        $stmt = $mysqli->prepare("SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?");
+        $stmt->bind_param("si", $server_id, $target_user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        if ($result->num_rows === 0) {
+            echo json_encode(['status' => 'error', 'description' => 'Target user is not in server', 'return_code' => 108]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("SELECT 1 FROM user_server_roles WHERE user_id = ? AND server_id = ? AND role_id = ?");
+        $stmt->bind_param("iss", $target_user_id, $server_id, $role_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        if ($result->num_rows > 0) {
+            echo json_encode(['status' => 'error', 'description' => 'User already has this role', 'return_code' => 109]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("INSERT INTO user_server_roles (user_id, server_id, role_id) VALUES (?, ?, ?)");
+        $stmt->bind_param("iss", $target_user_id, $server_id, $role_id);
+        $stmt->execute();
+        $stmt->close();
+
+        echo json_encode(['status' => 'success', 'description' => 'Role assigned', 'return_code' => 110]);
+        exit;
+
+    } else if ($action === 'remove_role') {
+        if (!isset($_POST['server_id']) || !isset($_POST['role_id']) || !isset($_POST['target_user_id'])) {
+            echo json_encode([
+                'status' => 'error',
+                'description' => 'Missing required fields',
+                'missing_fields' => ['server_id', 'role_id', 'target_user_id'],
+                'return_code' => 111
+            ]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+        $role_id = $_POST['role_id'];
+        $target_user_id = intval($_POST['target_user_id']);
+
+        $stmt = $mysqli->prepare("SELECT created_by FROM servers WHERE id = ?");
+        $stmt->bind_param("s", $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $server_row = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$server_row) {
+            echo json_encode(['status' => 'error', 'description' => 'Server not found', 'return_code' => 112]);
+            exit;
+        }
+
+        $is_owner = ($server_row['created_by'] == $user_id);
+
+        $stmt = $mysqli->prepare("SELECT role_index FROM server_roles WHERE role_id = ? AND server_id = ?");
+        $stmt->bind_param("ss", $role_id, $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $target_role = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$target_role) {
+            echo json_encode(['status' => 'error', 'description' => 'Role not found', 'return_code' => 113]);
+            exit;
+        }
+
+        if (!$is_owner) {
+            $stmt = $mysqli->prepare("
+                SELECT MAX(sr.role_index) as max_index
+                FROM user_server_roles usr
+                JOIN server_roles sr ON usr.role_id = sr.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ?
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $idx_row = $result->fetch_assoc();
+            $stmt->close();
+            $my_max_index = $idx_row['max_index'] ?? 0;
+
+            if ($target_role['role_index'] >= $my_max_index) {
+                http_response_code(403);
+                echo json_encode(['status' => 'error', 'description' => 'You cannot remove a role equal or higher than your own', 'return_code' => 114]);
+                exit;
+            }
+
+            $stmt = $mysqli->prepare("
+                SELECT rp.manage_roles
+                FROM user_server_roles usr
+                JOIN role_permissions rp ON usr.role_id = rp.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ? AND rp.manage_roles = 1
+                LIMIT 1
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $perm_result = $stmt->get_result();
+            $stmt->close();
+
+            if ($perm_result->num_rows === 0) {
+                http_response_code(403);
+                echo json_encode(['status' => 'error', 'description' => 'You do not have permission to manage roles', 'return_code' => 115]);
+                exit;
+            }
+        }
+
+        $stmt = $mysqli->prepare("DELETE FROM user_server_roles WHERE user_id = ? AND server_id = ? AND role_id = ?");
+        $stmt->bind_param("iss", $target_user_id, $server_id, $role_id);
+        $stmt->execute();
+        $stmt->close();
+
+        echo json_encode(['status' => 'success', 'description' => 'Role removed', 'return_code' => 116]);
+        exit;
+
+    } else if ($action === 'get_channel_permission_overrides') {
+        if (!isset($_POST['server_id']) || !isset($_POST['channel_id'])) {
+            echo json_encode(['status' => 'error', 'description' => 'Missing required fields', 'return_code' => 117]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+        $channel_id = $_POST['channel_id'];
+
+        $stmt = $mysqli->prepare("SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?");
+        $stmt->bind_param("si", $server_id, $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        if ($result->num_rows === 0) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'description' => 'Not a member of this server', 'return_code' => 118]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("SELECT 1 FROM channels WHERE channel_id = ? AND server_id = ? LIMIT 1");
+        $stmt->bind_param("ss", $channel_id, $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        if ($result->num_rows === 0) {
+            echo json_encode(['status' => 'error', 'description' => 'Channel not found in server', 'return_code' => 119]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("
+            SELECT cpo.*, u.username AS user_name, sr.role_name, sr.role_color, sr.role_index
+            FROM channel_permission_overrides cpo
+            LEFT JOIN users u ON cpo.user_id = u.id
+            LEFT JOIN server_roles sr ON cpo.role_id = sr.role_id
+            WHERE cpo.channel_id = ?
+        ");
+        $stmt->bind_param("s", $channel_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $overrides = [];
+        while ($row = $result->fetch_assoc()) {
+            $overrides[] = $row;
+        }
+        $stmt->close();
+
+        echo json_encode(['status' => 'success', 'channel_id' => $channel_id, 'overrides' => $overrides, 'return_code' => 120]);
+        exit;
+
+    } else if ($action === 'set_channel_permission_override') {
+        if (!isset($_POST['server_id']) || !isset($_POST['channel_id']) || !isset($_POST['permission']) || !isset($_POST['allow'])) {
+            echo json_encode(['status' => 'error', 'description' => 'Missing required fields', 'return_code' => 121]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+        $channel_id = $_POST['channel_id'];
+        $permission = $_POST['permission'];
+        $allow = $_POST['allow'] === 'true' ? 1 : 0;
+        $target_user_id = isset($_POST['target_user_id']) ? intval($_POST['target_user_id']) : null;
+        $target_role_id = isset($_POST['target_role_id']) ? $_POST['target_role_id'] : null;
+
+        $valid_permissions = ['send_messages','view_channels','manage_channels','manage_server','manage_roles','kick_members','ban_members','mute_members','manage_groups','read_message_history'];
+        if (!in_array($permission, $valid_permissions)) {
+            echo json_encode(['status' => 'error', 'description' => 'Unknown permission', 'return_code' => 122]);
+            exit;
+        }
+
+        if (($target_user_id === null) === ($target_role_id === null)) {
+            echo json_encode(['status' => 'error', 'description' => 'Provide exactly one of target_user_id or target_role_id', 'return_code' => 123]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("SELECT created_by FROM servers WHERE id = ?");
+        $stmt->bind_param("s", $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $server_row = $result->fetch_assoc();
+        $stmt->close();
+        if (!$server_row) {
+            echo json_encode(['status' => 'error', 'description' => 'Server not found', 'return_code' => 124]);
+            exit;
+        }
+
+        $is_owner = ($server_row['created_by'] == $user_id);
+        if (!$is_owner) {
+            $stmt = $mysqli->prepare("
+                SELECT rp.manage_channels
+                FROM user_server_roles usr
+                JOIN role_permissions rp ON usr.role_id = rp.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ? AND rp.manage_channels = 1
+                LIMIT 1
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $perm_result = $stmt->get_result();
+            $stmt->close();
+            if ($perm_result->num_rows === 0) {
+                http_response_code(403);
+                echo json_encode(['status' => 'error', 'description' => 'Missing manage_channels permission', 'return_code' => 125]);
+                exit;
+            }
+        }
+
+        $stmt = $mysqli->prepare("SELECT 1 FROM channels WHERE channel_id = ? AND server_id = ? LIMIT 1");
+        $stmt->bind_param("ss", $channel_id, $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        if ($result->num_rows === 0) {
+            echo json_encode(['status' => 'error', 'description' => 'Channel not found in server', 'return_code' => 126]);
+            exit;
+        }
+
+        if ($target_user_id !== null) {
+            $stmt = $mysqli->prepare("
+                INSERT INTO channel_permission_overrides (channel_id, user_id, role_id, bot_id, permission, allow)
+                VALUES (?, ?, NULL, NULL, ?, ?)
+                ON DUPLICATE KEY UPDATE allow = VALUES(allow)
+            ");
+            $stmt->bind_param("siis", $channel_id, $target_user_id, $permission, $allow);
+        } else {
+            $stmt = $mysqli->prepare("
+                INSERT INTO channel_permission_overrides (channel_id, user_id, role_id, bot_id, permission, allow)
+                VALUES (?, NULL, ?, NULL, ?, ?)
+                ON DUPLICATE KEY UPDATE allow = VALUES(allow)
+            ");
+            $stmt->bind_param("ssis", $channel_id, $target_role_id, $permission, $allow);
+        }
+        $stmt->execute();
+        $stmt->close();
+
+        echo json_encode(['status' => 'success', 'return_code' => 127]);
+        exit;
+
+    } else if ($action === 'delete_channel_permission_override') {
+        if (!isset($_POST['server_id']) || !isset($_POST['channel_id']) || !isset($_POST['permission'])) {
+            echo json_encode(['status' => 'error', 'description' => 'Missing required fields', 'return_code' => 128]);
+            exit;
+        }
+
+        $server_id = $_POST['server_id'];
+        $channel_id = $_POST['channel_id'];
+        $permission = $_POST['permission'];
+        $target_user_id = isset($_POST['target_user_id']) ? intval($_POST['target_user_id']) : null;
+        $target_role_id = isset($_POST['target_role_id']) ? $_POST['target_role_id'] : null;
+
+        if ($target_user_id === null && $target_role_id === null) {
+            echo json_encode(['status' => 'error', 'description' => 'Provide target_user_id or target_role_id', 'return_code' => 129]);
+            exit;
+        }
+
+        $stmt = $mysqli->prepare("SELECT created_by FROM servers WHERE id = ?");
+        $stmt->bind_param("s", $server_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $server_row = $result->fetch_assoc();
+        $stmt->close();
+        if (!$server_row) {
+            echo json_encode(['status' => 'error', 'description' => 'Server not found', 'return_code' => 130]);
+            exit;
+        }
+
+        $is_owner = ($server_row['created_by'] == $user_id);
+        if (!$is_owner) {
+            $stmt = $mysqli->prepare("
+                SELECT rp.manage_channels
+                FROM user_server_roles usr
+                JOIN role_permissions rp ON usr.role_id = rp.role_id
+                WHERE usr.user_id = ? AND usr.server_id = ? AND rp.manage_channels = 1
+                LIMIT 1
+            ");
+            $stmt->bind_param("is", $user_id, $server_id);
+            $stmt->execute();
+            $perm_result = $stmt->get_result();
+            $stmt->close();
+            if ($perm_result->num_rows === 0) {
+                http_response_code(403);
+                echo json_encode(['status' => 'error', 'description' => 'Missing manage_channels permission', 'return_code' => 131]);
+                exit;
+            }
+        }
+
+        if ($target_user_id !== null) {
+            $stmt = $mysqli->prepare("DELETE FROM channel_permission_overrides WHERE channel_id = ? AND user_id = ? AND permission = ?");
+            $stmt->bind_param("sis", $channel_id, $target_user_id, $permission);
+        } else {
+            $stmt = $mysqli->prepare("DELETE FROM channel_permission_overrides WHERE channel_id = ? AND role_id = ? AND permission = ?");
+            $stmt->bind_param("sss", $channel_id, $target_role_id, $permission);
+        }
+        $stmt->execute();
+        $stmt->close();
+
+        echo json_encode(['status' => 'success', 'return_code' => 132]);
+        exit;
+
     }
 
     echo json_encode([
         'status' => 'error',
         'description' => 'Action not supported',
-        'supported_actions' => ['create_category', 'create_channel', 'leave_server', 'create_invite'],
+        'supported_actions' => ['create_category', 'create_channel', 'leave_server', 'create_invite', 'get_roles', 'create_role', 'edit_role', 'delete_role', 'assign_role', 'remove_role', 'get_channel_permission_overrides', 'set_channel_permission_override', 'delete_channel_permission_override'],
         'return_code' => 46
     ]);
     exit;
 
-}
-else {
+} else {
     echo json_encode([
         'status' => 'error',
         'description' => 'Invalid request method',
