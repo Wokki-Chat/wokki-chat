@@ -18,7 +18,7 @@ redis_client = redis.Redis(host=os.getenv("REDIS_HOST", "localhost"), port=os.ge
 # --------------------
 typing_lock = asyncio.Lock()
 server_name = os.getenv("WORKER_NAME", "Unknown")
-pool = None
+pool = None # IMPORTANT: Never do `from server.config import pool`, always use `import server.config as config` and then use `config.pool` instead of `pool`
 
 # --------------------
 # API Keys
