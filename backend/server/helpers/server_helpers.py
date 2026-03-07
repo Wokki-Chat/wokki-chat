@@ -5,7 +5,8 @@ import aiomysql
 import re
 
 import server.sio_instance as sio_instance
-from server.config import pool, get_sids_for_user, get_bot_sid_from_id, get_cached_users, cache_users, save_command_id, get_typing_users
+from server.config import get_sids_for_user, get_bot_sid_from_id, get_cached_users, cache_users, save_command_id, get_typing_users
+import server.config as config
 from server.helpers.user_helpers import auth_required, get_user_info_from_id
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server
 from server.helpers.logs import addMessageToLogs
@@ -126,7 +127,7 @@ async def server_commands(sid, metadata, data):
         await sio_instance.sio.emit('server_commands_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
     
-    async with pool.acquire() as conn:
+    async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             member_entries = await get_member_ids_from_server(cur, server_id)
 
@@ -192,7 +193,7 @@ async def get_server_users(sid, metadata, data):
         await sio_instance.sio.emit('server_users', cached_users, to=sid)
         
     async def get_users():
-        async with pool.acquire() as conn:
+        async with config.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 users = await get_server_users_info(cur, server_id)
                 await cache_users(server_id = server_id, users = users)
@@ -216,7 +217,7 @@ async def command(sid, metadata, data):
         await sio_instance.sio.emit('command_response', {'success': False, 'error': 'Missing required fields'}, to=sid)
         return
     
-    async with pool.acquire() as conn:
+    async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             if not await is_bot_in_server(cur, bot_id, server_id):
                 await addMessageToLogs(f"Bot is not in server for command, bot id: {bot_id}, server id: {server_id}", "INFO")
