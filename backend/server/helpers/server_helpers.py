@@ -11,28 +11,11 @@ from server.helpers.user_helpers import auth_required, get_user_info_from_id
 from server.helpers.bot_helpers import get_bot_info_from_id, is_bot_in_server
 from server.helpers.logs import addMessageToLogs
 
-async def server_permissions(cur, user_id, server_id, permission_identifier):
-    u_owns_server_query = """
-        SELECT created_by
-        FROM servers
-        WHERE id = %s AND created_by = %s AND server_type = 'normal'
+async def check_permissions(cur, account_id, server_id, permission_identifier, is_bot=False):
     """
-    await cur.execute(u_owns_server_query, (server_id, user_id))
-    if await cur.fetchone():
-        return True
-
-    query = """
-        SELECT usr.role_id, rp.*
-        FROM user_server_roles usr
-        JOIN role_permissions rp ON usr.role_id = rp.role_id
-        JOIN server_roles sr ON rp.role_id = sr.role_id
-        WHERE usr.server_id = %s AND usr.user_id = %s
+    Check if account (user or bot) has a specific permission in a server.
+    Permissions are granted through roles.
     """
-    await cur.execute(query, (server_id, user_id))
-    rows = await cur.fetchall()
-    if not rows:
-        return False
-
     perm_column_map = {
         "send_messages": "send_messages",
         "view_channels": "view_channels",
@@ -48,14 +31,44 @@ async def server_permissions(cur, user_id, server_id, permission_identifier):
 
     col = perm_column_map.get(permission_identifier)
     if not col:
+        await addMessageToLogs(f"Unknown permission: {permission_identifier}", "WARN")
+        return False
+
+    if is_bot:
+        query = """
+            SELECT bsr.role_id, rp.*
+            FROM bot_server_roles bsr
+            JOIN role_permissions rp ON bsr.role_id = rp.role_id
+            JOIN server_roles sr ON rp.role_id = sr.role_id
+            WHERE bsr.server_id = %s AND bsr.bot_id = %s
+        """
+    else:
+        query = """
+            SELECT usr.role_id, rp.*
+            FROM user_server_roles usr
+            JOIN role_permissions rp ON usr.role_id = rp.role_id
+            JOIN server_roles sr ON rp.role_id = sr.role_id
+            WHERE usr.server_id = %s AND usr.user_id = %s
+        """
+    
+    await cur.execute(query, (server_id, account_id))
+    rows = await cur.fetchall()
+    
+    if not rows:
         return False
 
     for row in rows:
         if row.get(col) or getattr(row, col, False):
-            await addMessageToLogs(f"User {user_id} has permission {permission_identifier} via role {row['role_id']}", "INFO")
+            await addMessageToLogs(f"Account {account_id} has permission {permission_identifier} via role {row['role_id']}", "INFO")
             return True
 
     return False
+
+async def server_permissions(cur, user_id, server_id, permission_identifier):
+    """
+    Legacy function - redirects to check_permissions
+    """
+    return await check_permissions(cur, user_id, server_id, permission_identifier, is_bot=False)
 
 async def is_user_in_server(cur, user_id, server_id):
     await cur.execute(
@@ -65,6 +78,50 @@ async def is_user_in_server(cur, user_id, server_id):
     server = await cur.fetchone()
     await addMessageToLogs(f"User {user_id} in server {server_id}: {bool(server)}", "INFO")
     return bool(server)
+
+async def get_user_roles_in_server(cur, user_id, server_id):
+    """
+    Get all roles for a user in a specific server with role details
+    """
+    await cur.execute("""
+        SELECT sr.role_id, sr.role_name, sr.role_color
+        FROM user_server_roles usr
+        JOIN server_roles sr ON usr.role_id = sr.role_id
+        WHERE usr.user_id = %s AND usr.server_id = %s
+        ORDER BY sr.role_id
+    """, (user_id, server_id))
+    
+    roles = await cur.fetchall()
+    return [
+        {
+            "role_id": str(role["role_id"]),
+            "role_name": role["role_name"],
+            "role_color": role["role_color"]
+        }
+        for role in roles
+    ]
+
+async def get_bot_roles_in_server(cur, bot_id, server_id):
+    """
+    Get all roles for a bot in a specific server with role details
+    """
+    await cur.execute("""
+        SELECT sr.role_id, sr.role_name, sr.role_color
+        FROM bot_server_roles bsr
+        JOIN server_roles sr ON bsr.role_id = sr.role_id
+        WHERE bsr.bot_id = %s AND bsr.server_id = %s
+        ORDER BY sr.role_id
+    """, (bot_id, server_id))
+    
+    roles = await cur.fetchall()
+    return [
+        {
+            "role_id": str(role["role_id"]),
+            "role_name": role["role_name"],
+            "role_color": role["role_color"]
+        }
+        for role in roles
+    ]
                 
 async def get_member_ids_from_server(cur, server_id):
     await cur.execute(
@@ -103,6 +160,8 @@ async def get_server_users_info(cur, server_id):
             user = await get_user_info_from_id(cur, uid)
             
             if user:
+                user_roles = await get_user_roles_in_server(cur, uid, server_id)
+                user['roles'] = user_roles
                 users.append(user)
         if entry["type"] == "bot":
             uid = entry["id"]
@@ -113,11 +172,13 @@ async def get_server_users_info(cur, server_id):
             bot = await get_bot_info_from_id(cur, uid)
             
             if bot:
+                bot_roles = await get_bot_roles_in_server(cur, uid, server_id)
+                bot['roles'] = bot_roles
                 users.append(bot)
                 
     return users
 
-@auth_required(server_or_contact_required=True, allow_bots=False)
+@auth_required(server_or_contact_required=True, allow_bots=False, permissions=['view_channels'])
 async def server_commands(sid, metadata, data):
     server_id = data.get('server_id')
     user_id = metadata.get('account_id')
@@ -178,7 +239,7 @@ async def server_commands(sid, metadata, data):
             await sio_instance.sio.emit('server_commands_response', {'success': True, 'bots': bots_with_commands}, to=sid)
             await addMessageToLogs(f"Emitted server_commands_response for server_commands, server id: {server_id}", "INFO")
             
-@auth_required(server_or_contact_required=True, allow_bots=False)
+@auth_required(server_or_contact_required=True, allow_bots=False, permissions=['view_channels'])
 async def get_server_users(sid, metadata, data):
     server_id = data.get('server_id')
     user_id = metadata.get('account_id')
@@ -202,7 +263,7 @@ async def get_server_users(sid, metadata, data):
         
     asyncio.create_task(get_users())
     
-@auth_required(server_or_contact_required=True, allow_bots=False)
+@auth_required(server_or_contact_required=True, allow_bots=False, permissions=['send_messages'])
 async def command(sid, metadata, data):
     command = data.get('command')
     server_id = data.get('server_id')

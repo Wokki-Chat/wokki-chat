@@ -44,13 +44,14 @@ async def verify_access_token(cur, access_token):
     await addMessageToLogs(f"verify_access_token: valid for user {user_id}, expires at {expires_at}", "INFO")
     return user_id
 
-def auth_required(server_or_contact_required = True, allow_contact = True, allow_bots = True):
+def auth_required(server_or_contact_required = True, allow_contact = True, allow_bots = True, permissions = []):
     """
     Decorator to validate tokens and common inputs.
 
     Notes:
     1. Input function must be async.
     2. Passes `metadata` into the input function.
+    3. permissions: list of permission strings to check (e.g., ['send_messages', 'manage_channels'])
 
     Warning: server_or_contact_required must be `True` to receive
     valid server, channel and/or contact ids in the metadata!
@@ -58,7 +59,7 @@ def auth_required(server_or_contact_required = True, allow_contact = True, allow
     def decorator(func):
         @wraps(func)
         async def wrapper(sid, data, *args, **kwargs):
-            from server.helpers.server_helpers import is_user_in_server, server_permissions
+            from server.helpers.server_helpers import is_user_in_server, check_permissions
             from server.helpers.friend_helpers import inContact
 
             bot_token = data.get('bot_token')
@@ -99,14 +100,16 @@ def auth_required(server_or_contact_required = True, allow_contact = True, allow
                                 )
                                 return
                             
-                            if not await server_permissions(cur, bot_id, server_id, 'send_messages'):
-                                await addMessageToLogs(f"Bot does not have permission to send messages for send_message for bot id: {bot_id}", "INFO")
-                                await sio_instance.sio.emit('send_message_response', {
-                                    'success': False, 
-                                    'error': 'Bot does not have permission to send messages', 
-                                    'req_id': req_id
-                                }, to=sid)
-                                return
+                            if permissions:
+                                for perm in permissions:
+                                    if not await check_permissions(cur, bot_id, server_id, perm, is_bot=True):
+                                        await addMessageToLogs(f"Bot does not have permission {perm}, bot id: {bot_id}", "INFO")
+                                        await sio_instance.sio.emit('error', {
+                                            'success': False, 
+                                            'error': f'Bot does not have permission: {perm}', 
+                                            'req_id': req_id
+                                        }, to=sid)
+                                        return
                             
                             data['contact_id'] = None
                             is_channel = True
@@ -137,22 +140,24 @@ def auth_required(server_or_contact_required = True, allow_contact = True, allow
                                 )
                                 return
                             
-                            if not await server_permissions(cur, user_id, server_id, 'send_messages'):
-                                await addMessageToLogs(f"User does not have permission to send messages for send_message for user id: {user_id}", "INFO")
-                                await sio_instance.sio.emit('send_message_response', {
-                                    'success': False, 
-                                    'error': 'User does not have permission to send messages', 
-                                    'req_id': req_id
-                                }, to=sid)
-                                return
+                            if permissions:
+                                for perm in permissions:
+                                    if not await check_permissions(cur, user_id, server_id, perm):
+                                        await addMessageToLogs(f"User does not have permission {perm}, user id: {user_id}", "INFO")
+                                        await sio_instance.sio.emit('error', {
+                                            'success': False, 
+                                            'error': f'User does not have permission: {perm}', 
+                                            'req_id': req_id
+                                        }, to=sid)
+                                        return
                             
                             data['contact_id'] = None
                             is_channel = True
 
                         if contact_id and server_or_contact_required and allow_contact:
                             if not await inContact(cur, user_id, contact_id):
-                                await addMessageToLogs(f"User is not in contact for send_message, user id: {user_id}, contact id: {contact_id}", "INFO")
-                                await sio_instance.sio.emit('send_message_response', {
+                                await addMessageToLogs(f"User is not in contact, user id: {user_id}, contact id: {contact_id}", "INFO")
+                                await sio_instance.sio.emit('error', {
                                     'success': False, 
                                     'error': 'User is not in contact', 
                                     'req_id': req_id
@@ -165,8 +170,8 @@ def auth_required(server_or_contact_required = True, allow_contact = True, allow
                         account_id = user_id
 
             if server_or_contact_required and not (is_contact or is_channel) or (is_contact and is_channel):
-                await addMessageToLogs(f"Invalid message target for send_message", "INFO")
-                await sio_instance.sio.emit('send_message_response', {
+                await addMessageToLogs(f"Invalid message target", "INFO")
+                await sio_instance.sio.emit('error', {
                     'success': False, 
                     'error': 'Must specify either contact_id OR (server_id AND channel_id)',
                     'req_id': req_id
