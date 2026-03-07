@@ -89,6 +89,26 @@ CREATE TABLE `channels` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `channel_permission_overrides`
+--
+
+CREATE TABLE `channel_permission_overrides` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `channel_id` char(36) NOT NULL,
+    `user_id` int(11) DEFAULT NULL,
+    `role_id` char(36) DEFAULT NULL,
+    `bot_id` char(36) DEFAULT NULL,
+    `permission` varchar(64) NOT NULL,
+    `allow` tinyint(1) NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_channel_user_perm` (`channel_id`,`user_id`,`permission`),
+    UNIQUE KEY `uq_channel_role_perm` (`channel_id`,`role_id`,`permission`),
+    CONSTRAINT `channel_permission_overrides_ibfk_1` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`channel_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `channel_groups`
 --
 

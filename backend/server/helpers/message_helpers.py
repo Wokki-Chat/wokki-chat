@@ -1,8 +1,12 @@
 from datetime import datetime, timezone
 import json
-from server.config import message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS, get_cached_messages, cache_message, update_cached_messages, delete_cached_message, get_command_id
+from server.config import (
+    message_timestamps, MAX_MESSAGES, TIME_WINDOW_SECONDS,
+    get_cached_messages, cache_message, update_cached_messages,
+    delete_cached_message, get_command_id
+)
 from server.helpers.user_helpers import get_user_premium_status, auth_required
-from server.helpers.server_helpers import is_user_in_server, is_bot_in_server
+from server.helpers.server_helpers import is_user_in_server, is_bot_in_server, check_channel_permission
 import aiomysql
 import uuid
 import server.sio_instance as sio_instance
@@ -13,7 +17,8 @@ import asyncio
 from server.helpers.bot_helpers import validate_embed
 from dateutil import parser
 
-@auth_required(server_or_contact_required=True, allow_bots=True)
+
+@auth_required(server_or_contact_required=True, allow_bots=True, permissions=['send_messages'])
 async def send_message(sid, metadata, data):
     message = data.get('message')
     server_id = data.get('server_id')
@@ -21,7 +26,6 @@ async def send_message(sid, metadata, data):
     contact_id = data.get('contact_id')
     parent_message_id = data.get('parent_message_id')
     file_names = data.get('file_names')
-
     embed = data.get('embed')
     req_id = data.get('req_id')
     command_id = data.get('command_id')
@@ -30,26 +34,36 @@ async def send_message(sid, metadata, data):
     account_id = metadata.get('account_id')
 
     if not message and not embed:
-        await addMessageToLogs(f"Missing message content and embed for send_message", "INFO")
         await sio_instance.sio.emit('send_message_response', {
-            'success': False, 
-            'error': 'Must provide either message or embed', 
+            'success': False,
+            'error': 'Must provide either message or embed',
             'req_id': req_id
         }, to=sid)
         return
-    
+
     message_id = str(uuid.uuid4())
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
+
+            if server_id and channel_id and not contact_id:
+                if not await check_channel_permission(
+                    cur, account_id, server_id, channel_id, 'send_messages', is_bot=is_bot
+                ):
+                    await sio_instance.sio.emit('send_message_response', {
+                        'success': False,
+                        'error': 'You do not have permission to send messages in this channel',
+                        'req_id': req_id
+                    }, to=sid)
+                    return
+
             now = datetime.now(timezone.utc)
             timestamps = message_timestamps[account_id]
-            
+
             while timestamps and (now - timestamps[0]).total_seconds() > TIME_WINDOW_SECONDS:
                 timestamps.popleft()
 
             if len(timestamps) >= MAX_MESSAGES:
-                await addMessageToLogs(f"Rate limit exceeded for send_message for user id: {account_id}", "INFO")
                 await sio_instance.sio.emit('send_message_response', {
                     'success': False,
                     'error': f'Rate limit exceeded. Max {MAX_MESSAGES} messages every {TIME_WINDOW_SECONDS} seconds.',
@@ -62,10 +76,9 @@ async def send_message(sid, metadata, data):
             is_premium = False
             if not is_bot:
                 is_premium = await get_user_premium_status(cur, account_id)
-            
+
             limit = 10000 if is_premium else 3000
-            if len(message) > limit:
-                await addMessageToLogs(f"Message too long for send_message for user id: {account_id}", "INFO")
+            if message and len(message) > limit:
                 await sio_instance.sio.emit('send_message_response', {
                     'success': False,
                     'error': f'Message too long. Limit is {limit} characters.',
@@ -77,47 +90,43 @@ async def send_message(sid, metadata, data):
                 await cur.execute('SELECT name, profile_picture FROM bots WHERE id = %s', (account_id,))
                 row = await cur.fetchone()
                 if not row:
-                    await addMessageToLogs(f"Bot not found for send_message for bot id: {account_id}", "INFO")
                     await sio_instance.sio.emit('send_message_response', {
-                        'success': False, 
-                        'error': 'Bot not found', 
-                        'req_id': req_id
+                        'success': False, 'error': 'Bot not found', 'req_id': req_id
                     }, to=sid)
                     return
             else:
-                await cur.execute('SELECT username, nickname, profile_picture, is_staff FROM users WHERE id = %s', (account_id,))
+                await cur.execute(
+                    'SELECT username, nickname, profile_picture, is_staff FROM users WHERE id = %s',
+                    (account_id,)
+                )
                 row = await cur.fetchone()
                 if not row:
-                    await addMessageToLogs(f"User not found for send_message for user id: {account_id}", "INFO")
                     await sio_instance.sio.emit('send_message_response', {
-                        'success': False, 
-                        'error': 'User not found', 
-                        'req_id': req_id
+                        'success': False, 'error': 'User not found', 'req_id': req_id
                     }, to=sid)
                     return
 
-            username = is_bot and row.get('name') or row.get('username')
-            display_name = is_bot and row.get('name') or row.get('nickname')
-            is_staff = is_bot and False or row.get('is_staff')
+            username = row.get('name') if is_bot else row.get('username')
+            display_name = row.get('name') if is_bot else row.get('nickname')
+            is_staff = False if is_bot else row.get('is_staff')
             profile_picture = row['profile_picture']
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-            
+
             command_data = None
+            command_user_id = None
+            command = None
+            command_username = 'Unknown User'
+
             if command_id is not None:
                 command_data = await get_command_id(command_id)
+                command_user_id = command_data.get('user_id') if command_data else None
+                command = command_data.get('command') if command_data else None
 
-            command_user_id = command_data.get('user_id') if command_data else None
-            command = command_data.get('command') if command_data else None
-
-            if command_user_id:
-                await cur.execute('SELECT username FROM users WHERE id = %s', (command_user_id,))
-                row = await cur.fetchone()
-                if row:
-                    command_username = row.get('username')
-                else:
-                    command_username = 'Unknown User'
-            else:
-                command_username = 'Unknown User'
+                if command_user_id:
+                    await cur.execute('SELECT username FROM users WHERE id = %s', (command_user_id,))
+                    cu_row = await cur.fetchone()
+                    if cu_row:
+                        command_username = cu_row.get('username')
 
             if is_bot:
                 embed_str = json.dumps(embed) if embed is not None else None
@@ -129,25 +138,22 @@ async def send_message(sid, metadata, data):
                     saved_name = f.get('savedName') or f.get('saved_name') or f.get('file_name')
                     original_name = f.get('originalName') or f.get('original_name') or saved_name
                     if saved_name:
-                        assets_list.append({
-                            'savedName': saved_name,
-                            'originalName': original_name
-                        })
+                        assets_list.append({'savedName': saved_name, 'originalName': original_name})
                 assets_json = json.dumps(assets_list) if assets_list else None
-                
+
             parent_username = None
             parent_user_id = None
             parent_msg = None
-            
+
             if parent_message_id:
-                await cur.execute('SELECT sent_by, sent_by_bot, message FROM messages WHERE id = %s', (parent_message_id,))
+                await cur.execute(
+                    'SELECT sent_by, sent_by_bot, message FROM messages WHERE id = %s',
+                    (parent_message_id,)
+                )
                 parent_message = await cur.fetchone()
                 if not parent_message:
-                    await addMessageToLogs(f"Parent message not found for send_message for parent message id: {parent_message_id}", "INFO")
                     await sio_instance.sio.emit('send_message_response', {
-                        'success': False, 
-                        'error': 'Parent message not found', 
-                        'req_id': req_id
+                        'success': False, 'error': 'Parent message not found', 'req_id': req_id
                     }, to=sid)
                     return
 
@@ -156,79 +162,51 @@ async def send_message(sid, metadata, data):
                 if parent_message.get('sent_by'):
                     parent_user_id = parent_message.get('sent_by')
                     await cur.execute('SELECT username FROM users WHERE id = %s', (parent_user_id,))
-                    parent_user = await cur.fetchone()
-                    if not parent_user:
-                        await addMessageToLogs(f"Parent user not found for send_message for parent user id: {parent_user_id}", "INFO")
-                        await sio_instance.sio.emit('send_message_response', {
-                            'success': False, 
-                            'error': 'Parent user not found', 
-                            'req_id': req_id
-                        }, to=sid)
-                        return
-                    parent_username = parent_user.get('username')
+                    pu = await cur.fetchone()
+                    parent_username = pu.get('username') if pu else None
                 elif parent_message.get('sent_by_bot'):
                     parent_user_id = parent_message.get('sent_by_bot')
                     await cur.execute('SELECT name FROM bots WHERE id = %s', (parent_user_id,))
-                    parent_bot = await cur.fetchone()
-                    if not parent_bot:
-                        await addMessageToLogs(f"Parent bot not found for send_message for parent bot id: {parent_user_id}", "INFO")
-                        await sio_instance.sio.emit('send_message_response', {
-                            'success': False, 
-                            'error': 'Parent bot not found', 
-                            'req_id': req_id
-                        }, to=sid)
-                        return
-                    parent_username = parent_bot.get('name')
+                    pb = await cur.fetchone()
+                    parent_username = pb.get('name') if pb else None
 
-            if is_bot:
-                sent_by = None
-                sent_by_bot = account_id
-            else:
-                sent_by = account_id
-                sent_by_bot = None
+            sent_by = None if is_bot else account_id
+            sent_by_bot = account_id if is_bot else None
 
             await cur.execute(
                 '''
-                INSERT INTO messages 
-                (id, message, sent_by, sent_by_bot, created_at, updated_at, edited, server_id, channel_id, contact_id, command, command_user_id, embed, assets, parent_message_id)
+                INSERT INTO messages
+                (id, message, sent_by, sent_by_bot, created_at, updated_at, edited,
+                 server_id, channel_id, contact_id, command, command_user_id, embed, assets, parent_message_id)
                 VALUES (%s, %s, %s, %s, %s, NULL, FALSE, %s, %s, %s, %s, %s, %s, %s, %s)
                 ''',
                 (
-                    message_id, 
-                    message, 
-                    sent_by, 
-                    sent_by_bot, 
-                    timestamp, 
-                    server_id if not contact_id else None, 
-                    channel_id if not contact_id else None, 
+                    message_id, message, sent_by, sent_by_bot, timestamp,
+                    server_id if not contact_id else None,
+                    channel_id if not contact_id else None,
                     contact_id if contact_id else None,
                     command if is_bot else None,
-                    command_user_id if is_bot else None, 
-                    embed_str if is_bot else None, 
-                    assets_json, 
+                    command_user_id if is_bot else None,
+                    embed_str if is_bot else None,
+                    assets_json,
                     parent_message_id
                 )
             )
-            
+
             if contact_id:
                 await cur.execute(
                     'UPDATE contacts SET last_message_sent = %s WHERE contact_id = %s',
                     (timestamp, contact_id)
                 )
-                await addMessageToLogs(f"Updated last_message_sent for contact_id: {contact_id}", "INFO")
 
-            if is_bot:
-                await addMessageToLogs(f"Inserted bot message for bot id: {account_id}", "INFO")
-            else:
-                await addMessageToLogs(f"Inserted message for user id: {account_id}", "INFO")
-                if not contact_id:
-                    await addKudos(cur, account_id, 1, message, server_id, channel_id)
+            if not is_bot and not contact_id:
+                await addKudos(cur, account_id, 1, message, server_id, channel_id)
 
             await conn.commit()
-                
+
     if isinstance(timestamp, str):
         timestamp = datetime.fromisoformat(timestamp)
- 
+
     message_response = {
         'id': message_id,
         'bot_message': 1 if is_bot else 0,
@@ -260,7 +238,7 @@ async def send_message(sid, metadata, data):
             'message_preview': (parent_msg[:100] + '...') if len(parent_msg) > 100 else parent_msg,
             'username': parent_username
         }
-    
+
     if command_data and command:
         message_response['command_info'] = {
             'command': command,
@@ -274,8 +252,6 @@ async def send_message(sid, metadata, data):
 
     if contact_id:
         await sio_instance.sio.emit('new_message', message_response, room=f"contact:{contact_id}")
-        await addMessageToLogs(f"new_message emitted for contact_id: {contact_id}", "INFO")
-        
         await sio_instance.sio.emit('new_message_notification', {
             'contact_id': contact_id,
             'message_id': message_id,
@@ -283,9 +259,10 @@ async def send_message(sid, metadata, data):
             'sender_info': message_response['sender_info']
         }, room=f"contact_notif:{contact_id}", skip_sid=sid)
     else:
-        await sio_instance.sio.emit('new_message', message_response, room=f"server:{server_id}:channel:{channel_id}")
-        await addMessageToLogs(f"new_message emitted for server_id: {server_id} and channel_id: {channel_id}", "INFO")
-        
+        await sio_instance.sio.emit(
+            'new_message', message_response,
+            room=f"server:{server_id}:channel:{channel_id}"
+        )
         await sio_instance.sio.emit('new_message_notification', {
             'server_id': server_id,
             'channel_id': channel_id,
@@ -293,26 +270,23 @@ async def send_message(sid, metadata, data):
             'message': message,
             'sender_info': message_response['sender_info']
         }, room=f"server_notif:{server_id}", skip_sid=sid)
-    
-    await sio_instance.sio.emit('send_message_response', {
-        'success': True, 
-        'message_id': message_id, 
-        'req_id': req_id
-    }, to=sid)
-    await addMessageToLogs(f"send_message_response emitted for sid: {sid}", "INFO")
 
-@auth_required(server_or_contact_required=True, allow_bots=True)
+    await sio_instance.sio.emit('send_message_response', {
+        'success': True, 'message_id': message_id, 'req_id': req_id
+    }, to=sid)
+
+
+@auth_required(server_or_contact_required=True, allow_bots=True, permissions=['view_channels'])
 async def get_messages(sid, metadata, data):
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
     contact_id = data.get('contact_id')
     offset = data.get('offset', 0)
     user_id = metadata.get('account_id')
+    is_bot = metadata.get('is_bot', False)
 
     try:
-        offset = int(offset)
-        if offset < 0:
-            offset = 0
+        offset = max(int(offset), 0)
     except Exception:
         offset = 0
 
@@ -321,7 +295,9 @@ async def get_messages(sid, metadata, data):
     if contact_id:
         cached_messages = await get_cached_messages(contact_id=contact_id, offset=offset, limit=limit)
     else:
-        cached_messages = await get_cached_messages(server_id=server_id, channel_id=channel_id, offset=offset, limit=limit)
+        cached_messages = await get_cached_messages(
+            server_id=server_id, channel_id=channel_id, offset=offset, limit=limit
+        )
 
     if cached_messages:
         await sio_instance.sio.emit('all_messages', cached_messages, to=sid)
@@ -335,32 +311,18 @@ async def get_messages(sid, metadata, data):
                     can_read_history = True
 
                     if not contact_id:
-                        await cur.execute(
-                            "SELECT created_by FROM servers WHERE id = %s AND created_by = %s AND server_type = 'normal'",
-                            (server_id, user_id)
+                        if not await check_channel_permission(
+                            cur, user_id, server_id, channel_id, 'view_channels', is_bot=is_bot
+                        ):
+                            await sio_instance.sio.emit('get_messages_response', {
+                                'success': False,
+                                'error': 'You do not have permission to view this channel'
+                            }, to=sid)
+                            return
+
+                        can_read_history = await check_channel_permission(
+                            cur, user_id, server_id, channel_id, 'read_message_history', is_bot=is_bot
                         )
-                        is_owner = bool(await cur.fetchone())
-
-                        if not is_owner:
-                            await cur.execute("""
-                                SELECT rp.*
-                                FROM user_server_roles usr
-                                JOIN role_permissions rp ON usr.role_id = rp.role_id
-                                WHERE usr.server_id = %s AND usr.user_id = %s
-                            """, (server_id, user_id))
-                            role_rows = await cur.fetchall()
-
-                            def _has_perm(perm):
-                                for row in role_rows:
-                                    if row.get(perm):
-                                        return True
-                                return False
-
-                            if not _has_perm('view_channels'):
-                                await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'User does not have permission to view channels'}, to=sid)
-                                return
-
-                            can_read_history = _has_perm('read_message_history')
 
                         await cur.execute(
                             "SELECT joined_at FROM server_members WHERE server_id = %s AND user_id = %s",
@@ -368,19 +330,19 @@ async def get_messages(sid, metadata, data):
                         )
                         member_row = await cur.fetchone()
                         if not member_row:
-                            await sio_instance.sio.emit('get_messages_response', {'success': False, 'error': 'Server not found'}, to=sid)
+                            await sio_instance.sio.emit('get_messages_response', {
+                                'success': False, 'error': 'Server not found'
+                            }, to=sid)
                             return
 
                         if not can_read_history:
                             joined_at_value = member_row.get('joined_at')
                             if joined_at_value:
-                                if isinstance(joined_at_value, str):
-                                    try:
-                                        joined_at = datetime.strptime(joined_at_value, '%Y-%m-%d %H:%M:%S')
-                                    except Exception:
-                                        joined_at = None
-                                else:
-                                    joined_at = joined_at_value
+                                joined_at = (
+                                    datetime.strptime(joined_at_value, '%Y-%m-%d %H:%M:%S')
+                                    if isinstance(joined_at_value, str)
+                                    else joined_at_value
+                                )
 
                     if contact_id:
                         where_clause = "m.contact_id = %s"
@@ -395,23 +357,27 @@ async def get_messages(sid, metadata, data):
 
                     async def fetch_count():
                         async with config.pool.acquire() as c:
-                            async with c.cursor(aiomysql.DictCursor) as cur:
-                                await cur.execute(
+                            async with c.cursor(aiomysql.DictCursor) as cc:
+                                await cc.execute(
                                     f"SELECT COUNT(*) AS total FROM messages m WHERE {where_clause}",
                                     where_params
                                 )
-                                return (await cur.fetchone())['total']
+                                return (await cc.fetchone())['total']
 
                     async def fetch_messages():
                         async with config.pool.acquire() as c:
-                            async with c.cursor(aiomysql.DictCursor) as cur:
-                                await cur.execute(f"""
+                            async with c.cursor(aiomysql.DictCursor) as cc:
+                                await cc.execute(f"""
                                     SELECT
-                                        m.id, m.message, m.sent_by, m.sent_by_bot, m.created_at, m.updated_at, m.edited,
+                                        m.id, m.message, m.sent_by, m.sent_by_bot,
+                                        m.created_at, m.updated_at, m.edited,
                                         m.server_id, m.channel_id, m.contact_id,
-                                        m.parent_message_id, m.assets, m.command, m.command_user_id, m.embed,
-                                        u.username, u.nickname AS display_name, u.profile_picture,
-                                        u.is_staff AS staff, u.premium, u.premium_expires_at,
+                                        m.parent_message_id, m.assets, m.command,
+                                        m.command_user_id, m.embed,
+                                        u.username, u.nickname AS display_name,
+                                        u.profile_picture,
+                                        u.is_staff AS staff, u.premium,
+                                        u.premium_expires_at,
                                         (m.sent_by_bot IS NOT NULL) AS bot_message
                                     FROM messages m
                                     LEFT JOIN users u ON m.sent_by = u.id
@@ -419,7 +385,7 @@ async def get_messages(sid, metadata, data):
                                     ORDER BY m.created_at DESC
                                     LIMIT %s OFFSET %s
                                 """, where_params + [limit, offset])
-                                rows = list(await cur.fetchall())
+                                rows = list(await cc.fetchall())
                                 rows.reverse()
                                 return rows
 
@@ -427,7 +393,10 @@ async def get_messages(sid, metadata, data):
 
                     if not messages:
                         await sio_instance.sio.emit('all_messages_nocache', [], to=sid)
-                        await sio_instance.sio.emit('get_messages_response', {'success': True, 'count': 0, 'total': total_count, 'offset': offset}, to=sid)
+                        await sio_instance.sio.emit('get_messages_response', {
+                            'success': True, 'count': 0,
+                            'total': total_count, 'offset': offset
+                        }, to=sid)
                         return
 
                     message_ids = [str(msg['id']) for msg in messages]
@@ -435,22 +404,23 @@ async def get_messages(sid, metadata, data):
 
                     async def fetch_reactions():
                         async with config.pool.acquire() as c:
-                            async with c.cursor(aiomysql.DictCursor) as cur:
-                                await cur.execute(
-                                    f"SELECT message_id, reaction, user_id, bot_id, super_reaction FROM message_reactions WHERE message_id IN ({placeholders})",
+                            async with c.cursor(aiomysql.DictCursor) as cc:
+                                await cc.execute(
+                                    f"SELECT message_id, reaction, user_id, bot_id, super_reaction "
+                                    f"FROM message_reactions WHERE message_id IN ({placeholders})",
                                     message_ids
                                 )
-                                return await cur.fetchall()
+                                return await cc.fetchall()
 
-                    parent_ids = list({str(msg['parent_message_id']) for msg in messages if msg.get('parent_message_id')})
+                    parent_ids = list({str(m['parent_message_id']) for m in messages if m.get('parent_message_id')})
 
                     async def fetch_parents():
                         if not parent_ids:
                             return []
                         ph = ','.join(['%s'] * len(parent_ids))
                         async with config.pool.acquire() as c:
-                            async with c.cursor(aiomysql.DictCursor) as cur:
-                                await cur.execute(f"""
+                            async with c.cursor(aiomysql.DictCursor) as cc:
+                                await cc.execute(f"""
                                     SELECT m.id, m.message, m.sent_by, m.sent_by_bot,
                                            u.username AS user_name, b.name AS bot_name
                                     FROM messages m
@@ -458,65 +428,70 @@ async def get_messages(sid, metadata, data):
                                     LEFT JOIN bots b ON m.sent_by_bot = b.id
                                     WHERE m.id IN ({ph})
                                 """, parent_ids)
-                                return await cur.fetchall()
+                                return await cc.fetchall()
 
-                    bot_ids = list({str(msg['sent_by_bot']) for msg in messages if msg.get('sent_by_bot')})
+                    bot_ids = list({str(m['sent_by_bot']) for m in messages if m.get('sent_by_bot')})
 
                     async def fetch_bots():
                         if not bot_ids:
                             return []
                         ph = ','.join(['%s'] * len(bot_ids))
                         async with config.pool.acquire() as c:
-                            async with c.cursor(aiomysql.DictCursor) as cur:
-                                await cur.execute(f"SELECT id, name, profile_picture FROM bots WHERE id IN ({ph})", bot_ids)
-                                return await cur.fetchall()
+                            async with c.cursor(aiomysql.DictCursor) as cc:
+                                await cc.execute(
+                                    f"SELECT id, name, profile_picture FROM bots WHERE id IN ({ph})",
+                                    bot_ids
+                                )
+                                return await cc.fetchall()
 
-                    command_user_ids = list({str(msg['command_user_id']) for msg in messages if msg.get('command_user_id')})
+                    cmd_user_ids = list({str(m['command_user_id']) for m in messages if m.get('command_user_id')})
 
-                    async def fetch_command_users():
-                        if not command_user_ids:
+                    async def fetch_cmd_users():
+                        if not cmd_user_ids:
                             return []
-                        ph = ','.join(['%s'] * len(command_user_ids))
+                        ph = ','.join(['%s'] * len(cmd_user_ids))
                         async with config.pool.acquire() as c:
-                            async with c.cursor(aiomysql.DictCursor) as cur:
-                                await cur.execute(f"SELECT id, username FROM users WHERE id IN ({ph})", command_user_ids)
-                                return await cur.fetchall()
+                            async with c.cursor(aiomysql.DictCursor) as cc:
+                                await cc.execute(
+                                    f"SELECT id, username FROM users WHERE id IN ({ph})",
+                                    cmd_user_ids
+                                )
+                                return await cc.fetchall()
 
-                    reaction_rows, parent_rows, bot_rows, command_user_rows = await asyncio.gather(
-                        fetch_reactions(),
-                        fetch_parents(),
-                        fetch_bots(),
-                        fetch_command_users(),
+                    reaction_rows, parent_rows, bot_rows, cmd_user_rows = await asyncio.gather(
+                        fetch_reactions(), fetch_parents(), fetch_bots(), fetch_cmd_users()
                     )
 
-                    reaction_user_ids = list({str(r['user_id']) for r in reaction_rows if r.get('user_id')})
-                    reaction_bot_ids = list({str(r['bot_id']) for r in reaction_rows if r.get('bot_id')})
+                    r_user_ids = list({str(r['user_id']) for r in reaction_rows if r.get('user_id')})
+                    r_bot_ids = list({str(r['bot_id']) for r in reaction_rows if r.get('bot_id')})
 
-                    async def fetch_reaction_users():
-                        if not reaction_user_ids:
+                    async def fetch_r_users():
+                        if not r_user_ids:
                             return []
-                        ph = ','.join(['%s'] * len(reaction_user_ids))
+                        ph = ','.join(['%s'] * len(r_user_ids))
                         async with config.pool.acquire() as c:
-                            async with c.cursor(aiomysql.DictCursor) as cur:
-                                await cur.execute(
-                                    f"SELECT id, username, nickname AS display_name, profile_picture FROM users WHERE id IN ({ph})",
-                                    reaction_user_ids
+                            async with c.cursor(aiomysql.DictCursor) as cc:
+                                await cc.execute(
+                                    f"SELECT id, username, nickname AS display_name, profile_picture "
+                                    f"FROM users WHERE id IN ({ph})",
+                                    r_user_ids
                                 )
-                                return await cur.fetchall()
+                                return await cc.fetchall()
 
-                    async def fetch_reaction_bots():
-                        if not reaction_bot_ids:
+                    async def fetch_r_bots():
+                        if not r_bot_ids:
                             return []
-                        ph = ','.join(['%s'] * len(reaction_bot_ids))
+                        ph = ','.join(['%s'] * len(r_bot_ids))
                         async with config.pool.acquire() as c:
-                            async with c.cursor(aiomysql.DictCursor) as cur:
-                                await cur.execute(
-                                    f"SELECT id, name AS username, profile_picture FROM bots WHERE id IN ({ph})",
-                                    reaction_bot_ids
+                            async with c.cursor(aiomysql.DictCursor) as cc:
+                                await cc.execute(
+                                    f"SELECT id, name AS username, profile_picture "
+                                    f"FROM bots WHERE id IN ({ph})",
+                                    r_bot_ids
                                 )
-                                return await cur.fetchall()
+                                return await cc.fetchall()
 
-                    r_users, r_bots = await asyncio.gather(fetch_reaction_users(), fetch_reaction_bots())
+                    r_users, r_bots = await asyncio.gather(fetch_r_users(), fetch_r_bots())
 
                     now = datetime.now(timezone.utc)
 
@@ -534,7 +509,7 @@ async def get_messages(sid, metadata, data):
 
                     bots_by_id = {str(r['id']): r for r in bot_rows}
                     parents_by_id = {str(r['id']): r for r in parent_rows}
-                    cmd_users_by_id = {str(r['id']): r for r in command_user_rows}
+                    cmd_users_by_id = {str(r['id']): r for r in cmd_user_rows}
                     r_users_by_id = {str(r['id']): r for r in r_users}
                     r_bots_by_id = {str(r['id']): r for r in r_bots}
 
@@ -545,18 +520,14 @@ async def get_messages(sid, metadata, data):
                     for msg in messages:
                         for field in ('created_at', 'updated_at'):
                             v = msg.get(field)
-                            if isinstance(v, datetime):
-                                msg[field] = v.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
-                            else:
-                                msg[field] = None
+                            msg[field] = (
+                                v.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+                                if isinstance(v, datetime) else None
+                            )
 
-                        if msg.get('assets'):
-                            try:
-                                msg['assets'] = json.loads(msg['assets'])
-                            except Exception:
-                                msg['assets'] = []
-                        else:
-                            msg['assets'] = []
+                        msg['assets'] = (
+                            json.loads(msg['assets']) if msg.get('assets') else []
+                        )
 
                         if msg['bot_message']:
                             bot = bots_by_id.get(str(msg['sent_by_bot']), {})
@@ -593,17 +564,17 @@ async def get_messages(sid, metadata, data):
                                 }
                         msg['parent_message_info'] = parent_info
 
-                        command_user_id = msg.pop('command_user_id', None)
-                        command_info = None
-                        if command_user_id:
-                            cu = cmd_users_by_id.get(str(command_user_id))
+                        cmd_uid = msg.pop('command_user_id', None)
+                        cmd_info = None
+                        if cmd_uid:
+                            cu = cmd_users_by_id.get(str(cmd_uid))
                             if cu:
-                                command_info = {
+                                cmd_info = {
                                     'command': msg.pop('command', None),
                                     'username': cu['username'],
                                 }
                         msg.pop('command', None)
-                        msg['command_info'] = command_info
+                        msg['command_info'] = cmd_info
 
                         msg['reactions'] = [
                             {
@@ -620,18 +591,25 @@ async def get_messages(sid, metadata, data):
                         ]
 
                     await sio_instance.sio.emit('all_messages_nocache', messages, to=sid)
-                    await sio_instance.sio.emit(
-                        'get_messages_response',
-                        {'success': True, 'count': len(messages), 'total': total_count, 'offset': offset},
-                        to=sid
-                    )
+                    await sio_instance.sio.emit('get_messages_response', {
+                        'success': True,
+                        'count': len(messages),
+                        'total': total_count,
+                        'offset': offset
+                    }, to=sid)
 
                     async def _update_cache():
                         try:
                             if contact_id:
-                                await update_cached_messages(contact_id=contact_id, messages=messages, offset=offset, limit=limit)
+                                await update_cached_messages(
+                                    contact_id=contact_id, messages=messages,
+                                    offset=offset, limit=limit
+                                )
                             else:
-                                await update_cached_messages(server_id=server_id, channel_id=channel_id, messages=messages, offset=offset, limit=limit)
+                                await update_cached_messages(
+                                    server_id=server_id, channel_id=channel_id,
+                                    messages=messages, offset=offset, limit=limit
+                                )
                         except Exception:
                             pass
 
@@ -641,50 +619,62 @@ async def get_messages(sid, metadata, data):
             await addMessageToLogs(f"get_messages send_db error: {e}", "ERROR")
 
     asyncio.create_task(send_db())
-    await sio_instance.sio.emit('get_messages_response', {'success': True, 'offset': offset, 'count': len(cached_messages)}, to=sid)
+    await sio_instance.sio.emit('get_messages_response', {
+        'success': True, 'offset': offset, 'count': len(cached_messages)
+    }, to=sid)
 
-@auth_required(server_or_contact_required=True, allow_bots=True)
+
+@auth_required(server_or_contact_required=True, allow_bots=True, permissions=['view_channels'])
 async def get_message_by_id(sid, metadata, data):
     message_id = data.get('message_id')
     server_id = data.get('server_id')
     channel_id = data.get('channel_id')
     contact_id = data.get('contact_id')
     user_id = metadata.get('account_id')
+    is_bot = metadata.get('is_bot', False)
 
-    if (server_id is None and channel_id is None) and contact_id is None or message_id is None:
-        await addMessageToLogs(f"Missing required fields for get_message_by_id", "INFO")
+    if ((server_id is None and channel_id is None) and contact_id is None) or message_id is None:
         await sio_instance.sio.emit('message_by_id', None, to=sid)
         return
 
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
+
+            if server_id and channel_id and not contact_id:
+                if not await check_channel_permission(
+                    cur, user_id, server_id, channel_id, 'view_channels', is_bot=is_bot
+                ):
+                    await sio_instance.sio.emit('message_by_id', None, to=sid)
+                    return
+
             if contact_id:
                 await cur.execute("""
-                    SELECT m.id, m.message, m.sent_by, m.sent_by_bot, u.username AS user_name, b.name AS bot_name, m.created_at
+                    SELECT m.id, m.message, m.sent_by, m.sent_by_bot,
+                           u.username AS user_name, b.name AS bot_name, m.created_at
                     FROM messages m
                     LEFT JOIN users u ON m.sent_by = u.id
                     LEFT JOIN bots b ON m.sent_by_bot = b.id
-                    WHERE m.id = %s AND m.contact_id = %s
-                    LIMIT 1
+                    WHERE m.id = %s AND m.contact_id = %s LIMIT 1
                 """, (message_id, contact_id))
             else:
                 await cur.execute("""
-                    SELECT m.id, m.message, m.sent_by, m.sent_by_bot, u.username AS user_name, b.name AS bot_name, m.created_at
+                    SELECT m.id, m.message, m.sent_by, m.sent_by_bot,
+                           u.username AS user_name, b.name AS bot_name, m.created_at
                     FROM messages m
                     LEFT JOIN users u ON m.sent_by = u.id
                     LEFT JOIN bots b ON m.sent_by_bot = b.id
-                    WHERE m.id = %s AND m.server_id = %s AND m.channel_id = %s
-                    LIMIT 1
+                    WHERE m.id = %s AND m.server_id = %s AND m.channel_id = %s LIMIT 1
                 """, (message_id, server_id, channel_id))
-            
-            message = await cur.fetchone()
 
+            message = await cur.fetchone()
             if not message:
                 await sio_instance.sio.emit('message_by_id', None, to=sid)
                 return
 
             if isinstance(message.get('created_at'), datetime):
-                message['created_at'] = message['created_at'].astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+                message['created_at'] = (
+                    message['created_at'].astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+                )
 
             if message.get('sent_by_bot'):
                 message['sender'] = message.pop('bot_name')
@@ -697,9 +687,9 @@ async def get_message_by_id(sid, metadata, data):
             message.pop('sent_by_bot', None)
 
             await sio_instance.sio.emit('message_by_id', message, to=sid)
-            await addMessageToLogs(f"Emitted message_by_id to {user_id}", "INFO")
 
-@auth_required(server_or_contact_required=True, allow_bots=True)
+
+@auth_required(server_or_contact_required=True, allow_bots=True, permissions=['send_messages'])
 async def delete_message(sid, metadata, data):
     message_id = data.get('message_id')
     contact_id = data.get('contact_id')
@@ -708,12 +698,9 @@ async def delete_message(sid, metadata, data):
     account_id = metadata.get('account_id')
 
     if message_id is None:
-        await sio_instance.sio.emit(
-            'message_deleted',
-            {'success': False, 'error': 'Missing required fields', 'req_id': req_id},
-            to=sid
-        )
-        await addMessageToLogs("Missing required fields for delete_message", "INFO")
+        await sio_instance.sio.emit('message_deleted', {
+            'success': False, 'error': 'Missing required fields', 'req_id': req_id
+        }, to=sid)
         return
 
     async with config.pool.acquire() as conn:
@@ -734,12 +721,9 @@ async def delete_message(sid, metadata, data):
                     )
                 message = await cur.fetchone()
                 if not message:
-                    await sio_instance.sio.emit(
-                        'message_deleted',
-                        {'success': False, 'error': 'Message not found', 'req_id': req_id},
-                        to=sid
-                    )
-                    await addMessageToLogs(f"Message not found for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
+                    await sio_instance.sio.emit('message_deleted', {
+                        'success': False, 'error': 'Message not found', 'req_id': req_id
+                    }, to=sid)
                     return
                 server_id = message['server_id']
                 channel_id = message['channel_id']
@@ -756,12 +740,9 @@ async def delete_message(sid, metadata, data):
                 )
 
             if result == 0:
-                await sio_instance.sio.emit(
-                    'message_deleted',
-                    {'success': False, 'error': 'Message couldn\'t be deleted', 'req_id': req_id},
-                    to=sid
-                )
-                await addMessageToLogs(f"Message couldn't be deleted for delete_message, message id: {message_id}, user id: {account_id}", "INFO")
+                await sio_instance.sio.emit('message_deleted', {
+                    'success': False, "error": "Message couldn't be deleted", 'req_id': req_id
+                }, to=sid)
                 return
 
             await delete_cached_message(
@@ -771,15 +752,16 @@ async def delete_message(sid, metadata, data):
                 message_id=message_id
             )
 
-            room = f'contact:{contact_id}' if contact_id else f'server:{server_id}:channel:{channel_id}'
-            await sio_instance.sio.emit(
-                'message_deleted',
-                {'success': True, 'message_id': message_id, 'req_id': req_id},
-                room=room
+            room = (
+                f'contact:{contact_id}' if contact_id
+                else f'server:{server_id}:channel:{channel_id}'
             )
-            await addMessageToLogs(f"Emitted message_deleted to {room}", "INFO")
+            await sio_instance.sio.emit('message_deleted', {
+                'success': True, 'message_id': message_id, 'req_id': req_id
+            }, room=room)
 
-@auth_required(server_or_contact_required=True, allow_bots=True)
+
+@auth_required(server_or_contact_required=True, allow_bots=True, permissions=['view_channels', 'send_messages'])
 async def add_reaction(sid, metadata, data):
     message_id = data.get('message_id')
     req_id = data.get('req_id')
@@ -796,7 +778,6 @@ async def add_reaction(sid, metadata, data):
 
     if message_id is None or reaction is None:
         await respond({'success': False, 'error': 'Missing required fields', 'req_id': req_id})
-        await addMessageToLogs(f"Missing required fields for add_reaction", "INFO")
         return
 
     async with config.pool.acquire() as conn:
@@ -808,7 +789,6 @@ async def add_reaction(sid, metadata, data):
             message_info = await cur.fetchone()
             if not message_info:
                 await respond({'success': False, 'error': 'Message not found', 'req_id': req_id})
-                await addMessageToLogs(f"Message not found for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
                 return
 
             channel_id = message_info['channel_id']
@@ -818,18 +798,25 @@ async def add_reaction(sid, metadata, data):
             if not contact_id:
                 if is_bot:
                     if not await is_bot_in_server(cur, account_id, server_id):
-                        await respond({'success': False, 'error': f'Bot not in server, server id: {server_id}', 'req_id': req_id})
-                        await addMessageToLogs(f"Bot not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
+                        await respond({'success': False, 'error': f'Bot not in server', 'req_id': req_id})
                         return
                 else:
                     if not await is_user_in_server(cur, account_id, server_id):
-                        await respond({'success': False, 'error': f'User not in server, server id: {server_id}', 'req_id': req_id})
-                        await addMessageToLogs(f"User not in server for add_reaction, message id: {message_id}, user id: {account_id}", "INFO")
+                        await respond({'success': False, 'error': f'User not in server', 'req_id': req_id})
                         return
+
+                if not await check_channel_permission(
+                    cur, account_id, server_id, channel_id, 'send_messages', is_bot=is_bot
+                ):
+                    await respond({
+                        'success': False,
+                        'error': 'You do not have permission to react in this channel',
+                        'req_id': req_id
+                    })
+                    return
 
             if not reaction.startswith(':') or not reaction.endswith(':'):
                 await respond({'success': False, 'error': 'Invalid reaction', 'req_id': req_id})
-                await addMessageToLogs(f"Invalid reaction for add_reaction, message id: {message_id}, user id: {account_id}, reaction: {reaction}", "INFO")
                 return
 
             if is_bot:
@@ -844,7 +831,10 @@ async def add_reaction(sid, metadata, data):
                 )
             existing = await cur.fetchone()
 
-            room = f'contact:{contact_id}' if contact_id else f'server:{server_id}:channel:{channel_id}'
+            room = (
+                f'contact:{contact_id}' if contact_id
+                else f'server:{server_id}:channel:{channel_id}'
+            )
 
             if existing:
                 if is_bot:
@@ -858,12 +848,10 @@ async def add_reaction(sid, metadata, data):
                         (message_id, reaction, account_id)
                     )
                 await conn.commit()
-                await sio_instance.sio.emit(
-                    'remove_reaction',
-                    {'success': True, 'message_id': message_id, 'reaction': reaction, 'user_id': account_id, 'req_id': req_id},
-                    room=room
-                )
-                await addMessageToLogs(f"Removed reaction {reaction} from message {message_id} by user {account_id}", "INFO")
+                await sio_instance.sio.emit('remove_reaction', {
+                    'success': True, 'message_id': message_id,
+                    'reaction': reaction, 'user_id': account_id, 'req_id': req_id
+                }, room=room)
             else:
                 if is_bot:
                     await cur.execute(
@@ -876,135 +864,144 @@ async def add_reaction(sid, metadata, data):
                         (message_id, reaction, account_id)
                     )
                 await conn.commit()
-                await sio_instance.sio.emit(
-                    'add_reaction',
-                    {'success': True, 'message_id': message_id, 'reaction': reaction, 'user_id': account_id, 'req_id': req_id},
-                    room=room
-                )
-                await addMessageToLogs(f"Added reaction {reaction} to message {message_id} by user {account_id}", "INFO")
+                await sio_instance.sio.emit('add_reaction', {
+                    'success': True, 'message_id': message_id,
+                    'reaction': reaction, 'user_id': account_id, 'req_id': req_id
+                }, room=room)
 
-@auth_required(server_or_contact_required=True, allow_bots=True)
+
+@auth_required(server_or_contact_required=True, allow_bots=True, permissions=['send_messages'])
 async def edit_message(sid, metadata, data):
     server_id = data.get('server_id')
     message_id = data.get('message_id')
     message = data.get('message')
     embed = data.get('embed')
     req_id = data.get('req_id')
-    
+
     account_id = metadata.get('account_id')
     is_bot = metadata.get('is_bot')
-    
+
     if is_bot:
         if not all([(message or embed), message_id]):
-            await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
+            await sio_instance.sio.emit('edit_message_response', {
+                'success': False, 'error': 'Missing required fields', 'req_id': req_id
+            }, to=sid)
             return
     else:
         if not all([message, message_id]):
-            await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Missing required fields', 'req_id': req_id}, to=sid)
+            await sio_instance.sio.emit('edit_message_response', {
+                'success': False, 'error': 'Missing required fields', 'req_id': req_id
+            }, to=sid)
             return
-    
+
     if embed is not None and is_bot:
         if not validate_embed(embed):
-            await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Invalid embed data', 'req_id': req_id}, to=sid)
+            await sio_instance.sio.emit('edit_message_response', {
+                'success': False, 'error': 'Invalid embed data', 'req_id': req_id
+            }, to=sid)
             return
+
     async with config.pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            message_row = None
             if is_bot:
                 await cur.execute(
                     "SELECT server_id, channel_id, message, embed FROM messages WHERE id=%s AND sent_by_bot=%s",
                     (message_id, account_id)
                 )
-                message_row = await cur.fetchone()
             else:
                 await cur.execute(
                     "SELECT server_id, channel_id, message FROM messages WHERE id=%s AND sent_by=%s",
                     (message_id, account_id)
                 )
-                message_row = await cur.fetchone()
-            
-            if message_row == None:
-                await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Message not found', 'req_id': req_id}, to=sid)
+            message_row = await cur.fetchone()
+
+            if message_row is None:
+                await sio_instance.sio.emit('edit_message_response', {
+                    'success': False, 'error': 'Message not found', 'req_id': req_id
+                }, to=sid)
                 return
-            else:
-                if message_row['server_id'] != server_id:
-                    await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Message not found', 'req_id': req_id}, to=sid)
+
+            if message_row['server_id'] != server_id:
+                await sio_instance.sio.emit('edit_message_response', {
+                    'success': False, 'error': 'Message not found', 'req_id': req_id
+                }, to=sid)
+                return
+
+            channel_id = message_row['channel_id']
+            if not await check_channel_permission(
+                cur, account_id, server_id, channel_id, 'send_messages', is_bot=is_bot
+            ):
+                await sio_instance.sio.emit('edit_message_response', {
+                    'success': False,
+                    'error': 'You do not have permission to edit messages in this channel',
+                    'req_id': req_id
+                }, to=sid)
+                return
+
+            if is_bot:
+                db_embed = json.loads(message_row['embed']) if message_row.get('embed') else None
+                if message_row['message'] == message and db_embed == embed:
+                    await sio_instance.sio.emit('edit_message_response', {
+                        'success': True, 'message_id': message_id, 'req_id': req_id
+                    }, to=sid)
                     return
-                if is_bot:
-                    db_embed = json.loads(message_row['embed']) if message_row.get('embed') else None
-                    if message_row['message'] == message and db_embed == embed:
-                        await sio_instance.sio.emit('edit_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
-                        return
-                else:
-                    if message_row['message'] == message:
-                        await sio_instance.sio.emit('edit_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
-                        return
+            else:
+                if message_row['message'] == message:
+                    await sio_instance.sio.emit('edit_message_response', {
+                        'success': True, 'message_id': message_id, 'req_id': req_id
+                    }, to=sid)
+                    return
 
             is_premium = False
             if not is_bot:
                 is_premium = await get_user_premium_status(cur, account_id)
-            
             limit = 10000 if is_premium else 3000
-            
+
             if embed is not None and is_bot:
                 embed_list = embed if isinstance(embed, list) else [embed]
                 for e in embed_list:
                     e['bot_id'] = account_id
-            
+
             if message is not None and len(message) > limit:
-                await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Message too long', 'req_id': req_id}, to=sid)
+                await sio_instance.sio.emit('edit_message_response', {
+                    'success': False, 'error': 'Message too long', 'req_id': req_id
+                }, to=sid)
                 return
 
             if message is None and (embed is None or not is_bot):
-                await sio_instance.sio.emit('edit_message_response', {'success': False, 'error': 'Invalid update', 'req_id': req_id}, to=sid)
+                await sio_instance.sio.emit('edit_message_response', {
+                    'success': False, 'error': 'Invalid update', 'req_id': req_id
+                }, to=sid)
                 return
-            
+
             timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-            
+
             if is_bot:
-                embed_str = json.dumps(embed) if embed is not None else None
-                
                 fields = []
                 values = []
-
                 if message is not None:
                     fields.append("message = %s")
                     values.append(message)
-
                 if embed is not None:
-                    embed_str = json.dumps(embed)
                     fields.append("embed = %s")
-                    values.append(embed_str)
-
+                    values.append(json.dumps(embed))
                 if fields:
-                    fields.append("updated_at = %s")
-                    fields.append("edited = %s")
-                    values.append(timestamp)
-                    values.append(True)
-
-                    values.append(message_id)
-                    values.append(account_id)
-
-                    sql = f'''
-                        UPDATE messages
-                        SET {', '.join(fields)}
-                        WHERE id = %s AND sent_by_bot = %s
-                    '''
-
+                    fields += ["updated_at = %s", "edited = %s"]
+                    values += [timestamp, True, message_id, account_id]
+                    sql = f"UPDATE messages SET {', '.join(fields)} WHERE id = %s AND sent_by_bot = %s"
                     await cur.execute(sql, values)
                     await conn.commit()
-                    await sio_instance.sio.emit('edit_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
             else:
                 await cur.execute(
                     "UPDATE messages SET message=%s, updated_at=%s, edited=1 WHERE id=%s AND sent_by=%s",
                     (message, timestamp, message_id, account_id)
                 )
                 await conn.commit()
-                await sio_instance.sio.emit('edit_message_response', {'success': True, 'message_id': message_id, 'req_id': req_id}, to=sid)
 
-            server_id = message_row['server_id']
-            channel_id = message_row['channel_id']
-                
+            await sio_instance.sio.emit('edit_message_response', {
+                'success': True, 'message_id': message_id, 'req_id': req_id
+            }, to=sid)
+
     await sio_instance.sio.emit('update_message', {
         'id': message_id,
         'bot_message': is_bot,
@@ -1012,4 +1009,4 @@ async def edit_message(sid, metadata, data):
         'updated_at': timestamp,
         'embed': embed if is_bot and embed is not None else None,
         'sent_by': account_id
-    }, room=f'server:{server_id}:channel:{channel_id}', to=sid)
+    }, room=f'server:{server_id}:channel:{channel_id}')

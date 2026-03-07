@@ -86,3 +86,18 @@ ADD FOREIGN KEY (`client_id`) REFERENCES `oauth_clients`(`id`) ON DELETE SET NUL
 -- 3/2/2026
 ALTER TABLE ideas ADD COLUMN type ENUM('idea', 'bug', 'api_request') DEFAULT 'idea' AFTER status;
 ALTER TABLE ideas ADD COLUMN is_private BOOLEAN DEFAULT FALSE AFTER type;
+
+-- 3/7/2026
+CREATE TABLE `channel_permission_overrides` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `channel_id` CHAR(36) NOT NULL,
+    `user_id` INT NULL,
+    `role_id` CHAR(36) NULL,
+    `bot_id` CHAR(36) NULL,
+    `permission` VARCHAR(64) NOT NULL,
+    `allow` TINYINT(1) NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_channel_user_perm` (`channel_id`, `user_id`, `permission`),
+    UNIQUE KEY `uq_channel_role_perm` (`channel_id`, `role_id`, `permission`),
+    FOREIGN KEY (`channel_id`) REFERENCES `channels`(`channel_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
