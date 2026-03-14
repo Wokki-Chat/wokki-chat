@@ -30,6 +30,9 @@ POST /token
     Token endpoint. Exchange authorization codes for access/refresh tokens, or refresh expired tokens.
     Client authentication required (client_id + client_secret).
 
+POST /me/profile
+    Profile endpoint. Get the users profile information.
+    User authentication required (access_token).
 
 NOTES
 -----

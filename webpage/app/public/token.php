@@ -145,8 +145,8 @@ if ($grant_type === 'authorization_code') {
 	$access_expires = date('Y-m-d H:i:s', time() + 3600);
 	$refresh_expires = date('Y-m-d H:i:s', time() + 86400 * 30);
 
-	$stmt = $mysqli->prepare("INSERT INTO user_tokens (user_id, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at, created_at, client_id, scopes) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)");
-	$stmt->bind_param("ssssssi", $token_row['user_id'], $new_access_token, $new_refresh_token, $access_expires, $refresh_expires, $client['id'], $token_row['scopes']);
+	$stmt = $mysqli->prepare("INSERT INTO user_tokens (user_id, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at, created_at, client_id, scopes, device_id) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?)");
+	$stmt->bind_param("ssssssss", $token_row['user_id'], $new_access_token, $new_refresh_token, $access_expires, $refresh_expires, $client['id'], $token_row['scopes'], $token_row['device_id']);
 	$stmt->execute();
 	$stmt->close();
 
