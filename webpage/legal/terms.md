@@ -15,6 +15,7 @@ Users under the required age must have parental or guardian consent. By creating
 - You are solely responsible for the content you post, share, or interact with.
 - Impersonating Wokki Chat, its team members, or official representatives is strictly prohibited.
 - Notify support immediately if you suspect unauthorized use of your account.
+- When using the mobile app, a randomly generated device identifier and your IP address are collected at login to secure your session. This data is used exclusively for authentication security and is not shared.
 
 ## 4. User Conduct
 

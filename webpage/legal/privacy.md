@@ -6,6 +6,7 @@ We also collect data from integrated services you choose to connect, including:
 - **Spotify:** access token, refresh token, user ID, username, user URI, and profile image.  
 - **GitHub:** access token, username, user ID, and profile image, used to display your commit activity on your profile.  
 - **Chat:** username, user URL, profile image, and any data required by the Chat integration (from [Jona Zwetsloot](https://chat.jonazwetsloot.nl/)).
+- **Device & Network Information:** A randomly generated device identifier (created on first app launch and stored on your device) and your IP address, used solely to bind your session to your device for security purposes.
 
 By connecting these integrations, you also agree to their respective privacy policies.
 
@@ -18,6 +19,7 @@ We do **not** track users for analytics, and we do **not** sell your data or sho
 - To show your GitHub commit activity and Chat profile info when integrations are connected.  
 - To ensure platform security and compliance with our Terms of Service.  
 - To personalize your experience and improve services.
+- To bind authentication sessions to your device, preventing stolen tokens from being used on other devices.
 
 ## 3. Sharing and Disclosure
 
@@ -63,7 +65,7 @@ We do **not** use cookies for third-party advertising or analytics tracking.
 
 By connecting third-party services like **Spotify, GitHub, or Chat**, you acknowledge and agree that:
 
-- Your account and related data are subject to the third-party’s privacy policies.  
+- Your account and related data are subject to the third-party's privacy policies.  
 - Integration tokens are stored securely but used exclusively for displaying or retrieving the intended data.  
 - Wokki Chat cannot control changes in the privacy practices of third-party services.
 
