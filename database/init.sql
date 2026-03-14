@@ -320,6 +320,18 @@ CREATE TABLE `message_reactions` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `mobile_token_attempts`
+--
+
+CREATE TABLE `mobile_token_attempts` (
+  `id` int(11) NOT NULL,
+  `ip` varchar(45) NOT NULL,
+  `attempted_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `notifications`
 --
 
@@ -348,7 +360,8 @@ CREATE TABLE `oauth_clients` (
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `revoked_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `allow_password_grant` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -562,7 +575,8 @@ CREATE TABLE `user_tokens` (
   `refresh_token_expires_at` datetime NOT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   `client_id` char(36) DEFAULT NULL,
-  `scopes` varchar(1024) DEFAULT NULL
+  `scopes` varchar(1024) DEFAULT NULL,
+  `device_id` varchar(64) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -638,6 +652,10 @@ ALTER TABLE `messages`
 ALTER TABLE `message_reactions`
   ADD PRIMARY KEY (`id`);
 
+ALTER TABLE `mobile_token_attempts`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_ip_time` (`ip`,`attempted_at`);
+
 ALTER TABLE `notifications`
   ADD PRIMARY KEY (`id`);
 
@@ -691,7 +709,8 @@ ALTER TABLE `user_server_roles`
 ALTER TABLE `user_tokens`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`),
-  ADD KEY `idx_client_id` (`client_id`);
+  ADD KEY `idx_client_id` (`client_id`),
+  ADD KEY `idx_device_id` (`device_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -722,6 +741,9 @@ ALTER TABLE `maintenance`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 ALTER TABLE `message_reactions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `mobile_token_attempts`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 ALTER TABLE `profile_widgets`

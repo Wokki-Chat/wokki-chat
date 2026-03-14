@@ -105,3 +105,16 @@ CREATE TABLE `channel_permission_overrides` (
 -- 3/7/2026 roles index
 ALTER TABLE `server_roles` ADD COLUMN `role_index` INT NOT NULL DEFAULT 0;
 ALTER TABLE `channel_permission_overrides` ADD COLUMN `role_index` INT NULL;
+
+-- 3/14/2026
+ALTER TABLE `oauth_clients` ADD COLUMN `allow_password_grant` TINYINT(1) NOT NULL DEFAULT 0;
+
+ALTER TABLE `user_tokens` ADD COLUMN `device_id` VARCHAR(64) NULL;
+ALTER TABLE `user_tokens` ADD INDEX `idx_device` (device_id);
+
+CREATE TABLE mobile_token_attempts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ip VARCHAR(45) NOT NULL,
+  attempted_at DATETIME NOT NULL,
+  INDEX idx_ip_time (ip, attempted_at)
+);
