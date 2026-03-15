@@ -229,7 +229,7 @@ if (!$user_row) {
 }
 
 $premium = getPremiumStatus($requested_user_id, $mysqli);
-$can_read_email = verify_scope('user:read:email', $access_token, $mysqli);
+$can_read_email = verify_scope('user:read:email', $access_token, $mysqli) && $requested_user_id === $requesting_user_id;
 
 $user = [
 	'id' => $user_row['id'],
