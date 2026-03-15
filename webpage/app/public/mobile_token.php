@@ -29,6 +29,8 @@ define('APP_HMAC_SECRET', $mobile_hmac_secret);
 define('SIGNATURE_WINDOW', 300);
 define('RATE_LIMIT_WINDOW', 900);
 define('RATE_LIMIT_MAX', 10);
+define('ACCESS_TOKEN_TTL', 60 * 60 * 24 * 7);
+define('REFRESH_TOKEN_TTL', 60 * 60 * 24 * 365);
 
 function generate_token(int $bytes = 32): string {
 	return bin2hex(random_bytes($bytes));
@@ -85,7 +87,9 @@ function check_rate_limit(string $ip): void {
 }
 
 function validate_device_id(string $device_id): bool {
-	return strlen($device_id) >= 16 && strlen($device_id) <= 64 && ctype_alnum(str_replace(['-', '_'], '', $device_id));
+	return strlen($device_id) >= 16
+		&& strlen($device_id) <= 64
+		&& ctype_alnum(str_replace(['-', '_'], '', $device_id));
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -102,10 +106,6 @@ if (!$device_id || !validate_device_id($device_id)) {
 }
 
 verify_app_signature($raw_body, $device_id);
-
-$ip = $_SERVER['REMOTE_ADDR'];
-check_rate_limit($ip);
-
 $grant_type = $body['grant_type'] ?? null;
 $client_id = $body['client_id'] ?? null;
 
@@ -131,6 +131,9 @@ if ($grant_type === 'password') {
 		json_error('invalid_request', 'Missing email or password');
 	}
 
+	$ip = $_SERVER['REMOTE_ADDR'];
+	check_rate_limit($ip);
+
 	$stmt = $mysqli->prepare("SELECT id, password_hash FROM users WHERE email = ? AND email_verified = 1");
 	$stmt->bind_param("s", $email);
 	$stmt->execute();
@@ -143,8 +146,8 @@ if ($grant_type === 'password') {
 
 	$access_token = generate_token(32);
 	$refresh_token = generate_token(32);
-	$access_expires = date('Y-m-d H:i:s', time() + 3600);
-	$refresh_expires = date('Y-m-d H:i:s', time() + 86400 * 30);
+	$access_expires = date('Y-m-d H:i:s', time() + ACCESS_TOKEN_TTL);
+	$refresh_expires = date('Y-m-d H:i:s', time() + REFRESH_TOKEN_TTL);
 
 	$stmt = $mysqli->prepare("INSERT INTO user_tokens (user_id, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at, created_at, client_id, device_id, scopes) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, '')");
 	$stmt->bind_param("sssssss", $user['id'], $access_token, $refresh_token, $access_expires, $refresh_expires, $client['id'], $device_id);
@@ -155,7 +158,7 @@ if ($grant_type === 'password') {
 	echo json_encode([
 		'access_token' => $access_token,
 		'token_type' => 'Bearer',
-		'expires_in' => 3600,
+		'expires_in' => ACCESS_TOKEN_TTL,
 		'refresh_token' => $refresh_token,
 	]);
 	exit;
@@ -185,8 +188,8 @@ if ($grant_type === 'refresh_token') {
 
 	$new_access_token = generate_token(32);
 	$new_refresh_token = generate_token(32);
-	$access_expires = date('Y-m-d H:i:s', time() + 3600);
-	$refresh_expires = date('Y-m-d H:i:s', time() + 86400 * 30);
+	$access_expires = date('Y-m-d H:i:s', time() + ACCESS_TOKEN_TTL);
+	$refresh_expires = date('Y-m-d H:i:s', time() + REFRESH_TOKEN_TTL);
 
 	$stmt = $mysqli->prepare("INSERT INTO user_tokens (user_id, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at, created_at, client_id, device_id, scopes) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?)");
 	$stmt->bind_param("ssssssss", $token_row['user_id'], $new_access_token, $new_refresh_token, $access_expires, $refresh_expires, $client['id'], $device_id, $token_row['scopes']);
@@ -197,7 +200,7 @@ if ($grant_type === 'refresh_token') {
 	echo json_encode([
 		'access_token' => $new_access_token,
 		'token_type' => 'Bearer',
-		'expires_in' => 3600,
+		'expires_in' => ACCESS_TOKEN_TTL,
 		'refresh_token' => $new_refresh_token,
 	]);
 	exit;
