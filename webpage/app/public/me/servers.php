@@ -93,6 +93,7 @@ if (!empty($user_servers)) {
     while ($row = $result->fetch_assoc()) {
         $row['position'] = $member_data[$row['id']]['position'];
         $row['joined_at'] = $member_data[$row['id']]['joined_at'];
+        $row['image'] = 'https://chat.wokki20.nl' . $row['image'];
         $servers[] = $row;
     }
     $stmt->close();
