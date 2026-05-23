@@ -1,9 +1,19 @@
 # Wokki Chat
 
-A real-time chat application with load-balanced Socket.IO workers.
+> [!WARNING]
+> ## 📦 Archive Notice
+>
+> This project is now officially archived.
+>
+> Wokki Chat is no longer being maintained, and there will be no further updates, bug fixes, or new features. The codebase is preserved in its current state for reference and historical purposes only.
+>
+> The live site and all related services will be taken offline and will no longer be accessible.
+>
+> Issues and pull requests will no longer be reviewed or merged.
+>
+> Feel free to fork the repository if you want to continue development independently.
 
-**Live Site:** https://chat.wokki20.nl/  
-**Status Page:** https://status.chat.wokki20.nl/
+A real-time chat application with load-balanced Socket.IO workers.
 
 ---
 
